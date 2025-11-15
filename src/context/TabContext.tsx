@@ -1,89 +1,88 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, useCallback } from 'react';
 
-// ✅ Reusing types from AppSidebar’s data structure
-export type NestedItem = {
-  name: string;
-  path: string;
-  pro?: boolean;
-  new?: boolean;
-};
-
-export type SubItem = {
-  name: string;
-  path: string;
-  pro?: boolean;
-  new?: boolean;
-  nestedItems?: NestedItem[];
-};
-
-// ✅ Export TabItem so it can be reused elsewhere
-export type TabItem = SubItem | NestedItem;
-
-interface TabContextType {
-  openTabs: TabItem[];
-  activeTabPath: string;
-  addTab: (item: TabItem) => void;
-  setActiveTab: (path: string) => void;
-  closeTab: (path: string) => void;
+// Define the shape of a tab item
+interface TabItem {
+    name: string;
+    path: string;
 }
 
-const TabContext = createContext<TabContextType | undefined>(undefined);
+// Define the shape of the context value (same as the hook's return value)
+interface TabContextValue {
+    openTabs: TabItem[];
+    activeTabPath: string;
+    setActiveTab: (path: string) => void;
+    closeTab: (path: string) => void;
+    addTab: (item: TabItem) => void;
+}
 
-// TabContext.tsx (The hook that throws the error if not wrapped)
-export const useTabs = () => {
+// 1. Create the Context 
+// Initialize with 'undefined' and assert the type to prevent initial null/undefined checks elsewhere.
+const TabContext = createContext<TabContextValue | undefined>(undefined);
+
+// 2. Define the useTabs hook
+// This hook provides easy access to the context value.
+export const useTabs = (): TabContextValue => {
     const context = useContext(TabContext);
-    if (!context) {
-        throw new Error('useTabs must be used within a TabProvider'); // <--- Error thrown here
+    if (context === undefined) {
+        throw new Error('useTabs must be used within a TabProvider');
     }
     return context;
 };
 
-// ✅ Default (always open) tab
-const DEFAULT_TAB: TabItem = { name: "Dashboard", path: "/dashboard" };
+// 3. Define the TabProvider component (The missing piece)
+export const TabProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    // --- State and Logic from your original 'useTabs' hook ---
+    const defaultTab: TabItem = { name: "Dashboard", path: "/dashboard" };
+    const [openTabs, setOpenTabs] = useState<TabItem[]>([defaultTab]);
+    const [activeTabPath, setActiveTabPath] = useState(defaultTab.path);
 
-export const TabProvider: React.FC<{ children: ReactNode }> = ({
-  children,
-}) => {
-  const [openTabs, setOpenTabs] = useState<TabItem[]>([DEFAULT_TAB]);
-  const [activeTabPath, setActiveTabPath] = useState<string>(DEFAULT_TAB.path);
+    const addTab = useCallback((item: TabItem) => {
+        setOpenTabs(prev => {
+            // Only add if the tab doesn't already exist
+            if (!prev.find(tab => tab.path === item.path)) {
+                return [...prev, item];
+            }
+            return prev;
+        });
+        // Always set the new/existing tab as active
+        setActiveTabPath(item.path);
+    }, []);
 
-  const addTab = (item: TabItem) => {
-    setOpenTabs((prevTabs) => {
-      if (!prevTabs.find((tab) => tab.path === item.path)) {
-        return [...prevTabs, item];
-      }
-      return prevTabs;
-    });
-    setActiveTabPath(item.path);
-  };
+    const closeTab = useCallback((path: string) => {
+        // Prevent closing the dashboard
+        if (path === '/dashboard') return;
 
-  const closeTab = (path: string) => {
-    setOpenTabs((prevTabs) => {
-      const updatedTabs = prevTabs.filter((tab) => tab.path !== path);
+        setOpenTabs(prev => {
+            const newTabs = prev.filter(tab => tab.path !== path);
+            
+            // Only update activeTabPath if the closed tab was the active one
+            if (path === activeTabPath) {
+                const closedTabIndex = prev.findIndex(tab => tab.path === path);
+                
+                // Determine the next active tab: (after -> before -> dashboard)
+                const newActiveTab = newTabs[closedTabIndex] || newTabs[closedTabIndex - 1] || newTabs[0];
 
-      if (activeTabPath === path) {
-        // Find the path of the last remaining tab, or default to Dashboard
-        const newActiveTabPath =
-          updatedTabs.length > 0
-            ? updatedTabs[updatedTabs.length - 1].path
-            : DEFAULT_TAB.path;
-        setActiveTabPath(newActiveTabPath);
-      }
+                if (newActiveTab) {
+                    setActiveTabPath(newActiveTab.path);
+                } else {
+                    setActiveTabPath('/dashboard'); 
+                }
+            }
+            return newTabs;
+        });
+    }, [activeTabPath]);
 
-      // Ensure default tab stays if all are closed
-      return updatedTabs.length > 0 ? updatedTabs : [DEFAULT_TAB];
-    });
-  };
+    // Use setActiveTabPath directly as setActiveTab
+    const setActiveTab = setActiveTabPath;
 
-  const setActiveTab = (path: string) => {
-    setActiveTabPath(path);
-  };
+    // The value provided by the context
+    const value: TabContextValue = {
+        openTabs,
+        activeTabPath,
+        setActiveTab,
+        closeTab,
+        addTab
+    };
 
-  return (
-    <TabContext.Provider
-      value={{ openTabs, activeTabPath, addTab, setActiveTab, closeTab }}
-    >
-      {children}
-    </TabContext.Provider>
-  );
+    return <TabContext.Provider value={value}>{children}</TabContext.Provider>;
 };
