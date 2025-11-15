@@ -1,4 +1,9 @@
+// src/App.tsx
+
 import { BrowserRouter as Router, Routes, Route } from "react-router";
+
+import { UnsavedChangesProvider } from "./hooks/useUnsavedChangesWarning";
+
 import SignIn from "./pages/AuthPages/SignIn";
 import SignUp from "./pages/AuthPages/SignUp";
 import NotFound from "./pages/OtherPage/NotFound";
@@ -19,9 +24,11 @@ import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Welcome";
 
+
 export default function App() {
   return (
-    <>
+    // 1. Wrap the entire application in the UnsavedChangesProvider
+    <UnsavedChangesProvider>
       <Router>
         <ScrollToTop />
         <Routes>
@@ -33,8 +40,8 @@ export default function App() {
             <Route path="/profile" element={<UserProfiles />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/blank" element={<Blank />} />
-
-            {/* Forms */}
+            
+            {/* Components like FormElements should call setHasUnsavedChanges(true) when inputs change */}
             <Route path="/form-elements" element={<FormElements />} />
 
             {/* Tables */}
@@ -61,6 +68,6 @@ export default function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>
-    </>
+    </UnsavedChangesProvider>
   );
 }

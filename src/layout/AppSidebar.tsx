@@ -1,18 +1,14 @@
 import React, { useCallback, useEffect, useState, useRef } from "react";
-import { allItems } from "./navigation"; // Import navigation data
-import { ChevronRightIcon } from "../components/icons"; // Import icons
-import { useTabs } from '../context/TabContext'; // Import useTabs
+import { allItems } from "./navigation";
+import { ChevronRightIcon } from "../components/icons";
 
-// Utility to check if an item or its sub-items match the active path
 const findActiveItemPath = (items: any[] = [], activePath: string): boolean => {
     for (const item of items) {
       if (item.path === activePath) return true;
       if (item.subItems) {
-        // Recursive check for subItems (Level 2)
         if (findActiveItemPath(item.subItems, activePath)) return true;
       }
       if (item.nestedItems) {
-        // Direct check for nestedItems (Level 3)
         if (item.nestedItems.some((i: { path: string }) => i.path === activePath)) {
           return true;
         }
@@ -21,15 +17,10 @@ const findActiveItemPath = (items: any[] = [], activePath: string): boolean => {
     return false;
 };
 
-// Tailwind CSS Classes
 const baseLinkClasses = "flex items-center text-sm px-3 py-2 rounded-md transition-colors duration-200 w-full";
 const primaryColorClass = "bg-[#0c5888] text-white shadow-md";
 const inactiveLinkClasses = "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700";
 
-
-// ============================================
-// LEVEL 3 LINK
-// ============================================
 interface NavItem { name: string; path: string; icon?: React.ReactElement; subItems?: NavItem[]; nestedItems?: NavItem[]; }
 
 const NestedLink = React.memo(({ item, addTab, activeTabPath }: { item: NavItem, addTab: (item: NavItem) => void, activeTabPath: string }) => {
@@ -55,14 +46,11 @@ const NestedLink = React.memo(({ item, addTab, activeTabPath }: { item: NavItem,
     );
 });
 
-// ============================================
-// LEVEL 2 FLYOUT ITEM
-// ============================================
+
 const SubFlyoutItem = React.memo(({ item, addTab, activeTabPath }: { item: NavItem, addTab: (item: NavItem) => void, activeTabPath: string }) => {
     const [isNestedOpen, setIsNestedOpen] = useState(false);
     const hasNestedItems = !!item.nestedItems && item.nestedItems.length > 0;
     
-    // Check if the current path or any nested child's path is active
     const isItemActive = item.path === activeTabPath || (hasNestedItems && item.nestedItems!.some(i => i.path === activeTabPath));
 
     useEffect(() => {
@@ -96,7 +84,6 @@ const SubFlyoutItem = React.memo(({ item, addTab, activeTabPath }: { item: NavIt
                 )}
             </button>
             
-            {/* Level 3: Nested Menu */}
             {hasNestedItems && isNestedOpen && (
                 <ul className="pl-4 pt-1 mt-1 border-l border-gray-200 dark:border-gray-700">
                     {item.nestedItems!.map(nestedItem => (
@@ -114,9 +101,6 @@ const SubFlyoutItem = React.memo(({ item, addTab, activeTabPath }: { item: NavIt
 });
 
 
-// ============================================
-// FLYOUT BOX (Levels 2 & 3)
-// ============================================
 interface FlyoutBoxProps {
     item: NavItem & { subItems: NavItem[] };
     parentBounds: DOMRect;
@@ -128,20 +112,18 @@ interface FlyoutBoxProps {
 const FlyoutBox: React.FC<FlyoutBoxProps> = ({ item, parentBounds, onClose, addTab, activeTabPath }) => {
     const flyoutRef = useRef<HTMLDivElement>(null);
 
-    // Position the flyout based on the sidebar link's position
     const style = {
         top: parentBounds.top,
         left: parentBounds.right,
-        maxHeight: `calc(100vh - ${parentBounds.top}px - 20px)`, // Prevent overflow
+        maxHeight: `calc(100vh - ${parentBounds.top}px - 20px)`,
     };
 
-    // Click outside to close
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (
                 flyoutRef.current && 
                 !flyoutRef.current.contains(event.target as Node) && 
-                (event.target as HTMLElement).closest('aside') === null // Don't close if clicking inside the fixed sidebar
+                (event.target as HTMLElement).closest('aside') === null
             ) {
                 onClose();
             }
@@ -174,9 +156,6 @@ const FlyoutBox: React.FC<FlyoutBoxProps> = ({ item, parentBounds, onClose, addT
 };
 
 
-// ============================================
-// LEVEL 1 FIXED SIDEBAR LINK
-// ============================================
 interface SidebarLinkProps {
     item: NavItem;
     onClick: (data: { item: NavItem, bounds: DOMRect }) => void;
@@ -193,13 +172,11 @@ const SidebarLink: React.FC<SidebarLinkProps> = React.memo(({ item, onClick, isA
         if (!linkRef.current) return;
 
         if (hasSubItems) {
-            // Get boundaries to position the flyout box
             const bounds = linkRef.current.getBoundingClientRect();
             onClick({ item, bounds });
         } else {
-            // Navigate 1st layer link without sub-items
             addTab(item);
-            onCloseFlyout(); // Close flyout when a tab is added directly from the main sidebar
+            onCloseFlyout();
         }
     };
 
@@ -208,13 +185,9 @@ const SidebarLink: React.FC<SidebarLinkProps> = React.memo(({ item, onClick, isA
             <button
                 ref={linkRef}
                 onClick={handleClick}
-                // Tailwind classes for the vertical, icon-focused sidebar link
                 className={`${baseLinkClasses} ${isActive ? primaryColorClass : inactiveLinkClasses} font-medium flex-col justify-center h-16 pt-2 pb-2 relative`}
             >
-                {/* Clone element ensures icon inherits props like className */}
-                {item.icon && React.cloneElement(item.icon, {
-                    className: `w-5 h-5 ${isActive ? 'text-white' : 'text-current'}`,
-                })}
+                {item.icon && React.cloneElement(item.icon, { className: `w-5 h-5 ${isActive ? 'text-white' : 'text-current'}`, })}
                 <span className="text-xs mt-1 truncate max-w-full">{item.name}</span>
                 {hasSubItems && (
                     <ChevronRightIcon className={`absolute right-1 w-3 h-3 ${isActive ? 'text-white' : 'text-gray-500'}`} />
@@ -224,20 +197,15 @@ const SidebarLink: React.FC<SidebarLinkProps> = React.memo(({ item, onClick, isA
     );
 });
 
-// ============================================
-// MAIN SIDEBAR COMPONENT
-// ============================================
 interface AppSidebarProps {
     addTab: (item: NavItem) => void;
     activeTabPath: string;
 }
 
 export const AppSidebar: React.FC<AppSidebarProps> = ({ addTab, activeTabPath }) => {
-    // State to manage the open flyout: { item: itemObject, bounds: DOMRect }
     const [activeFlyout, setActiveFlyout] = useState<{ item: NavItem & { subItems: NavItem[] }, bounds: DOMRect } | null>(null);
 
     const handleLinkClick = useCallback(({ item, bounds }: { item: NavItem, bounds: DOMRect }) => {
-        // Type assertion for 'item' since we check for subItems presence before calling
         setActiveFlyout(prev => (prev?.item.name === item.name ? null : { item: item as NavItem & { subItems: NavItem[] }, bounds }));
     }, []);
 
@@ -245,7 +213,6 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ addTab, activeTabPath })
         setActiveFlyout(null);
     }, []);
     
-    // Determines if the main link or any of its nested children are active
     const isMainLinkActive = useCallback((item: NavItem) => {
         return item.path === activeTabPath || findActiveItemPath(item.subItems, activeTabPath);
     }, [activeTabPath]);
@@ -275,7 +242,6 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ addTab, activeTabPath })
                 </div>
             </aside>
 
-            {/* Render FlyoutBox if activeFlyout is set and has subItems */}
             {activeFlyout && activeFlyout.item.subItems && (
                 <FlyoutBox
                     item={activeFlyout.item}
