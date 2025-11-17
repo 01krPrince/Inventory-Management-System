@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 
-const Link = ({ children }: { children: React.ReactNode }) => <a href="">{children}</a>;
+const Link = ({ children }: { children: React.ReactNode }) => (
+  <a href="">{children}</a>
+);
 const ThemeToggleButton = () => null;
 const NotificationDropdown = () => null;
 
@@ -10,7 +12,8 @@ const AppHeader: React.FC = () => {
   const userMenuRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const toggleApplicationMenu = () => setApplicationMenuOpen(!isApplicationMenuOpen);
+  const toggleApplicationMenu = () =>
+    setApplicationMenuOpen(!isApplicationMenuOpen);
   const toggleUserMenu = () => setUserMenuOpen(!isUserMenuOpen);
 
   useEffect(() => {
@@ -22,7 +25,10 @@ const AppHeader: React.FC = () => {
     };
 
     const handleClickOutside = (event: MouseEvent) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(event.target as Node)
+      ) {
         setUserMenuOpen(false);
       }
     };
@@ -40,11 +46,13 @@ const AppHeader: React.FC = () => {
       <div className="flex flex-col items-center justify-between w-full grow lg:flex-row lg:px-6">
         {/* Left Section */}
         <div className="flex items-center justify-between w-full gap-2 px-3 py-2 border-b border-gray-200 dark:border-gray-800 sm:gap-4 lg:justify-normal lg:border-b-0 lg:px-0 lg:py-2 transition-all duration-300 ease-in-out">
-          <div className="ml-3 p-2 h-10 flex items-center justify-center transition-all duration-300 ease-in-out">
-            <span className="text-xl font-bold text-[#0c5888] dark:text-white transition-all duration-300 ease-in-out">
-              Inventory
-            </span>
-          </div>
+          <a href="https://solution.alignbooks.com/#/login" target="_blank">
+            <div className="ml-3 p-2 h-10 flex items-center justify-center transition-all duration-300 ease-in-out">
+              <span className="text-xl font-bold text-[#0c5888] dark:text-white transition-all duration-300 ease-in-out">
+                Inventory
+              </span>
+            </div>
+          </a>
 
           {/* Mobile menu button */}
           <button
@@ -120,8 +128,12 @@ const AppHeader: React.FC = () => {
               {isUserMenuOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden transition-all duration-300 ease-in-out">
                   <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
-                    <p className="text-sm font-medium text-gray-800 dark:text-gray-100">Admin User</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">admin@example.com</p>
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-100">
+                      Admin User
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      admin@example.com
+                    </p>
                   </div>
                   <button
                     key="account"

@@ -1,256 +1,345 @@
 import React, { useCallback, useEffect, useState, useRef } from "react";
 import { allItems } from "./navigation";
 import { ChevronRightIcon } from "../components/icons";
+import LogoWithIntroAnimation from "./LogoWithIntroAnimation";
 
 const findActiveItemPath = (items: any[] = [], activePath: string): boolean => {
-    for (const item of items) {
-      if (item.path === activePath) return true;
-      if (item.subItems) {
-        if (findActiveItemPath(item.subItems, activePath)) return true;
-      }
-      if (item.nestedItems) {
-        if (item.nestedItems.some((i: { path: string }) => i.path === activePath)) {
-          return true;
-        }
+  for (const item of items) {
+    if (item.path === activePath) return true;
+    if (item.subItems) {
+      if (findActiveItemPath(item.subItems, activePath)) return true;
+    }
+    if (item.nestedItems) {
+      if (
+        item.nestedItems.some((i: { path: string }) => i.path === activePath)
+      ) {
+        return true;
       }
     }
-    return false;
+  }
+  return false;
 };
 
-const baseLinkClasses = "flex items-center text-sm px-3 py-2 rounded-md transition-colors duration-200 w-full";
+const baseLinkClasses =
+  "flex items-center text-sm px-3 py-2 rounded-md transition-colors duration-200 w-full";
 const primaryColorClass = "bg-[#0c5888] text-white shadow-md";
-const inactiveLinkClasses = "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700";
+const inactiveLinkClasses =
+  "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700";
 
-interface NavItem { name: string; path: string; icon?: React.ReactElement; subItems?: NavItem[]; nestedItems?: NavItem[]; }
+interface NavItem {
+  name: string;
+  path: string;
+  icon?: React.ReactElement;
+  subItems?: NavItem[];
+  nestedItems?: NavItem[];
+}
 
-const NestedLink = React.memo(({ item, addTab, activeTabPath }: { item: NavItem, addTab: (item: NavItem) => void, activeTabPath: string }) => {
+const NestedLink = React.memo(
+  ({
+    item,
+    addTab,
+    activeTabPath,
+    onClose,
+  }: {
+    item: NavItem;
+    addTab: (item: NavItem) => void;
+    activeTabPath: string;
+    onClose: () => void;
+  }) => {
     const isItemActive = item.path === activeTabPath;
 
     return (
-        <li className="mb-1">
-            <button
-                onClick={(e) => { 
-                    e.stopPropagation(); 
-                    addTab(item); 
-                }}
-                className={`flex items-center text-xs px-3 py-1.5 rounded-md w-full transition-colors duration-150 ${
-                    isItemActive
-                        ? 'bg-indigo-100 text-indigo-700 font-semibold'
-                        : 'text-gray-600 hover:bg-gray-50'
-                }`}
-            >
-                <span className={`w-1.5 h-1.5 rounded-full mr-3 ${isItemActive ? 'bg-indigo-600' : 'bg-gray-400'}`} />
-                {item.name}
-            </button>
-        </li>
+      <li className="mb-1">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            addTab(item);
+            onClose();
+          }}
+          className={`flex items-center text-xs px-3 py-1.5 rounded-md w-full transition-colors duration-150 ${
+            isItemActive
+              ? "bg-indigo-100 text-[#0c5888] font-semibold"
+              : "text-gray-600 hover:bg-gray-50"
+          }`}
+        >
+          <span
+            className={`w-1.5 h-1.5 rounded-full mr-3 ${
+              isItemActive ? "bg-[#0c5888]" : "bg-gray-400"
+            }`}
+          />
+          {item.name}
+        </button>
+      </li>
     );
-});
+  }
+);
 
-
-const SubFlyoutItem = React.memo(({ item, addTab, activeTabPath }: { item: NavItem, addTab: (item: NavItem) => void, activeTabPath: string }) => {
+const SubFlyoutItem = React.memo(
+  ({
+    item,
+    addTab,
+    activeTabPath,
+    onClose,
+  }: {
+    item: NavItem;
+    addTab: (item: NavItem) => void;
+    activeTabPath: string;
+    onClose: () => void;
+  }) => {
     const [isNestedOpen, setIsNestedOpen] = useState(false);
     const hasNestedItems = !!item.nestedItems && item.nestedItems.length > 0;
-    
-    const isItemActive = item.path === activeTabPath || (hasNestedItems && item.nestedItems!.some(i => i.path === activeTabPath));
+
+    const isItemActive =
+      item.path === activeTabPath ||
+      (hasNestedItems &&
+        item.nestedItems!.some((i) => i.path === activeTabPath));
 
     useEffect(() => {
-        if (isItemActive) {
-            setIsNestedOpen(true);
-        }
+      if (isItemActive) {
+        setIsNestedOpen(true);
+      }
     }, [isItemActive]);
 
     const handleClick = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (hasNestedItems) {
-            setIsNestedOpen(prev => !prev);
-        } else {
-            addTab(item);
-        }
+      e.stopPropagation();
+      if (hasNestedItems) {
+        setIsNestedOpen((prev) => !prev);
+      } else {
+        addTab(item);
+        onClose(); // Close flyout after navigating
+      }
     };
 
     return (
-        <li className="mb-1">
-            <button
-                onClick={handleClick}
-                className={`flex items-center justify-between text-sm px-3 py-2 rounded-md w-full transition-colors duration-150 ${
-                    isItemActive
-                        ? 'bg-white text-[#0c5888] font-medium shadow-sm'
-                        : 'text-gray-700 hover:bg-gray-100'
-                }`}
-            >
-                <span>{item.name}</span>
-                {hasNestedItems && (
-                    <ChevronRightIcon className={`w-3 h-3 transition-transform duration-200 ${isNestedOpen ? 'transform rotate-90' : ''}`} />
-                )}
-            </button>
-            
-            {hasNestedItems && isNestedOpen && (
-                <ul className="pl-4 pt-1 mt-1 border-l border-gray-200 dark:border-gray-700">
-                    {item.nestedItems!.map(nestedItem => (
-                        <NestedLink 
-                            key={nestedItem.path} 
-                            item={nestedItem} 
-                            addTab={addTab} 
-                            activeTabPath={activeTabPath} 
-                        />
-                    ))}
-                </ul>
-            )}
-        </li>
-    );
-});
+      <li className="mb-1">
+        <button
+          onClick={handleClick}
+          className={`flex items-center justify-between text-sm px-3 py-2 rounded-md w-full transition-colors duration-150 ${
+            isItemActive
+              ? "bg-white text-[#0c5888] font-medium shadow-sm"
+              : "text-gray-700 hover:bg-gray-100"
+          }`}
+        >
+          <span>{item.name}</span>
+          {hasNestedItems && (
+            <ChevronRightIcon
+              className={`w-3 h-3 transition-transform duration-200 ${
+                isNestedOpen ? "transform rotate-90" : ""
+              }`}
+            />
+          )}
+        </button>
 
+        {hasNestedItems && isNestedOpen && (
+          <ul className="pl-4 pt-1 mt-1 border-l border-gray-200 dark:border-gray-700">
+            {item.nestedItems!.map((nestedItem) => (
+              <NestedLink
+                key={nestedItem.path}
+                item={nestedItem}
+                addTab={addTab}
+                activeTabPath={activeTabPath}
+                onClose={onClose} // Pass onClose down
+              />
+            ))}
+          </ul>
+        )}
+      </li>
+    );
+  }
+);
 
 interface FlyoutBoxProps {
-    item: NavItem & { subItems: NavItem[] };
-    parentBounds: DOMRect;
-    onClose: () => void;
-    addTab: (item: NavItem) => void;
-    activeTabPath: string;
+  item: NavItem & { subItems: NavItem[] };
+  parentBounds: DOMRect;
+  onClose: () => void;
+  addTab: (item: NavItem) => void;
+  activeTabPath: string;
 }
 
-const FlyoutBox: React.FC<FlyoutBoxProps> = ({ item, parentBounds, onClose, addTab, activeTabPath }) => {
-    const flyoutRef = useRef<HTMLDivElement>(null);
+const FlyoutBox: React.FC<FlyoutBoxProps> = ({
+  item,
+  parentBounds,
+  onClose,
+  addTab,
+  activeTabPath,
+}) => {
+  const flyoutRef = useRef<HTMLDivElement>(null);
 
-    const style = {
-        top: parentBounds.top,
-        left: parentBounds.right,
-        maxHeight: `calc(100vh - ${parentBounds.top}px - 20px)`,
+  const style = {
+    top: parentBounds.top,
+    left: parentBounds.right,
+    maxHeight: `calc(100vh - ${parentBounds.top}px - 20px)`,
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        flyoutRef.current &&
+        !flyoutRef.current.contains(event.target as Node) &&
+        (event.target as HTMLElement).closest("aside") === null
+      ) {
+        onClose();
+      }
     };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [onClose]);
 
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (
-                flyoutRef.current && 
-                !flyoutRef.current.contains(event.target as Node) && 
-                (event.target as HTMLElement).closest('aside') === null
-            ) {
-                onClose();
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [onClose]);
-
-    return (
-        <div
-            ref={flyoutRef}
-            className="fixed z-50 w-72 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-y-auto"
-            style={style}
-        >
-            <h4 className="text-lg font-bold text-[#0c5888] dark:text-indigo-400 mb-3 border-b border-gray-200 dark:border-gray-700 pb-2">
-                {item.name} Sub-Menu
-            </h4>
-            <ul className="space-y-1">
-                {item.subItems.map(subItem => (
-                    <SubFlyoutItem
-                        key={subItem.path || subItem.name}
-                        item={subItem}
-                        addTab={addTab}
-                        activeTabPath={activeTabPath}
-                    />
-                ))}
-            </ul>
-        </div>
-    );
+  return (
+    <div
+      ref={flyoutRef}
+      className="fixed z-50 w-72 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-y-auto"
+      style={style}
+    >
+                 {" "}
+      <h4 className="text-lg font-bold text-[#0c5888] dark:text-indigo-400 mb-3 border-b border-gray-200 dark:border-gray-700 pb-2">
+                        {item.name}           {" "}
+      </h4>
+                 {" "}
+      <ul className="space-y-1">
+                       {" "}
+        {item.subItems.map((subItem) => (
+          <SubFlyoutItem
+            key={subItem.path || subItem.name}
+            item={subItem}
+            addTab={addTab}
+            activeTabPath={activeTabPath}
+            onClose={onClose}
+          />
+        ))}
+                   {" "}
+      </ul>
+             {" "}
+    </div>
+  );
 };
 
-
 interface SidebarLinkProps {
-    item: NavItem;
-    onClick: (data: { item: NavItem, bounds: DOMRect }) => void;
-    isActive: boolean;
-    addTab: (item: NavItem) => void;
-    onCloseFlyout: () => void;
+  item: NavItem;
+  onClick: (data: { item: NavItem; bounds: DOMRect }) => void;
+  isActive: boolean;
+  addTab: (item: NavItem) => void;
+  onCloseFlyout: () => void;
 }
 
-const SidebarLink: React.FC<SidebarLinkProps> = React.memo(({ item, onClick, isActive, addTab, onCloseFlyout }) => {
+const SidebarLink: React.FC<SidebarLinkProps> = React.memo(
+  ({ item, onClick, isActive, addTab, onCloseFlyout }) => {
     const linkRef = useRef<HTMLButtonElement>(null);
     const hasSubItems = !!item.subItems && item.subItems.length > 0;
-    
     const handleClick = () => {
-        if (!linkRef.current) return;
+      if (!linkRef.current) return;
 
-        if (hasSubItems) {
-            const bounds = linkRef.current.getBoundingClientRect();
-            onClick({ item, bounds });
-        } else {
-            addTab(item);
-            onCloseFlyout();
-        }
+      if (hasSubItems) {
+        const bounds = linkRef.current.getBoundingClientRect();
+        onClick({ item, bounds });
+      } else {
+        addTab(item);
+        onCloseFlyout();
+      }
     };
 
     return (
-        <li className="mb-1">
-            <button
-                ref={linkRef}
-                onClick={handleClick}
-                className={`${baseLinkClasses} ${isActive ? primaryColorClass : inactiveLinkClasses} font-medium flex-col justify-center h-16 pt-2 pb-2 relative`}
-            >
-                {item.icon && React.cloneElement(item.icon, { className: `w-5 h-5 ${isActive ? 'text-white' : 'text-current'}`, })}
-                <span className="text-xs mt-1 truncate max-w-full">{item.name}</span>
-                {hasSubItems && (
-                    <ChevronRightIcon className={`absolute right-1 w-3 h-3 ${isActive ? 'text-white' : 'text-gray-500'}`} />
-                )}
-            </button>
-        </li>
+      <li className="mb-1">
+        <button
+          ref={linkRef}
+          onClick={handleClick}
+          className={`${baseLinkClasses} ${
+            isActive ? primaryColorClass : inactiveLinkClasses
+          } font-medium flex-col justify-center h-16 pt-2 pb-2 relative`}
+        >
+          {item.icon &&
+            React.cloneElement(item.icon, {
+              className: `w-5 h-5 ${isActive ? "text-white" : "text-current"}`,
+            })}
+          <span className="text-xs mt-1 truncate max-w-full">{item.name}</span> 
+          {hasSubItems && (
+            <ChevronRightIcon
+              className={`absolute right-1 w-3 h-3 ${
+                isActive ? "text-white" : "text-gray-500"
+              }`}
+            />
+          )}
+        </button>
+      </li>
     );
-});
+  }
+);
 
 interface AppSidebarProps {
-    addTab: (item: NavItem) => void;
-    activeTabPath: string;
+  addTab: (item: NavItem) => void;
+  activeTabPath: string;
 }
 
-export const AppSidebar: React.FC<AppSidebarProps> = ({ addTab, activeTabPath }) => {
-    const [activeFlyout, setActiveFlyout] = useState<{ item: NavItem & { subItems: NavItem[] }, bounds: DOMRect } | null>(null);
+export const AppSidebar: React.FC<AppSidebarProps> = ({
+  addTab,
+  activeTabPath,
+}) => {
+  const [activeFlyout, setActiveFlyout] = useState<{
+    item: NavItem & { subItems: NavItem[] };
+    bounds: DOMRect;
+  } | null>(null);
 
-    const handleLinkClick = useCallback(({ item, bounds }: { item: NavItem, bounds: DOMRect }) => {
-        setActiveFlyout(prev => (prev?.item.name === item.name ? null : { item: item as NavItem & { subItems: NavItem[] }, bounds }));
-    }, []);
+  const handleLinkClick = useCallback(
+    ({ item, bounds }: { item: NavItem; bounds: DOMRect }) => {
+      setActiveFlyout((prev) =>
+        prev?.item.name === item.name
+          ? null
+          : { item: item as NavItem & { subItems: NavItem[] }, bounds }
+      );
+    },
+    []
+  );
 
-    const handleCloseFlyout = useCallback(() => {
-        setActiveFlyout(null);
-    }, []);
-    
-    const isMainLinkActive = useCallback((item: NavItem) => {
-        return item.path === activeTabPath || findActiveItemPath(item.subItems, activeTabPath);
-    }, [activeTabPath]);
+  const handleCloseFlyout = useCallback(() => {
+    setActiveFlyout(null);
+  }, []);
+  const isMainLinkActive = useCallback(
+    (item: NavItem) => {
+      return (
+        item.path === activeTabPath ||
+        findActiveItemPath(item.subItems, activeTabPath)
+      );
+    },
+    [activeTabPath]
+  );
 
-    return (
-        <>
-            <aside
-                className={`fixed top-0 left-0 z-40 h-screen py-4 w-[110px] bg-white border-r border-gray-200 dark:bg-gray-800 dark:border-gray-700 overflow-y-auto shadow-lg`}
-                style={{ scrollbarWidth: 'thin', scrollbarColor: '#888 #f1f1f1' }}
-            >
-                <div className="flex flex-col h-full px-2">
-                    <div className="flex justify-center mb-4 py-2 border-b border-gray-200 dark:border-gray-700">
-                        <div className="text-xl font-extrabold text-[#0c5888] dark:text-indigo-400">APP</div>
-                    </div>
-                    <nav className="flex-grow space-y-1">
-                        {allItems.map((item) => (
-                            <SidebarLink
-                                key={item.name}
-                                item={item}
-                                onClick={handleLinkClick}
-                                isActive={isMainLinkActive(item)}
-                                addTab={addTab}
-                                onCloseFlyout={handleCloseFlyout}
-                            />
-                        ))}
-                    </nav>
-                </div>
-            </aside>
+  return (
+    <>
+      <aside
+        className={`fixed top-0 left-0 z-40 h-screen py-4 w-[110px] bg-white border-r border-gray-200 dark:bg-gray-800 dark:border-gray-700 overflow-y-auto shadow-lg`}
+        style={{ scrollbarWidth: "thin", scrollbarColor: "#888 #f1f1f1" }}
+      >
+        <div className="flex flex-col h-full px-2">
+          <div className="flex justify-center mb-4 py-2 border-b border-gray-200 dark:border-gray-700">
+            {/* <div className="text-xl font-extrabold text-[#0c5888] dark:text-indigo-400">
+              APP
+            </div> */}
 
-            {activeFlyout && activeFlyout.item.subItems && (
-                <FlyoutBox
-                    item={activeFlyout.item}
-                    parentBounds={activeFlyout.bounds}
-                    onClose={handleCloseFlyout}
-                    addTab={addTab}
-                    activeTabPath={activeTabPath}
-                />
-            )}
-        </>
-    );
+            <LogoWithIntroAnimation />
+          </div>
+          <nav className="flex-grow space-y-1">
+            {allItems.map((item) => (
+              <SidebarLink
+                key={item.name}
+                item={item}
+                onClick={handleLinkClick}
+                isActive={isMainLinkActive(item)}
+                addTab={addTab}
+                onCloseFlyout={handleCloseFlyout}
+              />
+            ))}
+          </nav>
+        </div>
+      </aside>
+      {activeFlyout && activeFlyout.item.subItems && (
+        <FlyoutBox
+          item={activeFlyout.item}
+          parentBounds={activeFlyout.bounds}
+          onClose={handleCloseFlyout}
+          addTab={addTab}
+          activeTabPath={activeTabPath}
+        />
+      )}
+    </>
+  );
 };

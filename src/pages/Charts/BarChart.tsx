@@ -6,8 +6,8 @@ export default function BarChart() {
   return (
     <div>
       <PageMeta
-        title="React.js Chart Dashboard | TailAdmin - React.js Admin Dashboard Template"
-        description="This is React.js Chart Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
+        title="Inventory | React.js Chart Dashboard | Inventory - React.js Admin Dashboard Template"
+        description="This is React.js Chart Dashboard page for Inventory - React.js Tailwind CSS Admin Dashboard Template"
       />
       <div className="space-y-6">
         <ComponentCard title="Sales Chart">

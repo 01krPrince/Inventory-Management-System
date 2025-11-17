@@ -1,5 +1,3 @@
-// src/App.tsx
-
 import { BrowserRouter as Router, Routes, Route } from "react-router";
 
 import { UnsavedChangesProvider } from "./hooks/useUnsavedChangesWarning";
@@ -22,8 +20,7 @@ import FormElements from "./pages/Forms/FormElements";
 import Blank from "./pages/Blank";
 import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
-import Home from "./pages/Dashboard/Welcome";
-
+import Welcome from "./pages/pages/Welcome";
 
 export default function App() {
   return (
@@ -34,13 +31,13 @@ export default function App() {
         <Routes>
           {/* Dashboard Layout */}
           <Route element={<AppLayout />}>
-            <Route index path="/" element={<Home />} />
+            <Route index path="/" element={<Welcome />} />
 
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/blank" element={<Blank />} />
-            
+
             {/* Components like FormElements should call setHasUnsavedChanges(true) when inputs change */}
             <Route path="/form-elements" element={<FormElements />} />
 
@@ -71,3 +68,5 @@ export default function App() {
     </UnsavedChangesProvider>
   );
 }
+
+// https://react-demo.inventory.com/

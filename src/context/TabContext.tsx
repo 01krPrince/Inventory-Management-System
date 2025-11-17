@@ -1,88 +1,108 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback } from "react";
 
-// Define the shape of a tab item
+// 1. Define the TabItem interface
 interface TabItem {
-    name: string;
-    path: string;
+  name: string;
+  path: string;
 }
 
-// Define the shape of the context value (same as the hook's return value)
+// 2. Define the TabContextValue interface, correctly including reorderTabs
 interface TabContextValue {
-    openTabs: TabItem[];
-    activeTabPath: string;
-    setActiveTab: (path: string) => void;
-    closeTab: (path: string) => void;
-    addTab: (item: TabItem) => void;
+  openTabs: TabItem[];
+  activeTabPath: string;
+  setActiveTab: (path: string) => void;
+  closeTab: (path: string) => void;
+  addTab: (item: TabItem) => void;
+  reorderTabs: (sourceIndex: number, destinationIndex: number) => void; // <-- CORRECTLY PLACED
 }
 
-// 1. Create the Context 
-// Initialize with 'undefined' and assert the type to prevent initial null/undefined checks elsewhere.
 const TabContext = createContext<TabContextValue | undefined>(undefined);
 
-// 2. Define the useTabs hook
-// This hook provides easy access to the context value.
 export const useTabs = (): TabContextValue => {
-    const context = useContext(TabContext);
-    if (context === undefined) {
-        throw new Error('useTabs must be used within a TabProvider');
-    }
-    return context;
+  const context = useContext(TabContext);
+  if (context === undefined) {
+    throw new Error("useTabs must be used within a TabProvider");
+  }
+  return context;
 };
 
-// 3. Define the TabProvider component (The missing piece)
-export const TabProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    // --- State and Logic from your original 'useTabs' hook ---
-    const defaultTab: TabItem = { name: "Dashboard", path: "/dashboard" };
-    const [openTabs, setOpenTabs] = useState<TabItem[]>([defaultTab]);
-    const [activeTabPath, setActiveTabPath] = useState(defaultTab.path);
+// Helper function for immutable array reordering
+const reorder = <T,>(list: T[], startIndex: number, endIndex: number): T[] => {
+  const result = Array.from(list);
+  const [removed] = result.splice(startIndex, 1);
+  result.splice(endIndex, 0, removed as T);
+  return result;
+};
 
-    const addTab = useCallback((item: TabItem) => {
-        setOpenTabs(prev => {
-            // Only add if the tab doesn't already exist
-            if (!prev.find(tab => tab.path === item.path)) {
-                return [...prev, item];
-            }
-            return prev;
-        });
-        // Always set the new/existing tab as active
-        setActiveTabPath(item.path);
-    }, []);
+export const TabProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const defaultTab: TabItem = { name: "Dashboard", path: "/welcome" };
+  const [openTabs, setOpenTabs] = useState<TabItem[]>([defaultTab]);
+  const [activeTabPath, setActiveTabPath] = useState(defaultTab.path);
 
-    const closeTab = useCallback((path: string) => {
-        // Prevent closing the dashboard
-        if (path === '/dashboard') return;
+  // 3. Implement the reorderTabs function using useCallback and the reorder helper
+  const reorderTabs = useCallback(
+    (sourceIndex: number, destinationIndex: number) => {
+      // Prevent reordering if the start and end positions are the same
+      if (sourceIndex === destinationIndex) return;
 
-        setOpenTabs(prev => {
-            const newTabs = prev.filter(tab => tab.path !== path);
-            
-            // Only update activeTabPath if the closed tab was the active one
-            if (path === activeTabPath) {
-                const closedTabIndex = prev.findIndex(tab => tab.path === path);
-                
-                // Determine the next active tab: (after -> before -> dashboard)
-                const newActiveTab = newTabs[closedTabIndex] || newTabs[closedTabIndex - 1] || newTabs[0];
+      setOpenTabs((prevTabs) =>
+        reorder(prevTabs, sourceIndex, destinationIndex)
+      );
+    },
+    []
+  );
 
-                if (newActiveTab) {
-                    setActiveTabPath(newActiveTab.path);
-                } else {
-                    setActiveTabPath('/dashboard'); 
-                }
-            }
-            return newTabs;
-        });
-    }, [activeTabPath]);
+  const addTab = useCallback((item: TabItem) => {
+    setOpenTabs((prev) => {
+      if (!prev.find((tab) => tab.path === item.path)) {
+        return [...prev, item];
+      }
+      return prev;
+    });
+    setActiveTabPath(item.path);
+  }, []);
 
-    // Use setActiveTabPath directly as setActiveTab
-    const setActiveTab = setActiveTabPath;
+  const closeTab = useCallback(
+    (path: string) => {
+      if (path === "/welcome") return;
 
-    // The value provided by the context
-    const value: TabContextValue = {
-        openTabs,
-        activeTabPath,
-        setActiveTab,
-        closeTab,
-        addTab
-    };
+      setOpenTabs((prev) => {
+        const newTabs = prev.filter((tab) => tab.path !== path);
 
-    return <TabContext.Provider value={value}>{children}</TabContext.Provider>;
+        if (path === activeTabPath) {
+          const closedTabIndex = prev.findIndex((tab) => tab.path === path);
+
+          // Logic to activate the tab to the right, then left, then the first one
+          const newActiveTab =
+            newTabs[closedTabIndex] ||
+            newTabs[closedTabIndex - 1] ||
+            newTabs[0];
+
+          if (newActiveTab) {
+            setActiveTabPath(newActiveTab.path);
+          } else {
+            // Fallback to the default tab if all others are closed
+            setActiveTabPath("/welcome");
+          }
+        }
+        return newTabs;
+      });
+    },
+    [activeTabPath]
+  );
+
+  const setActiveTab = setActiveTabPath;
+
+  const value: TabContextValue = {
+    openTabs,
+    activeTabPath,
+    setActiveTab,
+    closeTab,
+    addTab,
+    reorderTabs, // <-- NOW DEFINED AND EXPORTED
+  };
+
+  return <TabContext.Provider value={value}>{children}</TabContext.Provider>;
 };
