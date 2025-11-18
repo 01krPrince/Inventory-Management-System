@@ -1,34 +1,80 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Search, ChevronDown, Edit3, Check, Loader2 } from "lucide-react";
-import { initializeApp } from "firebase/app";
+import { initializeApp, FirebaseApp } from "firebase/app";
 import {
   getAuth,
   signInAnonymously,
   signInWithCustomToken,
   onAuthStateChanged,
+  Auth,
 } from "firebase/auth";
 import {
   getFirestore,
   doc,
   setDoc,
   onSnapshot,
-  collection,
+  Firestore,
   setLogLevel,
 } from "firebase/firestore";
 
 setLogLevel("error");
 
 // --- Global Variables (Provided by Canvas Environment) ---
+// Accessing globals via typeof check to satisfy TypeScript
 const appId =
   typeof __app_id !== "undefined" ? __app_id : "default-rate-list-app";
 const firebaseConfig =
   typeof __firebase_config !== "undefined" ? JSON.parse(__firebase_config) : {};
 const initialAuthToken =
   typeof __initial_auth_token !== "undefined" ? __initial_auth_token : null;
-const apiKey = "";
+// Removed unused 'apiKey' variable (TS6133 fix)
+
+// --- TYPE DEFINITIONS ---
+
+interface RateEntry {
+  id: number;
+  rateListName: string;
+  effectiveFrom: string;
+  [key: string]: string | number | undefined; // For dynamic property access
+}
+
+interface SalesRateEntry extends RateEntry {
+  rate: number;
+  dealerRate: number;
+  wholesaleRate: number;
+  mrp: number;
+}
+
+interface PurchaseRateEntry extends RateEntry {
+  rate: number;
+  mrp: number;
+  minPrice: number;
+  discount: string;
+}
+
+interface ItemOption {
+  label: string;
+  value: string;
+}
+
+interface HeaderMap {
+  label: string;
+  key: keyof (SalesRateEntry | PurchaseRateEntry);
+  editable: boolean;
+  isPrice: boolean;
+}
+
+interface RateListTableProps {
+  title: string;
+  headersMap: HeaderMap[];
+  data: RateEntry[];
+  isEditing: boolean;
+  // FIX TS2322: onRateChange must strictly pass a number value for price fields
+  onRateChange: (rowIndex: number, key: string, value: number) => void;
+}
 
 // --- Static Data for Initial Seeding and Item Selection ---
-const initialSalesData = [
+const initialSalesData: SalesRateEntry[] = [
   {
     id: 1,
     rateListName: "Standard Sales Rate",
@@ -49,7 +95,7 @@ const initialSalesData = [
   },
 ];
 
-const initialPurchaseData = [
+const initialPurchaseData: PurchaseRateEntry[] = [
   {
     id: 1,
     rateListName: "Standard Purchase Rate",
@@ -70,14 +116,14 @@ const initialPurchaseData = [
   },
 ];
 
-const availableItems = [
+const availableItems: ItemOption[] = [
   { label: "Product A - SKU101", value: "sku101" },
   { label: "Product B - SKU102", value: "sku102" },
   { label: "Product C - SKU103", value: "sku103" },
 ];
 
 // Define headers and their corresponding data keys
-const salesHeadersMap = [
+const salesHeadersMap: HeaderMap[] = [
   { label: "SNo", key: "id", editable: false, isPrice: false },
   {
     label: "Rate List Name",
@@ -102,7 +148,7 @@ const salesHeadersMap = [
   { label: "MRP", key: "mrp", editable: true, isPrice: true },
 ];
 
-const purchaseHeadersMap = [
+const purchaseHeadersMap: HeaderMap[] = [
   { label: "SNo", key: "id", editable: false, isPrice: false },
   {
     label: "Rate List Name",
@@ -122,19 +168,6 @@ const purchaseHeadersMap = [
   { label: "Discount", key: "discount", editable: false, isPrice: false },
 ];
 
-interface RateListTableProps {
-  title: string;
-  headersMap: {
-    label: string;
-    key: string;
-    editable: boolean;
-    isPrice: boolean;
-  }[];
-  data: any[];
-  isEditing: boolean;
-  onRateChange: (rowIndex: number, key: string, value: string | number) => void;
-}
-
 const RateListTable: React.FC<RateListTableProps> = ({
   title,
   headersMap,
@@ -143,7 +176,7 @@ const RateListTable: React.FC<RateListTableProps> = ({
   onRateChange,
 }) => {
   const tableColor = "bg-[#0c5888]";
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState<string>("");
 
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
@@ -202,7 +235,8 @@ const RateListTable: React.FC<RateListTableProps> = ({
                     className="hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-100"
                   >
                     {headersMap.map((header, colIndex) => {
-                      const value = row[header.key];
+                      const key = header.key as keyof RateEntry;
+                      const value = row[key];
                       const isEditable = isEditing && header.editable;
 
                       const displayValue = header.isPrice
@@ -217,24 +251,31 @@ const RateListTable: React.FC<RateListTableProps> = ({
                           className={`px-6 py-4 whitespace-nowrap text-sm dark:text-gray-300 ${
                             header.isPrice
                               ? "text-right"
-                              : "text-left text-gray-900"
+                              : "text-left text-gray-900 dark:text-gray-200"
                           }`}
                         >
                           {isEditable ? (
                             <input
                               type="number"
                               step="0.01"
-                              value={displayValue}
+                              value={
+                                typeof value === "number"
+                                  ? value
+                                  : value === ""
+                                  ? ""
+                                  : parseFloat(String(value)) || "" // Handle non-numeric strings
+                              }
                               onChange={(e) => {
                                 const numValue = parseFloat(e.target.value);
-                                if (
-                                  originalIndex !== -1 &&
-                                  (!isNaN(numValue) || e.target.value === "")
-                                ) {
+                                const rawValue = e.target.value;
+
+                                if (originalIndex !== -1) {
+                                  // Pass 0 if the input is cleared, otherwise pass the parsed number
                                   onRateChange(
                                     originalIndex,
-                                    header.key,
-                                    numValue
+                                    key,
+                                    // Use || 0 to default to zero if NaN (or empty string is passed to parseFloat)
+                                    !isNaN(numValue) ? numValue : 0
                                   );
                                 }
                               }}
@@ -278,30 +319,33 @@ const RateListTable: React.FC<RateListTableProps> = ({
 
 // --- Main Page Component ---
 const UpdateListForEachItems: React.FC = () => {
-  const [db, setDb] = useState<any>(null);
+  const [db, setDb] = useState<Firestore | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
-  const [isAuthReady, setIsAuthReady] = useState(false);
-  const [selectedItem, setSelectedItem] = useState(
+  const [isAuthReady, setIsAuthReady] = useState<boolean>(false);
+  const [selectedItem, setSelectedItem] = useState<string>(
     availableItems[0]?.value || ""
   );
-  const [salesRates, setSalesRates] = useState(initialSalesData);
-  const [purchaseRates, setPurchaseRates] = useState(initialPurchaseData);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
+  const [salesRates, setSalesRates] =
+    useState<SalesRateEntry[]>(initialSalesData);
+  const [purchaseRates, setPurchaseRates] =
+    useState<PurchaseRateEntry[]>(initialPurchaseData);
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
   const [message, setMessage] = useState<{
     text: string;
     type: "success" | "error" | "info";
   } | null>(null);
-  const [isDbInitialized, setIsDbInitialized] = useState(false);
+  const [isDbInitialized, setIsDbInitialized] = useState<boolean>(false);
 
   const actionButtonColor = "bg-[#0c5888]";
 
+  // 1. Firebase Initialization and Authentication
   useEffect(() => {
     try {
-      const app = initializeApp(firebaseConfig);
-      const auth = getAuth(app);
-      const firestore = getFirestore(app);
+      const app: FirebaseApp = initializeApp(firebaseConfig);
+      const auth: Auth = getAuth(app);
+      const firestore: Firestore = getFirestore(app);
       setDb(firestore);
       setIsDbInitialized(true);
 
@@ -325,11 +369,16 @@ const UpdateListForEachItems: React.FC = () => {
       setIsDbInitialized(false);
       setIsAuthReady(true);
       setIsLoading(false);
+      setMessage({
+        text: "Firebase initialization failed. Cannot save changes.",
+        type: "error",
+      });
     }
   }, []);
 
+  // 2. Seeding Logic (Used when a document doesn't exist)
   const seedItemData = useCallback(
-    async (firestore: any, currentUserId: string, itemSku: string) => {
+    async (firestore: Firestore, currentUserId: string, itemSku: string) => {
       if (!firestore || !currentUserId || !itemSku || !isDbInitialized) return;
       const docRef = doc(
         firestore,
@@ -361,6 +410,7 @@ const UpdateListForEachItems: React.FC = () => {
     [isDbInitialized]
   );
 
+  // 3. Firestore Data Subscription (onSnapshot)
   useEffect(() => {
     if (!db || !isAuthReady || !userId || !selectedItem || !isDbInitialized) {
       if (isAuthReady && !isDbInitialized) setIsLoading(false);
@@ -384,13 +434,18 @@ const UpdateListForEachItems: React.FC = () => {
       (docSnap) => {
         if (docSnap.exists()) {
           const data = docSnap.data();
-          setSalesRates(data.salesRates || initialSalesData);
-          setPurchaseRates(data.purchaseRates || initialPurchaseData);
+          setSalesRates(
+            (data.salesRates as SalesRateEntry[]) || initialSalesData
+          );
+          setPurchaseRates(
+            (data.purchaseRates as PurchaseRateEntry[]) || initialPurchaseData
+          );
           setMessage({
             text: `Rates loaded for ${selectedItem}.`,
             type: "info",
           });
         } else {
+          // If document doesn't exist, create it with initial data
           seedItemData(db, userId, selectedItem);
           setSalesRates(initialSalesData);
           setPurchaseRates(initialPurchaseData);
@@ -400,12 +455,17 @@ const UpdateListForEachItems: React.FC = () => {
       (error) => {
         console.error("Firestore onSnapshot error:", error);
         setIsLoading(false);
+        setMessage({
+          text: "Failed to load rates. Check console for details.",
+          type: "error",
+        });
       }
     );
 
     return () => unsubscribe();
   }, [db, isAuthReady, userId, selectedItem, seedItemData, isDbInitialized]);
 
+  // 4. Rate Change Handler
   const handleRateChange = useCallback(
     (
       rateType: "sales" | "purchase",
@@ -413,14 +473,26 @@ const UpdateListForEachItems: React.FC = () => {
       key: string,
       value: number
     ) => {
-      const setState = rateType === "sales" ? setSalesRates : setPurchaseRates;
+      // FIX TS7006: Explicitly type setState using React.Dispatch<React.SetStateAction<...>>
+      const setState: React.Dispatch<
+        React.SetStateAction<SalesRateEntry[] | PurchaseRateEntry[]>
+      > =
+        rateType === "sales"
+          ? (setSalesRates as React.Dispatch<
+              React.SetStateAction<SalesRateEntry[]>
+            >)
+          : (setPurchaseRates as React.Dispatch<
+              React.SetStateAction<PurchaseRateEntry[]>
+            >);
 
       setState((prevRates) => {
-        const newRates = [...prevRates];
+        // Find the rate entry corresponding to the row index
+        // The type assertion ensures we can treat prevRates as an array of RateEntry during the mapping.
+        const newRates = [...prevRates] as RateEntry[];
         if (newRates[rowIndex]) {
           newRates[rowIndex] = { ...newRates[rowIndex], [key]: value };
         }
-        return newRates;
+        return newRates as any; // Cast back to satisfy useState's specific array type (SalesRateEntry[] or PurchaseRateEntry[])
       });
     },
     []
@@ -440,6 +512,7 @@ const UpdateListForEachItems: React.FC = () => {
     [handleRateChange]
   );
 
+  // 5. Save Button Handler
   const handleSaveRates = async () => {
     if (!db || !userId || !selectedItem || !isDbInitialized) {
       setMessage({
@@ -484,6 +557,7 @@ const UpdateListForEachItems: React.FC = () => {
     }
   };
 
+  // 6. User ID Display
   const UidDisplay = useMemo(
     () => (
       <div className="absolute top-2 right-2 text-xs text-gray-400 dark:text-gray-600">
@@ -500,7 +574,8 @@ const UpdateListForEachItems: React.FC = () => {
         Inventory Rate Manager
       </h1>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-        View and edit item rates per rate list. Changes are saved to Firestore.
+        View and edit item rates per rate list. Changes are saved to
+        **Firestore** under your user ID, guaranteeing real-time updates.
       </p>
       {message && (
         <div
