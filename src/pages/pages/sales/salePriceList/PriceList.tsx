@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-// Assuming these imports exist from your original component's context
+// Assuming these imports exist in your project structure
 import {
   PrintIcon,
   PlusIcon,
@@ -12,7 +12,7 @@ import {
 import {
   handlePrint,
   handleExport,
-} from "../../../../components/function/functions"; // Assuming these exist and are correctly typed externally
+} from "../../../../components/function/functions";
 
 // --- TYPE DEFINITIONS ---
 interface PriceListData {
@@ -22,6 +22,7 @@ interface PriceListData {
   effectiveFromDate: string;
   description: string;
   branchName: string;
+  [key: string]: any; // Index signature for safe generic access (sorting/filtering)
 }
 
 interface PriceListColumn {
@@ -35,255 +36,34 @@ interface SortConfig {
   direction: "ascending" | "descending";
 }
 
-// Define the shape for the form data (excluding id/sNo)
+// Define the shape for the form data (Includes all necessary fields except id and sNo)
 type PriceListFormData = Omit<PriceListData, "id" | "sNo">;
 
-// --- 1. MODAL COMPONENTS ---
-
-interface FormField {
-  key: keyof PriceListFormData;
-  label: string;
-  type: string;
-  required: boolean;
-}
-
-const formFields: FormField[] = [
-  {
-    key: "categoryName",
-    label: "Category Name",
-    type: "text",
-    required: true,
-  },
-  {
-    key: "effectiveFromDate",
-    label: "Effective From Date",
-    type: "date",
-    required: true,
-  },
-  { key: "description", label: "Description", type: "text", required: false },
-  { key: "branchName", label: "Branch Name", type: "text", required: false },
-];
-
-interface AddModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onAdd: (data: PriceListFormData) => void;
-}
-
-const AddPriceListModal: React.FC<AddModalProps> = ({
-  isOpen,
-  onClose,
-  onAdd,
-}) => {
-  const initialData: PriceListFormData = {
-    categoryName: "",
-    effectiveFromDate: "",
-    description: "",
-    branchName: "",
-  };
-  const [formData, setFormData] = useState<PriceListFormData>(initialData);
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.categoryName || !formData.effectiveFromDate) {
-      alert("Please fill in Category Name and Effective From Date.");
-      return;
-    }
-    onAdd(formData);
-    setFormData(initialData); // Reset form
-    onClose();
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div
-      className="fixed inset-0 z-50 overflow-y-auto bg-gray-900 bg-opacity-70 flex items-center justify-center backdrop-blur-sm p-4"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-lg m-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2 className="text-2xl font-semibold mb-6 text-gray-900 dark:text-white border-b pb-2 border-gray-100 dark:border-gray-700">
-          Create New Price List
-        </h2>
-        <form
-          onSubmit={handleSubmit}
-          className="grid grid-cols-1 md:grid-cols-2 gap-4"
-        >
-          {formFields.map((col) => (
-            <div key={col.key} className="col-span-1">
-              <label
-                htmlFor={col.key}
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >
-                {col.label}
-                {col.required && <span className="text-red-500">*</span>}
-              </label>
-              <input
-                id={col.key}
-                type={col.type}
-                name={col.key}
-                value={formData[col.key as keyof PriceListFormData] || ""}
-                onChange={handleChange}
-                className="w-full p-2.5 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
-                required={col.required}
-              />
-            </div>
-          ))}
-          <div className="col-span-full flex justify-end space-x-3 pt-4 border-t mt-4 border-gray-100 dark:border-gray-700">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-2.5 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600 transition font-medium"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
-            >
-              Create Price List
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-interface EditModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  rowData: PriceListData | null;
-  onUpdate: (data: PriceListData) => void;
-}
-
-const EditPriceListModal: React.FC<EditModalProps> = ({
-  isOpen,
-  onClose,
-  rowData,
-  onUpdate,
-}) => {
-  // Use a partial structure or the actual rowData for initial state
-  const [formData, setFormData] = useState<PriceListData | {}>({});
-
-  // Update form data state when rowData changes
-  useMemo(() => {
-    setFormData(rowData ? { ...rowData } : {});
-  }, [rowData]);
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const updatedData = formData as PriceListData;
-
-    if (!updatedData.categoryName || !updatedData.effectiveFromDate) {
-      alert("Please fill in Category Name and Effective From Date.");
-      return;
-    }
-    onUpdate(updatedData);
-    onClose();
-  };
-
-  if (!isOpen || !rowData) return null;
-
-  return (
-    <div
-      className="fixed inset-0 z-50 overflow-y-auto bg-gray-900 bg-opacity-70 flex items-center justify-center backdrop-blur-sm p-4"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-lg m-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2 className="text-2xl font-semibold mb-6 text-gray-900 dark:text-white border-b pb-2 border-gray-100 dark:border-gray-700">
-          Edit Price List: {rowData?.categoryName}
-        </h2>
-        <form
-          onSubmit={handleSubmit}
-          className="grid grid-cols-1 md:grid-cols-2 gap-4"
-        >
-          {formFields.map((col) => (
-            <div key={col.key} className="col-span-1">
-              <label
-                htmlFor={col.key}
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >
-                {col.label}
-                {col.required && <span className="text-red-500">*</span>}
-              </label>
-              <input
-                id={col.key}
-                type={col.type}
-                name={col.key}
-                onChange={handleChange}
-                value={(formData as PriceListData)[col.key] || ""}
-                className="w-full p-2.5 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
-                required={col.required}
-              />
-            </div>
-          ))}
-          <div className="col-span-full flex justify-end space-x-3 pt-4 border-t mt-4 border-gray-100 dark:border-gray-700">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-2.5 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600 transition font-medium"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
-            >
-              Save Changes
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-// --- 2. MOCK DATA AND LOGIC (Fixed for types) ---
+// --- 1. MOCK DATA AND COLUMN DEFINITIONS ---
 
 const initialPriceListData: PriceListData[] = [
   {
     id: 1,
     sNo: 1,
-    categoryName: "Premium Services",
+    categoryName: "Standard Goods",
     effectiveFromDate: "2024-01-01",
-    description: "Highest tier services with dedicated support.",
-    branchName: "Headquarters Branch",
+    description: "Default pricing tier for general items.",
+    branchName: "Main Branch",
   },
   {
     id: 2,
     sNo: 2,
-    categoryName: "Standard Products",
+    categoryName: "Premium Services",
     effectiveFromDate: "2024-03-15",
-    description: "Standard consumer products.",
-    branchName: "East Side Store",
+    description: "High-value consulting rates.",
+    branchName: "Central Office",
   },
   {
     id: 3,
     sNo: 3,
-    categoryName: "Wholesale Goods",
+    categoryName: "Wholesale Components",
     effectiveFromDate: "2023-11-20",
-    description: "Bulk order pricing for distributors.",
+    description: "Volume discounts for bulk procurement.",
     branchName: "Warehouse Depot",
   },
 ];
@@ -296,13 +76,12 @@ const priceListColumns: PriceListColumn[] = [
   { key: "branchName", label: "Branch Name", sortable: true },
 ];
 
-const pageSizeOptions = [5, 10, 20, 50];
+const pageSizeOptions = [5, 10, 20];
 const initialPageSize = 5;
 
-// Mock hook for table logic (Typed version)
+// Mock hook for table logic
 const useTableLogicMock = (
   initialData: PriceListData[],
-  columns: PriceListColumn[],
   initialSize: number
 ) => {
   const [data, setData] = useState<PriceListData[]>(initialData);
@@ -325,11 +104,11 @@ const useTableLogicMock = (
 
     if (sortConfig.key) {
       filteredData.sort((a, b) => {
-        // Access safely using index signature
-        const aVal = a[sortConfig.key!];
-        const bVal = b[sortConfig.key!];
-
-        if (aVal === null || bVal === null) return 0; // Handle nulls if present
+        const sortKey = sortConfig.key!;
+        // Cast values to string for consistent comparison if needed,
+        // or rely on built-in comparison if types are mostly strings/numbers
+        const aVal = a[sortKey];
+        const bVal = b[sortKey];
 
         if (aVal < bVal) return sortConfig.direction === "ascending" ? -1 : 1;
         if (aVal > bVal) return sortConfig.direction === "ascending" ? 1 : -1;
@@ -401,9 +180,221 @@ const useTableLogicMock = (
   };
 };
 
-// --- 3. PRICE LIST COMPONENT ---
+// --- 2. MODAL COMPONENTS (ADD & EDIT) ---
 
-const PriceList: React.FC = () => {
+// Define fields for the forms
+const priceListFormFields = [
+  { key: "categoryName", label: "Category Name", type: "text", required: true },
+  {
+    key: "effectiveFromDate",
+    label: "Effective From Date",
+    type: "date",
+    required: true,
+  },
+  { key: "description", label: "Description", type: "text", required: false },
+  { key: "branchName", label: "Branch Name", type: "text", required: false },
+];
+
+interface AddModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onAdd: (data: PriceListFormData) => void;
+}
+
+const AddPriceListModal: React.FC<AddModalProps> = ({
+  isOpen,
+  onClose,
+  onAdd,
+}) => {
+  const initialData: PriceListFormData = {
+    categoryName: "",
+    effectiveFromDate: "",
+    description: "",
+    branchName: "",
+  };
+  const [formData, setFormData] = useState<PriceListFormData>(initialData);
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.categoryName || !formData.effectiveFromDate) {
+      alert("Please fill in Category Name and Effective From Date.");
+      return;
+    }
+    onAdd(formData);
+    setFormData(initialData); // Reset form
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 overflow-y-auto bg-gray-900 bg-opacity-70 flex items-center justify-center backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-lg m-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="text-2xl font-semibold mb-6 text-gray-900 dark:text-white border-b pb-2 border-gray-100 dark:border-gray-700">
+          Create New Price List
+        </h2>
+        <form
+          onSubmit={handleSubmit}
+          className="grid grid-cols-1 md:grid-cols-2 gap-4"
+        >
+          {priceListFormFields.map((col) => (
+            <div key={col.key} className="col-span-1">
+              <label
+                htmlFor={col.key}
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
+                {col.label}
+                {col.required && <span className="text-red-500">*</span>}
+              </label>
+              <input
+                id={col.key}
+                type={col.type}
+                name={col.key}
+                value={String(
+                  formData[col.key as keyof PriceListFormData] || ""
+                )}
+                onChange={handleChange}
+                className="w-full p-2.5 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                required={col.required}
+              />
+            </div>
+          ))}
+          <div className="col-span-full flex justify-end space-x-3 pt-4 border-t mt-4 border-gray-100 dark:border-gray-700">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2.5 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600 transition font-medium"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
+            >
+              Create Price List
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+interface EditModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  rowData: PriceListData | null;
+  onUpdate: (data: PriceListData) => void;
+}
+
+const EditPriceListModal: React.FC<EditModalProps> = ({
+  isOpen,
+  onClose,
+  rowData,
+  onUpdate,
+}) => {
+  const [formData, setFormData] = useState<PriceListData | {}>({});
+
+  // Sync formData with rowData when it changes
+  useMemo(() => {
+    setFormData(rowData ? { ...rowData } : {});
+  }, [rowData]);
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const updatedData = formData as PriceListData;
+
+    if (!updatedData.categoryName || !updatedData.effectiveFromDate) {
+      alert("Please fill in Category Name and Effective From Date.");
+      return;
+    }
+    onUpdate(updatedData);
+    onClose();
+  };
+
+  if (!isOpen || !rowData) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 overflow-y-auto bg-gray-900 bg-opacity-70 flex items-center justify-center backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-lg m-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="text-2xl font-semibold mb-6 text-gray-900 dark:text-white border-b pb-2 border-gray-100 dark:border-gray-700">
+          Edit Price List: {rowData?.categoryName}
+        </h2>
+        <form
+          onSubmit={handleSubmit}
+          className="grid grid-cols-1 md:grid-cols-2 gap-4"
+        >
+          {priceListFormFields.map((col) => (
+            <div key={col.key} className="col-span-1">
+              <label
+                htmlFor={col.key}
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
+                {col.label}
+                {col.required && <span className="text-red-500">*</span>}
+              </label>
+              <input
+                id={col.key}
+                type={col.type}
+                name={col.key}
+                // Ensure value is a string for the input element
+                value={String((formData as PriceListData)[col.key] || "")}
+                onChange={handleChange}
+                className="w-full p-2.5 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                required={col.required}
+              />
+            </div>
+          ))}
+          <div className="col-span-full flex justify-end space-x-3 pt-4 border-t mt-4 border-gray-100 dark:border-gray-700">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2.5 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600 transition font-medium"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
+            >
+              Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// --- 3. MAIN COMPONENT ---
+
+export default function PriceListDirectory() {
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [editingRow, setEditingRow] = useState<PriceListData | null>(null);
@@ -427,11 +418,7 @@ const PriceList: React.FC = () => {
     pageNumbers,
     requestSort,
     renderSortIndicator,
-  } = useTableLogicMock(
-    initialPriceListData,
-    priceListColumns,
-    initialPageSize
-  );
+  } = useTableLogicMock(initialPriceListData, initialPageSize);
 
   const isSelected = (row: PriceListData) => selectedRows.includes(row.id);
 
@@ -458,16 +445,22 @@ const PriceList: React.FC = () => {
 
   const handleAddPriceList = (newPriceListData: PriceListFormData) => {
     const newId = data.length > 0 ? Math.max(...data.map((d) => d.id)) + 1 : 1;
-    const newSNo = data.length + 1; // Simple sequential sNo for new entries
+    const newSNo = data.length + 1;
 
+    // FIX: Explicitly assemble the new entry, ensuring all required fields
+    // (categoryName, effectiveFromDate) are present to satisfy PriceListData.
     const newEntry: PriceListData = {
-      ...newPriceListData,
       id: newId,
       sNo: newSNo,
+      categoryName: newPriceListData.categoryName, // Required field
+      effectiveFromDate: newPriceListData.effectiveFromDate, // Required field
+      // Optional fields with fallback handling
       description: newPriceListData.description || "N/A",
       branchName: newPriceListData.branchName || "N/A",
     };
-    setData((prev) => [...prev, newEntry]);
+
+    // The setData call is now satisfied because newEntry is definitively PriceListData
+    setData((prev: PriceListData[]): PriceListData[] => [...prev, newEntry]);
   };
 
   const handleUpdatePriceList = (updatedData: PriceListData) => {
@@ -477,15 +470,14 @@ const PriceList: React.FC = () => {
   };
 
   const handleOpenEditModal = (row: PriceListData) => {
-    // Must ensure we pass a deep copy or a new object reference
-    setEditingRow({ ...row });
+    setEditingRow({ ...row }); // Pass a clone to isolate modal state
     setIsEditModalOpen(true);
   };
 
   const handleDelete = (row: PriceListData) => {
     if (
       window.confirm(
-        `Are you sure you want to delete price list: ${row.categoryName}?`
+        `Are you sure you want to delete Price List: ${row.categoryName}?`
       )
     ) {
       setData((prev) => prev.filter((u) => u.id !== row.id));
@@ -559,7 +551,11 @@ const PriceList: React.FC = () => {
             </button>
             <button
               onClick={() =>
-                handleExport(data, priceListColumns, "PriceListDirectory")
+                handleExport(
+                  data,
+                  priceListColumns as any,
+                  "PriceListDirectory"
+                )
               }
               className="p-2 text-gray-600 dark:text-gray-300 border border-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
               title="Export to XLSX"
@@ -583,13 +579,14 @@ const PriceList: React.FC = () => {
               className="px-3 py-2 flex items-center bg-[#0c5888] text-white text-sm font-medium hover:bg-[#124463] transition shadow-md whitespace-nowrap rounded-lg"
             >
               <PlusIcon className="size-4 mr-1" />
-              Create New Price List
+              Create New
             </button>
           </div>
         </div>
 
         <hr className="mb-4 border-gray-100 dark:border-gray-700" />
 
+        {/* Table Section */}
         <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
           <table className="min-w-full table-fixed" id="price-list-table">
             <thead>
@@ -698,7 +695,7 @@ const PriceList: React.FC = () => {
                     colSpan={priceListColumns.length + 2}
                     className="p-8 text-center text-lg text-gray-500 dark:text-gray-400"
                   >
-                    No matching entries found. 🙁
+                    No matching price list entries found. 🙁
                   </td>
                 </tr>
               )}
@@ -773,6 +770,4 @@ const PriceList: React.FC = () => {
       />
     </>
   );
-};
-
-export default PriceList;
+}

@@ -107,8 +107,10 @@ const useTableLogicMock = (
     if (sortConfig.key) {
       filteredData.sort((a, b) => {
         // Safe access due to index signature in BrandDiscountData
-        const aVal = a[sortConfig.key!];
-        const bVal = b[sortConfig.key!];
+        // FIX: Ensuring the key access is explicitly of the correct property type
+        const sortKey = sortConfig.key as keyof BrandDiscountData;
+        const aVal = a[sortKey];
+        const bVal = b[sortKey];
 
         if (aVal < bVal) return sortConfig.direction === "ascending" ? -1 : 1;
         if (aVal > bVal) return sortConfig.direction === "ascending" ? 1 : -1;
@@ -471,14 +473,18 @@ export default function BrandwiseDiscountCharges() {
   const handleAddBrandDiscount = (newDiscountData: BrandDiscountFormData) => {
     const newId = data.length > 0 ? Math.max(...data.map((d) => d.id)) + 1 : 1;
     // Recalculate sNo based on current total data length before adding
+    // Note: If sorting is applied to sNo, this will need recalculation after sort.
+    // For simple append, it's just the next number.
     const newSNo = data.length + 1;
 
-    // FIX 1 (TS2739): The spread operator explicitly provides the required string properties.
-    const newEntry: BrandDiscountData = {
+    // FIX 1: Explicitly combine the FormData with id and sNo, then assert the type.
+    // This resolves the TS2739 error by guaranteeing all required properties are present.
+    const newEntry = {
       ...newDiscountData,
       id: newId,
       sNo: newSNo,
-    };
+    } as BrandDiscountData;
+
     setData((prev) => [...prev, newEntry]);
   };
 
