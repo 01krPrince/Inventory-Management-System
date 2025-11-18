@@ -38,7 +38,7 @@ export const TabBar: React.FC = React.memo(() => {
             // Apply the droppable properties
             ref={droppableProvided.innerRef}
             {...droppableProvided.droppableProps}
-            className="flex items-center space-x-1 border-b border-gray-200 dark:border-gray-800 px-4 pt-2 overflow-x-auto whitespace-nowrap hidden-scrollbar"
+            className="flex flex-wrap items-center space-x-1 border-b border-gray-200 dark:border-gray-800 px-4 pt-2 whitespace-normal"
           >
             {openTabs.map((tab, index) => (
               // 4. Each tab must be a Draggable component

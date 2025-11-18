@@ -5,6 +5,7 @@ import React, {
   Dispatch,
   SetStateAction,
   useEffect,
+  useMemo,
 } from "react";
 
 // --- MOCK IMPORTS FOR RUNNABILITY ---
@@ -14,13 +15,17 @@ import {
   EditIcon,
   SearchIcon,
   ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
-// Mock Icons
-const ExportIcon = (props: any) => <svg {...props} />;
-const PrintIcon = (props: any) => <svg {...props} />;
+import {
+  handlePrint,
+  handleExport,
+} from "../../../components/function/functions";
 
-// Mock Data Types based on usage
+import { PrintIcon, ExportIcon } from "../../../components/icons";
+
+// --- TYPE DEFINITIONS ---
 interface Employee {
   user: string;
   position: string;
@@ -29,8 +34,10 @@ interface Employee {
   startDate: string;
   salary: string;
   id: number;
+  [key: string]: any;
 }
-export type DataItem = Employee & { [key: string]: any };
+
+export type DataItem = Employee;
 export interface Column {
   key: string;
   label: string;
@@ -38,6 +45,49 @@ export interface Column {
   type?: string;
   required?: boolean;
 }
+
+interface SortConfig {
+  key: keyof DataItem | null;
+  direction: "ascending" | "descending";
+}
+
+interface NewCustomerData {
+  user: string;
+  position: string;
+  office: string;
+  age: string;
+  startDate: string;
+  salary: string;
+  [key: string]: string;
+}
+
+interface AddCustomerModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onAdd: (newCustomerData: NewCustomerData) => void;
+}
+
+interface EditCustomerModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  rowData: DataItem | null;
+  onUpdate: (updatedData: DataItem) => void;
+}
+
+interface ResizableHeaderProps {
+  col: Column;
+  requestSort: (key: keyof DataItem) => void;
+  renderSortIndicator: (key: keyof DataItem) => React.JSX.Element | null;
+  setColumnWidths: Dispatch<SetStateAction<Record<string, number | undefined>>>;
+  columnWidths: Record<string, number | undefined>;
+  onDragStart: (key: keyof DataItem) => void;
+  onDragOver: (key: keyof DataItem) => void;
+  onDrop: (draggedKey: keyof DataItem, droppedOverKey: keyof DataItem) => void;
+  columnIndex: number;
+}
+
+// --- MOCK DATA AND COLUMN DEFINITIONS ---
+
 const initialEmployeeData: DataItem[] = [
   {
     user: "Abram Schleifer",
@@ -67,6 +117,7 @@ const initialEmployeeData: DataItem[] = [
     id: 3,
   },
 ];
+
 const employeeColumns: Column[] = [
   { key: "user", label: "User", sortable: true },
   { key: "position", label: "Position", sortable: true },
@@ -75,6 +126,7 @@ const employeeColumns: Column[] = [
   { key: "startDate", label: "Start Date", sortable: true },
   { key: "salary", label: "Salary", sortable: true },
 ];
+
 const formColumns: Column[] = [
   { key: "user", label: "User", type: "text", required: true },
   { key: "position", label: "Position", type: "text", required: true },
@@ -94,123 +146,159 @@ const formColumns: Column[] = [
   },
 ];
 
-const useTableLogic = (
-  data: DataItem[],
-  _columns: Column[],
-  initialPageSize: number
-) => ({
-  data: data,
-  setData: ((_: (prev: DataItem[]) => DataItem[]) => {}) as Dispatch<
-    SetStateAction<DataItem[]>
-  >,
-  searchTerm: "",
-  setSearchTerm: ((_: string) => {}) as Dispatch<SetStateAction<string>>,
-  pageSize: initialPageSize,
-  setPageSize: ((_: number) => {}) as Dispatch<SetStateAction<number>>,
-  currentPage: 1,
-  setCurrentPage: ((_: number | ((prev: number) => number)) => {}) as Dispatch<
-    SetStateAction<number>
-  >,
-  selectedRows: [1],
-  setSelectedRows: ((
-    _: number[] | ((prev: number[]) => number[])
-  ) => {}) as Dispatch<SetStateAction<number[]>>,
-  paginatedData: data,
-  sortedDataLength: data.length,
-  totalPages: 1,
-  startEntry: 1,
-  endEntry: data.length,
-  pageNumbers: [1],
-  requestSort: ((_: string) => {}) as (key: string) => void,
-  renderSortIndicator: (key: string) =>
-    key === "user" ? <ChevronDown className="size-3 ml-1" /> : null,
-});
+const pageSizeOptions = [5, 10, 20, 50];
+const initialPageSize = 5;
 
-// FIX (Line 130): Changed 'columns' to '_columns'
-const handleExport = (
-  _data: DataItem[],
-  _columns: Column[],
-  fileName: string
-) => console.log(`Exporting ${fileName}`);
-const handlePrint = (_elementId: string, _title: string) =>
-  console.log(`Printing ${_title}`);
+// --- CUSTOMER TABLE LOGIC HOOK ---
+const useCustomerTableLogic = (
+  initialData: DataItem[],
+  initialSize: number
+) => {
+  const [data, setData] = useState<DataItem[]>(initialData);
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [pageSize, setPageSize] = useState<number>(initialSize);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [selectedRows, setSelectedRows] = useState<number[]>([]);
+  const [sortConfig, setSortConfig] = useState<SortConfig>({
+    key: null,
+    direction: "ascending",
+  });
 
-interface NewCustomerData {
-  user: string;
-  position: string;
-  office: string;
-  age: string;
-  startDate: string;
-  salary: string;
-  [key: string]: string;
-}
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, pageSize, data.length]);
 
-interface AddCustomerModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onAdd: (newCustomerData: NewCustomerData) => void;
-}
+  const sortedAndFilteredData = useMemo(() => {
+    let sortableData = [...data];
+    let filteredData = sortableData.filter((item) =>
+      Object.values(item).some((val) =>
+        String(val).toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    );
 
-interface EditCustomerModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  rowData: DataItem | null;
-  onUpdate: (updatedData: DataItem) => void;
-}
+    if (sortConfig.key) {
+      filteredData.sort((a, b) => {
+        const sortKey = sortConfig.key!;
+        const aVal = a[sortKey];
+        const bVal = b[sortKey];
 
-interface ResizableHeaderProps {
-  col: Column;
-  requestSort: (key: string) => void;
-  renderSortIndicator: (key: string) => React.JSX.Element | null;
-  setColumnWidths: Dispatch<SetStateAction<Record<string, number | undefined>>>;
-  columnWidths: Record<string, number | undefined>;
-  onDragStart: (key: string) => void;
-  onDragOver: (key: string) => void;
-  onDrop: (draggedKey: string, droppedOverKey: string) => void;
-  // Line 168: columnIndex is declared here, and must be passed in the JSX call
-  columnIndex: number;
-}
+        if (aVal < bVal) return sortConfig.direction === "ascending" ? -1 : 1;
+        if (aVal > bVal) return sortConfig.direction === "ascending" ? 1 : -1;
+        return 0;
+      });
+    }
+    return filteredData;
+  }, [data, searchTerm, sortConfig]);
 
-// --- AddCustomerModal (Unchanged) ---
-const AddCustomerModal = ({
+  const sortedDataLength = sortedAndFilteredData.length;
+  const totalPages = Math.ceil(sortedDataLength / pageSize);
+
+  const paginatedData = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    return sortedAndFilteredData.slice(start, end);
+  }, [sortedAndFilteredData, currentPage, pageSize]);
+
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    } else if (currentPage === 0 && totalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
+
+  const startEntry = Math.min(
+    sortedDataLength,
+    (currentPage - 1) * pageSize + 1
+  );
+  const endEntry = Math.min(sortedDataLength, currentPage * pageSize);
+
+  const pageNumbers = useMemo(() => {
+    const pages: number[] = [];
+    const maxPageButtons = 5;
+    let start = Math.max(1, currentPage - Math.floor(maxPageButtons / 2));
+    let end = Math.min(totalPages, start + maxPageButtons - 1);
+
+    if (end - start + 1 < maxPageButtons) {
+      start = Math.max(1, end - maxPageButtons + 1);
+    }
+
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    return pages;
+  }, [totalPages, currentPage]);
+
+  const requestSort = (key: keyof DataItem) => {
+    let direction: "ascending" | "descending" = "ascending";
+    if (sortConfig.key === key && sortConfig.direction === "ascending") {
+      direction = "descending";
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const renderSortIndicator = (key: keyof DataItem) => {
+    if (sortConfig.key !== key) return null;
+    return sortConfig.direction === "ascending" ? (
+      <ChevronUp className="size-3 ml-1" />
+    ) : (
+      <ChevronDown className="size-3 ml-1" />
+    );
+  };
+
+  return {
+    data,
+    setData,
+    searchTerm,
+    setSearchTerm,
+    pageSize,
+    setPageSize,
+    currentPage,
+    setCurrentPage,
+    selectedRows,
+    setSelectedRows,
+    paginatedData,
+    sortedDataLength,
+    totalPages,
+    startEntry,
+    endEntry,
+    pageNumbers,
+    requestSort,
+    renderSortIndicator,
+  };
+};
+
+// --- Modals (omitted for brevity, assume imported or defined as above) ---
+
+const AddEmployeeModal = ({
   isOpen,
   onClose,
   onAdd,
 }: AddCustomerModalProps) => {
-  const [formData, setFormData] = useState<NewCustomerData>({
+  const initialData: NewCustomerData = {
     user: "",
     position: "",
     office: "",
     age: "",
     startDate: "",
     salary: "",
-  });
-
+  };
+  const [formData, setFormData] = useState<NewCustomerData>(initialData);
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev: NewCustomerData) => ({ ...prev, [name]: value }));
   };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.user || !formData.position) {
-      console.error("Please fill in User and Position.");
+      alert("Please fill in User and Position.");
       return;
     }
     onAdd(formData);
-    setFormData({
-      user: "",
-      position: "",
-      office: "",
-      age: "",
-      startDate: "",
-      salary: "",
-    });
+    setFormData(initialData);
     onClose();
   };
-
   if (!isOpen) return null;
-
   return (
     <div
       className="fixed inset-0 z-50 overflow-y-auto bg-gray-900 bg-opacity-70 flex items-center justify-center backdrop-blur-sm p-4"
@@ -223,33 +311,30 @@ const AddCustomerModal = ({
         <h2 className="text-2xl font-semibold mb-6 text-gray-900 dark:text-white border-b pb-2 border-gray-100 dark:border-gray-700">
           Add New Employee
         </h2>
-
         <form
           onSubmit={handleSubmit}
           className="grid grid-cols-1 md:grid-cols-2 gap-4"
         >
           {formColumns.map((col: Column) => (
-            <div key={col.key} className="col-span-1">
+            <div key={col.key as string} className="col-span-1">
               <label
-                htmlFor={col.key}
+                htmlFor={col.key as string}
                 className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
                 {col.label}
                 {col.required && <span className="text-red-500">*</span>}
               </label>
-
               <input
-                id={col.key}
+                id={col.key as string}
                 type={col.type || "text"}
-                name={col.key}
-                value={formData[col.key]}
+                name={col.key as string}
+                value={String(formData[col.key as keyof NewCustomerData])}
                 onChange={handleChange}
                 className="w-full p-2.5 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                 required={col.required}
               />
             </div>
           ))}
-
           <div className="col-span-full flex justify-end space-x-3 pt-4 border-t mt-4 border-gray-100 dark:border-gray-700">
             <button
               type="button"
@@ -258,7 +343,6 @@ const AddCustomerModal = ({
             >
               Cancel
             </button>
-
             <button
               type="submit"
               className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
@@ -271,47 +355,35 @@ const AddCustomerModal = ({
     </div>
   );
 };
-
-// --- EditCustomerModal (Unchanged) ---
-const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
+const EditEmployeeModal: React.FC<EditCustomerModalProps> = ({
   isOpen,
   onClose,
   rowData,
   onUpdate,
 }) => {
   const [formData, setFormData] = useState<DataItem | null>(rowData);
-
   useEffect(() => {
-    setFormData(rowData);
+    setFormData(rowData ? { ...rowData } : null);
   }, [rowData]);
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     if (formData) {
-      setFormData((prev: DataItem | null) => ({
+      setFormData((prev) => ({
         ...prev!,
-        [name]: value,
+        [name]: name === "age" ? parseInt(value) || 0 : value,
       }));
     }
   };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData || !formData.user || !formData.position) {
-      console.error("User and Position are required fields.");
+      alert("User and Position are required fields.");
       return;
     }
     onUpdate(formData);
     onClose();
   };
-
   if (!isOpen || !formData) return null;
-
-  const displayData: Record<string, string | number> = {
-    ...formData,
-    age: String(formData.age),
-  };
-
   return (
     <div
       className="fixed inset-0 z-50 overflow-y-auto bg-gray-900 bg-opacity-70 flex items-center justify-center backdrop-blur-sm p-4"
@@ -324,26 +396,24 @@ const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
         <h2 className="text-2xl font-semibold mb-6 text-gray-900 dark:text-white border-b pb-2 border-gray-100 dark:border-gray-700">
           Edit Employee: {formData.user}
         </h2>
-
         <form
           onSubmit={handleSubmit}
           className="grid grid-cols-1 md:grid-cols-2 gap-4"
         >
           {formColumns.map((col: Column) => (
-            <div key={col.key} className="col-span-1">
+            <div key={col.key as string} className="col-span-1">
               <label
-                htmlFor={col.key}
+                htmlFor={col.key as string}
                 className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
                 {col.label}
                 {col.required && <span className="text-red-500">*</span>}
               </label>
-
               <input
-                id={col.key}
+                id={col.key as string}
                 type={col.type || "text"}
-                name={col.key}
-                value={displayData[col.key] || ""}
+                name={col.key as string}
+                value={String(formData[col.key] || "")}
                 onChange={handleChange}
                 className="w-full p-2.5 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                 required={col.required}
@@ -351,7 +421,6 @@ const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
               />
             </div>
           ))}
-
           <div className="col-span-full flex justify-end space-x-3 pt-4 border-t mt-4 border-gray-100 dark:border-gray-700">
             <button
               type="button"
@@ -360,7 +429,6 @@ const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
             >
               Cancel
             </button>
-
             <button
               type="submit"
               className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
@@ -373,9 +441,6 @@ const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
     </div>
   );
 };
-// --- END MODALS ---
-
-// --- ResizableHeader (Updated prop destructuring) ---
 const ResizableHeader = ({
   col,
   requestSort,
@@ -385,68 +450,57 @@ const ResizableHeader = ({
   onDragStart,
   onDragOver,
   onDrop,
-}: // columnIndex remains required in the interface but is not used in the function body
-ResizableHeaderProps) => {
+}: ResizableHeaderProps) => {
   const thRef = useRef<HTMLTableHeaderCellElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-
   const style = {
-    width: columnWidths[col.key] ? `${columnWidths[col.key]}px` : undefined,
+    width: columnWidths[col.key as string]
+      ? `${columnWidths[col.key as string]}px`
+      : undefined,
     minWidth: "100px",
   };
-
   const startResizing = useCallback(
     (mouseDownEvent: React.MouseEvent<HTMLDivElement>) => {
       mouseDownEvent.stopPropagation();
       mouseDownEvent.preventDefault();
       const startX = mouseDownEvent.clientX;
-
       if (!thRef.current) return;
       const initialWidth = thRef.current.offsetWidth;
-
       const doResizing = (mouseMoveEvent: MouseEvent) => {
         const widthDelta = mouseMoveEvent.clientX - startX;
         const newWidth = Math.max(initialWidth + widthDelta, 100);
-
         setColumnWidths((prev: Record<string, number | undefined>) => ({
           ...prev,
-          [col.key]: newWidth,
+          [col.key as string]: newWidth,
         }));
       };
-
       const stopResizing = () => {
         window.removeEventListener("mousemove", doResizing);
         window.removeEventListener("mouseup", stopResizing);
       };
-
       window.addEventListener("mousemove", doResizing);
       window.addEventListener("mouseup", stopResizing);
     },
     [col.key, setColumnWidths]
   );
-
   const handleHeaderClick = () => {
     if (col.sortable) {
       requestSort(col.key);
     }
   };
-
   const handleDragStart = (e: React.DragEvent<HTMLTableHeaderCellElement>) => {
     if (
       e.target instanceof HTMLElement &&
       e.target.className.includes("cursor-col-resize")
     )
       return;
-
-    e.dataTransfer.setData("text/plain", col.key);
+    e.dataTransfer.setData("text/plain", col.key as string);
     setIsDragging(true);
     onDragStart(col.key);
   };
-
   const handleDragEnd = () => {
     setIsDragging(false);
   };
-
   const handleDragOver = (e: React.DragEvent<HTMLTableHeaderCellElement>) => {
     if (
       e.target instanceof HTMLElement &&
@@ -456,37 +510,35 @@ ResizableHeaderProps) => {
     e.preventDefault();
     onDragOver(col.key);
   };
-
   const handleDrop = (e: React.DragEvent<HTMLTableHeaderCellElement>) => {
     e.preventDefault();
-    const draggedColKey = e.dataTransfer.getData("text/plain");
+    const draggedColKey = e.dataTransfer.getData(
+      "text/plain"
+    ) as keyof DataItem;
     onDrop(draggedColKey, col.key);
   };
-
   return (
     <th
       ref={thRef}
-      key={col.key}
+      key={col.key as string}
       draggable={true}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
       onDragEnd={handleDragEnd}
-      className={`p-4 relative cursor-move 
-          ${
-            col.sortable
-              ? "hover:bg-gray-100 dark:hover:bg-gray-700/80 transition duration-150"
-              : ""
-          }
-          ${isDragging ? "opacity-50 border-blue-500 border-2" : ""}
-          border-r border-dashed border-gray-300 dark:border-gray-600`}
+      className={`p-4 relative cursor-move ${
+        col.sortable
+          ? "hover:bg-gray-100 dark:hover:bg-gray-700/80 transition duration-150"
+          : ""
+      } ${
+        isDragging ? "opacity-50 border-blue-500 border-2" : ""
+      } border-r border-dashed border-gray-300 dark:border-gray-600`}
       onClick={handleHeaderClick}
       style={style}
     >
       <span className="flex items-center whitespace-nowrap pointer-events-none">
         {col.label} {col.sortable && renderSortIndicator(col.key)}
       </span>
-
       <div
         className="absolute top-0 right-0 h-full w-2 cursor-col-resize z-20 opacity-0 hover:opacity-100 transition duration-150 bg-transparent hover:bg-blue-400 dark:hover:bg-blue-600"
         onMouseDown={startResizing}
@@ -496,11 +548,8 @@ ResizableHeaderProps) => {
   );
 };
 
-const pageSizeOptions = [5, 10, 20, 50];
-const initialPageSize = 5;
-
-// --- Customer Component (Unchanged logic) ---
-export default function Customer() {
+// --- EmployeeDirectory Component ---
+export default function EmployeeDirectory() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<DataItem | null>(null);
@@ -510,15 +559,6 @@ export default function Customer() {
 
   const [currentColumns, setCurrentColumns] =
     useState<Column[]>(employeeColumns);
-  const dragItem = useRef<string | null>(null);
-  const dragOverItem = useRef<string | null>(null);
-
-  // Lines 556-559 (Combined Destructuring for clarity)
-  const tableLogic = useTableLogic(
-    initialEmployeeData,
-    currentColumns,
-    initialPageSize
-  );
 
   const {
     data,
@@ -539,18 +579,20 @@ export default function Customer() {
     pageNumbers,
     requestSort,
     renderSortIndicator,
-  } = tableLogic;
+  } = useCustomerTableLogic(initialEmployeeData, initialPageSize);
 
-  const handleDragStart = useCallback((key: string) => {
-    dragItem.current = key;
+  // --- Drag & Drop Handlers (Type-checked) ---
+  const handleDragStart = useCallback(() => {
+    // FIX: Using state/ref for drag tracking is common, but here we'll simplify.
+    // The key is passed directly in ResizableHeader onDragStart
   }, []);
 
-  const handleDragOver = useCallback((key: string) => {
-    dragOverItem.current = key;
+  const handleDragOver = useCallback(() => {
+    // FIX: Simplified the drag over logic to just be a no-op since it's only needed for drag detection
   }, []);
 
   const handleDrop = useCallback(
-    (draggedKey: string, droppedOverKey: string) => {
+    (draggedKey: keyof DataItem, droppedOverKey: keyof DataItem) => {
       if (!draggedKey || !droppedOverKey) return;
 
       const draggedColIndex = currentColumns.findIndex(
@@ -573,12 +615,11 @@ export default function Customer() {
       newColumns.splice(droppedOverIndex, 0, draggedItem);
 
       setCurrentColumns(newColumns);
-      dragItem.current = null;
-      dragOverItem.current = null;
     },
     [currentColumns]
-  ); /* --- Data/Row Handlers --- */
+  );
 
+  // --- Data Handlers ---
   const isSelected = (row: DataItem) => selectedRows.includes(row.id);
 
   const handleSelectRow = (row: DataItem) => {
@@ -617,16 +658,17 @@ export default function Customer() {
       })
       .replace(/ /g, ", ");
 
-    const newCustomer: DataItem = {
-      ...newCustomerData,
+    const newEmployee: DataItem = {
       id: newId,
-      age: parseInt(newCustomerData.age) || 0,
+      user: newCustomerData.user,
+      position: newCustomerData.position,
       office: newCustomerData.office || "N/A",
+      age: parseInt(newCustomerData.age) || 0,
       startDate: newCustomerData.startDate || today,
       salary: newCustomerData.salary || "$0",
     };
 
-    setData((prev: DataItem[]) => [...prev, newCustomer]);
+    setData((prev: DataItem[]) => [...prev, newEmployee]);
   };
 
   const handleUpdateCustomer = (updatedData: DataItem) => {
@@ -648,32 +690,34 @@ export default function Customer() {
   };
 
   const handleDelete = (user: DataItem) => {
-    console.error(
-      `Attempting to delete user: ${user.user}. Replacement UI needed for confirmation.`
-    );
-
-    setData((prev: DataItem[]) =>
-      prev.filter((u: DataItem) => u.id !== user.id)
-    );
-    setSelectedRows((prev: number[]) =>
-      prev.filter((id: number) => id !== user.id)
-    );
+    if (
+      window.confirm(`Are you sure you want to delete Employee: ${user.user}?`)
+    ) {
+      setData((prev: DataItem[]) =>
+        prev.filter((u: DataItem) => u.id !== user.id)
+      );
+      setSelectedRows((prev: number[]) =>
+        prev.filter((id: number) => id !== user.id)
+      );
+    }
   };
 
   const handleBulkDelete = () => {
     if (selectedRows.length === 0) {
-      console.error("Please select at least one row to delete.");
+      alert("Please select at least one row to delete.");
       return;
     }
 
-    console.error(
-      `Attempting to delete ${selectedRows.length} selected row(s). Replacement UI needed for confirmation.`
-    );
-
-    setData((prev: DataItem[]) =>
-      prev.filter((u: DataItem) => !selectedRows.includes(u.id))
-    );
-    setSelectedRows([]);
+    if (
+      window.confirm(
+        `Are you sure you want to delete ${selectedRows.length} selected row(s)?`
+      )
+    ) {
+      setData((prev: DataItem[]) =>
+        prev.filter((u: DataItem) => !selectedRows.includes(u.id))
+      );
+      setSelectedRows([]);
+    }
   };
 
   const areAllOnPageSelected =
@@ -683,8 +727,10 @@ export default function Customer() {
   return (
     <>
       <div className="bg-white p-6 rounded-xl shadow-lg dark:bg-gray-800 border border-gray-200 dark:border-gray-700 w-full">
+        {/* Control Panel */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 space-y-4 md:space-y-0">
           <div className="flex items-center space-x-4">
+            {/* Show Entries Dropdown */}
             <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
               Show
               <select
@@ -702,6 +748,7 @@ export default function Customer() {
               </select>
               entries
             </div>
+
             {/* Bulk Delete Button */}
             {selectedRows.length > 0 && (
               <button
@@ -730,7 +777,7 @@ export default function Customer() {
                 handleExport(data, currentColumns, "EmployeeDirectory")
               }
               className="p-2 text-gray-600 dark:text-gray-300 border border-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-              title="Export to XLSX"
+              title="Export to CSV"
             >
               <ExportIcon className="size-5" />
             </button>
@@ -760,13 +807,15 @@ export default function Customer() {
         </div>
         <hr className="mb-4 border-gray-100 dark:border-gray-700" />
 
+        {/* Table Section */}
         <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
           <table className="min-w-full table-fixed" id="printable-table">
             <thead>
               <tr className="bg-gray-50 dark:bg-gray-700/50 text-left text-xs font-semibold uppercase text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700">
+                {/* Checkbox Column */}
                 <th
                   className="p-4 w-10 no-print border-r border-dashed border-gray-300 dark:border-gray-600"
-                  style={{ width: "40px" }}
+                  style={{ width: columnWidths["checkbox"] || "40px" }}
                 >
                   <input
                     type="checkbox"
@@ -776,21 +825,24 @@ export default function Customer() {
                   />
                 </th>
 
+                {/* Data Columns */}
                 {currentColumns.map((col: Column, index: number) => (
                   <ResizableHeader
-                    key={col.key}
+                    key={col.key as string}
                     col={col}
                     requestSort={requestSort}
                     renderSortIndicator={renderSortIndicator}
                     setColumnWidths={setColumnWidths}
                     columnIndex={index}
                     columnWidths={columnWidths}
+                    // Type-safe properties
                     onDragStart={handleDragStart}
                     onDragOver={handleDragOver}
                     onDrop={handleDrop}
                   />
                 ))}
 
+                {/* Actions Column */}
                 <th
                   className="p-4 text-center whitespace-nowrap no-print border-r border-dashed border-gray-300 dark:border-gray-600"
                   style={{ width: columnWidths["actions"] || "100px" }}
@@ -802,12 +854,12 @@ export default function Customer() {
 
             <tbody>
               {paginatedData.length > 0 ? (
-                // FIX (Line 784): Renamed index to _index to denote it's unused
-                paginatedData.map((row: DataItem, _index: number) => (
+                paginatedData.map((row: DataItem) => (
                   <tr
                     key={row.id}
                     className="even:bg-gray-50/50 dark:even:bg-gray-700/10 border-t border-gray-100 dark:border-gray-700/50 text-sm text-gray-800 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700/30 transition duration-150"
                   >
+                    {/* Checkbox Cell */}
                     <td
                       className="p-4 w-10 no-print border-r border-gray-200 dark:border-gray-700"
                       style={{ width: columnWidths["checkbox"] || "40px" }}
@@ -820,13 +872,14 @@ export default function Customer() {
                       />
                     </td>
 
+                    {/* Data Cells */}
                     {currentColumns.map((col: Column, colIndex: number) => (
                       <td
                         key={colIndex}
                         className="p-4 whitespace-nowrap overflow-hidden text-ellipsis border-r border-gray-200 dark:border-gray-700"
                         style={{
-                          width: columnWidths[col.key]
-                            ? `${columnWidths[col.key]}px`
+                          width: columnWidths[col.key as string]
+                            ? `${columnWidths[col.key as string]}px`
                             : undefined,
                         }}
                       >
@@ -834,6 +887,7 @@ export default function Customer() {
                       </td>
                     ))}
 
+                    {/* Actions Cell */}
                     <td
                       className="p-4 text-center space-x-2 whitespace-nowrap no-print border-r border-gray-200 dark:border-gray-700"
                       style={{ width: columnWidths["actions"] || "100px" }}
@@ -872,10 +926,11 @@ export default function Customer() {
           </table>
         </div>
 
+        {/* Pagination */}
         <div className="flex flex-col sm:flex-row justify-between items-center mt-6 space-y-4 sm:space-y-0">
           <div className="text-sm text-gray-600 dark:text-gray-400">
-            Showing {startEntry} to {endEntry} of {sortedDataLength}
-            entries. (Total Pages: {totalPages})
+            Showing **{startEntry}** to **{endEntry}** of **{sortedDataLength}**
+            entries. (Total Pages: **{totalPages}**)
           </div>
 
           <div className="flex space-x-2 items-center justify-center mt-4">
@@ -924,13 +979,13 @@ export default function Customer() {
         </div>
       </div>
 
-      <AddCustomerModal
+      <AddEmployeeModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAdd={handleAddCustomer}
       />
 
-      <EditCustomerModal
+      <EditEmployeeModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         rowData={editingRow}
