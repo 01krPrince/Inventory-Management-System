@@ -8,24 +8,25 @@ const AppFooter = () => {
     { name: "Support", href: "/support" },
   ];
 
-  // Define your custom brand color
+  // Define your custom brand color and the developer name
   const brandColor = "#0c5888";
+  const developerName = "Info Era Software Services Pvt. Ltd."; // Added developer name
 
   // Use a professional, slightly smaller font and subtle colors
   return (
     <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-3 px-6">
       <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center text-xs text-gray-500 dark:text-gray-400">
         {/* === 1. Copyright and Branding === */}
-        <span className="mb-2 sm:mb-0 mr-4">
+        {/* Updated span to include the developer name */}
+        <span className="mb-2 sm:mb-0 mr-4 text-center sm:text-left">
           &copy; {currentYear}{" "}
-          {/* Use <span> or regular <b> instead of <p> for inline content */}
-          <strong
-            className="inline font-bold"
-            style={{ color: brandColor }} // Apply the color directly to the brand name
-          >
+          <strong className="inline font-bold" style={{ color: brandColor }}>
             Inventory
           </strong>
-          . All Rights Reserved.
+          . All Rights Reserved. Developed by{" "}
+          <span className="font-medium text-gray-700 dark:text-gray-300">
+            {developerName}
+          </span>
         </span>
 
         {/* === 2. Essential Links === */}
@@ -34,6 +35,7 @@ const AppFooter = () => {
             <a
               key={link.name}
               href={link.href}
+              // Tailwind class concatenation needs to be outside of bracket notation for dynamic values
               className={`
                 text-gray-600 dark:text-gray-400 
                 transition-colors duration-200 font-medium
