@@ -14,7 +14,34 @@ import {
   handleExport,
 } from "../../../../components/function/functions";
 
-const initialDiscountRatesData = [
+// --- TYPE DEFINITIONS ---
+interface DiscountRateData {
+  id: number;
+  sNo: number;
+  description: string;
+  rate: string;
+  effectiveFrom: string;
+  effectiveTo: string;
+  [key: string]: string | number; // Index signature for dynamic access in logic hook/table
+}
+
+interface DiscountRateColumn {
+  key: keyof Omit<DiscountRateData, "id">;
+  label: string;
+  sortable: boolean;
+}
+
+interface SortConfig {
+  key: keyof DiscountRateData | null;
+  direction: "ascending" | "descending";
+}
+
+// Define the shape for the form data
+type DiscountRateFormData = Omit<DiscountRateData, "id" | "sNo">;
+
+// --- 1. MOCK DATA AND COLUMN DEFINITIONS ---
+
+const initialDiscountRatesData: DiscountRateData[] = [
   {
     id: 1,
     sNo: 1,
@@ -41,7 +68,7 @@ const initialDiscountRatesData = [
   },
 ];
 
-const discountRateColumns = [
+const discountRateColumns: DiscountRateColumn[] = [
   { key: "sNo", label: "S.No.", sortable: true },
   { key: "description", label: "Description", sortable: true },
   { key: "rate", label: "Rate", sortable: true },
@@ -52,14 +79,18 @@ const discountRateColumns = [
 const pageSizeOptions = [5, 10, 20];
 const initialPageSize = 5;
 
-// Mock hook for table logic (as defined in the previous response)
-const useTableLogicMock = (initialData, columns, initialSize) => {
-  const [data, setData] = useState(initialData);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [pageSize, setPageSize] = useState(initialSize);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [selectedRows, setSelectedRows] = useState([]);
-  const [sortConfig, setSortConfig] = useState({
+// Mock hook for table logic
+const useTableLogicMock = (
+  initialData: DiscountRateData[],
+  columns: DiscountRateColumn[],
+  initialSize: number
+) => {
+  const [data, setData] = useState<DiscountRateData[]>(initialData);
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [pageSize, setPageSize] = useState<number>(initialSize);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [selectedRows, setSelectedRows] = useState<number[]>([]);
+  const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: null,
     direction: "ascending",
   });
@@ -74,8 +105,8 @@ const useTableLogicMock = (initialData, columns, initialSize) => {
 
     if (sortConfig.key) {
       filteredData.sort((a, b) => {
-        const aVal = a[sortConfig.key];
-        const bVal = b[sortConfig.key];
+        const aVal = a[sortConfig.key!];
+        const bVal = b[sortConfig.key!];
 
         if (aVal < bVal) return sortConfig.direction === "ascending" ? -1 : 1;
         if (aVal > bVal) return sortConfig.direction === "ascending" ? 1 : -1;
@@ -101,7 +132,7 @@ const useTableLogicMock = (initialData, columns, initialSize) => {
   const endEntry = Math.min(sortedDataLength, currentPage * pageSize);
 
   const pageNumbers = useMemo(() => {
-    const pages = [];
+    const pages: number[] = [];
     const maxPageButtons = 5;
     const start = Math.max(1, currentPage - Math.floor(maxPageButtons / 2));
     const end = Math.min(totalPages, start + maxPageButtons - 1);
@@ -112,15 +143,15 @@ const useTableLogicMock = (initialData, columns, initialSize) => {
     return pages;
   }, [totalPages, currentPage]);
 
-  const requestSort = (key) => {
-    let direction = "ascending";
+  const requestSort = (key: keyof DiscountRateData) => {
+    let direction: "ascending" | "descending" = "ascending";
     if (sortConfig.key === key && sortConfig.direction === "ascending") {
       direction = "descending";
     }
     setSortConfig({ key, direction });
   };
 
-  const renderSortIndicator = (key) => {
+  const renderSortIndicator = (key: keyof DiscountRateData) => {
     if (sortConfig.key !== key) return null;
     return sortConfig.direction === "ascending" ? " ▲" : " ▼";
   };
@@ -167,21 +198,33 @@ const discountFormFields = [
   },
 ];
 
-const AddDiscountModal = ({ isOpen, onClose, onAdd }) => {
-  const initialData = {
+interface AddModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onAdd: (data: DiscountRateFormData) => void;
+}
+
+const AddDiscountModal: React.FC<AddModalProps> = ({
+  isOpen,
+  onClose,
+  onAdd,
+}) => {
+  const initialData: DiscountRateFormData = {
     description: "",
     rate: "",
     effectiveFrom: "",
     effectiveTo: "",
   };
-  const [formData, setFormData] = useState(initialData);
+  const [formData, setFormData] = useState<DiscountRateFormData>(initialData);
 
-  const handleChange = (e) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.description || !formData.rate || !formData.effectiveFrom) {
       alert("Please fill in Description, Rate, and Effective From Date.");
@@ -216,14 +259,14 @@ const AddDiscountModal = ({ isOpen, onClose, onAdd }) => {
                 htmlFor={col.key}
                 className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
-                {col.label}{" "}
+                {col.label}
                 {col.required && <span className="text-red-500">*</span>}
               </label>
               <input
                 id={col.key}
                 type={col.type}
                 name={col.key}
-                value={formData[col.key] || ""}
+                value={formData[col.key as keyof DiscountRateFormData] || ""}
                 onChange={handleChange}
                 className="w-full p-2.5 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                 required={col.required}
@@ -251,26 +294,46 @@ const AddDiscountModal = ({ isOpen, onClose, onAdd }) => {
   );
 };
 
-const EditDiscountModal = ({ isOpen, onClose, rowData, onUpdate }) => {
-  const [formData, setFormData] = useState(rowData || {});
+interface EditModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  rowData: DiscountRateData | null;
+  onUpdate: (data: DiscountRateData) => void;
+}
+
+const EditDiscountModal: React.FC<EditModalProps> = ({
+  isOpen,
+  onClose,
+  rowData,
+  onUpdate,
+}) => {
+  const [formData, setFormData] = useState<DiscountRateData | {}>({});
 
   // Sync formData with rowData when it changes
   useMemo(() => {
     setFormData(rowData ? { ...rowData } : {});
   }, [rowData]);
 
-  const handleChange = (e) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.description || !formData.rate || !formData.effectiveFrom) {
+    const updatedData = formData as DiscountRateData;
+
+    if (
+      !updatedData.description ||
+      !updatedData.rate ||
+      !updatedData.effectiveFrom
+    ) {
       alert("Please fill in Description, Rate, and Effective From Date.");
       return;
     }
-    onUpdate(formData);
+    onUpdate(updatedData);
     onClose();
   };
 
@@ -298,14 +361,18 @@ const EditDiscountModal = ({ isOpen, onClose, rowData, onUpdate }) => {
                 htmlFor={col.key}
                 className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
-                {col.label}{" "}
+                {col.label}
                 {col.required && <span className="text-red-500">*</span>}
               </label>
               <input
                 id={col.key}
                 type={col.type}
                 name={col.key}
-                value={formData[col.key] || ""}
+                value={
+                  (formData as DiscountRateData)[
+                    col.key as keyof DiscountRateData
+                  ] || ""
+                }
                 onChange={handleChange}
                 className="w-full p-2.5 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                 required={col.required}
@@ -336,9 +403,9 @@ const EditDiscountModal = ({ isOpen, onClose, rowData, onUpdate }) => {
 // --- 3. MAIN COMPONENT ---
 
 export default function PartySalesDiscountRate() {
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingRow, setEditingRow] = useState(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
+  const [editingRow, setEditingRow] = useState<DiscountRateData | null>(null);
 
   const {
     data,
@@ -365,9 +432,9 @@ export default function PartySalesDiscountRate() {
     initialPageSize
   );
 
-  const isSelected = (row) => selectedRows.includes(row.id);
+  const isSelected = (row: DiscountRateData) => selectedRows.includes(row.id);
 
-  const handleSelectRow = (row) => {
+  const handleSelectRow = (row: DiscountRateData) => {
     setSelectedRows((prev) =>
       isSelected(row) ? prev.filter((id) => id !== row.id) : [...prev, row.id]
     );
@@ -388,33 +455,35 @@ export default function PartySalesDiscountRate() {
     }
   };
 
-  const handleAddDiscount = (newDiscountData) => {
+  const handleAddDiscount = (newDiscountData: DiscountRateFormData) => {
     const newId = data.length > 0 ? Math.max(...data.map((d) => d.id)) + 1 : 1;
 
-    const newEntry = {
+    const newEntry: DiscountRateData = {
       ...newDiscountData,
       id: newId,
       sNo: data.length + 1,
+      // Ensure rate is formatted with % if missing
       rate: newDiscountData.rate.endsWith("%")
         ? newDiscountData.rate
         : `${newDiscountData.rate}%`,
+      // Set 'Effective To' to 'N/A' if left empty
       effectiveTo: newDiscountData.effectiveTo || "N/A",
     };
     setData((prev) => [...prev, newEntry]);
   };
 
-  const handleUpdateDiscount = (updatedData) => {
+  const handleUpdateDiscount = (updatedData: DiscountRateData) => {
     setData((prevData) =>
       prevData.map((row) => (row.id === updatedData.id ? updatedData : row))
     );
   };
 
-  const handleOpenEditModal = (row) => {
+  const handleOpenEditModal = (row: DiscountRateData) => {
     setEditingRow({ ...row }); // Pass a clone to isolate modal state
     setIsEditModalOpen(true);
   };
 
-  const handleDelete = (row) => {
+  const handleDelete = (row: DiscountRateData) => {
     if (
       window.confirm(
         `Are you sure you want to delete discount: ${row.description}?`
@@ -549,11 +618,15 @@ export default function PartySalesDiscountRate() {
                         ? "cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/80 transition duration-150"
                         : ""
                     } border-r border-dashed border-gray-300 dark:border-gray-600`}
-                    onClick={() => col.sortable && requestSort(col.key)}
+                    onClick={() =>
+                      col.sortable &&
+                      requestSort(col.key as keyof DiscountRateData)
+                    }
                   >
                     <span className="flex items-center whitespace-nowrap">
                       {col.label}
-                      {col.sortable && renderSortIndicator(col.key)}
+                      {col.sortable &&
+                        renderSortIndicator(col.key as keyof DiscountRateData)}
                     </span>
                   </th>
                 ))}

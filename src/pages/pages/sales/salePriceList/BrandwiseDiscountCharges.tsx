@@ -14,9 +14,29 @@ import {
   handleExport,
 } from "../../../../components/function/functions";
 
+// --- TYPE DEFINITIONS ---
+interface BrandDiscountData {
+  id: number;
+  sNo: number;
+  description: string;
+  effectiveFrom: string;
+  rateOrCharge: string;
+}
+
+interface BrandDiscountColumn {
+  key: keyof BrandDiscountData | "actions";
+  label: string;
+  sortable: boolean;
+}
+
+interface SortConfig {
+  key: keyof BrandDiscountData | null;
+  direction: "ascending" | "descending";
+}
+
 // --- 1. MOCK DATA AND COLUMN DEFINITIONS ---
 
-const initialBrandDiscountData = [
+const initialBrandDiscountData: BrandDiscountData[] = [
   {
     id: 1,
     sNo: 1,
@@ -40,7 +60,7 @@ const initialBrandDiscountData = [
   },
 ];
 
-const brandDiscountColumns = [
+const brandDiscountColumns: BrandDiscountColumn[] = [
   { key: "sNo", label: "S.No.", sortable: true },
   { key: "description", label: "Description", sortable: true },
   { key: "rateOrCharge", label: "Rate/Charge", sortable: false },
@@ -51,13 +71,17 @@ const pageSizeOptions = [5, 10, 20];
 const initialPageSize = 5;
 
 // Mock hook for table logic (same as previous examples)
-const useTableLogicMock = (initialData, columns, initialSize) => {
-  const [data, setData] = useState(initialData);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [pageSize, setPageSize] = useState(initialSize);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [selectedRows, setSelectedRows] = useState([]);
-  const [sortConfig, setSortConfig] = useState({
+const useTableLogicMock = (
+  initialData: BrandDiscountData[],
+  columns: BrandDiscountColumn[],
+  initialSize: number
+) => {
+  const [data, setData] = useState<BrandDiscountData[]>(initialData);
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [pageSize, setPageSize] = useState<number>(initialSize);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [selectedRows, setSelectedRows] = useState<number[]>([]);
+  const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: null,
     direction: "ascending",
   });
@@ -72,8 +96,8 @@ const useTableLogicMock = (initialData, columns, initialSize) => {
 
     if (sortConfig.key) {
       filteredData.sort((a, b) => {
-        const aVal = a[sortConfig.key];
-        const bVal = b[sortConfig.key];
+        const aVal = a[sortConfig.key!]; // Type is explicitly checked for null above
+        const bVal = b[sortConfig.key!];
 
         if (aVal < bVal) return sortConfig.direction === "ascending" ? -1 : 1;
         if (aVal > bVal) return sortConfig.direction === "ascending" ? 1 : -1;
@@ -99,7 +123,7 @@ const useTableLogicMock = (initialData, columns, initialSize) => {
   const endEntry = Math.min(sortedDataLength, currentPage * pageSize);
 
   const pageNumbers = useMemo(() => {
-    const pages = [];
+    const pages: number[] = [];
     const maxPageButtons = 5;
     const start = Math.max(1, currentPage - Math.floor(maxPageButtons / 2));
     const end = Math.min(totalPages, start + maxPageButtons - 1);
@@ -110,15 +134,15 @@ const useTableLogicMock = (initialData, columns, initialSize) => {
     return pages;
   }, [totalPages, currentPage]);
 
-  const requestSort = (key) => {
-    let direction = "ascending";
+  const requestSort = (key: keyof BrandDiscountData) => {
+    let direction: "ascending" | "descending" = "ascending";
     if (sortConfig.key === key && sortConfig.direction === "ascending") {
       direction = "descending";
     }
     setSortConfig({ key, direction });
   };
 
-  const renderSortIndicator = (key) => {
+  const renderSortIndicator = (key: keyof BrandDiscountData) => {
     if (sortConfig.key !== key) return null;
     return sortConfig.direction === "ascending" ? " ▲" : " ▼";
   };
@@ -147,6 +171,9 @@ const useTableLogicMock = (initialData, columns, initialSize) => {
 
 // --- 2. MODAL COMPONENTS (ADD & EDIT) ---
 
+// Define the shape for the form data excluding id/sNo
+type BrandDiscountFormData = Omit<BrandDiscountData, "id" | "sNo">;
+
 const brandDiscountFormFields = [
   { key: "description", label: "Description", type: "text", required: true },
   {
@@ -163,16 +190,35 @@ const brandDiscountFormFields = [
   },
 ];
 
-const AddBrandDiscountModal = ({ isOpen, onClose, onAdd }) => {
-  const initialData = { description: "", effectiveFrom: "", rateOrCharge: "" };
-  const [formData, setFormData] = useState(initialData);
+interface AddModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onAdd: (data: BrandDiscountFormData) => void;
+}
 
-  const handleChange = (e) => {
+const AddBrandDiscountModal: React.FC<AddModalProps> = ({
+  isOpen,
+  onClose,
+  onAdd,
+}) => {
+  const initialData: BrandDiscountFormData = {
+    description: "",
+    effectiveFrom: "",
+    rateOrCharge: "",
+  };
+  const [formData, setFormData] = useState<BrandDiscountFormData>(initialData);
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (
       !formData.description ||
@@ -220,7 +266,7 @@ const AddBrandDiscountModal = ({ isOpen, onClose, onAdd }) => {
                 id={col.key}
                 type={col.type}
                 name={col.key}
-                value={formData[col.key] || ""}
+                value={formData[col.key as keyof BrandDiscountFormData] || ""}
                 onChange={handleChange}
                 className="w-full p-2.5 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                 required={col.required}
@@ -248,32 +294,48 @@ const AddBrandDiscountModal = ({ isOpen, onClose, onAdd }) => {
   );
 };
 
-const EditBrandDiscountModal = ({ isOpen, onClose, rowData, onUpdate }) => {
-  const [formData, setFormData] = useState(rowData || {});
+interface EditModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  rowData: BrandDiscountData | null;
+  onUpdate: (data: BrandDiscountData) => void;
+}
+
+const EditBrandDiscountModal: React.FC<EditModalProps> = ({
+  isOpen,
+  onClose,
+  rowData,
+  onUpdate,
+}) => {
+  const [formData, setFormData] = useState<BrandDiscountData | {}>({});
 
   // Sync formData with rowData when it changes
   useMemo(() => {
     setFormData(rowData ? { ...rowData } : {});
   }, [rowData]);
 
-  const handleChange = (e) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const updatedData = formData as BrandDiscountData; // Cast to expected type after checks
+
     if (
-      !formData.description ||
-      !formData.effectiveFrom ||
-      !formData.rateOrCharge
+      !updatedData.description ||
+      !updatedData.effectiveFrom ||
+      !updatedData.rateOrCharge
     ) {
       alert(
         "Please fill in Description, Effective From Date, and Rate/Charge."
       );
       return;
     }
-    onUpdate(formData);
+    onUpdate(updatedData);
     onClose();
   };
 
@@ -308,7 +370,11 @@ const EditBrandDiscountModal = ({ isOpen, onClose, rowData, onUpdate }) => {
                 id={col.key}
                 type={col.type}
                 name={col.key}
-                value={formData[col.key] || ""}
+                value={
+                  (formData as BrandDiscountData)[
+                    col.key as keyof BrandDiscountData
+                  ] || ""
+                }
                 onChange={handleChange}
                 className="w-full p-2.5 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                 required={col.required}
@@ -341,7 +407,7 @@ const EditBrandDiscountModal = ({ isOpen, onClose, rowData, onUpdate }) => {
 export default function BrandwiseDiscountCharges() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingRow, setEditingRow] = useState(null);
+  const [editingRow, setEditingRow] = useState<BrandDiscountData | null>(null);
 
   const {
     data,
@@ -368,9 +434,9 @@ export default function BrandwiseDiscountCharges() {
     initialPageSize
   );
 
-  const isSelected = (row) => selectedRows.includes(row.id);
+  const isSelected = (row: BrandDiscountData) => selectedRows.includes(row.id);
 
-  const handleSelectRow = (row) => {
+  const handleSelectRow = (row: BrandDiscountData) => {
     setSelectedRows((prev) =>
       isSelected(row) ? prev.filter((id) => id !== row.id) : [...prev, row.id]
     );
@@ -391,29 +457,31 @@ export default function BrandwiseDiscountCharges() {
     }
   };
 
-  const handleAddBrandDiscount = (newDiscountData) => {
+  const handleAddBrandDiscount = (newDiscountData: BrandDiscountFormData) => {
     const newId = data.length > 0 ? Math.max(...data.map((d) => d.id)) + 1 : 1;
+    // Recalculate sNo based on current total data length before adding
+    const newSNo = data.length + 1;
 
-    const newEntry = {
+    const newEntry: BrandDiscountData = {
       ...newDiscountData,
       id: newId,
-      sNo: data.length + 1,
+      sNo: newSNo,
     };
     setData((prev) => [...prev, newEntry]);
   };
 
-  const handleUpdateBrandDiscount = (updatedData) => {
+  const handleUpdateBrandDiscount = (updatedData: BrandDiscountData) => {
     setData((prevData) =>
       prevData.map((row) => (row.id === updatedData.id ? updatedData : row))
     );
   };
 
-  const handleOpenEditModal = (row) => {
+  const handleOpenEditModal = (row: BrandDiscountData) => {
     setEditingRow({ ...row }); // Pass a clone to isolate modal state
     setIsEditModalOpen(true);
   };
 
-  const handleDelete = (row) => {
+  const handleDelete = (row: BrandDiscountData) => {
     if (
       window.confirm(
         `Are you sure you want to delete entry for: ${row.description}?`
@@ -551,11 +619,15 @@ export default function BrandwiseDiscountCharges() {
                         ? "cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/80 transition duration-150"
                         : ""
                     } border-r border-dashed border-gray-300 dark:border-gray-600`}
-                    onClick={() => col.sortable && requestSort(col.key)}
+                    onClick={() =>
+                      col.sortable &&
+                      requestSort(col.key as keyof BrandDiscountData)
+                    }
                   >
                     <span className="flex items-center whitespace-nowrap">
                       {col.label}
-                      {col.sortable && renderSortIndicator(col.key)}
+                      {col.sortable &&
+                        renderSortIndicator(col.key as keyof BrandDiscountData)}
                     </span>
                   </th>
                 ))}
@@ -595,7 +667,7 @@ export default function BrandwiseDiscountCharges() {
                         key={col.key}
                         className="p-4 whitespace-nowrap overflow-hidden text-ellipsis border-r border-gray-200 dark:border-gray-700"
                       >
-                        {row[col.key]}
+                        {row[col.key as keyof BrandDiscountData]}
                       </td>
                     ))}
 

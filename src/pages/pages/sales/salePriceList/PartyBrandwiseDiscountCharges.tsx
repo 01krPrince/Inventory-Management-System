@@ -14,9 +14,30 @@ import {
   handleExport,
 } from "../../../../components/function/functions";
 
+// --- TYPE DEFINITIONS ---
+interface PartyBrandData {
+  id: number;
+  sNo: number;
+  partyBrandName: string;
+  description: string;
+  effectiveFrom: string;
+  [key: string]: string | number; // Index signature for dynamic access in logic hook
+}
+
+interface PartyBrandColumn {
+  key: keyof Omit<PartyBrandData, "id">;
+  label: string;
+  sortable: boolean;
+}
+
+interface SortConfig {
+  key: keyof PartyBrandData | null;
+  direction: "ascending" | "descending";
+}
+
 // --- 1. MOCK DATA AND COLUMN DEFINITIONS ---
 
-const initialPartyBrandData = [
+const initialPartyBrandData: PartyBrandData[] = [
   {
     id: 1,
     sNo: 1,
@@ -40,7 +61,7 @@ const initialPartyBrandData = [
   },
 ];
 
-const partyBrandColumns = [
+const partyBrandColumns: PartyBrandColumn[] = [
   { key: "sNo", label: "S.No.", sortable: true },
   { key: "partyBrandName", label: "Party/Brand", sortable: true },
   { key: "description", label: "Discount/Charge Description", sortable: true },
@@ -50,14 +71,18 @@ const partyBrandColumns = [
 const pageSizeOptions = [5, 10, 20];
 const initialPageSize = 5;
 
-// Mock hook for table logic (Copied from previous BrandwiseDiscountCharges for self-containment)
-const useTableLogic = (initialData, columns, initialSize) => {
-  const [data, setData] = useState(initialData);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [pageSize, setPageSize] = useState(initialSize);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [selectedRows, setSelectedRows] = useState([]);
-  const [sortConfig, setSortConfig] = useState({
+// Mock hook for table logic
+const useTableLogic = (
+  initialData: PartyBrandData[],
+  columns: PartyBrandColumn[],
+  initialSize: number
+) => {
+  const [data, setData] = useState<PartyBrandData[]>(initialData);
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [pageSize, setPageSize] = useState<number>(initialSize);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [selectedRows, setSelectedRows] = useState<number[]>([]);
+  const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: null,
     direction: "ascending",
   });
@@ -72,8 +97,9 @@ const useTableLogic = (initialData, columns, initialSize) => {
 
     if (sortConfig.key) {
       filteredData.sort((a, b) => {
-        const aVal = a[sortConfig.key];
-        const bVal = b[sortConfig.key];
+        // Safe access due to index signature in PartyBrandData
+        const aVal = a[sortConfig.key!];
+        const bVal = b[sortConfig.key!];
 
         if (aVal < bVal) return sortConfig.direction === "ascending" ? -1 : 1;
         if (aVal > bVal) return sortConfig.direction === "ascending" ? 1 : -1;
@@ -99,7 +125,7 @@ const useTableLogic = (initialData, columns, initialSize) => {
   const endEntry = Math.min(sortedDataLength, currentPage * pageSize);
 
   const pageNumbers = useMemo(() => {
-    const pages = [];
+    const pages: number[] = [];
     const maxPageButtons = 5;
     const start = Math.max(1, currentPage - Math.floor(maxPageButtons / 2));
     const end = Math.min(totalPages, start + maxPageButtons - 1);
@@ -110,15 +136,15 @@ const useTableLogic = (initialData, columns, initialSize) => {
     return pages;
   }, [totalPages, currentPage]);
 
-  const requestSort = (key) => {
-    let direction = "ascending";
+  const requestSort = (key: keyof PartyBrandData) => {
+    let direction: "ascending" | "descending" = "ascending";
     if (sortConfig.key === key && sortConfig.direction === "ascending") {
       direction = "descending";
     }
     setSortConfig({ key, direction });
   };
 
-  const renderSortIndicator = (key) => {
+  const renderSortIndicator = (key: keyof PartyBrandData) => {
     if (sortConfig.key !== key) return null;
     return sortConfig.direction === "ascending" ? " ▲" : " ▼";
   };
@@ -147,6 +173,9 @@ const useTableLogic = (initialData, columns, initialSize) => {
 
 // --- 2. MODAL COMPONENTS (ADD & EDIT) ---
 
+// Define the shape for the form data excluding id/sNo
+type PartyBrandFormData = Omit<PartyBrandData, "id" | "sNo">;
+
 const partyBrandFormFields = [
   {
     key: "partyBrandName",
@@ -163,20 +192,35 @@ const partyBrandFormFields = [
   },
 ];
 
-const AddPartyBrandModal = ({ isOpen, onClose, onAdd }) => {
-  const initialData = {
+interface AddModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onAdd: (data: PartyBrandFormData) => void;
+}
+
+const AddPartyBrandModal: React.FC<AddModalProps> = ({
+  isOpen,
+  onClose,
+  onAdd,
+}) => {
+  const initialData: PartyBrandFormData = {
     partyBrandName: "",
     description: "",
     effectiveFrom: "",
   };
-  const [formData, setFormData] = useState(initialData);
+  const [formData, setFormData] = useState<PartyBrandFormData>(initialData);
 
-  const handleChange = (e) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (
       !formData.partyBrandName ||
@@ -200,98 +244,101 @@ const AddPartyBrandModal = ({ isOpen, onClose, onAdd }) => {
       className="fixed inset-0 z-50 overflow-y-auto bg-gray-900 bg-opacity-70 flex items-center justify-center backdrop-blur-sm p-4"
       onClick={onClose}
     >
-           {" "}
       <div
         className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-lg m-auto"
         onClick={(e) => e.stopPropagation()}
       >
-               {" "}
         <h2 className="text-2xl font-semibold mb-6 text-gray-900 dark:text-white border-b pb-2 border-gray-100 dark:border-gray-700">
-                    Create New Party/Brand Discount        {" "}
+          Create New Party/Brand Discount
         </h2>
-               {" "}
         <form
           onSubmit={handleSubmit}
           className="grid grid-cols-1 md:grid-cols-2 gap-4"
         >
-                   {" "}
           {partyBrandFormFields.map((col) => (
             <div key={col.key} className="col-span-1">
-                           {" "}
               <label
                 htmlFor={col.key}
                 className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
-                                {col.label}                {" "}
-                {col.required && <span className="text-red-500">*</span>}       
-                     {" "}
+                {col.label}
+                {col.required && <span className="text-red-500">*</span>}
               </label>
-                           {" "}
               <input
                 id={col.key}
                 type={col.type}
                 name={col.key}
-                value={formData[col.key] || ""}
+                value={formData[col.key as keyof PartyBrandFormData] || ""}
                 onChange={handleChange}
                 className="w-full p-2.5 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                 required={col.required}
               />
-                         {" "}
             </div>
           ))}
-                   {" "}
           <div className="col-span-full flex justify-end space-x-3 pt-4 border-t mt-4 border-gray-100 dark:border-gray-700">
-                       {" "}
             <button
               type="button"
               onClick={onClose}
               className="px-5 py-2.5 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600 transition font-medium"
             >
-                            Cancel            {" "}
+              Cancel
             </button>
-                       {" "}
             <button
               type="submit"
               className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
             >
-                            Create Discount            {" "}
+              Create Discount
             </button>
-                     {" "}
           </div>
-                 {" "}
         </form>
-               {" "}
       </div>
-         {" "}
     </div>
   );
 };
 
-const EditPartyBrandModal = ({ isOpen, onClose, rowData, onUpdate }) => {
-  const [formData, setFormData] = useState(rowData || {}); // Sync formData with rowData when it changes
+interface EditModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  rowData: PartyBrandData | null;
+  onUpdate: (data: PartyBrandData) => void;
+}
 
+const EditPartyBrandModal: React.FC<EditModalProps> = ({
+  isOpen,
+  onClose,
+  rowData,
+  onUpdate,
+}) => {
+  // Use PartyBrandData | {} for initial state to handle the case when rowData is null
+  const [formData, setFormData] = useState<PartyBrandData | {}>({});
+
+  // Sync formData with rowData when it changes
   useMemo(() => {
     setFormData(rowData ? { ...rowData } : {});
   }, [rowData]);
 
-  const handleChange = (e) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const updatedData = formData as PartyBrandData;
+
     if (
-      !formData.partyBrandName ||
-      !formData.description ||
-      !formData.effectiveFrom
+      !updatedData.partyBrandName ||
+      !updatedData.description ||
+      !updatedData.effectiveFrom
     ) {
       alert(
         "Please fill in Party/Brand Name, Description, and Effective From Date."
       );
       return;
     }
-    onUpdate(formData);
+    onUpdate(updatedData);
     onClose();
   };
 
@@ -302,69 +349,59 @@ const EditPartyBrandModal = ({ isOpen, onClose, rowData, onUpdate }) => {
       className="fixed inset-0 z-50 overflow-y-auto bg-gray-900 bg-opacity-70 flex items-center justify-center backdrop-blur-sm p-4"
       onClick={onClose}
     >
-           {" "}
       <div
         className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-lg m-auto"
         onClick={(e) => e.stopPropagation()}
       >
-               {" "}
         <h2 className="text-2xl font-semibold mb-6 text-gray-900 dark:text-white border-b pb-2 border-gray-100 dark:border-gray-700">
-                    Edit Party/Brand Discount: {rowData?.partyBrandName}       {" "}
+          Edit Party/Brand Discount: {rowData?.partyBrandName}
         </h2>
-               {" "}
         <form
           onSubmit={handleSubmit}
           className="grid grid-cols-1 md:grid-cols-2 gap-4"
         >
-                   {" "}
           {partyBrandFormFields.map((col) => (
             <div key={col.key} className="col-span-1">
-                           {" "}
               <label
                 htmlFor={col.key}
                 className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
-                                {col.label}                {" "}
-                {col.required && <span className="text-red-500">*</span>}       
-                     {" "}
+                {col.label}
+                {col.required && <span className="text-red-500">*</span>}
               </label>
-                           {" "}
               <input
                 id={col.key}
                 type={col.type}
                 name={col.key}
-                value={formData[col.key] || ""}
+                // Safely cast formData to PartyBrandData before accessing property
+                value={
+                  (formData as PartyBrandData)[
+                    col.key as keyof PartyBrandData
+                  ] || ""
+                }
                 onChange={handleChange}
                 className="w-full p-2.5 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                 required={col.required}
               />
-                         {" "}
             </div>
           ))}
-                   {" "}
           <div className="col-span-full flex justify-end space-x-3 pt-4 border-t mt-4 border-gray-100 dark:border-gray-700">
-                       {" "}
             <button
               type="button"
               onClick={onClose}
               className="px-5 py-2.5 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600 transition font-medium"
             >
-                            Cancel            {" "}
+              Cancel
             </button>
-                       {" "}
             <button
               type="submit"
               className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
             >
-                            Save Changes            {" "}
+              Save Changes
             </button>
-                     {" "}
           </div>
-                 {" "}
         </form>
-             {" "}
       </div>
-         {" "}
     </div>
   );
 };
@@ -372,9 +409,9 @@ const EditPartyBrandModal = ({ isOpen, onClose, rowData, onUpdate }) => {
 // --- 3. MAIN COMPONENT ---
 
 export default function PartyBrandwiseDiscountCharges() {
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingRow, setEditingRow] = useState(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
+  const [editingRow, setEditingRow] = useState<PartyBrandData | null>(null);
 
   const {
     data,
@@ -397,9 +434,9 @@ export default function PartyBrandwiseDiscountCharges() {
     renderSortIndicator,
   } = useTableLogic(initialPartyBrandData, partyBrandColumns, initialPageSize);
 
-  const isSelected = (row) => selectedRows.includes(row.id);
+  const isSelected = (row: PartyBrandData) => selectedRows.includes(row.id);
 
-  const handleSelectRow = (row) => {
+  const handleSelectRow = (row: PartyBrandData) => {
     setSelectedRows((prev) =>
       isSelected(row) ? prev.filter((id) => id !== row.id) : [...prev, row.id]
     );
@@ -420,29 +457,31 @@ export default function PartyBrandwiseDiscountCharges() {
     }
   };
 
-  const handleAddPartyBrand = (newDiscountData) => {
+  const handleAddPartyBrand = (newDiscountData: PartyBrandFormData) => {
     const newId = data.length > 0 ? Math.max(...data.map((d) => d.id)) + 1 : 1;
+    // sNo is calculated based on current length, assuming a non-deleted list or simply an incremental number.
+    const newSNo = data.length + 1;
 
-    const newEntry = {
+    const newEntry: PartyBrandData = {
       ...newDiscountData,
       id: newId,
-      sNo: data.length + 1,
+      sNo: newSNo,
     };
     setData((prev) => [...prev, newEntry]);
   };
 
-  const handleUpdatePartyBrand = (updatedData) => {
+  const handleUpdatePartyBrand = (updatedData: PartyBrandData) => {
     setData((prevData) =>
       prevData.map((row) => (row.id === updatedData.id ? updatedData : row))
     );
   };
 
-  const handleOpenEditModal = (row) => {
+  const handleOpenEditModal = (row: PartyBrandData) => {
     setEditingRow({ ...row }); // Pass a clone to isolate modal state
     setIsEditModalOpen(true);
   };
 
-  const handleDelete = (row) => {
+  const handleDelete = (row: PartyBrandData) => {
     if (
       window.confirm(
         `Are you sure you want to delete entry for: ${row.partyBrandName}?`
@@ -475,10 +514,12 @@ export default function PartyBrandwiseDiscountCharges() {
   return (
     <>
       <div className="bg-white p-6 rounded-xl shadow-lg dark:bg-gray-800 border border-gray-200 dark:border-gray-700 w-full">
+        {/* Control Panel */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 space-y-4 md:space-y-0">
           <div className="flex items-center space-x-4">
+            {/* Show Entries Dropdown */}
             <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                            Show            
+              Show
               <select
                 value={pageSize}
                 onChange={(e) => setPageSize(Number(e.target.value))}
@@ -486,28 +527,25 @@ export default function PartyBrandwiseDiscountCharges() {
               >
                 {pageSizeOptions.map((option) => (
                   <option key={option} value={option}>
-                                        {option}               
+                    {option}
                   </option>
                 ))}
-                           
               </select>
-                            entries            
+              entries
             </div>
-                        {/* Bulk Delete Button */}         
+            {/* Bulk Delete Button */}
             {selectedRows.length > 0 && (
               <button
                 onClick={handleBulkDelete}
                 className="px-3 py-1.5 flex items-center bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition shadow-sm"
               >
-                                <TrashIcon className="size-4 mr-1" />           
-                    Bulk Delete ({selectedRows.length})            
+                <TrashIcon className="size-4 mr-1" />
+                Bulk Delete ({selectedRows.length})
               </button>
             )}
-                   
           </div>
-                 
+
           <div className="flex items-center space-x-3 w-full md:w-auto justify-end">
-                     
             <button
               onClick={() =>
                 handlePrint("party-brand-table", "Party/Brand Discount/Charges")
@@ -515,9 +553,8 @@ export default function PartyBrandwiseDiscountCharges() {
               className="p-2 text-gray-600 dark:text-gray-300 border border-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
               title="Print Table"
             >
-                            <PrintIcon className="size-5" />         
+              <PrintIcon className="size-5" />
             </button>
-                     
             <button
               onClick={() =>
                 handleExport(data, partyBrandColumns, "PartyBrandDiscounts")
@@ -525,11 +562,9 @@ export default function PartyBrandwiseDiscountCharges() {
               className="p-2 text-gray-600 dark:text-gray-300 border border-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
               title="Export to XLSX"
             >
-                            <ExportIcon className="size-5" />         
+              <ExportIcon className="size-5" />
             </button>
-                       
             <div className="relative w-full md:w-64">
-                           
               <input
                 type="text"
                 placeholder="Search all columns..."
@@ -537,31 +572,26 @@ export default function PartyBrandwiseDiscountCharges() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full p-2 pl-10 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
               />
-                           
               <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-gray-400" />
-                       
             </div>
-                       
             <button
               onClick={() => setIsAddModalOpen(true)}
               className="px-3 py-2 flex items-center bg-[#0c5888] text-white text-sm font-medium hover:bg-[#124463] transition shadow-md whitespace-nowrap rounded-lg"
             >
-                            <PlusIcon className="size-4 mr-1" />             
-              Create New          
+              <PlusIcon className="size-4 mr-1" />
+              Create New
             </button>
-                     
           </div>
-               
         </div>
-                <hr className="mb-4 border-gray-100 dark:border-gray-700" />   
+
+        <hr className="mb-4 border-gray-100 dark:border-gray-700" />
+
+        {/* Table Section */}
         <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
-                   
           <table className="min-w-full table-fixed" id="party-brand-table">
-                       
             <thead>
-                           
               <tr className="bg-gray-50 dark:bg-gray-700/50 text-left text-xs font-semibold uppercase text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700">
-                                {/* Checkbox Column */} 
+                {/* Checkbox Column */}
                 <th
                   className="p-4 w-10 no-print border-r border-dashed border-gray-300 dark:border-gray-600"
                   style={{ width: "40px" }}
@@ -573,7 +603,7 @@ export default function PartyBrandwiseDiscountCharges() {
                     onChange={handleSelectAll}
                   />
                 </th>
-                                {/* Data Columns */}             
+                {/* Data Columns */}
                 {partyBrandColumns.map((col) => (
                   <th
                     key={col.key}
@@ -582,20 +612,24 @@ export default function PartyBrandwiseDiscountCharges() {
                         ? "cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/80 transition duration-150"
                         : ""
                     } border-r border-dashed border-gray-300 dark:border-gray-600`}
-                    onClick={() => col.sortable && requestSort(col.key)}
+                    onClick={() =>
+                      col.sortable &&
+                      requestSort(col.key as keyof PartyBrandData)
+                    }
                   >
-                                 
                     <span className="flex items-center whitespace-nowrap">
-                                            {col.label}             
-                      {col.sortable && renderSortIndicator(col.key)}           
+                      {col.label}
+                      {col.sortable &&
+                        renderSortIndicator(col.key as keyof PartyBrandData)}
                     </span>
                   </th>
                 ))}
+                {/* Actions Column */}
                 <th
                   className="p-4 text-center whitespace-nowrap no-print border-r border-dashed border-gray-300 dark:border-gray-600"
                   style={{ width: "100px" }}
                 >
-                                    Actions            
+                  Actions
                 </th>
               </tr>
             </thead>
@@ -606,30 +640,28 @@ export default function PartyBrandwiseDiscountCharges() {
                     key={row.id}
                     className="even:bg-gray-50/50 dark:even:bg-gray-700/10 border-t border-gray-100 dark:border-gray-700/50 text-sm text-gray-800 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700/30 transition duration-150"
                   >
-                                        {/* Checkbox Cell */}                 
+                    {/* Checkbox Cell */}
                     <td
                       className="p-4 w-10 no-print border-r border-gray-200 dark:border-gray-700"
                       style={{ width: "40px" }}
                     >
-                                         
                       <input
                         type="checkbox"
                         className="rounded text-blue-600 dark:bg-gray-600 dark:border-gray-500 border-gray-300 focus:ring-blue-500"
                         checked={isSelected(row)}
                         onChange={() => handleSelectRow(row)}
                       />
-                                         
                     </td>
-                                     
+                    {/* Data Cells */}
                     {partyBrandColumns.map((col) => (
                       <td
                         key={col.key}
                         className="p-4 whitespace-nowrap overflow-hidden text-ellipsis border-r border-gray-200 dark:border-gray-700"
                       >
-                                                {row[col.key]}                 
+                        {row[col.key]}
                       </td>
                     ))}
-                                       
+                    {/* Actions Cell */}
                     <td
                       className="p-4 text-center space-x-2 whitespace-nowrap no-print border-r border-gray-200 dark:border-gray-700"
                       style={{ width: "100px" }}
@@ -640,7 +672,7 @@ export default function PartyBrandwiseDiscountCharges() {
                         aria-label="Edit"
                         title="Edit"
                       >
-                        <EditIcon className="size-4 inline" />                 
+                        <EditIcon className="size-4 inline" />
                       </button>
                       <button
                         onClick={() => handleDelete(row)}
@@ -648,7 +680,7 @@ export default function PartyBrandwiseDiscountCharges() {
                         aria-label="Delete"
                         title="Delete"
                       >
-                        <TrashIcon className="size-4 inline" />                 
+                        <TrashIcon className="size-4 inline" />
                       </button>
                     </td>
                   </tr>
@@ -659,22 +691,18 @@ export default function PartyBrandwiseDiscountCharges() {
                     colSpan={partyBrandColumns.length + 2}
                     className="p-8 text-center text-lg text-gray-500 dark:text-gray-400"
                   >
-                                        No matching party/brand discount or
-                    charge entries found. 🙁              
+                    No matching party/brand discount or charge entries found. 🙁
                   </td>
-                           
                 </tr>
               )}
-                       
             </tbody>
-                   
           </table>
-                 
         </div>
+        {/* Pagination */}
         <div className="flex flex-col sm:flex-row justify-between items-center mt-6 space-y-4 sm:space-y-0">
           <div className="text-sm text-gray-600 dark:text-gray-400">
-                        Showing {startEntry} to {endEntry} of {sortedDataLength}
-            entries.             (Total Pages: {totalPages})      
+            Showing {startEntry} to {endEntry} of {sortedDataLength} entries.
+            (Total Pages: {totalPages})
           </div>
           <div className="flex space-x-2 items-center justify-center mt-4">
             <button
@@ -686,9 +714,8 @@ export default function PartyBrandwiseDiscountCharges() {
                   : "bg-white text-gray-700 border border-gray-300 hover:bg-[#0c5888]/10 hover:text-[#0c5888] dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-[#0c5888]/20"
               }`}
             >
-                            Previous        
+              Previous
             </button>
-                     
             {pageNumbers.map((page) => (
               <button
                 key={page}
@@ -699,7 +726,7 @@ export default function PartyBrandwiseDiscountCharges() {
                     : "bg-white text-gray-700 border border-gray-300 hover:bg-[#0c5888]/10 hover:hover:text-[#0c5888] dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-[#0c5888]/20"
                 }`}
               >
-                                {page}           
+                {page}
               </button>
             ))}
             <button
@@ -713,13 +740,10 @@ export default function PartyBrandwiseDiscountCharges() {
                   : "bg-white text-gray-700 border border-gray-300 hover:bg-[#0c5888]/10 hover:text-[#0c5888] dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-[#0c5888]/20"
               }`}
             >
-                            Next          
+              Next
             </button>
-                   
           </div>
-               
         </div>
-             
       </div>
       <AddPartyBrandModal
         isOpen={isAddModalOpen}

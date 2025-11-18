@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 // Assuming these imports exist from your original component's context
 import {
   PrintIcon,
@@ -8,62 +8,101 @@ import {
   SearchIcon,
   ExportIcon,
 } from "../../../../components/icons";
-import {
-  useTableLogic,
-  handleExport,
-  handlePrint,
-} from "../../../../components/function/functions";
 
-// Modal component for creating a new Price List entry
-const AddPriceListModal = ({ isOpen, onClose, onAdd, formColumns }) => {
-  // State for the form data, initialized with empty values based on assumed keys
-  const [formData, setFormData] = useState({
+import {
+  handlePrint,
+  handleExport,
+} from "../../../../components/function/functions"; // Assuming these exist and are correctly typed externally
+
+// --- TYPE DEFINITIONS ---
+interface PriceListData {
+  id: number;
+  sNo: number;
+  categoryName: string;
+  effectiveFromDate: string;
+  description: string;
+  branchName: string;
+  [key: string]: string | number | null; // Index signature for dynamic access
+}
+
+interface PriceListColumn {
+  key: keyof Omit<PriceListData, "id">;
+  label: string;
+  sortable: boolean;
+}
+
+interface SortConfig {
+  key: keyof PriceListData | null;
+  direction: "ascending" | "descending";
+}
+
+// Define the shape for the form data (excluding id/sNo)
+type PriceListFormData = Omit<PriceListData, "id" | "sNo">;
+
+// --- 1. MODAL COMPONENTS ---
+
+interface FormField {
+  key: keyof PriceListFormData;
+  label: string;
+  type: string;
+  required: boolean;
+}
+
+const formFields: FormField[] = [
+  {
+    key: "categoryName",
+    label: "Category Name",
+    type: "text",
+    required: true,
+  },
+  {
+    key: "effectiveFromDate",
+    label: "Effective From Date",
+    type: "date",
+    required: true,
+  },
+  { key: "description", label: "Description", type: "text", required: false },
+  { key: "branchName", label: "Branch Name", type: "text", required: false },
+];
+
+interface AddModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onAdd: (data: PriceListFormData) => void;
+}
+
+const AddPriceListModal: React.FC<AddModalProps> = ({
+  isOpen,
+  onClose,
+  onAdd,
+}) => {
+  const initialData: PriceListFormData = {
     categoryName: "",
     effectiveFromDate: "",
     description: "",
     branchName: "",
-  });
+  };
+  const [formData, setFormData] = useState<PriceListFormData>(initialData);
 
-  const handleChange = (e) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.categoryName || !formData.effectiveFromDate) {
       alert("Please fill in Category Name and Effective From Date.");
       return;
     }
     onAdd(formData);
-    setFormData({
-      categoryName: "",
-      effectiveFromDate: "",
-      description: "",
-      branchName: "",
-    }); // Reset form
+    setFormData(initialData); // Reset form
     onClose();
   };
 
   if (!isOpen) return null;
-
-  // Filter columns for the form, excluding sNo and actions keys if they exist
-  const formFields = [
-    {
-      key: "categoryName",
-      label: "Category Name",
-      type: "text",
-      required: true,
-    },
-    {
-      key: "effectiveFromDate",
-      label: "Effective From Date",
-      type: "date",
-      required: true,
-    },
-    { key: "description", label: "Description", type: "text", required: false },
-    { key: "branchName", label: "Branch Name", type: "text", required: false },
-  ];
 
   return (
     <div
@@ -87,7 +126,7 @@ const AddPriceListModal = ({ isOpen, onClose, onAdd, formColumns }) => {
                 htmlFor={col.key}
                 className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
-                {col.label}{" "}
+                {col.label}
                 {col.required && <span className="text-red-500">*</span>}
               </label>
               <input
@@ -122,65 +161,47 @@ const AddPriceListModal = ({ isOpen, onClose, onAdd, formColumns }) => {
   );
 };
 
-// Modal component for updating an existing Price List entry
-const EditPriceListModal = ({ isOpen, onClose, rowData, onUpdate }) => {
-  // Initialize form data with rowData or empty structure if rowData is null
-  const [formData, setFormData] = useState(
-    rowData || {
-      id: null,
-      categoryName: "",
-      effectiveFromDate: "",
-      description: "",
-      branchName: "",
-    }
-  );
+interface EditModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  rowData: PriceListData | null;
+  onUpdate: (data: PriceListData) => void;
+}
 
-  // Update form data state when rowData changes (i.e., when modal opens for a new row)
+const EditPriceListModal: React.FC<EditModalProps> = ({
+  isOpen,
+  onClose,
+  rowData,
+  onUpdate,
+}) => {
+  // Use a partial structure or the actual rowData for initial state
+  const [formData, setFormData] = useState<PriceListData | {}>({});
+
+  // Update form data state when rowData changes
   useMemo(() => {
-    setFormData(
-      rowData || {
-        id: null,
-        categoryName: "",
-        effectiveFromDate: "",
-        description: "",
-        branchName: "",
-      }
-    );
+    setFormData(rowData ? { ...rowData } : {});
   }, [rowData]);
 
-  const handleChange = (e) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.categoryName || !formData.effectiveFromDate) {
+    const updatedData = formData as PriceListData;
+
+    if (!updatedData.categoryName || !updatedData.effectiveFromDate) {
       alert("Please fill in Category Name and Effective From Date.");
       return;
     }
-    onUpdate(formData);
+    onUpdate(updatedData);
     onClose();
   };
 
   if (!isOpen || !rowData) return null;
-
-  const formFields = [
-    {
-      key: "categoryName",
-      label: "Category Name",
-      type: "text",
-      required: true,
-    },
-    {
-      key: "effectiveFromDate",
-      label: "Effective From Date",
-      type: "date",
-      required: true,
-    },
-    { key: "description", label: "Description", type: "text", required: false },
-    { key: "branchName", label: "Branch Name", type: "text", required: false },
-  ];
 
   return (
     <div
@@ -204,14 +225,15 @@ const EditPriceListModal = ({ isOpen, onClose, rowData, onUpdate }) => {
                 htmlFor={col.key}
                 className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
-                {col.label}{" "}
+                {col.label}
                 {col.required && <span className="text-red-500">*</span>}
               </label>
               <input
                 id={col.key}
                 type={col.type}
                 name={col.key}
-                value={formData[col.key] || ""}
+                // Safely cast formData to PriceListData for property access
+                value={(formData as PriceListData)[col.key] || ""}
                 onChange={handleChange}
                 className="w-full p-2.5 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                 required={col.required}
@@ -239,9 +261,9 @@ const EditPriceListModal = ({ isOpen, onClose, rowData, onUpdate }) => {
   );
 };
 
-// --- 2. MOCK DATA AND LOGIC (As in the previous response) ---
+// --- 2. MOCK DATA AND LOGIC (Fixed for types) ---
 
-const initialPriceListData = [
+const initialPriceListData: PriceListData[] = [
   {
     id: 1,
     sNo: 1,
@@ -268,7 +290,7 @@ const initialPriceListData = [
   },
 ];
 
-const priceListColumns = [
+const priceListColumns: PriceListColumn[] = [
   { key: "sNo", label: "S.No.", sortable: true },
   { key: "categoryName", label: "Category Name", sortable: true },
   { key: "effectiveFromDate", label: "Effective From Date", sortable: true },
@@ -279,14 +301,18 @@ const priceListColumns = [
 const pageSizeOptions = [5, 10, 20, 50];
 const initialPageSize = 5;
 
-// Mock hook for table logic, mimicking the one from the Customer component
-const useTableLogicMock = (initialData, columns, initialSize) => {
-  const [data, setData] = useState(initialData);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [pageSize, setPageSize] = useState(initialSize);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [selectedRows, setSelectedRows] = useState([]);
-  const [sortConfig, setSortConfig] = useState({
+// Mock hook for table logic (Typed version)
+const useTableLogicMock = (
+  initialData: PriceListData[],
+  columns: PriceListColumn[],
+  initialSize: number
+) => {
+  const [data, setData] = useState<PriceListData[]>(initialData);
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [pageSize, setPageSize] = useState<number>(initialSize);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [selectedRows, setSelectedRows] = useState<number[]>([]);
+  const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: null,
     direction: "ascending",
   });
@@ -301,8 +327,11 @@ const useTableLogicMock = (initialData, columns, initialSize) => {
 
     if (sortConfig.key) {
       filteredData.sort((a, b) => {
-        const aVal = a[sortConfig.key];
-        const bVal = b[sortConfig.key];
+        // Access safely using index signature
+        const aVal = a[sortConfig.key!];
+        const bVal = b[sortConfig.key!];
+
+        if (aVal === null || bVal === null) return 0; // Handle nulls if present
 
         if (aVal < bVal) return sortConfig.direction === "ascending" ? -1 : 1;
         if (aVal > bVal) return sortConfig.direction === "ascending" ? 1 : -1;
@@ -328,7 +357,7 @@ const useTableLogicMock = (initialData, columns, initialSize) => {
   const endEntry = Math.min(sortedDataLength, currentPage * pageSize);
 
   const pageNumbers = useMemo(() => {
-    const pages = [];
+    const pages: number[] = [];
     const maxPageButtons = 5;
     const start = Math.max(1, currentPage - Math.floor(maxPageButtons / 2));
     const end = Math.min(totalPages, start + maxPageButtons - 1);
@@ -339,15 +368,15 @@ const useTableLogicMock = (initialData, columns, initialSize) => {
     return pages;
   }, [totalPages, currentPage]);
 
-  const requestSort = (key) => {
-    let direction = "ascending";
+  const requestSort = (key: keyof PriceListData) => {
+    let direction: "ascending" | "descending" = "ascending";
     if (sortConfig.key === key && sortConfig.direction === "ascending") {
       direction = "descending";
     }
     setSortConfig({ key, direction });
   };
 
-  const renderSortIndicator = (key) => {
+  const renderSortIndicator = (key: keyof PriceListData) => {
     if (sortConfig.key !== key) return null;
     return sortConfig.direction === "ascending" ? " ▲" : " ▼";
   };
@@ -376,10 +405,10 @@ const useTableLogicMock = (initialData, columns, initialSize) => {
 
 // --- 3. PRICE LIST COMPONENT ---
 
-const PriceList = () => {
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingRow, setEditingRow] = useState(null);
+const PriceList: React.FC = () => {
+  const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
+  const [editingRow, setEditingRow] = useState<PriceListData | null>(null);
 
   const {
     data,
@@ -406,9 +435,9 @@ const PriceList = () => {
     initialPageSize
   );
 
-  const isSelected = (row) => selectedRows.includes(row.id);
+  const isSelected = (row: PriceListData) => selectedRows.includes(row.id);
 
-  const handleSelectRow = (row) => {
+  const handleSelectRow = (row: PriceListData) => {
     setSelectedRows((prev) =>
       isSelected(row) ? prev.filter((id) => id !== row.id) : [...prev, row.id]
     );
@@ -429,32 +458,33 @@ const PriceList = () => {
     }
   };
 
-  const handleAddPriceList = (newPriceListData) => {
+  const handleAddPriceList = (newPriceListData: PriceListFormData) => {
     const newId = data.length > 0 ? Math.max(...data.map((d) => d.id)) + 1 : 1;
+    const newSNo = data.length + 1; // Simple sequential sNo for new entries
 
-    const newEntry = {
+    const newEntry: PriceListData = {
       ...newPriceListData,
       id: newId,
-      sNo: data.length + 1, // Simple sequential sNo for new entries
+      sNo: newSNo,
       description: newPriceListData.description || "N/A",
       branchName: newPriceListData.branchName || "N/A",
     };
     setData((prev) => [...prev, newEntry]);
   };
 
-  const handleUpdatePriceList = (updatedData) => {
+  const handleUpdatePriceList = (updatedData: PriceListData) => {
     setData((prevData) =>
       prevData.map((row) => (row.id === updatedData.id ? updatedData : row))
     );
   };
 
-  const handleOpenEditModal = (row) => {
+  const handleOpenEditModal = (row: PriceListData) => {
     // Must ensure we pass a deep copy or a new object reference
     setEditingRow({ ...row });
     setIsEditModalOpen(true);
   };
 
-  const handleDelete = (row) => {
+  const handleDelete = (row: PriceListData) => {
     if (
       window.confirm(
         `Are you sure you want to delete price list: ${row.categoryName}?`
@@ -588,11 +618,15 @@ const PriceList = () => {
                         ? "cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/80 transition duration-150"
                         : ""
                     } border-r border-dashed border-gray-300 dark:border-gray-600`}
-                    onClick={() => col.sortable && requestSort(col.key)}
+                    onClick={() =>
+                      col.sortable &&
+                      requestSort(col.key as keyof PriceListData)
+                    }
                   >
                     <span className="flex items-center whitespace-nowrap">
                       {col.label}
-                      {col.sortable && renderSortIndicator(col.key)}
+                      {col.sortable &&
+                        renderSortIndicator(col.key as keyof PriceListData)}
                     </span>
                   </th>
                 ))}
