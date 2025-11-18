@@ -1,32 +1,6 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo } from "react";
+// Only import necessary Lucide icons
 import { Search, ChevronDown, Edit3, Check, Loader2 } from "lucide-react";
-import { initializeApp, FirebaseApp } from "firebase/app";
-import {
-  getAuth,
-  signInAnonymously,
-  signInWithCustomToken,
-  onAuthStateChanged,
-  Auth,
-} from "firebase/auth";
-import {
-  getFirestore,
-  doc,
-  setDoc,
-  onSnapshot,
-  Firestore,
-  setLogLevel,
-} from "firebase/firestore";
-
-setLogLevel("error");
-
-// --- Global Variables (Provided by Canvas Environment) ---
-const appId =
-  typeof __app_id !== "undefined" ? __app_id : "default-rate-list-app";
-const firebaseConfig =
-  typeof __firebase_config !== "undefined" ? JSON.parse(__firebase_config) : {};
-const initialAuthToken =
-  typeof __initial_auth_token !== "undefined" ? __initial_auth_token : null;
-// const apiKey = ""; // Not used directly in the frontend fetch calls for Canvas
 
 // --- TYPE DEFINITIONS ---
 
@@ -58,7 +32,8 @@ interface ItemOption {
 
 interface HeaderMap {
   label: string;
-  key: keyof (SalesRateEntry | PurchaseRateEntry);
+  // Using string here to satisfy dynamic key access in table.
+  key: string;
   editable: boolean;
   isPrice: boolean;
 }
@@ -233,15 +208,9 @@ const RateListTable: React.FC<RateListTableProps> = ({
                     className="hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-100"
                   >
                     {headersMap.map((header, colIndex) => {
-                      const key = header.key as keyof RateEntry;
+                      const key = header.key;
                       const value = row[key];
                       const isEditable = isEditing && header.editable;
-
-                      const displayValue = header.isPrice
-                        ? typeof value === "number"
-                          ? value.toFixed(2)
-                          : value
-                        : value;
 
                       return (
                         <td
@@ -268,10 +237,10 @@ const RateListTable: React.FC<RateListTableProps> = ({
                                 const rawValue = e.target.value;
 
                                 if (originalIndex !== -1) {
-                                  // Pass raw value if it's an empty string, otherwise pass the number
+                                  // Pass 0 if the input is cleared, otherwise pass the number
                                   onRateChange(
                                     originalIndex,
-                                    key,
+                                    key, // key is a string here, matching the prop type
                                     rawValue === "" ? 0 : numValue
                                   );
                                 }
@@ -316,9 +285,8 @@ const RateListTable: React.FC<RateListTableProps> = ({
 
 // --- Main Page Component ---
 const UpdateListForEachItems: React.FC = () => {
-  const [db, setDb] = useState<Firestore | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [isAuthReady, setIsAuthReady] = useState<boolean>(false);
+  // --- Removed Firebase/Auth/DB State ---
+
   const [selectedItem, setSelectedItem] = useState<string>(
     availableItems[0]?.value || ""
   );
@@ -327,160 +295,35 @@ const UpdateListForEachItems: React.FC = () => {
   const [purchaseRates, setPurchaseRates] =
     useState<PurchaseRateEntry[]>(initialPurchaseData);
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // Removed isLoading state
   const [isSaving, setIsSaving] = useState<boolean>(false);
+
   const [message, setMessage] = useState<{
     text: string;
     type: "success" | "error" | "info";
   } | null>(null);
-  const [isDbInitialized, setIsDbInitialized] = useState<boolean>(false);
 
-  const actionButtonColor = "bg-[#0c5888]";
+  const actionButtonColor = isEditing
+    ? "bg-green-600 hover:bg-green-700"
+    : "bg-[#0c5888] hover:bg-blue-800";
 
-  // 1. Firebase Initialization and Authentication
-  useEffect(() => {
-    try {
-      const app: FirebaseApp = initializeApp(firebaseConfig);
-      const auth: Auth = getAuth(app);
-      const firestore: Firestore = getFirestore(app);
-      setDb(firestore);
-      setIsDbInitialized(true);
-
-      onAuthStateChanged(auth, async (user) => {
-        if (!user) {
-          try {
-            if (initialAuthToken) {
-              await signInWithCustomToken(auth, initialAuthToken);
-            } else {
-              await signInAnonymously(auth);
-            }
-          } catch (e) {
-            console.error("Authentication Error:", e);
-          }
-        }
-        setUserId(auth.currentUser?.uid || crypto.randomUUID());
-        setIsAuthReady(true);
-      });
-    } catch (e) {
-      console.error("Error initializing Firebase:", e);
-      setIsDbInitialized(false);
-      setIsAuthReady(true);
-      setIsLoading(false);
-      setMessage({
-        text: "Firebase initialization failed. Cannot save changes.",
-        type: "error",
-      });
-    }
-  }, []);
-
-  // 2. Seeding Logic (Used when a document doesn't exist)
-  const seedItemData = useCallback(
-    async (firestore: Firestore, currentUserId: string, itemSku: string) => {
-      if (!firestore || !currentUserId || !itemSku || !isDbInitialized) return;
-      const docRef = doc(
-        firestore,
-        "artifacts",
-        appId,
-        "users",
-        currentUserId,
-        "rateLists",
-        itemSku
-      );
-
-      try {
-        await setDoc(
-          docRef,
-          {
-            salesRates: initialSalesData,
-            purchaseRates: initialPurchaseData,
-            lastUpdated: new Date().toISOString(),
-          },
-          { merge: true }
-        );
-        console.log(`Data seeded for ${itemSku}`);
-        return true;
-      } catch (e) {
-        console.error("Error seeding data:", e);
-        return false;
-      }
-    },
-    [isDbInitialized]
-  );
-
-  // 3. Firestore Data Subscription (onSnapshot)
-  useEffect(() => {
-    if (!db || !isAuthReady || !userId || !selectedItem || !isDbInitialized) {
-      if (isAuthReady && !isDbInitialized) setIsLoading(false);
-      return;
-    }
-
-    const docRef = doc(
-      db,
-      "artifacts",
-      appId,
-      "users",
-      userId,
-      "rateLists",
-      selectedItem
-    );
-
-    setIsLoading(true);
-
-    const unsubscribe = onSnapshot(
-      docRef,
-      (docSnap) => {
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setSalesRates(
-            (data.salesRates as SalesRateEntry[]) || initialSalesData
-          );
-          setPurchaseRates(
-            (data.purchaseRates as PurchaseRateEntry[]) || initialPurchaseData
-          );
-          setMessage({
-            text: `Rates loaded for ${selectedItem}.`,
-            type: "info",
-          });
-        } else {
-          // If document doesn't exist, create it with initial data
-          seedItemData(db, userId, selectedItem);
-          setSalesRates(initialSalesData);
-          setPurchaseRates(initialPurchaseData);
-        }
-        setIsLoading(false);
-      },
-      (error) => {
-        console.error("Firestore onSnapshot error:", error);
-        setIsLoading(false);
-        setMessage({
-          text: "Failed to load rates. Check console for details.",
-          type: "error",
-        });
-      }
-    );
-
-    return () => unsubscribe();
-  }, [db, isAuthReady, userId, selectedItem, seedItemData, isDbInitialized]);
-
-  // 4. Rate Change Handler
+  // 1. Rate Change Handler (Generic and type-safe for local state)
   const handleRateChange = useCallback(
-    (
-      rateType: "sales" | "purchase",
+    <T extends SalesRateEntry[] | PurchaseRateEntry[]>(
+      setState: React.Dispatch<React.SetStateAction<T>>,
       rowIndex: number,
       key: string,
       value: number
     ) => {
-      const setState = rateType === "sales" ? setSalesRates : setPurchaseRates;
-
-      setState((prevRates: any) => {
-        // Find the rate entry corresponding to the row index
-        const newRates = [...prevRates];
-        // Note: rowIndex here is the index in the *current* state array,
-        // which matches the index passed from the table (since we don't paginate/sort here).
+      setState((prevRates) => {
+        // Cast the array to RateEntry[] for generic array manipulation
+        const newRates = [...(prevRates as RateEntry[])];
         if (newRates[rowIndex]) {
           newRates[rowIndex] = { ...newRates[rowIndex], [key]: value };
         }
-        return newRates;
+        // Return the new array, cast back to T
+        return newRates as T;
       });
     },
     []
@@ -488,64 +331,151 @@ const UpdateListForEachItems: React.FC = () => {
 
   const handleSalesRateChange = useCallback(
     (rowIndex: number, key: string, value: number) => {
-      handleRateChange("sales", rowIndex, key, value);
+      handleRateChange(setSalesRates, rowIndex, key, value);
     },
     [handleRateChange]
   );
 
   const handlePurchaseRateChange = useCallback(
     (rowIndex: number, key: string, value: number) => {
-      handleRateChange("purchase", rowIndex, key, value);
+      handleRateChange(setPurchaseRates, rowIndex, key, value);
     },
     [handleRateChange]
   );
 
-  // 5. Save Button Handler
+  // 2. Save Button Handler (Simulates save to local state)
   const handleSaveRates = async () => {
-    if (!db || !userId || !selectedItem || !isDbInitialized) {
-      setMessage({
-        text: "Database not connected. Changes cannot be saved.",
-        type: "error",
-      });
-      setIsEditing(false);
-      return;
-    }
-
     setIsSaving(true);
-    setMessage({ text: "Saving changes...", type: "info" });
+    setMessage({ text: "Simulating save...", type: "info" });
 
-    const docRef = doc(
-      db,
-      "artifacts",
-      appId,
-      "users",
-      userId,
-      "rateLists",
-      selectedItem
-    );
+    // Simulate API delay
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     try {
-      await setDoc(
-        docRef,
-        {
-          salesRates: salesRates,
-          purchaseRates: purchaseRates,
-          lastUpdated: new Date().toISOString(),
-        },
-        { merge: true }
-      );
+      // In a real app, API persistence would happen here.
 
       setIsEditing(false);
-      setMessage({ text: "Rates updated successfully!", type: "success" });
+      setMessage({
+        text: "Rates saved successfully (Local State)!",
+        type: "success",
+      });
     } catch (e) {
-      console.error("Error saving rates:", e);
-      setMessage({ text: "Failed to save rates.", type: "error" });
+      console.error("Simulation error:", e);
+      setMessage({
+        text: "Failed to save rates (Simulation Error).",
+        type: "error",
+      });
     } finally {
       setIsSaving(false);
     }
   };
 
-  return <></>;
+  // UI Rendering
+  return (
+    <div className="p-4 sm:p-8 max-w-4xl mx-auto bg-white dark:bg-gray-900 rounded-xl shadow-2xl min-h-screen">
+      <h1 className="text-3xl font-extrabold text-[#0c5888] dark:text-indigo-400 mb-6 border-b pb-3">
+        Item Rate List Editor 💾 (Local Mode)
+      </h1>
+
+      {/* Item Selection Dropdown */}
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center space-x-2">
+          <label className="text-gray-700 dark:text-gray-300 font-medium whitespace-nowrap">
+            Select Item:
+          </label>
+          <div className="relative inline-block text-left">
+            <select
+              value={selectedItem}
+              onChange={(e) => setSelectedItem(e.target.value)}
+              className="appearance-none block w-full bg-gray-50 border border-gray-300 dark:border-gray-700 dark:bg-gray-700 dark:text-white text-sm px-4 py-2 pr-8 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150"
+              disabled={isSaving || isEditing}
+            >
+              {availableItems.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex space-x-3">
+          {isEditing ? (
+            <button
+              onClick={handleSaveRates}
+              className={`flex items-center px-4 py-2 text-white font-semibold rounded-lg shadow-md transition duration-200 ${actionButtonColor} ${
+                isSaving ? "opacity-70 cursor-not-allowed" : ""
+              }`}
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Check className="mr-2 h-4 w-4" />
+              )}
+              {isSaving ? "Saving..." : "Save Changes"}
+            </button>
+          ) : (
+            <button
+              onClick={() => setIsEditing(true)}
+              className={`flex items-center px-4 py-2 text-white font-semibold rounded-lg shadow-md transition duration-200 ${actionButtonColor} ${
+                isSaving ? "opacity-70 cursor-not-allowed" : ""
+              }`}
+              disabled={isSaving}
+            >
+              <Edit3 className="mr-2 h-4 w-4" />
+              Edit Rates
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Loading/Message Display */}
+      {message && (
+        <div
+          className={`p-3 mb-4 rounded-lg text-sm font-medium ${
+            message.type === "success"
+              ? "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100"
+              : message.type === "error"
+              ? "bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100"
+              : "bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100"
+          }`}
+        >
+          {message.text}
+        </div>
+      )}
+
+      {/* Content Area */}
+      {/* Removed loading check since data is instant */}
+      <div className="space-y-10">
+        {/* Sales Rate Table */}
+        <RateListTable
+          title="Sales Rate Lists"
+          headersMap={salesHeadersMap}
+          data={salesRates}
+          isEditing={isEditing}
+          onRateChange={handleSalesRateChange}
+        />
+
+        {/* Purchase Rate Table */}
+        <RateListTable
+          title="Purchase Rate Lists"
+          headersMap={purchaseHeadersMap}
+          data={purchaseRates}
+          isEditing={isEditing}
+          onRateChange={handlePurchaseRateChange}
+        />
+      </div>
+
+      {/* Footer / Status */}
+      <div className="mt-12 pt-4 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
+        **Status:** Local State Only. Changes are **not persisted** outside this
+        session.
+      </div>
+    </div>
+  );
 };
 
 export default UpdateListForEachItems;

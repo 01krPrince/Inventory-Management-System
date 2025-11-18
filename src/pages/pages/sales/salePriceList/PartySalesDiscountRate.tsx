@@ -22,7 +22,6 @@ interface DiscountRateData {
   rate: string;
   effectiveFrom: string;
   effectiveTo: string;
-  [key: string]: string | number; // Index signature for dynamic access in logic hook/table
 }
 
 interface DiscountRateColumn {
@@ -82,7 +81,6 @@ const initialPageSize = 5;
 // Mock hook for table logic
 const useTableLogicMock = (
   initialData: DiscountRateData[],
-  columns: DiscountRateColumn[],
   initialSize: number
 ) => {
   const [data, setData] = useState<DiscountRateData[]>(initialData);
@@ -105,8 +103,9 @@ const useTableLogicMock = (
 
     if (sortConfig.key) {
       filteredData.sort((a, b) => {
-        const aVal = a[sortConfig.key!];
-        const bVal = b[sortConfig.key!];
+        const sortKey = sortConfig.key!;
+        const aVal = a[sortKey];
+        const bVal = b[sortKey];
 
         if (aVal < bVal) return sortConfig.direction === "ascending" ? -1 : 1;
         if (aVal > bVal) return sortConfig.direction === "ascending" ? 1 : -1;
@@ -426,11 +425,7 @@ export default function PartySalesDiscountRate() {
     pageNumbers,
     requestSort,
     renderSortIndicator,
-  } = useTableLogicMock(
-    initialDiscountRatesData,
-    discountRateColumns,
-    initialPageSize
-  );
+  } = useTableLogicMock(initialDiscountRatesData, initialPageSize);
 
   const isSelected = (row: DiscountRateData) => selectedRows.includes(row.id);
 
@@ -455,18 +450,15 @@ export default function PartySalesDiscountRate() {
     }
   };
 
+  // Line 463:
   const handleAddDiscount = (newDiscountData: DiscountRateFormData) => {
     const newId = data.length > 0 ? Math.max(...data.map((d) => d.id)) + 1 : 1;
-
+    const rateString = String(newDiscountData.rate);
     const newEntry: DiscountRateData = {
       ...newDiscountData,
       id: newId,
-      sNo: data.length + 1,
-      // Ensure rate is formatted with % if missing
-      rate: newDiscountData.rate.endsWith("%")
-        ? newDiscountData.rate
-        : `${newDiscountData.rate}%`,
-      // Set 'Effective To' to 'N/A' if left empty
+      sNo: data.length + 1, // Ensure rate is formatted with % if missing, using the string version
+      rate: rateString.endsWith("%") ? rateString : `${rateString}%`, // Set 'Effective To' to 'N/A' if left empty
       effectiveTo: newDiscountData.effectiveTo || "N/A",
     };
     setData((prev) => [...prev, newEntry]);

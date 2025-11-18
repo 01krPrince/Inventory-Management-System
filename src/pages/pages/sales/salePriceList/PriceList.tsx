@@ -22,7 +22,6 @@ interface PriceListData {
   effectiveFromDate: string;
   description: string;
   branchName: string;
-  [key: string]: string | number | null; // Index signature for dynamic access
 }
 
 interface PriceListColumn {
@@ -133,7 +132,7 @@ const AddPriceListModal: React.FC<AddModalProps> = ({
                 id={col.key}
                 type={col.type}
                 name={col.key}
-                value={formData[col.key] || ""}
+                value={formData[col.key as keyof PriceListFormData] || ""}
                 onChange={handleChange}
                 className="w-full p-2.5 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                 required={col.required}
@@ -232,9 +231,8 @@ const EditPriceListModal: React.FC<EditModalProps> = ({
                 id={col.key}
                 type={col.type}
                 name={col.key}
-                // Safely cast formData to PriceListData for property access
-                value={(formData as PriceListData)[col.key] || ""}
                 onChange={handleChange}
+                value={(formData as PriceListData)[col.key] || ""}
                 className="w-full p-2.5 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                 required={col.required}
               />

@@ -1,33 +1,8 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { Search, ChevronDown, Edit3, Check, Loader2 } from "lucide-react";
-import { initializeApp, FirebaseApp } from "firebase/app";
-import {
-  getAuth,
-  signInAnonymously,
-  signInWithCustomToken,
-  onAuthStateChanged,
-  Auth,
-} from "firebase/auth";
-import {
-  getFirestore,
-  doc,
-  setDoc,
-  onSnapshot,
-  Firestore,
-  setLogLevel,
-} from "firebase/firestore";
+// Removed all Firebase imports
 
-setLogLevel("error");
-
-// --- Global Variables (Provided by Canvas Environment) ---
-// Accessing globals via typeof check to satisfy TypeScript
-const appId =
-  typeof __app_id !== "undefined" ? __app_id : "default-rate-list-app";
-const firebaseConfig =
-  typeof __firebase_config !== "undefined" ? JSON.parse(__firebase_config) : {};
-const initialAuthToken =
-  typeof __initial_auth_token !== "undefined" ? __initial_auth_token : null;
-// Removed unused 'apiKey' variable (TS6133 fix)
+// --- Global Variable Declarations (Removed Firebase-specific globals) ---
 
 // --- TYPE DEFINITIONS ---
 
@@ -58,8 +33,8 @@ interface ItemOption {
 }
 
 interface HeaderMap {
-  label: string;
   key: keyof (SalesRateEntry | PurchaseRateEntry);
+  label: string;
   editable: boolean;
   isPrice: boolean;
 }
@@ -69,7 +44,6 @@ interface RateListTableProps {
   headersMap: HeaderMap[];
   data: RateEntry[];
   isEditing: boolean;
-  // FIX TS2322: onRateChange must strictly pass a number value for price fields
   onRateChange: (rowIndex: number, key: string, value: number) => void;
 }
 
@@ -239,12 +213,6 @@ const RateListTable: React.FC<RateListTableProps> = ({
                       const value = row[key];
                       const isEditable = isEditing && header.editable;
 
-                      const displayValue = header.isPrice
-                        ? typeof value === "number"
-                          ? value.toFixed(2)
-                          : value
-                        : value;
-
                       return (
                         <td
                           key={colIndex}
@@ -267,14 +235,12 @@ const RateListTable: React.FC<RateListTableProps> = ({
                               }
                               onChange={(e) => {
                                 const numValue = parseFloat(e.target.value);
-                                const rawValue = e.target.value;
 
                                 if (originalIndex !== -1) {
                                   // Pass 0 if the input is cleared, otherwise pass the parsed number
                                   onRateChange(
                                     originalIndex,
-                                    key,
-                                    // Use || 0 to default to zero if NaN (or empty string is passed to parseFloat)
+                                    key as string,
                                     !isNaN(numValue) ? numValue : 0
                                   );
                                 }
@@ -319,9 +285,7 @@ const RateListTable: React.FC<RateListTableProps> = ({
 
 // --- Main Page Component ---
 const UpdateListForEachItems: React.FC = () => {
-  const [db, setDb] = useState<Firestore | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [isAuthReady, setIsAuthReady] = useState<boolean>(false);
+  // Removed db, userId, isAuthReady, isDbInitialized state
   const [selectedItem, setSelectedItem] = useState<string>(
     availableItems[0]?.value || ""
   );
@@ -330,169 +294,37 @@ const UpdateListForEachItems: React.FC = () => {
   const [purchaseRates, setPurchaseRates] =
     useState<PurchaseRateEntry[]>(initialPurchaseData);
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  // Removed isLoading state (since data loads immediately from local state)
   const [message, setMessage] = useState<{
     text: string;
     type: "success" | "error" | "info";
   } | null>(null);
-  const [isDbInitialized, setIsDbInitialized] = useState<boolean>(false);
 
   const actionButtonColor = "bg-[#0c5888]";
 
-  // 1. Firebase Initialization and Authentication
-  useEffect(() => {
-    try {
-      const app: FirebaseApp = initializeApp(firebaseConfig);
-      const auth: Auth = getAuth(app);
-      const firestore: Firestore = getFirestore(app);
-      setDb(firestore);
-      setIsDbInitialized(true);
+  // 1. Initialization and Data Loading (Replaced by local state initialization)
+  // Removed useEffect for Firebase initialization and onSnapshot subscription
 
-      onAuthStateChanged(auth, async (user) => {
-        if (!user) {
-          try {
-            if (initialAuthToken) {
-              await signInWithCustomToken(auth, initialAuthToken);
-            } else {
-              await signInAnonymously(auth);
-            }
-          } catch (e) {
-            console.error("Authentication Error:", e);
-          }
-        }
-        setUserId(auth.currentUser?.uid || crypto.randomUUID());
-        setIsAuthReady(true);
-      });
-    } catch (e) {
-      console.error("Error initializing Firebase:", e);
-      setIsDbInitialized(false);
-      setIsAuthReady(true);
-      setIsLoading(false);
-      setMessage({
-        text: "Firebase initialization failed. Cannot save changes.",
-        type: "error",
-      });
-    }
-  }, []);
+  // Use a local variable to simulate loading/auth completion
+  const isReady = true;
 
-  // 2. Seeding Logic (Used when a document doesn't exist)
-  const seedItemData = useCallback(
-    async (firestore: Firestore, currentUserId: string, itemSku: string) => {
-      if (!firestore || !currentUserId || !itemSku || !isDbInitialized) return;
-      const docRef = doc(
-        firestore,
-        "artifacts",
-        appId,
-        "users",
-        currentUserId,
-        "rateLists",
-        itemSku
-      );
-
-      try {
-        await setDoc(
-          docRef,
-          {
-            salesRates: initialSalesData,
-            purchaseRates: initialPurchaseData,
-            lastUpdated: new Date().toISOString(),
-          },
-          { merge: true }
-        );
-        console.log(`Data seeded for ${itemSku}`);
-        return true;
-      } catch (e) {
-        console.error("Error seeding data:", e);
-        return false;
-      }
-    },
-    [isDbInitialized]
-  );
-
-  // 3. Firestore Data Subscription (onSnapshot)
-  useEffect(() => {
-    if (!db || !isAuthReady || !userId || !selectedItem || !isDbInitialized) {
-      if (isAuthReady && !isDbInitialized) setIsLoading(false);
-      return;
-    }
-
-    const docRef = doc(
-      db,
-      "artifacts",
-      appId,
-      "users",
-      userId,
-      "rateLists",
-      selectedItem
-    );
-
-    setIsLoading(true);
-
-    const unsubscribe = onSnapshot(
-      docRef,
-      (docSnap) => {
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setSalesRates(
-            (data.salesRates as SalesRateEntry[]) || initialSalesData
-          );
-          setPurchaseRates(
-            (data.purchaseRates as PurchaseRateEntry[]) || initialPurchaseData
-          );
-          setMessage({
-            text: `Rates loaded for ${selectedItem}.`,
-            type: "info",
-          });
-        } else {
-          // If document doesn't exist, create it with initial data
-          seedItemData(db, userId, selectedItem);
-          setSalesRates(initialSalesData);
-          setPurchaseRates(initialPurchaseData);
-        }
-        setIsLoading(false);
-      },
-      (error) => {
-        console.error("Firestore onSnapshot error:", error);
-        setIsLoading(false);
-        setMessage({
-          text: "Failed to load rates. Check console for details.",
-          type: "error",
-        });
-      }
-    );
-
-    return () => unsubscribe();
-  }, [db, isAuthReady, userId, selectedItem, seedItemData, isDbInitialized]);
-
-  // 4. Rate Change Handler
+  // 2. Rate Change Handler (FIX: Simplified generic handler)
   const handleRateChange = useCallback(
-    (
-      rateType: "sales" | "purchase",
+    <T extends SalesRateEntry[] | PurchaseRateEntry[]>(
+      setState: React.Dispatch<React.SetStateAction<T>>,
       rowIndex: number,
       key: string,
       value: number
     ) => {
-      // FIX TS7006: Explicitly type setState using React.Dispatch<React.SetStateAction<...>>
-      const setState: React.Dispatch<
-        React.SetStateAction<SalesRateEntry[] | PurchaseRateEntry[]>
-      > =
-        rateType === "sales"
-          ? (setSalesRates as React.Dispatch<
-              React.SetStateAction<SalesRateEntry[]>
-            >)
-          : (setPurchaseRates as React.Dispatch<
-              React.SetStateAction<PurchaseRateEntry[]>
-            >);
-
       setState((prevRates) => {
-        // Find the rate entry corresponding to the row index
-        // The type assertion ensures we can treat prevRates as an array of RateEntry during the mapping.
-        const newRates = [...prevRates] as RateEntry[];
+        // Cast the array to RateEntry[] for generic array manipulation
+        const newRates = [...(prevRates as RateEntry[])];
         if (newRates[rowIndex]) {
           newRates[rowIndex] = { ...newRates[rowIndex], [key]: value };
         }
-        return newRates as any; // Cast back to satisfy useState's specific array type (SalesRateEntry[] or PurchaseRateEntry[])
+        // Return the new array, cast back to T (the precise type, e.g., SalesRateEntry[])
+        return newRates as T;
       });
     },
     []
@@ -500,55 +332,38 @@ const UpdateListForEachItems: React.FC = () => {
 
   const handleSalesRateChange = useCallback(
     (rowIndex: number, key: string, value: number) => {
-      handleRateChange("sales", rowIndex, key, value);
+      handleRateChange(setSalesRates, rowIndex, key, value);
     },
     [handleRateChange]
   );
 
   const handlePurchaseRateChange = useCallback(
     (rowIndex: number, key: string, value: number) => {
-      handleRateChange("purchase", rowIndex, key, value);
+      handleRateChange(setPurchaseRates, rowIndex, key, value);
     },
     [handleRateChange]
   );
 
-  // 5. Save Button Handler
+  // 3. Save Button Handler (Now simulates saving with setTimeout)
   const handleSaveRates = async () => {
-    if (!db || !userId || !selectedItem || !isDbInitialized) {
-      setMessage({
-        text: "Database not connected. Changes cannot be saved.",
-        type: "error",
-      });
-      setIsEditing(false);
-      return;
-    }
-
     setIsSaving(true);
-    setMessage({ text: "Saving changes...", type: "info" });
+    setMessage({ text: "Simulating save to local state...", type: "info" });
 
-    const docRef = doc(
-      db,
-      "artifacts",
-      appId,
-      "users",
-      userId,
-      "rateLists",
-      selectedItem
-    );
+    // Simulate API delay
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     try {
-      await setDoc(
-        docRef,
-        {
-          salesRates: salesRates,
-          purchaseRates: purchaseRates,
-          lastUpdated: new Date().toISOString(),
-        },
-        { merge: true }
-      );
+      // Logic for saving would typically go here (e.g., API call)
+
+      // Since persistence is removed, we just confirm the local state update.
+      console.log("State updated locally. Sales Rates:", salesRates);
+      console.log("State updated locally. Purchase Rates:", purchaseRates);
 
       setIsEditing(false);
-      setMessage({ text: "Rates updated successfully!", type: "success" });
+      setMessage({
+        text: "Rates updated successfully (Local State)!",
+        type: "success",
+      });
     } catch (e) {
       console.error("Error saving rates:", e);
       setMessage({ text: "Failed to save rates.", type: "error" });
@@ -557,25 +372,18 @@ const UpdateListForEachItems: React.FC = () => {
     }
   };
 
-  // 6. User ID Display
-  const UidDisplay = useMemo(
-    () => (
-      <div className="absolute top-2 right-2 text-xs text-gray-400 dark:text-gray-600">
-        User ID: {userId || "Authenticating..."}
-      </div>
-    ),
-    [userId]
-  );
+  // 4. User ID Display (Removed since authentication is gone)
+  const UidDisplay = null; // Replaced with null
 
   return (
     <div className="p-4 md:p-8 bg-gray-50 dark:bg-gray-900 min-h-screen relative font-sans">
       {UidDisplay}
       <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-2">
-        Inventory Rate Manager
+        Inventory Rate Manager (Local State)
       </h1>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-        View and edit item rates per rate list. Changes are saved to
-        **Firestore** under your user ID, guaranteeing real-time updates.
+        View and edit item rates per rate list. Changes are stored in **local
+        React state** only and are **not persisted**.
       </p>
       {message && (
         <div
@@ -604,7 +412,7 @@ const UpdateListForEachItems: React.FC = () => {
               value={selectedItem}
               onChange={(e) => setSelectedItem(e.target.value)}
               className="appearance-none w-full py-2 pl-3 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition duration-150"
-              disabled={isLoading || isSaving || isEditing}
+              disabled={isSaving || isEditing}
             >
               {availableItems.map((item) => (
                 <option key={item.value} value={item.value}>
@@ -618,7 +426,7 @@ const UpdateListForEachItems: React.FC = () => {
         <div className="flex space-x-3 w-full sm:w-auto">
           <button
             onClick={() => setIsEditing(true)}
-            disabled={isEditing || isLoading || isSaving}
+            disabled={isEditing || isSaving}
             className={`${
               isEditing ? "bg-gray-400 cursor-not-allowed" : actionButtonColor
             } text-white p-2 rounded-lg transition duration-150 flex items-center justify-center shadow-md hover:shadow-lg disabled:opacity-50`}
@@ -628,11 +436,9 @@ const UpdateListForEachItems: React.FC = () => {
           </button>
           <button
             onClick={handleSaveRates}
-            disabled={!isEditing || isLoading || isSaving || !isDbInitialized}
+            disabled={!isEditing || isSaving}
             className={`${
-              !isEditing || !isDbInitialized
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-green-600"
+              !isEditing ? "bg-gray-400 cursor-not-allowed" : "bg-green-600"
             } text-white px-4 py-2 rounded-lg transition duration-150 flex items-center space-x-1 shadow-md hover:bg-green-700 disabled:opacity-50`}
             title="Save Changes"
           >
@@ -650,7 +456,7 @@ const UpdateListForEachItems: React.FC = () => {
           </button>
         </div>
       </div>
-      {isLoading && (
+      {!isReady && ( // Using isReady instead of isLoading, though now always true.
         <div className="flex items-center justify-center p-10 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
           <Loader2 className="h-8 w-8 text-blue-500 animate-spin mr-3" />
           <span className="text-xl text-gray-700 dark:text-gray-300">
@@ -658,7 +464,7 @@ const UpdateListForEachItems: React.FC = () => {
           </span>
         </div>
       )}
-      {!isLoading && (
+      {isReady && (
         <>
           <RateListTable
             title="Sales Rate List"

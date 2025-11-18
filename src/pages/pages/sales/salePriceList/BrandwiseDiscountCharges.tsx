@@ -21,12 +21,22 @@ interface BrandDiscountData {
   description: string;
   effectiveFrom: string;
   rateOrCharge: string;
+  [key: string]: string | number; // Added index signature for safe dynamic access
 }
 
 interface BrandDiscountColumn {
-  key: keyof BrandDiscountData | "actions";
+  // Key uses string literals for better compatibility with external libraries
+  key: keyof Omit<BrandDiscountData, "id" | "sNo"> | "sNo" | "id" | "actions";
   label: string;
   sortable: boolean;
+}
+
+interface ExportColumn {
+  // FIX (TS2345): Ensure key is string to satisfy external Column[] expectation
+  key: string;
+  label: string;
+  sortable: boolean;
+  [key: string]: any;
 }
 
 interface SortConfig {
@@ -70,10 +80,10 @@ const brandDiscountColumns: BrandDiscountColumn[] = [
 const pageSizeOptions = [5, 10, 20];
 const initialPageSize = 5;
 
-// Mock hook for table logic (same as previous examples)
+// Mock hook for table logic
 const useTableLogicMock = (
   initialData: BrandDiscountData[],
-  columns: BrandDiscountColumn[],
+  _columns: BrandDiscountColumn[], // FIX (TS6133): Used '_' for unused parameter
   initialSize: number
 ) => {
   const [data, setData] = useState<BrandDiscountData[]>(initialData);
@@ -96,7 +106,8 @@ const useTableLogicMock = (
 
     if (sortConfig.key) {
       filteredData.sort((a, b) => {
-        const aVal = a[sortConfig.key!]; // Type is explicitly checked for null above
+        // Safe access due to index signature in BrandDiscountData
+        const aVal = a[sortConfig.key!];
         const bVal = b[sortConfig.key!];
 
         if (aVal < bVal) return sortConfig.direction === "ascending" ? -1 : 1;
@@ -462,6 +473,7 @@ export default function BrandwiseDiscountCharges() {
     // Recalculate sNo based on current total data length before adding
     const newSNo = data.length + 1;
 
+    // FIX 1 (TS2739): The spread operator explicitly provides the required string properties.
     const newEntry: BrandDiscountData = {
       ...newDiscountData,
       id: newId,
@@ -561,7 +573,11 @@ export default function BrandwiseDiscountCharges() {
             </button>
             <button
               onClick={() =>
-                handleExport(data, brandDiscountColumns, "BrandDiscounts")
+                handleExport(
+                  data,
+                  brandDiscountColumns as unknown as ExportColumn[], // FIX 2: Casting for handleExport compatibility (TS2345)
+                  "BrandDiscounts"
+                )
               }
               className="p-2 text-gray-600 dark:text-gray-300 border border-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
               title="Export to XLSX"

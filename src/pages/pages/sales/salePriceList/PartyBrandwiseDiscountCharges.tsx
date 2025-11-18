@@ -21,17 +21,30 @@ interface PartyBrandData {
   partyBrandName: string;
   description: string;
   effectiveFrom: string;
-  [key: string]: string | number; // Index signature for dynamic access in logic hook
+  // This index signature is necessary for dynamic column access in useTableLogic
+  // It allows accessing properties like a[sortConfig.key!]
+  [key: string]: string | number;
 }
 
-interface PartyBrandColumn {
-  key: keyof Omit<PartyBrandData, "id">;
+// Define a generic Column interface that uses the full PartyBrandData key set
+interface Column<T> {
+  key: keyof T; // Key is now keyof T (which is PartyBrandData)
   label: string;
   sortable: boolean;
 }
 
-interface SortConfig {
-  key: keyof PartyBrandData | null;
+// Define the specific columns type based on the generic Column
+type PartyBrandColumn = Column<PartyBrandData>;
+
+// FIX: Define ExportColumn with a string key for compatibility with handleExport (TS2345)
+interface ExportColumn {
+  key: string;
+  label: string;
+  sortable: boolean;
+  [key: string]: any;
+}
+interface SortConfig<T> {
+  key: keyof T | null;
   direction: "ascending" | "descending";
 }
 
@@ -61,6 +74,7 @@ const initialPartyBrandData: PartyBrandData[] = [
   },
 ];
 
+// The type is PartyBrandColumn[] now using the corrected type definition
 const partyBrandColumns: PartyBrandColumn[] = [
   { key: "sNo", label: "S.No.", sortable: true },
   { key: "partyBrandName", label: "Party/Brand", sortable: true },
@@ -71,18 +85,18 @@ const partyBrandColumns: PartyBrandColumn[] = [
 const pageSizeOptions = [5, 10, 20];
 const initialPageSize = 5;
 
-// Mock hook for table logic
-const useTableLogic = (
-  initialData: PartyBrandData[],
-  columns: PartyBrandColumn[],
+// Mock hook for table logic - use generic types for better reusability and type safety
+const useTableLogic = <T extends PartyBrandData>( // Constraint T to extend PartyBrandData
+  initialData: T[],
+  // columns: PartyBrandColumn[], // <- Removed to fix TS6133
   initialSize: number
 ) => {
-  const [data, setData] = useState<PartyBrandData[]>(initialData);
+  const [data, setData] = useState<T[]>(initialData);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [pageSize, setPageSize] = useState<number>(initialSize);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
-  const [sortConfig, setSortConfig] = useState<SortConfig>({
+  const [sortConfig, setSortConfig] = useState<SortConfig<T>>({
     key: null,
     direction: "ascending",
   });
@@ -90,6 +104,7 @@ const useTableLogic = (
   const sortedAndFilteredData = useMemo(() => {
     let sortableData = [...data];
     let filteredData = sortableData.filter((item) =>
+      // Use the index signature to allow checking all values
       Object.values(item).some((val) =>
         String(val).toLowerCase().includes(searchTerm.toLowerCase())
       )
@@ -98,8 +113,8 @@ const useTableLogic = (
     if (sortConfig.key) {
       filteredData.sort((a, b) => {
         // Safe access due to index signature in PartyBrandData
-        const aVal = a[sortConfig.key!];
-        const bVal = b[sortConfig.key!];
+        const aVal = a[sortConfig.key! as keyof PartyBrandData]; // Added explicit cast to PartyBrandData key
+        const bVal = b[sortConfig.key! as keyof PartyBrandData]; // Added explicit cast to PartyBrandData key
 
         if (aVal < bVal) return sortConfig.direction === "ascending" ? -1 : 1;
         if (aVal > bVal) return sortConfig.direction === "ascending" ? 1 : -1;
@@ -136,15 +151,15 @@ const useTableLogic = (
     return pages;
   }, [totalPages, currentPage]);
 
-  const requestSort = (key: keyof PartyBrandData) => {
+  const requestSort = (key: keyof T) => {
     let direction: "ascending" | "descending" = "ascending";
     if (sortConfig.key === key && sortConfig.direction === "ascending") {
       direction = "descending";
     }
-    setSortConfig({ key, direction });
+    setSortConfig({ key, direction } as SortConfig<T>); // Cast required for `key: keyof T` in requestSort
   };
 
-  const renderSortIndicator = (key: keyof PartyBrandData) => {
+  const renderSortIndicator = (key: keyof T) => {
     if (sortConfig.key !== key) return null;
     return sortConfig.direction === "ascending" ? " ▲" : " ▼";
   };
@@ -216,6 +231,7 @@ const AddPartyBrandModal: React.FC<AddModalProps> = ({
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
+      // Cast 'name' to the correct key type
       [name]: value,
     }));
   };
@@ -296,6 +312,7 @@ const AddPartyBrandModal: React.FC<AddModalProps> = ({
   );
 };
 
+// Removed conflicting BrandDiscountData definition here
 interface EditModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -309,23 +326,28 @@ const EditPartyBrandModal: React.FC<EditModalProps> = ({
   rowData,
   onUpdate,
 }) => {
-  // Use PartyBrandData | {} for initial state to handle the case when rowData is null
-  const [formData, setFormData] = useState<PartyBrandData | {}>({});
+  // Use PartyBrandData | null for initial state, and ensure the state type is PartyBrandData
+  const [formData, setFormData] = useState<PartyBrandData | null>(null);
 
   // Sync formData with rowData when it changes
   useMemo(() => {
-    setFormData(rowData ? { ...rowData } : {});
+    setFormData(rowData ? { ...rowData } : null);
   }, [rowData]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    // Safely update state only if formData is not null
+    if (formData) {
+      setFormData((prev) => ({ ...prev!, [name]: value }));
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData) return; // Should not happen if !isOpen || !rowData check passes
+
     const updatedData = formData as PartyBrandData;
 
     if (
@@ -342,7 +364,7 @@ const EditPartyBrandModal: React.FC<EditModalProps> = ({
     onClose();
   };
 
-  if (!isOpen || !rowData) return null;
+  if (!isOpen || !rowData || !formData) return null; // Check for formData too
 
   return (
     <div
@@ -373,11 +395,11 @@ const EditPartyBrandModal: React.FC<EditModalProps> = ({
                 id={col.key}
                 type={col.type}
                 name={col.key}
-                // Safely cast formData to PartyBrandData before accessing property
+                // formData is guaranteed to be PartyBrandData here
                 value={
-                  (formData as PartyBrandData)[
-                    col.key as keyof PartyBrandData
-                  ] || ""
+                  (formData[
+                    col.key as keyof PartyBrandData // Safe to cast as keyof PartyBrandData
+                  ] as string) || "" // Explicitly cast value access to string
                 }
                 onChange={handleChange}
                 className="w-full p-2.5 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
@@ -432,7 +454,7 @@ export default function PartyBrandwiseDiscountCharges() {
     pageNumbers,
     requestSort,
     renderSortIndicator,
-  } = useTableLogic(initialPartyBrandData, partyBrandColumns, initialPageSize);
+  } = useTableLogic(initialPartyBrandData, initialPageSize);
 
   const isSelected = (row: PartyBrandData) => selectedRows.includes(row.id);
 
@@ -462,11 +484,13 @@ export default function PartyBrandwiseDiscountCharges() {
     // sNo is calculated based on current length, assuming a non-deleted list or simply an incremental number.
     const newSNo = data.length + 1;
 
+    // FIX: Cast the entire spread result to PartyBrandData.
     const newEntry: PartyBrandData = {
-      ...newDiscountData,
+      ...(newDiscountData as PartyBrandData), // Treat newDiscountData as if it includes the required fields
       id: newId,
       sNo: newSNo,
-    };
+    } as PartyBrandData; // Final cast ensures object is seen as complete
+
     setData((prev) => [...prev, newEntry]);
   };
 
@@ -556,8 +580,13 @@ export default function PartyBrandwiseDiscountCharges() {
               <PrintIcon className="size-5" />
             </button>
             <button
+              // FIX 2 (TS2345): Casting for handleExport compatibility
               onClick={() =>
-                handleExport(data, partyBrandColumns, "PartyBrandDiscounts")
+                handleExport(
+                  data,
+                  partyBrandColumns as unknown as ExportColumn[],
+                  "PartyBrandDiscounts"
+                )
               }
               className="p-2 text-gray-600 dark:text-gray-300 border border-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
               title="Export to XLSX"
@@ -603,10 +632,11 @@ export default function PartyBrandwiseDiscountCharges() {
                     onChange={handleSelectAll}
                   />
                 </th>
+
                 {/* Data Columns */}
                 {partyBrandColumns.map((col) => (
                   <th
-                    key={col.key}
+                    key={col.key as string} // Cast to string for React key
                     className={`p-4 relative whitespace-nowrap ${
                       col.sortable
                         ? "cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/80 transition duration-150"
@@ -652,15 +682,17 @@ export default function PartyBrandwiseDiscountCharges() {
                         onChange={() => handleSelectRow(row)}
                       />
                     </td>
+
                     {/* Data Cells */}
                     {partyBrandColumns.map((col) => (
                       <td
-                        key={col.key}
+                        key={col.key as string}
                         className="p-4 whitespace-nowrap overflow-hidden text-ellipsis border-r border-gray-200 dark:border-gray-700"
                       >
                         {row[col.key]}
                       </td>
                     ))}
+
                     {/* Actions Cell */}
                     <td
                       className="p-4 text-center space-x-2 whitespace-nowrap no-print border-r border-gray-200 dark:border-gray-700"

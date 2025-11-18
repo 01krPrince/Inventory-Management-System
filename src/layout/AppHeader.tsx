@@ -1,8 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
 
-const Link = ({ children }: { children: React.ReactNode }) => (
-  <a href="">{children}</a>
-);
 const ThemeToggleButton = () => null;
 const NotificationDropdown = () => null;
 

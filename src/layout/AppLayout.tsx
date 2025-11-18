@@ -97,7 +97,10 @@ const LayoutContent: React.FC = () => {
         {/* Sidebar and Backdrop are likely already positioned correctly (fixed/absolute) 
             to overlay content, but keeping them here for structural reference. */}
         <div>
-          <AppSidebar addTab={addTab} activeTabPath={activeTabPath} />
+          <AppSidebar
+            addTab={addTab as (item: any) => void}
+            activeTabPath={activeTabPath}
+          />
           <Backdrop />
         </div>
 

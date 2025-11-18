@@ -28,7 +28,7 @@ const inactiveLinkClasses =
 
 interface NavItem {
   name: string;
-  path: string;
+  path?: string;
   icon?: React.ReactElement;
   subItems?: NavItem[];
   nestedItems?: NavItem[];
@@ -250,8 +250,8 @@ const SidebarLink: React.FC<SidebarLinkProps> = React.memo(
           {item.icon &&
             React.cloneElement(item.icon, {
               className: `w-5 h-5 ${isActive ? "text-white" : "text-current"}`,
-            })}
-          <span className="text-xs mt-1 truncate max-w-full">{item.name}</span> 
+            } as React.HTMLAttributes<HTMLElement>)}
+          <span className="text-xs mt-1 truncate max-w-full">{item.name}</span>
           {hasSubItems && (
             <ChevronRightIcon
               className={`absolute right-1 w-3 h-3 ${
@@ -321,11 +321,11 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             {allItems.map((item) => (
               <SidebarLink
                 key={item.name}
-                item={item}
-                onClick={handleLinkClick}
-                isActive={isMainLinkActive(item)}
-                addTab={addTab}
-                onCloseFlyout={handleCloseFlyout}
+                item={item} // Passes the current navigation item data
+                onClick={handleLinkClick} // Passes the click handler
+                isActive={isMainLinkActive(item)} // Calculates if this specific item is active
+                addTab={addTab} // Passes the function to open a new tab
+                onCloseFlyout={handleCloseFlyout} // Passes the function to close the flyout
               />
             ))}
           </nav>

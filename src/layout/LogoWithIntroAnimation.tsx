@@ -1,7 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 
-import logo from "../../public/logo.jpg";
+import logo from "../assets/logo.jpg";
 
 const Header: React.FC = () => {
   return (
