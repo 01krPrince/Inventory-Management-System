@@ -30,44 +30,11 @@ const ComponentMap: { [key: string]: React.FC } = {
   "/party-brandwise-discount-charges": PartyBrandwiseDiscountCharges,
   "/update-price-for-single-item": UpdateListForEachItems,
   "/update-barcode-rate": UpdateBarcodeRate,
-  "/estimate": () => (
-    <div className="p-6 mt-6 bg-white dark:bg-gray-700 rounded-lg shadow-md">
-      🧾 Estimate Generator - It just a sample page
-    </div>
-  ),
-  "/calendar": () => (
-    <div className="p-6 mt-6 bg-white dark:bg-gray-700 rounded-lg shadow-md">
-      📅 Calendar View Component - It just a sample page
-    </div>
-  ),
-  "/profile": () => (
-    <div className="p-6 mt-6 bg-white dark:bg-gray-700 rounded-lg shadow-md">
-      ⚙️ User Profile Settings - It just a sample page
-    </div>
-  ),
-  "/form-elements": () => (
-    <div className="p-6 mt-6 bg-white dark:bg-gray-700 rounded-lg shadow-md">
-      📄 Form Elements View - It just a sample page
-    </div>
-  ),
-  "/basic-tables": () => (
-    <div className="p-6 mt-6 bg-white dark:bg-gray-700 rounded-lg shadow-md">
-      📊 Basic Tables View - It just a sample page
-    </div>
-  ),
-  "/blank": () => (
-    <div className="p-6 mt-6 bg-white dark:bg-gray-700 rounded-lg shadow-md">
-      🔲 Blank Page View - It just a sample page
-    </div>
-  ),
-  "/error-404": () => (
-    <div className="p-6 mt-6 bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 rounded-lg">
-      ⚠️ 404 Error Page - It just a sample page
-    </div>
-  ),
   "/fallback": () => (
-    <div className="p-6 mt-6 bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 rounded-lg">
-      ❗ Component not found for this tab path.
+    <div className="p-6 mt-6 bg-gray-100 dark:bg-gray-800 rounded-lg shadow text-center">
+      <p className="text-gray-600 dark:text-gray-300 font-medium">
+        This page is currently not available.
+      </p>
     </div>
   ),
 };

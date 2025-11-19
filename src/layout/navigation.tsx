@@ -398,7 +398,7 @@ export const navItems = [
         path: "/production-assembling",
         pro: false,
       },
-      { name: "Disassembling", path: "/disassembling", pro: false },
+      { name: "Dis Assembling", path: "/dis-assembling", pro: false },
       {
         name: "Issue Request From Production Floor",
         path: "/issue-request-from-production-floor",
@@ -456,8 +456,8 @@ export const navItems = [
         pro: false,
         nestedItems: [
           {
-            name: "Employee Leave",
-            path: "/employee-leave",
+            name: "Employee Leave Master",
+            path: "/employee-leave-master",
             pro: false,
           },
           {
