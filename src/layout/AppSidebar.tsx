@@ -1,9 +1,8 @@
 import React, { useCallback, useEffect, useState, useRef } from "react";
-import { allItems } from "./navigation"; // Assuming this file exists and exports navigation data
-import { ChevronRightIcon } from "../components/icons"; // Assuming this is the correct path for the icon
-import LogoWithIntroAnimation from "./LogoWithIntroAnimation"; // Assuming this component exists
+import { allItems } from "./navigation";
+import { ChevronRightIcon } from "../components/icons";
+import LogoWithIntroAnimation from "./LogoWithIntroAnimation";
 
-// Helper function to determine if any item/subitem is active
 const findActiveItemPath = (items: any[] = [], activePath: string): boolean => {
   for (const item of items) {
     if (item.path === activePath) return true;
@@ -21,14 +20,12 @@ const findActiveItemPath = (items: any[] = [], activePath: string): boolean => {
   return false;
 };
 
-// --- CSS Constants ---
 const baseLinkClasses =
   "flex items-center text-sm px-3 py-2 rounded-md transition-colors duration-200 w-full";
 const primaryColorClass = "bg-[#0c5888] text-white shadow-md";
 const inactiveLinkClasses =
   "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700";
 
-// --- Interface Definitions ---
 interface NavItem {
   name: string;
   path?: string;
@@ -36,10 +33,6 @@ interface NavItem {
   subItems?: NavItem[];
   nestedItems?: NavItem[];
 }
-
-// =========================================================================================
-// LEVEL 3: NESTED LINK (Leaf Node)
-// =========================================================================================
 
 const NestedLink = React.memo(
   ({
@@ -274,7 +267,7 @@ const FlyoutBox: React.FC<FlyoutBoxProps> = ({
 
 // =========================================================================================
 // WRAPPER: FLYOUT WRAPPER (MODIFIED)
-// Manages the conditional close behavior based on whether it was click-opened.
+// Enforces click-to-open behavior from Level 1.
 // =========================================================================================
 
 interface FlyoutWrapperProps {
@@ -285,7 +278,7 @@ interface FlyoutWrapperProps {
   onCloseFlyout: () => void;
   addTab: (item: NavItem) => void;
   activeTabPath: string;
-  isClickOpened: boolean; // New prop
+  isClickOpened: boolean; // Kept in interface to avoid errors from parent
 }
 
 const FlyoutWrapper: React.FC<FlyoutWrapperProps> = ({
@@ -293,7 +286,7 @@ const FlyoutWrapper: React.FC<FlyoutWrapperProps> = ({
   onCloseFlyout,
   addTab,
   activeTabPath,
-  isClickOpened, // Destructure new prop
+  // isClickOpened, <--- REMOVED: unused variable causing TS error
 }) => {
   const [activeNestedFlyout, setActiveNestedFlyout] = useState<{
     item: NavItem & { nestedItems: NavItem[] };
@@ -301,6 +294,17 @@ const FlyoutWrapper: React.FC<FlyoutWrapperProps> = ({
   } | null>(null);
 
   const wrapperRef = useRef<HTMLDivElement>(null);
+
+  // -------------------------------------------------------------------------
+  // FIX APPLIED HERE:
+  // When the parent flyout (activeFlyout) changes, we MUST reset the
+  // nested flyout state. Otherwise, switching from Tab C to Tab A keeps
+  // Tab C's nested sub-items active.
+  // -------------------------------------------------------------------------
+  useEffect(() => {
+    setActiveNestedFlyout(null);
+  }, [activeFlyout]);
+  // -------------------------------------------------------------------------
 
   const handleSubItemHover = useCallback(
     ({ item, bounds }: { item: NavItem; bounds: DOMRect }) => {
@@ -317,18 +321,19 @@ const FlyoutWrapper: React.FC<FlyoutWrapperProps> = ({
     []
   );
 
-  // MODIFIED: Only close the flyout on mouse leave if it was NOT opened by a click.
+  // MODIFIED: Since SidebarLink now only opens the flyout via click,
+  // we rely on handleClickOutside to close the main flyout.
+  // This handler is simplified to only close the nested (Level 3) flyout on mouse leave.
   const handleWrapperMouseLeave = useCallback(() => {
-    if (!isClickOpened) {
-      setActiveNestedFlyout(null); // Close nested flyout
-      onCloseFlyout(); // Close main flyout
-    }
-  }, [onCloseFlyout, isClickOpened]);
+    // Only close the Level 3 nested flyout. The main flyout stays open.
+    setActiveNestedFlyout(null);
+  }, []);
 
   useEffect(() => {
     // This effect handles clicks *outside* the entire wrapper (main flyout + nested flyout)
     const handleClickOutside = (event: MouseEvent) => {
       if (
+        activeFlyout &&
         wrapperRef.current &&
         !wrapperRef.current.contains(event.target as Node) &&
         (event.target as HTMLElement).closest("aside") === null // Make sure not clicking sidebar
@@ -338,7 +343,7 @@ const FlyoutWrapper: React.FC<FlyoutWrapperProps> = ({
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [onCloseFlyout]);
+  }, [onCloseFlyout, activeFlyout]);
 
   if (!activeFlyout) return null; // Don't render if no main flyout is active
 
@@ -346,11 +351,13 @@ const FlyoutWrapper: React.FC<FlyoutWrapperProps> = ({
     // The wrapper div covers the area where both flyouts can appear
     <div
       className="absolute top-0 left-0"
-      onMouseLeave={handleWrapperMouseLeave} // Conditionally functional based on isClickOpened
+      onMouseLeave={handleWrapperMouseLeave} // Now only closes the Level 3 flyout
       ref={wrapperRef}
     >
       {/* The main FlyoutBox */}
+      {/* Added KEY to ensure complete re-render when switching parent tabs */}
       <FlyoutBox
+        key={activeFlyout.item.name}
         item={activeFlyout.item}
         parentBounds={activeFlyout.bounds}
         onClose={onCloseFlyout}
@@ -376,7 +383,7 @@ const FlyoutWrapper: React.FC<FlyoutWrapperProps> = ({
 
 // =========================================================================================
 // LEVEL 1: SIDEBAR LINK (MODIFIED)
-// Added a flag to indicate if the menu was opened by a click.
+// REMOVED HOVER FUNCTIONALITY: Only click opens the flyout.
 // =========================================================================================
 
 interface SidebarLinkProps {
@@ -396,7 +403,7 @@ const SidebarLink: React.FC<SidebarLinkProps> = React.memo(
       if (!linkRef.current) return;
 
       if (hasSubItems) {
-        // Pass the isClick: true flag
+        // Flyout only opens on click, so we pass isClick: true
         const bounds = linkRef.current.getBoundingClientRect();
         onClick({ item, bounds, isClick: true });
       } else if (item.path) {
@@ -405,17 +412,11 @@ const SidebarLink: React.FC<SidebarLinkProps> = React.memo(
       }
     };
 
-    const handleMouseEnter = () => {
-      if (!linkRef.current || !hasSubItems) return;
-
-      // We can also trigger the flyout on mouse enter for hover functionality.
-      // Pass the isClick: false flag
-      const bounds = linkRef.current.getBoundingClientRect();
-      onClick({ item, bounds, isClick: false });
-    };
+    // --- REMOVED handleMouseEnter FUNCTION ---
 
     return (
-      <li className="mb-1" onMouseEnter={handleMouseEnter}>
+      // --- REMOVED onMouseEnter={handleMouseEnter} PROP ---
+      <li className="mb-1">
         <button
           ref={linkRef}
           onClick={handleClick}
@@ -442,8 +443,7 @@ const SidebarLink: React.FC<SidebarLinkProps> = React.memo(
 );
 
 // =========================================================================================
-// MAIN COMPONENT: APP SIDEBAR (MODIFIED)
-// State management for click/hover opening.
+// MAIN COMPONENT: APP SIDEBAR
 // =========================================================================================
 
 interface AppSidebarProps {
@@ -484,6 +484,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
           bounds,
         });
         // Set the mode of opening
+        // Since SidebarLink only calls this with isClick: true, isClickOpened will be true here
         setIsClickOpened(isClick);
       }
     },

@@ -1,160 +1,89 @@
-import React, {
-  useState,
-  useRef,
-  useCallback,
-  Dispatch,
-  SetStateAction,
-  useEffect,
-  useMemo,
-} from "react";
-
-// --- MOCK IMPORTS FOR RUNNABILITY ---
+import React, { useState, useMemo } from "react";
+// Assuming these imports exist in your project structure
 import {
+  PrintIcon,
   PlusIcon,
   TrashIcon,
   EditIcon,
   SearchIcon,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react";
+  ExportIcon,
+} from "../../../../components/icons";
 
 import {
   handlePrint,
   handleExport,
-} from "../../../components/function/functions";
-
-import { PrintIcon, ExportIcon } from "../../../components/icons";
+} from "../../../../components/function/functions";
 
 // --- TYPE DEFINITIONS ---
-interface Employee {
-  user: string;
-  position: string;
-  office: string;
-  age: number;
-  startDate: string;
-  salary: string;
+interface BarcodeRateData {
   id: number;
-  [key: string]: any;
+  sNo: number;
+  itemName: string;
+  barcode: string;
+  rate: string;
+  effectiveFrom: string;
 }
 
-export type DataItem = Employee;
-export interface Column {
-  key: string;
+interface BarcodeRateColumn {
+  key: keyof Omit<BarcodeRateData, "id">;
   label: string;
-  sortable?: boolean;
-  type?: string;
-  required?: boolean;
+  sortable: boolean;
 }
 
 interface SortConfig {
-  key: keyof DataItem | null;
+  key: keyof BarcodeRateData | null;
   direction: "ascending" | "descending";
 }
 
-interface NewCustomerData {
-  user: string;
-  position: string;
-  office: string;
-  age: string;
-  startDate: string;
-  salary: string;
-  [key: string]: string;
-}
+// Define the shape for the form data
+type BarcodeRateFormData = Omit<BarcodeRateData, "id" | "sNo">;
 
-interface AddCustomerModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onAdd: (newCustomerData: NewCustomerData) => void;
-}
+// --- 1. MOCK DATA AND COLUMN DEFINITIONS ---
 
-interface EditCustomerModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  rowData: DataItem | null;
-  onUpdate: (updatedData: DataItem) => void;
-}
-
-interface ResizableHeaderProps {
-  col: Column;
-  requestSort: (key: keyof DataItem) => void;
-  renderSortIndicator: (key: keyof DataItem) => React.JSX.Element | null;
-  setColumnWidths: Dispatch<SetStateAction<Record<string, number | undefined>>>;
-  columnWidths: Record<string, number | undefined>;
-  onDragStart: (key: keyof DataItem) => void;
-  onDragOver: (key: keyof DataItem) => void;
-  onDrop: (draggedKey: keyof DataItem, droppedOverKey: keyof DataItem) => void;
-  columnIndex: number;
-}
-
-// --- MOCK DATA AND COLUMN DEFINITIONS ---
-
-const initialEmployeeData: DataItem[] = [
+const initialBarcodeRatesData: BarcodeRateData[] = [
   {
-    user: "Abram Schleifer",
-    position: "Sales Assistant",
-    office: "Edinburgh",
-    age: 57,
-    startDate: "25 Apr, 2027",
-    salary: "$89,500",
     id: 1,
+    sNo: 1,
+    itemName: "Super Mild Shampoo 200ml",
+    barcode: "8901234567890",
+    rate: "120.00",
+    effectiveFrom: "2024-06-01",
   },
   {
-    user: "Charlotte Anderson",
-    position: "Marketing Manager",
-    office: "London",
-    age: 42,
-    startDate: "12 Mar, 2025",
-    salary: "$105,000",
     id: 2,
+    sNo: 2,
+    itemName: "Classic Earl Grey Tea",
+    barcode: "8909876543210",
+    rate: "450.00",
+    effectiveFrom: "2024-07-15",
   },
   {
-    user: "Ethan Brown",
-    position: "Software Engineer",
-    office: "San Francisco",
-    age: 30,
-    startDate: "01 Jan, 2024",
-    salary: "$120,000",
     id: 3,
+    sNo: 3,
+    itemName: "Almond Milk 1L",
+    barcode: "8901122334455",
+    rate: "299.00",
+    effectiveFrom: "2024-01-01",
   },
 ];
 
-const employeeColumns: Column[] = [
-  { key: "user", label: "User", sortable: true },
-  { key: "position", label: "Position", sortable: true },
-  { key: "office", label: "Office", sortable: true },
-  { key: "age", label: "Age", sortable: true, type: "number" },
-  { key: "startDate", label: "Start Date", sortable: true },
-  { key: "salary", label: "Salary", sortable: true },
-];
-
-const formColumns: Column[] = [
-  { key: "user", label: "User", type: "text", required: true },
-  { key: "position", label: "Position", type: "text", required: true },
-  { key: "office", label: "Office", type: "text", required: false },
-  { key: "age", label: "Age", type: "number", required: false },
-  {
-    key: "startDate",
-    label: "Start Date (e.g., 01 Jan, 2024)",
-    type: "text",
-    required: false,
-  },
-  {
-    key: "salary",
-    label: "Salary (e.g., $100,000)",
-    type: "text",
-    required: false,
-  },
+const barcodeRateColumns: BarcodeRateColumn[] = [
+  { key: "sNo", label: "S.No.", sortable: true },
+  { key: "itemName", label: "Item Name", sortable: true },
+  { key: "barcode", label: "Barcode", sortable: true },
+  { key: "rate", label: "Rate (₹)", sortable: true },
+  { key: "effectiveFrom", label: "Effective From", sortable: true },
 ];
 
 const pageSizeOptions = [5, 10, 20, 50];
-const initialPageSize = 5;
+const initialPageSize = 10;
 
-// --- CUSTOMER TABLE LOGIC HOOK ---
-const useCustomerTableLogic = (
-  initialData: DataItem[],
+// Mock hook for table logic (Reused Logic)
+const useTableLogicMock = (
+  initialData: BarcodeRateData[],
   initialSize: number
 ) => {
-  const [data, setData] = useState<DataItem[]>(initialData);
+  const [data, setData] = useState<BarcodeRateData[]>(initialData);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [pageSize, setPageSize] = useState<number>(initialSize);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -163,10 +92,6 @@ const useCustomerTableLogic = (
     key: null,
     direction: "ascending",
   });
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, pageSize, data.length]);
 
   const sortedAndFilteredData = useMemo(() => {
     let sortableData = [...data];
@@ -199,14 +124,6 @@ const useCustomerTableLogic = (
     return sortedAndFilteredData.slice(start, end);
   }, [sortedAndFilteredData, currentPage, pageSize]);
 
-  useEffect(() => {
-    if (currentPage > totalPages && totalPages > 0) {
-      setCurrentPage(totalPages);
-    } else if (currentPage === 0 && totalPages > 0) {
-      setCurrentPage(1);
-    }
-  }, [totalPages, currentPage]);
-
   const startEntry = Math.min(
     sortedDataLength,
     (currentPage - 1) * pageSize + 1
@@ -216,12 +133,8 @@ const useCustomerTableLogic = (
   const pageNumbers = useMemo(() => {
     const pages: number[] = [];
     const maxPageButtons = 5;
-    let start = Math.max(1, currentPage - Math.floor(maxPageButtons / 2));
-    let end = Math.min(totalPages, start + maxPageButtons - 1);
-
-    if (end - start + 1 < maxPageButtons) {
-      start = Math.max(1, end - maxPageButtons + 1);
-    }
+    const start = Math.max(1, currentPage - Math.floor(maxPageButtons / 2));
+    const end = Math.min(totalPages, start + maxPageButtons - 1);
 
     for (let i = start; i <= end; i++) {
       pages.push(i);
@@ -229,7 +142,7 @@ const useCustomerTableLogic = (
     return pages;
   }, [totalPages, currentPage]);
 
-  const requestSort = (key: keyof DataItem) => {
+  const requestSort = (key: keyof BarcodeRateData) => {
     let direction: "ascending" | "descending" = "ascending";
     if (sortConfig.key === key && sortConfig.direction === "ascending") {
       direction = "descending";
@@ -237,13 +150,9 @@ const useCustomerTableLogic = (
     setSortConfig({ key, direction });
   };
 
-  const renderSortIndicator = (key: keyof DataItem) => {
+  const renderSortIndicator = (key: keyof BarcodeRateData) => {
     if (sortConfig.key !== key) return null;
-    return sortConfig.direction === "ascending" ? (
-      <ChevronUp className="size-3 ml-1" />
-    ) : (
-      <ChevronDown className="size-3 ml-1" />
-    );
+    return sortConfig.direction === "ascending" ? " ▲" : " ▼";
   };
 
   return {
@@ -268,37 +177,65 @@ const useCustomerTableLogic = (
   };
 };
 
-// --- Modals (omitted for brevity, assume imported or defined as above) ---
+// --- 2. MODAL COMPONENTS (ADD & EDIT) ---
 
-const AddEmployeeModal = ({
+// Define fields for the forms
+const barcodeFormFields = [
+  { key: "itemName", label: "Item Name", type: "text", required: true },
+  { key: "barcode", label: "Barcode Number", type: "text", required: true },
+  { key: "rate", label: "New Rate", type: "number", required: true },
+  {
+    key: "effectiveFrom",
+    label: "Effective From Date",
+    type: "date",
+    required: true,
+  },
+];
+
+interface AddModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onAdd: (data: BarcodeRateFormData) => void;
+}
+
+const AddBarcodeRateModal: React.FC<AddModalProps> = ({
   isOpen,
   onClose,
   onAdd,
-}: AddCustomerModalProps) => {
-  const initialData: NewCustomerData = {
-    user: "",
-    position: "",
-    office: "",
-    age: "",
-    startDate: "",
-    salary: "",
+}) => {
+  const initialData: BarcodeRateFormData = {
+    itemName: "",
+    barcode: "",
+    rate: "",
+    effectiveFrom: "",
   };
-  const [formData, setFormData] = useState<NewCustomerData>(initialData);
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [formData, setFormData] = useState<BarcodeRateFormData>(initialData);
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData((prev: NewCustomerData) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.user || !formData.position) {
-      alert("Please fill in User and Position.");
+    if (
+      !formData.itemName ||
+      !formData.rate ||
+      !formData.effectiveFrom ||
+      !formData.barcode
+    ) {
+      alert("Please fill in all required fields.");
       return;
     }
     onAdd(formData);
-    setFormData(initialData);
+    setFormData(initialData); // Reset form
     onClose();
   };
+
   if (!isOpen) return null;
+
   return (
     <div
       className="fixed inset-0 z-50 overflow-y-auto bg-gray-900 bg-opacity-70 flex items-center justify-center backdrop-blur-sm p-4"
@@ -309,26 +246,26 @@ const AddEmployeeModal = ({
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-2xl font-semibold mb-6 text-gray-900 dark:text-white border-b pb-2 border-gray-100 dark:border-gray-700">
-          Add New Employee
+          Create New Barcode Rate
         </h2>
         <form
           onSubmit={handleSubmit}
           className="grid grid-cols-1 md:grid-cols-2 gap-4"
         >
-          {formColumns.map((col: Column) => (
-            <div key={col.key as string} className="col-span-1">
+          {barcodeFormFields.map((col) => (
+            <div key={col.key} className="col-span-1">
               <label
-                htmlFor={col.key as string}
+                htmlFor={col.key}
                 className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
                 {col.label}
                 {col.required && <span className="text-red-500">*</span>}
               </label>
               <input
-                id={col.key as string}
-                type={col.type || "text"}
-                name={col.key as string}
-                value={String(formData[col.key as keyof NewCustomerData])}
+                id={col.key}
+                type={col.type}
+                name={col.key}
+                value={formData[col.key as keyof BarcodeRateFormData] || ""}
                 onChange={handleChange}
                 className="w-full p-2.5 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                 required={col.required}
@@ -347,7 +284,7 @@ const AddEmployeeModal = ({
               type="submit"
               className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
             >
-              Add Employee
+              Add Rate
             </button>
           </div>
         </form>
@@ -355,35 +292,53 @@ const AddEmployeeModal = ({
     </div>
   );
 };
-const EditEmployeeModal: React.FC<EditCustomerModalProps> = ({
+
+interface EditModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  rowData: BarcodeRateData | null;
+  onUpdate: (data: BarcodeRateData) => void;
+}
+
+const EditBarcodeRateModal: React.FC<EditModalProps> = ({
   isOpen,
   onClose,
   rowData,
   onUpdate,
 }) => {
-  const [formData, setFormData] = useState<DataItem | null>(rowData);
-  useEffect(() => {
-    setFormData(rowData ? { ...rowData } : null);
+  const [formData, setFormData] = useState<BarcodeRateData | {}>({});
+
+  // Sync formData with rowData when it changes
+  useMemo(() => {
+    setFormData(rowData ? { ...rowData } : {});
   }, [rowData]);
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
-    if (formData) {
-      setFormData((prev) => ({
-        ...prev!,
-        [name]: name === "age" ? parseInt(value) || 0 : value,
-      }));
-    }
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData || !formData.user || !formData.position) {
-      alert("User and Position are required fields.");
+    const updatedData = formData as BarcodeRateData;
+
+    if (
+      !updatedData.itemName ||
+      !updatedData.rate ||
+      !updatedData.barcode ||
+      !updatedData.effectiveFrom
+    ) {
+      alert("Please fill in all required fields.");
       return;
     }
-    onUpdate(formData);
+    onUpdate(updatedData);
     onClose();
   };
-  if (!isOpen || !formData) return null;
+
+  if (!isOpen || !rowData) return null;
+
   return (
     <div
       className="fixed inset-0 z-50 overflow-y-auto bg-gray-900 bg-opacity-70 flex items-center justify-center backdrop-blur-sm p-4"
@@ -394,30 +349,33 @@ const EditEmployeeModal: React.FC<EditCustomerModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-2xl font-semibold mb-6 text-gray-900 dark:text-white border-b pb-2 border-gray-100 dark:border-gray-700">
-          Edit Employee: {formData.user}
+          Edit Barcode Rate: {rowData?.itemName}
         </h2>
         <form
           onSubmit={handleSubmit}
           className="grid grid-cols-1 md:grid-cols-2 gap-4"
         >
-          {formColumns.map((col: Column) => (
-            <div key={col.key as string} className="col-span-1">
+          {barcodeFormFields.map((col) => (
+            <div key={col.key} className="col-span-1">
               <label
-                htmlFor={col.key as string}
+                htmlFor={col.key}
                 className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
                 {col.label}
                 {col.required && <span className="text-red-500">*</span>}
               </label>
               <input
-                id={col.key as string}
-                type={col.type || "text"}
-                name={col.key as string}
-                value={String(formData[col.key] || "")}
+                id={col.key}
+                type={col.type}
+                name={col.key}
+                value={
+                  (formData as BarcodeRateData)[
+                    col.key as keyof BarcodeRateData
+                  ] || ""
+                }
                 onChange={handleChange}
                 className="w-full p-2.5 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                 required={col.required}
-                disabled={col.key === "id"}
               />
             </div>
           ))}
@@ -433,7 +391,7 @@ const EditEmployeeModal: React.FC<EditCustomerModalProps> = ({
               type="submit"
               className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
             >
-              Update Employee
+              Update Rate
             </button>
           </div>
         </form>
@@ -441,124 +399,13 @@ const EditEmployeeModal: React.FC<EditCustomerModalProps> = ({
     </div>
   );
 };
-const ResizableHeader = ({
-  col,
-  requestSort,
-  renderSortIndicator,
-  setColumnWidths,
-  columnWidths,
-  onDragStart,
-  onDragOver,
-  onDrop,
-}: ResizableHeaderProps) => {
-  const thRef = useRef<HTMLTableHeaderCellElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const style = {
-    width: columnWidths[col.key as string]
-      ? `${columnWidths[col.key as string]}px`
-      : undefined,
-    minWidth: "100px",
-  };
-  const startResizing = useCallback(
-    (mouseDownEvent: React.MouseEvent<HTMLDivElement>) => {
-      mouseDownEvent.stopPropagation();
-      mouseDownEvent.preventDefault();
-      const startX = mouseDownEvent.clientX;
-      if (!thRef.current) return;
-      const initialWidth = thRef.current.offsetWidth;
-      const doResizing = (mouseMoveEvent: MouseEvent) => {
-        const widthDelta = mouseMoveEvent.clientX - startX;
-        const newWidth = Math.max(initialWidth + widthDelta, 100);
-        setColumnWidths((prev: Record<string, number | undefined>) => ({
-          ...prev,
-          [col.key as string]: newWidth,
-        }));
-      };
-      const stopResizing = () => {
-        window.removeEventListener("mousemove", doResizing);
-        window.removeEventListener("mouseup", stopResizing);
-      };
-      window.addEventListener("mousemove", doResizing);
-      window.addEventListener("mouseup", stopResizing);
-    },
-    [col.key, setColumnWidths]
-  );
-  const handleHeaderClick = () => {
-    if (col.sortable) {
-      requestSort(col.key);
-    }
-  };
-  const handleDragStart = (e: React.DragEvent<HTMLTableHeaderCellElement>) => {
-    if (
-      e.target instanceof HTMLElement &&
-      e.target.className.includes("cursor-col-resize")
-    )
-      return;
-    e.dataTransfer.setData("text/plain", col.key as string);
-    setIsDragging(true);
-    onDragStart(col.key);
-  };
-  const handleDragEnd = () => {
-    setIsDragging(false);
-  };
-  const handleDragOver = (e: React.DragEvent<HTMLTableHeaderCellElement>) => {
-    if (
-      e.target instanceof HTMLElement &&
-      e.target.className.includes("cursor-col-resize")
-    )
-      return;
-    e.preventDefault();
-    onDragOver(col.key);
-  };
-  const handleDrop = (e: React.DragEvent<HTMLTableHeaderCellElement>) => {
-    e.preventDefault();
-    const draggedColKey = e.dataTransfer.getData(
-      "text/plain"
-    ) as keyof DataItem;
-    onDrop(draggedColKey, col.key);
-  };
-  return (
-    <th
-      ref={thRef}
-      key={col.key as string}
-      draggable={true}
-      onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
-      onDragEnd={handleDragEnd}
-      className={`p-4 relative cursor-move ${
-        col.sortable
-          ? "hover:bg-gray-100 dark:hover:bg-gray-700/80 transition duration-150"
-          : ""
-      } ${
-        isDragging ? "opacity-50 border-blue-500 border-2" : ""
-      } border-r border-dashed border-gray-300 dark:border-gray-600`}
-      onClick={handleHeaderClick}
-      style={style}
-    >
-      <span className="flex items-center whitespace-nowrap pointer-events-none">
-        {col.label} {col.sortable && renderSortIndicator(col.key)}
-      </span>
-      <div
-        className="absolute top-0 right-0 h-full w-2 cursor-col-resize z-20 opacity-0 hover:opacity-100 transition duration-150 bg-transparent hover:bg-blue-400 dark:hover:bg-blue-600"
-        onMouseDown={startResizing}
-        onClick={(e) => e.stopPropagation()}
-      />
-    </th>
-  );
-};
 
-// --- EmployeeDirectory Component ---
-export default function EmployeeDirectory() {
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingRow, setEditingRow] = useState<DataItem | null>(null);
-  const [columnWidths, setColumnWidths] = useState<
-    Record<string, number | undefined>
-  >({});
+// --- 3. MAIN COMPONENT ---
 
-  const [currentColumns, setCurrentColumns] =
-    useState<Column[]>(employeeColumns);
+export default function UpdateBarcodeRate() {
+  const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
+  const [editingRow, setEditingRow] = useState<BarcodeRateData | null>(null);
 
   const {
     data,
@@ -579,126 +426,60 @@ export default function EmployeeDirectory() {
     pageNumbers,
     requestSort,
     renderSortIndicator,
-  } = useCustomerTableLogic(initialEmployeeData, initialPageSize);
+  } = useTableLogicMock(initialBarcodeRatesData, initialPageSize);
 
-  // --- Drag & Drop Handlers (Type-checked) ---
-  const handleDragStart = useCallback(() => {
-    // FIX: Using state/ref for drag tracking is common, but here we'll simplify.
-    // The key is passed directly in ResizableHeader onDragStart
-  }, []);
+  const isSelected = (row: BarcodeRateData) => selectedRows.includes(row.id);
 
-  const handleDragOver = useCallback(() => {
-    // FIX: Simplified the drag over logic to just be a no-op since it's only needed for drag detection
-  }, []);
-
-  const handleDrop = useCallback(
-    (draggedKey: keyof DataItem, droppedOverKey: keyof DataItem) => {
-      if (!draggedKey || !droppedOverKey) return;
-
-      const draggedColIndex = currentColumns.findIndex(
-        (col) => col.key === draggedKey
-      );
-      const droppedOverIndex = currentColumns.findIndex(
-        (col) => col.key === droppedOverKey
-      );
-
-      if (
-        draggedColIndex === -1 ||
-        droppedOverIndex === -1 ||
-        draggedColIndex === droppedOverIndex
-      ) {
-        return;
-      }
-
-      const newColumns = [...currentColumns];
-      const [draggedItem] = newColumns.splice(draggedColIndex, 1);
-      newColumns.splice(droppedOverIndex, 0, draggedItem);
-
-      setCurrentColumns(newColumns);
-    },
-    [currentColumns]
-  );
-
-  // --- Data Handlers ---
-  const isSelected = (row: DataItem) => selectedRows.includes(row.id);
-
-  const handleSelectRow = (row: DataItem) => {
-    setSelectedRows((prev: number[]) =>
-      isSelected(row)
-        ? prev.filter((id: number) => id !== row.id)
-        : [...prev, row.id]
+  const handleSelectRow = (row: BarcodeRateData) => {
+    setSelectedRows((prev) =>
+      isSelected(row) ? prev.filter((id) => id !== row.id) : [...prev, row.id]
     );
   };
 
   const handleSelectAll = () => {
-    const allIdsOnPage = paginatedData.map((row: DataItem) => row.id);
-    const areAllSelected = allIdsOnPage.every((id: number) =>
+    const allIdsOnPage = paginatedData.map((row) => row.id);
+    const areAllSelected = allIdsOnPage.every((id) =>
       selectedRows.includes(id)
     );
 
     if (areAllSelected) {
-      setSelectedRows((prev: number[]) =>
-        prev.filter((id: number) => !allIdsOnPage.includes(id))
+      setSelectedRows((prev) =>
+        prev.filter((id) => !allIdsOnPage.includes(id))
       );
     } else {
-      setSelectedRows((prev: number[]) => [
-        ...new Set([...prev, ...allIdsOnPage]),
-      ]);
+      setSelectedRows((prev) => [...new Set([...prev, ...allIdsOnPage])]);
     }
   };
 
-  const handleAddCustomer = (newCustomerData: NewCustomerData) => {
-    const newId =
-      data.length > 0 ? Math.max(...data.map((d: DataItem) => d.id)) + 1 : 1;
-    const today = new Date()
-      .toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
-      .replace(/ /g, ", ");
-
-    const newEmployee: DataItem = {
+  const handleAddBarcodeRate = (newData: BarcodeRateFormData) => {
+    const newId = data.length > 0 ? Math.max(...data.map((d) => d.id)) + 1 : 1;
+    const newEntry: BarcodeRateData = {
+      ...newData,
       id: newId,
-      user: newCustomerData.user,
-      position: newCustomerData.position,
-      office: newCustomerData.office || "N/A",
-      age: parseInt(newCustomerData.age) || 0,
-      startDate: newCustomerData.startDate || today,
-      salary: newCustomerData.salary || "$0",
+      sNo: data.length + 1,
     };
-
-    setData((prev: DataItem[]) => [...prev, newEmployee]);
+    setData((prev) => [...prev, newEntry]);
   };
 
-  const handleUpdateCustomer = (updatedData: DataItem) => {
-    const cleanedData: DataItem = {
-      ...updatedData,
-      age: parseInt(String(updatedData.age)) || 0,
-    };
-
-    setData((prevData: DataItem[]) =>
-      prevData.map((row: DataItem) =>
-        row.id === updatedData.id ? cleanedData : row
-      )
+  const handleUpdateBarcodeRate = (updatedData: BarcodeRateData) => {
+    setData((prevData) =>
+      prevData.map((row) => (row.id === updatedData.id ? updatedData : row))
     );
   };
 
-  const handleOpenEditModal = (row: DataItem) => {
-    setEditingRow(row);
+  const handleOpenEditModal = (row: BarcodeRateData) => {
+    setEditingRow({ ...row }); // Pass a clone to isolate modal state
     setIsEditModalOpen(true);
   };
 
-  const handleDelete = (user: DataItem) => {
+  const handleDelete = (row: BarcodeRateData) => {
     if (
-      window.confirm(`Are you sure you want to delete Employee: ${user.user}?`)
+      window.confirm(
+        `Are you sure you want to delete rate for: ${row.itemName}?`
+      )
     ) {
-      setData((prev: DataItem[]) =>
-        prev.filter((u: DataItem) => u.id !== user.id)
-      );
-      setSelectedRows((prev: number[]) =>
-        prev.filter((id: number) => id !== user.id)
-      );
+      setData((prev) => prev.filter((u) => u.id !== row.id));
+      setSelectedRows((prev) => prev.filter((id) => id !== row.id));
     }
   };
 
@@ -707,26 +488,32 @@ export default function EmployeeDirectory() {
       alert("Please select at least one row to delete.");
       return;
     }
-
     if (
       window.confirm(
         `Are you sure you want to delete ${selectedRows.length} selected row(s)?`
       )
     ) {
-      setData((prev: DataItem[]) =>
-        prev.filter((u: DataItem) => !selectedRows.includes(u.id))
-      );
+      setData((prev) => prev.filter((u) => !selectedRows.includes(u.id)));
       setSelectedRows([]);
     }
   };
 
   const areAllOnPageSelected =
     paginatedData.length > 0 &&
-    paginatedData.every((row: DataItem) => selectedRows.includes(row.id));
+    paginatedData.every((row) => selectedRows.includes(row.id));
 
   return (
     <>
       <div className="bg-white p-6 rounded-xl shadow-lg dark:bg-gray-800 border border-gray-200 dark:border-gray-700 w-full">
+        {/* <div className="mb-4">
+          <h1 className="text-xl font-bold text-gray-800 dark:text-white">
+            Update Barcode Rate
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Manage item rates and barcodes.
+          </p>
+        </div> */}
+
         {/* Control Panel */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 space-y-4 md:space-y-0">
           <div className="flex items-center space-x-4">
@@ -735,12 +522,10 @@ export default function EmployeeDirectory() {
               Show
               <select
                 value={pageSize}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                  setPageSize(Number(e.target.value))
-                }
+                onChange={(e) => setPageSize(Number(e.target.value))}
                 className="mx-2 p-1 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 dark:text-white appearance-none cursor-pointer"
               >
-                {pageSizeOptions.map((option: number) => (
+                {pageSizeOptions.map((option) => (
                   <option key={option} value={option}>
                     {option}
                   </option>
@@ -764,20 +549,19 @@ export default function EmployeeDirectory() {
           <div className="flex items-center space-x-3 w-full md:w-auto justify-end">
             <button
               onClick={() =>
-                handlePrint("printable-table", "Employee Directory")
+                handlePrint("barcode-rate-table", "Update Barcode Rate")
               }
               className="p-2 text-gray-600 dark:text-gray-300 border border-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
               title="Print Table"
             >
               <PrintIcon className="size-5" />
             </button>
-
             <button
               onClick={() =>
-                handleExport(data, currentColumns, "EmployeeDirectory")
+                handleExport(data, barcodeRateColumns, "BarcodeRates")
               }
               className="p-2 text-gray-600 dark:text-gray-300 border border-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-              title="Export to CSV"
+              title="Export to XLSX"
             >
               <ExportIcon className="size-5" />
             </button>
@@ -785,14 +569,11 @@ export default function EmployeeDirectory() {
             <div className="relative w-full md:w-64">
               <input
                 type="text"
-                placeholder="Search all columns..."
+                placeholder="Search Item, Barcode..."
                 value={searchTerm}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setSearchTerm(e.target.value)
-                }
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full p-2 pl-10 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
               />
-
               <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-gray-400" />
             </div>
 
@@ -801,21 +582,22 @@ export default function EmployeeDirectory() {
               className="px-3 py-2 flex items-center bg-[#0c5888] text-white text-sm font-medium hover:bg-[#124463] transition shadow-md whitespace-nowrap rounded-lg"
             >
               <PlusIcon className="size-4 mr-1" />
-              Add New
+              Update Barcode Rate
             </button>
           </div>
         </div>
+
         <hr className="mb-4 border-gray-100 dark:border-gray-700" />
 
         {/* Table Section */}
         <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
-          <table className="min-w-full table-fixed" id="printable-table">
+          <table className="min-w-full table-fixed" id="barcode-rate-table">
             <thead>
               <tr className="bg-gray-50 dark:bg-gray-700/50 text-left text-xs font-semibold uppercase text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700">
                 {/* Checkbox Column */}
                 <th
                   className="p-4 w-10 no-print border-r border-dashed border-gray-300 dark:border-gray-600"
-                  style={{ width: columnWidths["checkbox"] || "40px" }}
+                  style={{ width: "40px" }}
                 >
                   <input
                     type="checkbox"
@@ -826,26 +608,30 @@ export default function EmployeeDirectory() {
                 </th>
 
                 {/* Data Columns */}
-                {currentColumns.map((col: Column, index: number) => (
-                  <ResizableHeader
-                    key={col.key as string}
-                    col={col}
-                    requestSort={requestSort}
-                    renderSortIndicator={renderSortIndicator}
-                    setColumnWidths={setColumnWidths}
-                    columnIndex={index}
-                    columnWidths={columnWidths}
-                    // Type-safe properties
-                    onDragStart={handleDragStart}
-                    onDragOver={handleDragOver}
-                    onDrop={handleDrop}
-                  />
+                {barcodeRateColumns.map((col) => (
+                  <th
+                    key={col.key}
+                    className={`p-4 relative whitespace-nowrap ${
+                      col.sortable
+                        ? "cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/80 transition duration-150"
+                        : ""
+                    } border-r border-dashed border-gray-300 dark:border-gray-600`}
+                    onClick={() =>
+                      col.sortable &&
+                      requestSort(col.key as keyof BarcodeRateData)
+                    }
+                  >
+                    <span className="flex items-center whitespace-nowrap">
+                      {col.label}
+                      {col.sortable &&
+                        renderSortIndicator(col.key as keyof BarcodeRateData)}
+                    </span>
+                  </th>
                 ))}
-
                 {/* Actions Column */}
                 <th
                   className="p-4 text-center whitespace-nowrap no-print border-r border-dashed border-gray-300 dark:border-gray-600"
-                  style={{ width: columnWidths["actions"] || "100px" }}
+                  style={{ width: "100px" }}
                 >
                   Actions
                 </th>
@@ -854,7 +640,7 @@ export default function EmployeeDirectory() {
 
             <tbody>
               {paginatedData.length > 0 ? (
-                paginatedData.map((row: DataItem) => (
+                paginatedData.map((row) => (
                   <tr
                     key={row.id}
                     className="even:bg-gray-50/50 dark:even:bg-gray-700/10 border-t border-gray-100 dark:border-gray-700/50 text-sm text-gray-800 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700/30 transition duration-150"
@@ -862,7 +648,7 @@ export default function EmployeeDirectory() {
                     {/* Checkbox Cell */}
                     <td
                       className="p-4 w-10 no-print border-r border-gray-200 dark:border-gray-700"
-                      style={{ width: columnWidths["checkbox"] || "40px" }}
+                      style={{ width: "40px" }}
                     >
                       <input
                         type="checkbox"
@@ -873,15 +659,10 @@ export default function EmployeeDirectory() {
                     </td>
 
                     {/* Data Cells */}
-                    {currentColumns.map((col: Column, colIndex: number) => (
+                    {barcodeRateColumns.map((col) => (
                       <td
-                        key={colIndex}
+                        key={col.key}
                         className="p-4 whitespace-nowrap overflow-hidden text-ellipsis border-r border-gray-200 dark:border-gray-700"
-                        style={{
-                          width: columnWidths[col.key as string]
-                            ? `${columnWidths[col.key as string]}px`
-                            : undefined,
-                        }}
                       >
                         {row[col.key]}
                       </td>
@@ -890,7 +671,7 @@ export default function EmployeeDirectory() {
                     {/* Actions Cell */}
                     <td
                       className="p-4 text-center space-x-2 whitespace-nowrap no-print border-r border-gray-200 dark:border-gray-700"
-                      style={{ width: columnWidths["actions"] || "100px" }}
+                      style={{ width: "100px" }}
                     >
                       <button
                         onClick={() => handleOpenEditModal(row)}
@@ -900,7 +681,6 @@ export default function EmployeeDirectory() {
                       >
                         <EditIcon className="size-4 inline" />
                       </button>
-
                       <button
                         onClick={() => handleDelete(row)}
                         className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-red-600 dark:text-red-400 transition"
@@ -915,10 +695,10 @@ export default function EmployeeDirectory() {
               ) : (
                 <tr>
                   <td
-                    colSpan={currentColumns.length + 2}
+                    colSpan={barcodeRateColumns.length + 2}
                     className="p-8 text-center text-lg text-gray-500 dark:text-gray-400"
                   >
-                    No matching entries found. 🙁
+                    No matching items found.
                   </td>
                 </tr>
               )}
@@ -929,15 +709,13 @@ export default function EmployeeDirectory() {
         {/* Pagination */}
         <div className="flex flex-col sm:flex-row justify-between items-center mt-6 space-y-4 sm:space-y-0">
           <div className="text-sm text-gray-600 dark:text-gray-400">
-            Showing {startEntry} to {endEntry} of {sortedDataLength}
-            entries. (Total Pages: {totalPages})
+            Showing {startEntry} to {endEntry} of {sortedDataLength} entries.
+            (Total Pages: {totalPages})
           </div>
 
           <div className="flex space-x-2 items-center justify-center mt-4">
             <button
-              onClick={() =>
-                setCurrentPage((prev: number) => Math.max(prev - 1, 1))
-              }
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
                 currentPage === 1
@@ -948,14 +726,14 @@ export default function EmployeeDirectory() {
               Previous
             </button>
 
-            {pageNumbers.map((page: number) => (
+            {pageNumbers.map((page) => (
               <button
                 key={page}
                 onClick={() => setCurrentPage(page)}
                 className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
                   currentPage === page
                     ? "bg-[#0c5888] text-white shadow-md border border-transparent dark:bg-[#0c5888]"
-                    : "bg-white text-gray-700 border border-gray-300 hover:bg-[#0c5888]/10 hover:text-[#0c5888] dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-[#0c5888]/20"
+                    : "bg-white text-gray-700 border border-gray-300 hover:bg-[#0c5888]/10 hover:hover:text-[#0c5888] dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-[#0c5888]/20"
                 }`}
               >
                 {page}
@@ -964,7 +742,7 @@ export default function EmployeeDirectory() {
 
             <button
               onClick={() =>
-                setCurrentPage((prev: number) => Math.min(prev + 1, totalPages))
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
               }
               disabled={currentPage >= totalPages}
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
@@ -979,17 +757,19 @@ export default function EmployeeDirectory() {
         </div>
       </div>
 
-      <AddEmployeeModal
+      {/* ADD POPUP */}
+      <AddBarcodeRateModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        onAdd={handleAddCustomer}
+        onAdd={handleAddBarcodeRate}
       />
 
-      <EditEmployeeModal
+      {/* EDIT POPUP */}
+      <EditBarcodeRateModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         rowData={editingRow}
-        onUpdate={handleUpdateCustomer}
+        onUpdate={handleUpdateBarcodeRate}
       />
     </>
   );
