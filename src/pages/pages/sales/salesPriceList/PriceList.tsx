@@ -228,7 +228,7 @@ const AddPriceListModal: React.FC<AddModalProps> = ({
       return;
     }
     onAdd(formData);
-    setFormData(initialData); // Reset form
+    setFormData(initialData);
     onClose();
   };
 

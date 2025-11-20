@@ -7,12 +7,13 @@ import { TabBar } from "./TabBar";
 import { AppSidebar } from "./AppSidebar";
 import Welcome from "../pages/pages/Welcome";
 import Customer from "../pages/pages/sales/Customer";
-import PriceList from "../pages/pages/sales/salePriceList/PriceList";
-import PartySalesDiscountRate from "../pages/pages/sales/salePriceList/PartySalesDiscountRate";
-import BrandwiseDiscountCharges from "../pages/pages/sales/salePriceList/BrandwiseDiscountCharges";
-import PartyBrandwiseDiscountCharges from "../pages/pages/sales/salePriceList/PartyBrandwiseDiscountCharges";
-import UpdateListForEachItems from "../pages/pages/sales/salePriceList/UpdateListForEachItems";
-import UpdateBarcodeRate from "../pages/pages/sales/salePriceList/UpdateBarcodeRate";
+import PriceList from "../pages/pages/sales/salesPriceList/PriceList";
+import PartySalesDiscountRate from "../pages/pages/sales/salesPriceList/PartySalesDiscountRate";
+import BrandwiseDiscountCharges from "../pages/pages/sales/salesPriceList/BrandwiseDiscountCharges";
+import PartyBrandwiseDiscountCharges from "../pages/pages/sales/salesPriceList/PartyBrandwiseDiscountCharges";
+import UpdateListForEachItems from "../pages/pages/sales/salesPriceList/UpdateListForEachItems";
+import UpdateBarcodeRate from "../pages/pages/sales/salesPriceList/UpdateBarcodeRate";
+import SalesInvoice from "../pages/pages/sales/salesInvoice/SalseInvoice";
 
 const useSidebar = () => ({
   isExpanded: false,
@@ -30,6 +31,7 @@ const ComponentMap: { [key: string]: React.FC } = {
   "/party-brandwise-discount-charges": PartyBrandwiseDiscountCharges,
   "/update-price-for-single-item": UpdateListForEachItems,
   "/update-barcode-rate": UpdateBarcodeRate,
+  "/sale-invoice": SalesInvoice,
   "/fallback": () => (
     <div className="p-6 mt-6 bg-gray-100 dark:bg-gray-800 rounded-lg shadow text-center">
       <p className="text-gray-600 dark:text-gray-300 font-medium">
@@ -78,7 +80,7 @@ const LayoutContent: React.FC = () => {
           <TabBar />
 
           <main className="flex-1 overflow-y-auto hidden-scrollbar">
-            <div className="p-4 mx-auto md:p-6">
+            <div className="">
               {openTabs.map((tab) => {
                 const TabComponent =
                   ComponentMap[tab.path] || ComponentMap["/fallback"];
