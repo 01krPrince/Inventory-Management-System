@@ -1,68 +1,35 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router";
-
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom"; // Ensure using react-router-dom if web
 import { UnsavedChangesProvider } from "./hooks/useUnsavedChangesWarning";
 
 import SignIn from "./pages/AuthPages/SignIn";
 import SignUp from "./pages/AuthPages/SignUp";
-import NotFound from "./pages/OtherPage/NotFound";
-import UserProfiles from "./pages/UserProfiles";
-import Videos from "./pages/UiElements/Videos";
-import Images from "./pages/UiElements/Images";
-import Alerts from "./pages/UiElements/Alerts";
-import Badges from "./pages/UiElements/Badges";
-import Avatars from "./pages/UiElements/Avatars";
-import Buttons from "./pages/UiElements/Buttons";
-import LineChart from "./pages/Charts/LineChart";
-import BarChart from "./pages/Charts/BarChart";
-import Calendar from "./pages/Calendar";
-import BasicTables from "./pages/Tables/BasicTables";
-import FormElements from "./pages/Forms/FormElements";
-import Blank from "./pages/Blank";
+// NotFound is removed from here because AppLayout handles missing tabs/pages internally now
+// or you can handle 404 inside AppLayout if the path doesn't match ComponentMap
 import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
-import Welcome from "./pages/pages/Welcome";
 
 export default function App() {
   return (
-    // 1. Wrap the entire application in the UnsavedChangesProvider
     <UnsavedChangesProvider>
       <Router>
         <ScrollToTop />
         <Routes>
-          {/* Dashboard Layout */}
-          <Route element={<AppLayout />}>
-            <Route index path="/" element={<Welcome />} />
-
-            {/* Others Page */}
-            <Route path="/profile" element={<UserProfiles />} />
-            <Route path="/calendar" element={<Calendar />} />
-            <Route path="/blank" element={<Blank />} />
-
-            {/* Components like FormElements should call setHasUnsavedChanges(true) when inputs change */}
-            <Route path="/form-elements" element={<FormElements />} />
-
-            {/* Tables */}
-            <Route path="/basic-tables" element={<BasicTables />} />
-
-            {/* Ui Elements */}
-            <Route path="/alerts" element={<Alerts />} />
-            <Route path="/avatars" element={<Avatars />} />
-            <Route path="/badge" element={<Badges />} />
-            <Route path="/buttons" element={<Buttons />} />
-            <Route path="/images" element={<Images />} />
-            <Route path="/videos" element={<Videos />} />
-
-            {/* Charts */}
-            <Route path="/line-chart" element={<LineChart />} />
-            <Route path="/bar-chart" element={<BarChart />} />
-          </Route>
-
-          {/* Auth Layout */}
+          {/* --------------------------------------------------------- */}
+          {/* 1. Authentication Routes (Public)                         */}
+          {/* These must be defined BEFORE the wildcard route so        */}
+          {/* they take precedence.                                     */}
+          {/* --------------------------------------------------------- */}
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
 
-          {/* Fallback Route */}
-          <Route path="*" element={<NotFound />} />
+          {/* --------------------------------------------------------- */}
+          {/* 2. The Main App Layout (Wildcard)                         */}
+          {/* CRITICAL: We use "/*" here.                               */}
+          {/* This means ANY path (e.g., /, /customer, /sale-invoice)   */}
+          {/* will render AppLayout.                                    */}
+          {/* AppLayout then checks the URL and opens the correct Tab.  */}
+          {/* --------------------------------------------------------- */}
+          <Route path="/*" element={<AppLayout />} />
         </Routes>
       </Router>
     </UnsavedChangesProvider>

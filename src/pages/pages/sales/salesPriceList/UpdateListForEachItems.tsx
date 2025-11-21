@@ -1,8 +1,7 @@
 import React, { useState, useCallback, useMemo } from "react";
 import { Search, ChevronDown, Edit3, Check, Loader2 } from "lucide-react";
-// Removed all Firebase imports
-
-// --- Global Variable Declarations (Removed Firebase-specific globals) ---
+// Import the centralized theme
+import { COLORS } from "../../../../constants/colors";
 
 // --- TYPE DEFINITIONS ---
 
@@ -149,7 +148,6 @@ const RateListTable: React.FC<RateListTableProps> = ({
   isEditing,
   onRateChange,
 }) => {
-  const tableColor = "bg-[#0c5888]";
   const [searchTerm, setSearchTerm] = useState<string>("");
 
   const filteredData = useMemo(() => {
@@ -168,7 +166,13 @@ const RateListTable: React.FC<RateListTableProps> = ({
 
   return (
     <div className="mt-8">
-      <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4 border-b pb-2 border-gray-300 dark:border-gray-700">
+      <h3
+        className="text-xl font-semibold mb-4 border-b pb-2"
+        style={{
+          color: COLORS.textPrimary,
+          borderColor: COLORS.border,
+        }}
+      >
         {title}
       </h3>
       <div className="mb-4 flex justify-end">
@@ -178,14 +182,25 @@ const RateListTable: React.FC<RateListTableProps> = ({
             placeholder="Search rates..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-200 text-sm"
+            // Applied Theme Focus Ring
+            className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 shadow-sm outline-none focus:ring-[${COLORS.primary}]`}
+            style={{
+              borderColor: COLORS.border,
+              color: COLORS.textPrimary,
+            }}
           />
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4"
+            style={{ color: COLORS.textMuted }}
+          />
         </div>
       </div>
-      <div className="overflow-x-auto shadow-xl rounded-lg border dark:border-gray-700">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead className={tableColor}>
+      <div
+        className="overflow-x-auto shadow-xl rounded-lg border"
+        style={{ borderColor: COLORS.border }}
+      >
+        <table className="min-w-full divide-y">
+          <thead style={{ backgroundColor: COLORS.primary }}>
             <tr>
               {headersMap.map((header, index) => (
                 <th
@@ -198,7 +213,10 @@ const RateListTable: React.FC<RateListTableProps> = ({
               ))}
             </tr>
           </thead>
-          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+          <tbody
+            className="bg-white divide-y"
+            style={{ borderColor: COLORS.border }}
+          >
             {filteredData && filteredData.length > 0 ? (
               filteredData.map((row, index) => {
                 const originalIndex = data.findIndex((d) => d.id === row.id);
@@ -206,7 +224,9 @@ const RateListTable: React.FC<RateListTableProps> = ({
                 return (
                   <tr
                     key={row.id || index}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-100"
+                    // Applied Theme Row Hover
+                    className={`hover:bg-[${COLORS.rowHover}] transition duration-100 border-b`}
+                    style={{ borderColor: COLORS.border }}
                   >
                     {headersMap.map((header, colIndex) => {
                       const key = header.key as keyof RateEntry;
@@ -216,11 +236,10 @@ const RateListTable: React.FC<RateListTableProps> = ({
                       return (
                         <td
                           key={colIndex}
-                          className={`px-6 py-4 whitespace-nowrap text-sm dark:text-gray-300 ${
-                            header.isPrice
-                              ? "text-right"
-                              : "text-left text-gray-900 dark:text-gray-200"
+                          className={`px-6 py-4 whitespace-nowrap text-sm ${
+                            header.isPrice ? "text-right" : "text-left"
                           }`}
+                          style={{ color: COLORS.textPrimary }}
                         >
                           {isEditable ? (
                             <input
@@ -231,13 +250,12 @@ const RateListTable: React.FC<RateListTableProps> = ({
                                   ? value
                                   : value === ""
                                   ? ""
-                                  : parseFloat(String(value)) || "" // Handle non-numeric strings
+                                  : parseFloat(String(value)) || ""
                               }
                               onChange={(e) => {
                                 const numValue = parseFloat(e.target.value);
 
                                 if (originalIndex !== -1) {
-                                  // Pass 0 if the input is cleared, otherwise pass the parsed number
                                   onRateChange(
                                     originalIndex,
                                     key as string,
@@ -245,7 +263,13 @@ const RateListTable: React.FC<RateListTableProps> = ({
                                   );
                                 }
                               }}
-                              className="w-24 p-1 border rounded-md text-right bg-blue-50 dark:bg-gray-700 dark:text-white focus:ring-blue-500 focus:border-blue-500"
+                              // Applied Theme Focus Ring & Light Background
+                              className={`w-24 p-1 border rounded-md text-right focus:ring-2 outline-none focus:ring-[${COLORS.primary}]`}
+                              style={{
+                                backgroundColor: COLORS.primaryLight,
+                                borderColor: COLORS.border,
+                                color: COLORS.textPrimary,
+                              }}
                             />
                           ) : (
                             <span
@@ -268,7 +292,8 @@ const RateListTable: React.FC<RateListTableProps> = ({
               <tr>
                 <td
                   colSpan={headersMap.length}
-                  className="text-center py-12 text-lg text-gray-500 dark:text-gray-400"
+                  className="text-center py-12 text-lg"
+                  style={{ color: COLORS.textMuted }}
                 >
                   {searchTerm
                     ? `No results found for "${searchTerm}".`
@@ -285,7 +310,6 @@ const RateListTable: React.FC<RateListTableProps> = ({
 
 // --- Main Page Component ---
 const UpdateListForEachItems: React.FC = () => {
-  // Removed db, userId, isAuthReady, isDbInitialized state
   const [selectedItem, setSelectedItem] = useState<string>(
     availableItems[0]?.value || ""
   );
@@ -295,21 +319,13 @@ const UpdateListForEachItems: React.FC = () => {
     useState<PurchaseRateEntry[]>(initialPurchaseData);
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
-  // Removed isLoading state (since data loads immediately from local state)
   const [message, setMessage] = useState<{
     text: string;
     type: "success" | "error" | "info";
   } | null>(null);
 
-  const actionButtonColor = "bg-[#0c5888]";
-
-  // 1. Initialization and Data Loading (Replaced by local state initialization)
-  // Removed useEffect for Firebase initialization and onSnapshot subscription
-
-  // Use a local variable to simulate loading/auth completion
   const isReady = true;
 
-  // 2. Rate Change Handler (FIX: Simplified generic handler)
   const handleRateChange = useCallback(
     <T extends SalesRateEntry[] | PurchaseRateEntry[]>(
       setState: React.Dispatch<React.SetStateAction<T>>,
@@ -318,12 +334,10 @@ const UpdateListForEachItems: React.FC = () => {
       value: number
     ) => {
       setState((prevRates) => {
-        // Cast the array to RateEntry[] for generic array manipulation
         const newRates = [...(prevRates as RateEntry[])];
         if (newRates[rowIndex]) {
           newRates[rowIndex] = { ...newRates[rowIndex], [key]: value };
         }
-        // Return the new array, cast back to T (the precise type, e.g., SalesRateEntry[])
         return newRates as T;
       });
     },
@@ -344,18 +358,13 @@ const UpdateListForEachItems: React.FC = () => {
     [handleRateChange]
   );
 
-  // 3. Save Button Handler (Now simulates saving with setTimeout)
   const handleSaveRates = async () => {
     setIsSaving(true);
     setMessage({ text: "Simulating save to local state...", type: "info" });
 
-    // Simulate API delay
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     try {
-      // Logic for saving would typically go here (e.g., API call)
-
-      // Since persistence is removed, we just confirm the local state update.
       console.log("State updated locally. Sales Rates:", salesRates);
       console.log("State updated locally. Purchase Rates:", purchaseRates);
 
@@ -372,16 +381,18 @@ const UpdateListForEachItems: React.FC = () => {
     }
   };
 
-  // 4. User ID Display (Removed since authentication is gone)
-  const UidDisplay = null; // Replaced with null
-
   return (
-    <div className="p-4 md:p-8 bg-gray-50 dark:bg-gray-900 min-h-screen relative font-sans">
-      {UidDisplay}
-      <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-2">
+    <div
+      className="p-4 md:p-8 min-h-screen relative font-sans"
+      style={{ backgroundColor: COLORS.background }}
+    >
+      <h1
+        className="text-3xl font-extrabold mb-2"
+        style={{ color: COLORS.textPrimary }}
+      >
         Inventory Rate Manager (Local State)
       </h1>
-      <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+      <p className="text-sm mb-6" style={{ color: COLORS.textSecondary }}>
         View and edit item rates per rate list. Changes are stored in **local
         React state** only and are **not persisted**.
       </p>
@@ -389,20 +400,24 @@ const UpdateListForEachItems: React.FC = () => {
         <div
           className={`p-3 rounded-lg shadow-lg mb-4 text-sm font-medium ${
             message.type === "success"
-              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+              ? "bg-green-100 text-green-800"
               : message.type === "error"
-              ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-              : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
+              ? "bg-red-100 text-red-800"
+              : "bg-blue-100 text-blue-800"
           }`}
         >
           {message.text}
         </div>
       )}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0 sm:space-x-4 p-4 bg-white dark:bg-gray-800 rounded-xl shadow-lg mb-6 border border-gray-200 dark:border-gray-700">
+      <div
+        className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0 sm:space-x-4 p-4 bg-white rounded-xl shadow-lg mb-6 border"
+        style={{ borderColor: COLORS.border }}
+      >
         <div className="flex items-center space-x-3 w-full sm:w-auto">
           <label
             htmlFor="item-select"
-            className="text-gray-700 dark:text-gray-300 font-medium whitespace-nowrap"
+            className="font-medium whitespace-nowrap"
+            style={{ color: COLORS.textPrimary }}
           >
             Select Item:
           </label>
@@ -411,7 +426,12 @@ const UpdateListForEachItems: React.FC = () => {
               id="item-select"
               value={selectedItem}
               onChange={(e) => setSelectedItem(e.target.value)}
-              className="appearance-none w-full py-2 pl-3 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition duration-150"
+              // Applied Theme Focus Ring
+              className={`appearance-none w-full py-2 pl-3 pr-10 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[${COLORS.primary}] transition duration-150`}
+              style={{
+                borderColor: COLORS.border,
+                color: COLORS.textPrimary,
+              }}
               disabled={isSaving || isEditing}
             >
               {availableItems.map((item) => (
@@ -420,16 +440,25 @@ const UpdateListForEachItems: React.FC = () => {
                 </option>
               ))}
             </select>
-            <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+            <ChevronDown
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 pointer-events-none"
+              style={{ color: COLORS.textMuted }}
+            />
           </div>
         </div>
         <div className="flex space-x-3 w-full sm:w-auto">
           <button
             onClick={() => setIsEditing(true)}
             disabled={isEditing || isSaving}
+            // Applied Theme Primary Color & Hover
             className={`${
-              isEditing ? "bg-gray-400 cursor-not-allowed" : actionButtonColor
+              isEditing
+                ? "bg-gray-400 cursor-not-allowed"
+                : `hover:bg-[${COLORS.primaryHover}]`
             } text-white p-2 rounded-lg transition duration-150 flex items-center justify-center shadow-md hover:shadow-lg disabled:opacity-50`}
+            style={{
+              backgroundColor: isEditing ? undefined : COLORS.primary,
+            }}
             title="Edit Rate List"
           >
             <Edit3 className="h-5 w-5 mr-1" /> Edit
@@ -437,9 +466,13 @@ const UpdateListForEachItems: React.FC = () => {
           <button
             onClick={handleSaveRates}
             disabled={!isEditing || isSaving}
+            // Applied Theme Success Color (Explicitly utilizing COLORS.success)
             className={`${
-              !isEditing ? "bg-gray-400 cursor-not-allowed" : "bg-green-600"
-            } text-white px-4 py-2 rounded-lg transition duration-150 flex items-center space-x-1 shadow-md hover:bg-green-700 disabled:opacity-50`}
+              !isEditing ? "bg-gray-400 cursor-not-allowed" : "hover:opacity-90" // Simple hover for success button
+            } text-white px-4 py-2 rounded-lg transition duration-150 flex items-center space-x-1 shadow-md disabled:opacity-50`}
+            style={{
+              backgroundColor: !isEditing ? undefined : COLORS.success,
+            }}
             title="Save Changes"
           >
             {isSaving ? (
@@ -456,12 +489,16 @@ const UpdateListForEachItems: React.FC = () => {
           </button>
         </div>
       </div>
-      {!isReady && ( // Using isReady instead of isLoading, though now always true.
-        <div className="flex items-center justify-center p-10 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
-          <Loader2 className="h-8 w-8 text-blue-500 animate-spin mr-3" />
-          <span className="text-xl text-gray-700 dark:text-gray-300">
-            Loading Rate Lists...
-          </span>
+      {!isReady && (
+        <div
+          className="flex items-center justify-center p-10 bg-white rounded-xl shadow-lg"
+          style={{ color: COLORS.textPrimary }}
+        >
+          <Loader2
+            className="h-8 w-8 animate-spin mr-3"
+            style={{ color: COLORS.primary }}
+          />
+          <span className="text-xl">Loading Rate Lists...</span>
         </div>
       )}
       {isReady && (

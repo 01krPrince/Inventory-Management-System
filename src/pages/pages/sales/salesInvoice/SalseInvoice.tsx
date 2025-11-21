@@ -4,10 +4,14 @@ import SalesInvoiceForm from "./SalesInvoiceForm";
 import OrderTable from "./OrderTable";
 import InvoiceFooter from "./InvoiceFooter";
 import LedgerAttributes from "./LedgerAttributes";
+import { COLORS } from "../../../../constants/colors";
 
 const SalesInvoice: React.FC = () => {
   return (
-    <div className="flex flex-col h-screen bg-gray-100 overflow-hidden">
+    <div
+      style={{ backgroundColor: COLORS.background }}
+      className="flex flex-col h-screen bg-gray-100 overflow-hidden"
+    >
       {/* Header (Fixed at top) */}
       <SalesInvoiceHeader />
 

@@ -1,11 +1,18 @@
 import React from "react";
 import { Edit2, ChevronRight } from "lucide-react";
+import { COLORS } from "../../../../constants/colors";
 
 const LedgerAttributes: React.FC = () => {
   return (
-    <div className="w-full bg-white p-4 font-sans">
+    <div
+      className="w-full p-4 font-sans"
+      style={{ backgroundColor: COLORS.white }}
+    >
       {/* Section Title */}
-      <h3 className="text-sm text-gray-800 font-medium mb-3">
+      <h3
+        className="text-sm font-medium mb-3"
+        style={{ color: COLORS.textPrimary }}
+      >
         Financial Posting (Ledger) Attributes - Select if applicable
       </h3>
 
@@ -17,6 +24,23 @@ const LedgerAttributes: React.FC = () => {
         {/* Row 2: Group */}
         <AttributeRow label="Group" />
       </div>
+
+      {/* --- GLOBAL STYLES FOR THIS COMPONENT --- */}
+      <style>{`
+        /* Reuse the primary button style */
+        .custom-btn-primary {
+          background-color: ${COLORS.primary};
+          transition: background-color 0.2s;
+        }
+        .custom-btn-primary:hover {
+          background-color: ${COLORS.primaryHover};
+        }
+
+        /* Custom Focus State for Inputs */
+        .custom-input:focus {
+          border-color: ${COLORS.info} !important; 
+        }
+      `}</style>
     </div>
   );
 };
@@ -30,7 +54,9 @@ const AttributeRow: React.FC<AttributeRowProps> = ({ label }) => {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
       {/* Label */}
-      <label className="w-32 text-sm text-gray-700">{label}</label>
+      <label className="w-32 text-sm" style={{ color: COLORS.textPrimary }}>
+        {label}
+      </label>
 
       {/* Input Group */}
       <div className="flex-1 flex items-center gap-1">
@@ -40,18 +66,27 @@ const AttributeRow: React.FC<AttributeRowProps> = ({ label }) => {
             type="text"
             placeholder="Select..."
             readOnly
-            className="w-full border border-gray-300 rounded-sm py-1.5 px-3 text-xs text-gray-600 placeholder-gray-400 outline-none focus:border-blue-500 bg-white cursor-pointer"
+            className="w-full border rounded-sm py-1.5 px-3 text-xs outline-none cursor-pointer custom-input"
+            style={{
+              borderColor: COLORS.borderDark,
+              backgroundColor: COLORS.white,
+              color: COLORS.textSecondary,
+            }}
           />
           {/* Right Arrow Icon */}
           <ChevronRight
             size={14}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-800 pointer-events-none"
+            className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
             strokeWidth={2.5}
+            style={{ color: COLORS.textPrimary }}
           />
         </div>
 
         {/* Edit Button */}
-        <button className="bg-[#0e4a7b] text-white p-1.5 rounded-sm hover:bg-blue-900 transition-colors flex-shrink-0">
+        <button
+          className="custom-btn-primary p-1.5 rounded-sm transition-colors flex-shrink-0"
+          style={{ color: COLORS.white }}
+        >
           <Edit2 size={14} />
         </button>
       </div>

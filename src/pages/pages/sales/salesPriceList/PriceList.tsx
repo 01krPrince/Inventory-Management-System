@@ -14,6 +14,9 @@ import {
   handleExport,
 } from "../../../../components/function/functions";
 
+// Import the centralized theme
+import { COLORS } from "../../../../constants/colors";
+
 // --- TYPE DEFINITIONS ---
 interface PriceListData {
   id: number;
@@ -29,6 +32,13 @@ interface PriceListColumn {
   key: keyof Omit<PriceListData, "id">;
   label: string;
   sortable: boolean;
+}
+
+interface ExportColumn {
+  key: string;
+  label: string;
+  sortable: boolean;
+  [key: string]: any;
 }
 
 interface SortConfig {
@@ -243,7 +253,13 @@ const AddPriceListModal: React.FC<AddModalProps> = ({
         className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-lg m-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-2xl font-semibold mb-6 text-gray-900 dark:text-white border-b pb-2 border-gray-100 dark:border-gray-700">
+        <h2
+          className="text-2xl font-semibold mb-6 border-b pb-2"
+          style={{
+            color: COLORS.textPrimary,
+            borderColor: COLORS.border,
+          }}
+        >
           Create New Price List
         </h2>
         <form
@@ -254,10 +270,13 @@ const AddPriceListModal: React.FC<AddModalProps> = ({
             <div key={col.key} className="col-span-1">
               <label
                 htmlFor={col.key}
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                className="block text-sm font-medium mb-1"
+                style={{ color: COLORS.textSecondary }}
               >
                 {col.label}
-                {col.required && <span className="text-red-500">*</span>}
+                {col.required && (
+                  <span style={{ color: COLORS.danger }}>*</span>
+                )}
               </label>
               <input
                 id={col.key}
@@ -267,22 +286,34 @@ const AddPriceListModal: React.FC<AddModalProps> = ({
                   formData[col.key as keyof PriceListFormData] || ""
                 )}
                 onChange={handleChange}
-                className="w-full p-2.5 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                // Applied Theme Focus Ring
+                className={`w-full p-2.5 border rounded-lg focus:ring-2 shadow-sm outline-none transition-all focus:ring-[${COLORS.primary}]`}
+                style={{
+                  borderColor: COLORS.border,
+                  color: COLORS.textPrimary,
+                }}
                 required={col.required}
               />
             </div>
           ))}
-          <div className="col-span-full flex justify-end space-x-3 pt-4 border-t mt-4 border-gray-100 dark:border-gray-700">
+          <div
+            className="col-span-full flex justify-end space-x-3 pt-4 border-t mt-4"
+            style={{ borderColor: COLORS.border }}
+          >
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600 transition font-medium"
+              // Applied Neutral Hover
+              className={`px-5 py-2.5 rounded-lg transition font-medium bg-gray-100 hover:bg-[${COLORS.neutralHover}]`}
+              style={{ color: COLORS.textPrimary }}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
+              // Applied Primary Hover
+              className={`px-5 py-2.5 rounded-lg transition font-medium shadow-md text-white hover:bg-[${COLORS.primaryHover}]`}
+              style={{ backgroundColor: COLORS.primary }}
             >
               Create Price List
             </button>
@@ -343,7 +374,13 @@ const EditPriceListModal: React.FC<EditModalProps> = ({
         className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-lg m-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-2xl font-semibold mb-6 text-gray-900 dark:text-white border-b pb-2 border-gray-100 dark:border-gray-700">
+        <h2
+          className="text-2xl font-semibold mb-6 border-b pb-2"
+          style={{
+            color: COLORS.textPrimary,
+            borderColor: COLORS.border,
+          }}
+        >
           Edit Price List: {rowData?.categoryName}
         </h2>
         <form
@@ -354,10 +391,13 @@ const EditPriceListModal: React.FC<EditModalProps> = ({
             <div key={col.key} className="col-span-1">
               <label
                 htmlFor={col.key}
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                className="block text-sm font-medium mb-1"
+                style={{ color: COLORS.textSecondary }}
               >
                 {col.label}
-                {col.required && <span className="text-red-500">*</span>}
+                {col.required && (
+                  <span style={{ color: COLORS.danger }}>*</span>
+                )}
               </label>
               <input
                 id={col.key}
@@ -366,22 +406,34 @@ const EditPriceListModal: React.FC<EditModalProps> = ({
                 // Ensure value is a string for the input element
                 value={String((formData as PriceListData)[col.key] || "")}
                 onChange={handleChange}
-                className="w-full p-2.5 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                // Applied Theme Focus Ring
+                className={`w-full p-2.5 border rounded-lg focus:ring-2 shadow-sm outline-none transition-all focus:ring-[${COLORS.primary}]`}
+                style={{
+                  borderColor: COLORS.border,
+                  color: COLORS.textPrimary,
+                }}
                 required={col.required}
               />
             </div>
           ))}
-          <div className="col-span-full flex justify-end space-x-3 pt-4 border-t mt-4 border-gray-100 dark:border-gray-700">
+          <div
+            className="col-span-full flex justify-end space-x-3 pt-4 border-t mt-4"
+            style={{ borderColor: COLORS.border }}
+          >
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600 transition font-medium"
+              // Applied Neutral Hover
+              className={`px-5 py-2.5 bg-gray-100 rounded-lg hover:bg-[${COLORS.neutralHover}] transition font-medium`}
+              style={{ color: COLORS.textPrimary }}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
+              // Applied Primary Hover
+              className={`px-5 py-2.5 rounded-lg transition font-medium shadow-md text-white hover:bg-[${COLORS.primaryHover}]`}
+              style={{ backgroundColor: COLORS.primary }}
             >
               Save Changes
             </button>
@@ -506,17 +558,28 @@ export default function PriceListDirectory() {
 
   return (
     <>
-      <div className="bg-white p-6 rounded-xl shadow-lg dark:bg-gray-800 border border-gray-200 dark:border-gray-700 w-full">
+      <div
+        className="bg-white p-6 rounded-xl shadow-lg border w-full"
+        style={{ borderColor: COLORS.border }}
+      >
         {/* Control Panel */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 space-y-4 md:space-y-0">
           <div className="flex items-center space-x-4">
             {/* Show Entries Dropdown */}
-            <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+            <div
+              className="flex items-center text-sm"
+              style={{ color: COLORS.textSecondary }}
+            >
               Show
               <select
                 value={pageSize}
                 onChange={(e) => setPageSize(Number(e.target.value))}
-                className="mx-2 p-1 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 dark:text-white appearance-none cursor-pointer"
+                // Applied Theme Focus Ring
+                className={`mx-2 p-1 border rounded-md focus:ring-2 outline-none appearance-none cursor-pointer focus:ring-[${COLORS.primary}]`}
+                style={{
+                  borderColor: COLORS.border,
+                  color: COLORS.textPrimary,
+                }}
               >
                 {pageSizeOptions.map((option) => (
                   <option key={option} value={option}>
@@ -531,7 +594,8 @@ export default function PriceListDirectory() {
             {selectedRows.length > 0 && (
               <button
                 onClick={handleBulkDelete}
-                className="px-3 py-1.5 flex items-center bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition shadow-sm"
+                className="px-3 py-1.5 flex items-center text-white rounded-lg text-sm font-medium hover:opacity-90 transition shadow-sm"
+                style={{ backgroundColor: COLORS.danger }}
               >
                 <TrashIcon className="size-4 mr-1" />
                 Bulk Delete ({selectedRows.length})
@@ -544,7 +608,12 @@ export default function PriceListDirectory() {
               onClick={() =>
                 handlePrint("price-list-table", "Price List Directory")
               }
-              className="p-2 text-gray-600 dark:text-gray-300 border border-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+              // Applied Neutral Hover
+              className={`p-2 border rounded-lg hover:bg-[${COLORS.neutralHover}] transition`}
+              style={{
+                borderColor: COLORS.border,
+                color: COLORS.textSecondary,
+              }}
               title="Print Table"
             >
               <PrintIcon className="size-5" />
@@ -553,11 +622,16 @@ export default function PriceListDirectory() {
               onClick={() =>
                 handleExport(
                   data,
-                  priceListColumns as any,
+                  priceListColumns as unknown as ExportColumn[],
                   "PriceListDirectory"
                 )
               }
-              className="p-2 text-gray-600 dark:text-gray-300 border border-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+              // Applied Neutral Hover
+              className={`p-2 border rounded-lg hover:bg-[${COLORS.neutralHover}] transition`}
+              style={{
+                borderColor: COLORS.border,
+                color: COLORS.textSecondary,
+              }}
               title="Export to XLSX"
             >
               <ExportIcon className="size-5" />
@@ -569,14 +643,24 @@ export default function PriceListDirectory() {
                 placeholder="Search all columns..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full p-2 pl-10 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                // Applied Theme Focus Ring
+                className={`w-full p-2.5 pl-10 border rounded-lg focus:ring-2 shadow-sm outline-none focus:ring-[${COLORS.primary}]`}
+                style={{
+                  borderColor: COLORS.border,
+                  color: COLORS.textPrimary,
+                }}
               />
-              <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-gray-400" />
+              <SearchIcon
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4"
+                style={{ color: COLORS.textMuted }}
+              />
             </div>
 
             <button
               onClick={() => setIsAddModalOpen(true)}
-              className="px-3 py-2 flex items-center bg-[#0c5888] text-white text-sm font-medium hover:bg-[#124463] transition shadow-md whitespace-nowrap rounded-lg"
+              // Applied Primary Hover
+              className={`px-3 py-2 flex items-center text-white text-sm font-medium hover:bg-[${COLORS.primaryHover}] transition shadow-md whitespace-nowrap rounded-lg`}
+              style={{ backgroundColor: COLORS.primary }}
             >
               <PlusIcon className="size-4 mr-1" />
               Create New
@@ -584,21 +668,34 @@ export default function PriceListDirectory() {
           </div>
         </div>
 
-        <hr className="mb-4 border-gray-100 dark:border-gray-700" />
+        <hr className="mb-4" style={{ borderColor: COLORS.border }} />
 
         {/* Table Section */}
-        <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+        <div
+          className="overflow-x-auto rounded-lg border"
+          style={{ borderColor: COLORS.border }}
+        >
           <table className="min-w-full table-fixed" id="price-list-table">
             <thead>
-              <tr className="bg-gray-50 dark:bg-gray-700/50 text-left text-xs font-semibold uppercase text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700">
+              <tr
+                className="bg-gray-50 text-left text-xs font-semibold uppercase border-b"
+                style={{
+                  color: COLORS.textPrimary,
+                  borderColor: COLORS.border,
+                }}
+              >
                 {/* Checkbox Column */}
                 <th
-                  className="p-4 w-10 no-print border-r border-dashed border-gray-300 dark:border-gray-600"
-                  style={{ width: "40px" }}
+                  className="p-4 w-10 no-print border-r border-dashed"
+                  style={{
+                    width: "40px",
+                    borderColor: COLORS.borderDark,
+                  }}
                 >
                   <input
                     type="checkbox"
-                    className="rounded text-blue-600 dark:bg-gray-600 dark:border-gray-500 border-gray-300 focus:ring-blue-500"
+                    // Applied Theme Focus Ring
+                    className={`rounded focus:ring-2 focus:ring-[${COLORS.primary}]`}
                     checked={areAllOnPageSelected}
                     onChange={handleSelectAll}
                   />
@@ -608,11 +705,13 @@ export default function PriceListDirectory() {
                 {priceListColumns.map((col) => (
                   <th
                     key={col.key}
+                    // Applied Neutral Hover on Sort
                     className={`p-4 relative whitespace-nowrap ${
                       col.sortable
-                        ? "cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/80 transition duration-150"
+                        ? `cursor-pointer hover:bg-[${COLORS.neutralHover}] transition duration-150`
                         : ""
-                    } border-r border-dashed border-gray-300 dark:border-gray-600`}
+                    } border-r border-dashed`}
+                    style={{ borderColor: COLORS.borderDark }}
                     onClick={() =>
                       col.sortable &&
                       requestSort(col.key as keyof PriceListData)
@@ -627,8 +726,11 @@ export default function PriceListDirectory() {
                 ))}
                 {/* Actions Column */}
                 <th
-                  className="p-4 text-center whitespace-nowrap no-print border-r border-dashed border-gray-300 dark:border-gray-600"
-                  style={{ width: "100px" }}
+                  className="p-4 text-center whitespace-nowrap no-print border-r border-dashed"
+                  style={{
+                    width: "100px",
+                    borderColor: COLORS.borderDark,
+                  }}
                 >
                   Actions
                 </th>
@@ -640,16 +742,24 @@ export default function PriceListDirectory() {
                 paginatedData.map((row) => (
                   <tr
                     key={row.id}
-                    className="even:bg-gray-50/50 dark:even:bg-gray-700/10 border-t border-gray-100 dark:border-gray-700/50 text-sm text-gray-800 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700/30 transition duration-150"
+                    // Applied Row Hover
+                    className={`border-t hover:bg-[${COLORS.rowHover}] transition duration-150`}
+                    style={{
+                      borderColor: COLORS.border,
+                      color: COLORS.textPrimary,
+                    }}
                   >
                     {/* Checkbox Cell */}
                     <td
-                      className="p-4 w-10 no-print border-r border-gray-200 dark:border-gray-700"
-                      style={{ width: "40px" }}
+                      className="p-4 w-10 no-print border-r"
+                      style={{
+                        width: "40px",
+                        borderColor: COLORS.border,
+                      }}
                     >
                       <input
                         type="checkbox"
-                        className="rounded text-blue-600 dark:bg-gray-600 dark:border-gray-500 border-gray-300 focus:ring-blue-500"
+                        className="rounded"
                         checked={isSelected(row)}
                         onChange={() => handleSelectRow(row)}
                       />
@@ -659,7 +769,8 @@ export default function PriceListDirectory() {
                     {priceListColumns.map((col) => (
                       <td
                         key={col.key}
-                        className="p-4 whitespace-nowrap overflow-hidden text-ellipsis border-r border-gray-200 dark:border-gray-700"
+                        className="p-4 whitespace-nowrap overflow-hidden text-ellipsis border-r"
+                        style={{ borderColor: COLORS.border }}
                       >
                         {row[col.key]}
                       </td>
@@ -667,12 +778,17 @@ export default function PriceListDirectory() {
 
                     {/* Actions Cell */}
                     <td
-                      className="p-4 text-center space-x-2 whitespace-nowrap no-print border-r border-gray-200 dark:border-gray-700"
-                      style={{ width: "100px" }}
+                      className="p-4 text-center space-x-2 whitespace-nowrap no-print border-r"
+                      style={{
+                        width: "100px",
+                        borderColor: COLORS.border,
+                      }}
                     >
                       <button
                         onClick={() => handleOpenEditModal(row)}
-                        className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400 transition"
+                        // Applied Neutral Hover
+                        className={`p-1.5 rounded-full hover:bg-[${COLORS.neutralHover}] transition`}
+                        style={{ color: COLORS.primary }}
                         aria-label="Edit"
                         title="Edit"
                       >
@@ -680,7 +796,9 @@ export default function PriceListDirectory() {
                       </button>
                       <button
                         onClick={() => handleDelete(row)}
-                        className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-red-600 dark:text-red-400 transition"
+                        // Applied Neutral Hover
+                        className={`p-1.5 rounded-full hover:bg-[${COLORS.neutralHover}] transition`}
+                        style={{ color: COLORS.danger }}
                         aria-label="Delete"
                         title="Delete"
                       >
@@ -693,7 +811,8 @@ export default function PriceListDirectory() {
                 <tr>
                   <td
                     colSpan={priceListColumns.length + 2}
-                    className="p-8 text-center text-lg text-gray-500 dark:text-gray-400"
+                    className="p-8 text-center text-lg"
+                    style={{ color: COLORS.textMuted }}
                   >
                     No matching price list entries found. 🙁
                   </td>
@@ -705,7 +824,7 @@ export default function PriceListDirectory() {
 
         {/* Pagination */}
         <div className="flex flex-col sm:flex-row justify-between items-center mt-6 space-y-4 sm:space-y-0">
-          <div className="text-sm text-gray-600 dark:text-gray-400">
+          <div className="text-sm" style={{ color: COLORS.textSecondary }}>
             Showing {startEntry} to {endEntry} of {sortedDataLength} entries.
             (Total Pages: {totalPages})
           </div>
@@ -714,11 +833,16 @@ export default function PriceListDirectory() {
             <button
               onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 border ${
                 currentPage === 1
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-700/40 dark:text-gray-500"
-                  : "bg-white text-gray-700 border border-gray-300 hover:bg-[#0c5888]/10 hover:text-[#0c5888] dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-[#0c5888]/20"
+                  ? "bg-gray-100 cursor-not-allowed"
+                  : "bg-white"
               }`}
+              style={{
+                borderColor: COLORS.border,
+                color:
+                  currentPage === 1 ? COLORS.textMuted : COLORS.textPrimary,
+              }}
             >
               Previous
             </button>
@@ -727,11 +851,24 @@ export default function PriceListDirectory() {
               <button
                 key={page}
                 onClick={() => setCurrentPage(page)}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
-                  currentPage === page
-                    ? "bg-[#0c5888] text-white shadow-md border border-transparent dark:bg-[#0c5888]"
-                    : "bg-white text-gray-700 border border-gray-300 hover:bg-[#0c5888]/10 hover:hover:text-[#0c5888] dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-[#0c5888]/20"
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 border shadow-sm ${
+                  currentPage !== page
+                    ? `hover:bg-[${COLORS.primaryLight}]`
+                    : ""
                 }`}
+                style={
+                  currentPage === page
+                    ? {
+                        backgroundColor: COLORS.primary,
+                        color: COLORS.white,
+                        borderColor: COLORS.primary,
+                      }
+                    : {
+                        backgroundColor: COLORS.white,
+                        color: COLORS.textPrimary,
+                        borderColor: COLORS.border,
+                      }
+                }
               >
                 {page}
               </button>
@@ -742,11 +879,18 @@ export default function PriceListDirectory() {
                 setCurrentPage((prev) => Math.min(prev + 1, totalPages))
               }
               disabled={currentPage >= totalPages}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 border ${
                 currentPage >= totalPages
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-700/40 dark:text-gray-500"
-                  : "bg-white text-gray-700 border border-gray-300 hover:bg-[#0c5888]/10 hover:text-[#0c5888] dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-[#0c5888]/20"
+                  ? "bg-gray-100 cursor-not-allowed"
+                  : "bg-white"
               }`}
+              style={{
+                borderColor: COLORS.border,
+                color:
+                  currentPage >= totalPages
+                    ? COLORS.textMuted
+                    : COLORS.textPrimary,
+              }}
             >
               Next
             </button>

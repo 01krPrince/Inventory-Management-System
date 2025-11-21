@@ -8,7 +8,6 @@ import React, {
   useMemo,
 } from "react";
 
-// --- MOCK IMPORTS FOR RUNNABILITY ---
 import {
   PlusIcon,
   TrashIcon,
@@ -16,6 +15,7 @@ import {
   SearchIcon,
   ChevronDown,
   ChevronUp,
+  ArrowLeft, // Added for the back button
 } from "lucide-react";
 
 import {
@@ -24,6 +24,10 @@ import {
 } from "../../../components/function/functions";
 
 import { PrintIcon, ExportIcon } from "../../../components/icons";
+
+// --- IMPORT YOUR COMPONENT ---
+// Ensure the file path matches where you saved the previous component
+import AddNewCustomer from "./AddNewCustomer";
 
 // --- TYPE DEFINITIONS ---
 interface Customer {
@@ -49,22 +53,6 @@ export interface Column {
 interface SortConfig {
   key: keyof DataItem | null;
   direction: "ascending" | "descending";
-}
-
-interface NewCustomerData {
-  user: string;
-  position: string;
-  office: string;
-  age: string;
-  startDate: string;
-  salary: string;
-  [key: string]: string;
-}
-
-interface AddCustomerModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onAdd: (newCustomerData: NewCustomerData) => void;
 }
 
 interface EditCustomerModalProps {
@@ -268,93 +256,9 @@ const useCustomerTableLogic = (
   };
 };
 
-// --- Modals (omitted for brevity, assume imported or defined as above) ---
+// --- Modals ---
+// Note: We removed AddCustomerModal because we are using the new Full Page Component
 
-const AddCustomerModal = ({
-  isOpen,
-  onClose,
-  onAdd,
-}: AddCustomerModalProps) => {
-  const initialData: NewCustomerData = {
-    user: "",
-    position: "",
-    office: "",
-    age: "",
-    startDate: "",
-    salary: "",
-  };
-  const [formData, setFormData] = useState<NewCustomerData>(initialData);
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev: NewCustomerData) => ({ ...prev, [name]: value }));
-  };
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.user || !formData.position) {
-      alert("Please fill in User and Position.");
-      return;
-    }
-    onAdd(formData);
-    setFormData(initialData);
-    onClose();
-  };
-  if (!isOpen) return null;
-  return (
-    <div
-      className="fixed inset-0 z-50 overflow-y-auto bg-gray-900 bg-opacity-70 flex items-center justify-center backdrop-blur-sm p-4"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-lg m-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2 className="text-2xl font-semibold mb-6 text-gray-900 dark:text-white border-b pb-2 border-gray-100 dark:border-gray-700">
-          Add New Customer
-        </h2>
-        <form
-          onSubmit={handleSubmit}
-          className="grid grid-cols-1 md:grid-cols-2 gap-4"
-        >
-          {formColumns.map((col: Column) => (
-            <div key={col.key as string} className="col-span-1">
-              <label
-                htmlFor={col.key as string}
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >
-                {col.label}
-                {col.required && <span className="text-red-500">*</span>}
-              </label>
-              <input
-                id={col.key as string}
-                type={col.type || "text"}
-                name={col.key as string}
-                value={String(formData[col.key as keyof NewCustomerData])}
-                onChange={handleChange}
-                className="w-full p-2.5 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
-                required={col.required}
-              />
-            </div>
-          ))}
-          <div className="col-span-full flex justify-end space-x-3 pt-4 border-t mt-4 border-gray-100 dark:border-gray-700">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-2.5 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600 transition font-medium"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
-            >
-              Add Customer
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
 const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
   isOpen,
   onClose,
@@ -441,6 +345,7 @@ const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
     </div>
   );
 };
+
 const ResizableHeader = ({
   col,
   requestSort,
@@ -550,7 +455,9 @@ const ResizableHeader = ({
 
 // --- CustomerDirectory Component ---
 export default function CustomerDirectory() {
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  // NEW STATE: Toggles between Table view and Add New Form view
+  const [showAddForm, setShowAddForm] = useState(false);
+
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<DataItem | null>(null);
   const [columnWidths, setColumnWidths] = useState<
@@ -581,15 +488,9 @@ export default function CustomerDirectory() {
     renderSortIndicator,
   } = useCustomerTableLogic(initialCustomerData, initialPageSize);
 
-  // --- Drag & Drop Handlers (Type-checked) ---
-  const handleDragStart = useCallback(() => {
-    // FIX: Using state/ref for drag tracking is common, but here we'll simplify.
-    // The key is passed directly in ResizableHeader onDragStart
-  }, []);
-
-  const handleDragOver = useCallback(() => {
-    // FIX: Simplified the drag over logic to just be a no-op since it's only needed for drag detection
-  }, []);
+  // --- Drag & Drop Handlers ---
+  const handleDragStart = useCallback(() => {}, []);
+  const handleDragOver = useCallback(() => {}, []);
 
   const handleDrop = useCallback(
     (draggedKey: keyof DataItem, droppedOverKey: keyof DataItem) => {
@@ -647,30 +548,6 @@ export default function CustomerDirectory() {
     }
   };
 
-  const handleAddCustomer = (newCustomerData: NewCustomerData) => {
-    const newId =
-      data.length > 0 ? Math.max(...data.map((d: DataItem) => d.id)) + 1 : 1;
-    const today = new Date()
-      .toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
-      .replace(/ /g, ", ");
-
-    const newCustomer: DataItem = {
-      id: newId,
-      user: newCustomerData.user,
-      position: newCustomerData.position,
-      office: newCustomerData.office || "N/A",
-      age: parseInt(newCustomerData.age) || 0,
-      startDate: newCustomerData.startDate || today,
-      salary: newCustomerData.salary || "$0",
-    };
-
-    setData((prev: DataItem[]) => [...prev, newCustomer]);
-  };
-
   const handleUpdateCustomer = (updatedData: DataItem) => {
     const cleanedData: DataItem = {
       ...updatedData,
@@ -724,6 +601,30 @@ export default function CustomerDirectory() {
     paginatedData.length > 0 &&
     paginatedData.every((row: DataItem) => selectedRows.includes(row.id));
 
+  if (showAddForm) {
+    return (
+      <div className="w-full bg-white p-6 rounded-xl shadow-lg dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+        {/* Back Button to return to Table */}
+        <div className="mb-4">
+          <button
+            onClick={() => setShowAddForm(false)}
+            className="flex items-center text-sm text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-white transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4 mr-1" />
+            Back to Directory
+          </button>
+        </div>
+
+        {/* PASS THE PROP HERE: 
+           When 'onClose' is called inside AddNewCustomer, 
+           it triggers setShowAddForm(false) here.
+        */}
+        <AddNewCustomer onClose={() => setShowAddForm(false)} />
+      </div>
+    );
+  }
+
+  // --- DEFAULT VIEW: THE TABLE ---
   return (
     <>
       <div className="bg-white p-6 rounded-xl shadow-lg dark:bg-gray-800 border border-gray-200 dark:border-gray-700 w-full">
@@ -796,8 +697,9 @@ export default function CustomerDirectory() {
               <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-gray-400" />
             </div>
 
+            {/* UPDATED: Toggle to Show Add Form */}
             <button
-              onClick={() => setIsAddModalOpen(true)}
+              onClick={() => setShowAddForm(true)}
               className="px-3 py-2 flex items-center bg-[#0c5888] text-white text-sm font-medium hover:bg-[#124463] transition shadow-md whitespace-nowrap rounded-lg"
             >
               <PlusIcon className="size-4 mr-1" />
@@ -835,7 +737,6 @@ export default function CustomerDirectory() {
                     setColumnWidths={setColumnWidths}
                     columnIndex={index}
                     columnWidths={columnWidths}
-                    // Type-safe properties
                     onDragStart={handleDragStart}
                     onDragOver={handleDragOver}
                     onDrop={handleDrop}
@@ -978,12 +879,6 @@ export default function CustomerDirectory() {
           </div>
         </div>
       </div>
-
-      <AddCustomerModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onAdd={handleAddCustomer}
-      />
 
       <EditCustomerModal
         isOpen={isEditModalOpen}

@@ -74,6 +74,11 @@ interface AccordionSectionProps {
   children: React.ReactNode;
 }
 
+interface SalesInvoiceFormProps {
+  // New Prop for Theme
+  themeColor?: string;
+}
+
 // --- Helper Components ---
 
 const Label: React.FC<LabelProps> = ({ children, required }) => (
@@ -93,7 +98,7 @@ const Select: React.FC<SelectProps> = ({
 }) => (
   <div className="relative w-full">
     <select
-      className="w-full h-[30px] bg-white border border-gray-300 rounded-sm px-2 text-[13px] text-gray-700 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 appearance-none"
+      className="w-full h-[30px] bg-white border border-gray-300 rounded-sm px-2 text-[13px] text-gray-700 focus:outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)] appearance-none"
       defaultValue={value}
     >
       <option value="" disabled>
@@ -116,7 +121,7 @@ const Select: React.FC<SelectProps> = ({
 const Input: React.FC<InputProps> = ({ value, placeholder, readOnly }) => (
   <input
     type="text"
-    className={`w-full h-[30px] bg-white border border-gray-300 rounded-sm px-2 text-[13px] text-gray-700 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 ${
+    className={`w-full h-[30px] bg-white border border-gray-300 rounded-sm px-2 text-[13px] text-gray-700 focus:outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)] ${
       readOnly ? "bg-gray-50" : ""
     }`}
     defaultValue={value}
@@ -129,7 +134,7 @@ const DateField: React.FC<DateFieldProps> = ({ value }) => (
   <div className="relative w-full">
     <input
       type="text"
-      className="w-full h-[30px] bg-white border border-gray-300 rounded-sm px-2 text-[13px] text-gray-700 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
+      className="w-full h-[30px] bg-white border border-gray-300 rounded-sm px-2 text-[13px] text-gray-700 focus:outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)]"
       defaultValue={value}
     />
     <div className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none">
@@ -139,7 +144,7 @@ const DateField: React.FC<DateFieldProps> = ({ value }) => (
 );
 
 const ActionBtn: React.FC<ActionBtnProps> = ({ icon }) => (
-  <button className="h-[30px] w-[30px] bg-[#0f3c63] text-white flex items-center justify-center rounded-sm border border-[#0f3c63] hover:bg-[#0a2a46] ml-[-1px] z-10">
+  <button className="h-[30px] w-[30px] bg-[var(--theme-primary)] text-white flex items-center justify-center rounded-sm border border-[var(--theme-primary)] hover:opacity-90 transition-opacity ml-[-1px] z-10">
     <span className="w-3 h-3">{icon}</span>
   </button>
 );
@@ -151,17 +156,17 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({
   children,
 }) => {
   return (
-    <div className="mb-2 border border-gray-200 rounded bg-white shadow-sm">
+    <div className="mb-2 border border-gray-200 rounded bg-white">
       {/* Header */}
       <div
         onClick={onToggle}
         className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-50 transition-colors select-none border-b border-transparent"
       >
-        <div className="flex items-center gap-2 text-[#164066] font-bold text-sm">
+        <div className="flex items-center gap-2 text-[var(--theme-secondary)] font-bold text-sm">
           <DocumentIcon className="w-5 h-5" />
           <span>{title}</span>
         </div>
-        <div className="text-[#164066]">
+        <div className="text-[var(--theme-secondary)]">
           {isOpen ? (
             <ChevronUpIcon className="w-5 h-5" />
           ) : (
@@ -178,12 +183,27 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({
 
 // --- Main Form Component ---
 
-const SalesInvoiceForm: React.FC = () => {
+const SalesInvoiceForm: React.FC<SalesInvoiceFormProps> = ({
+  themeColor = "#0f3c63",
+}) => {
   const [isBillToOpen, setBillToOpen] = useState<boolean>(false);
   const [isShipToOpen, setShipToOpen] = useState<boolean>(false);
 
+  // Define dynamic styles based on the theme prop
+  const themeStyles = {
+    "--theme-primary": themeColor,
+    // For secondary text, we use the same color but you could make this lighter logic if needed
+    "--theme-secondary": themeColor,
+    // A lighter version for focus rings (using a hardcoded fallback or simple opacity logic if you want complex color math)
+    // For now, I'll default the focus ring to a standard blue, or you can pass a specific focus color prop.
+    "--theme-focus": "#60a5fa",
+  } as React.CSSProperties;
+
   return (
-    <div className="bg-white rounded shadow-sm border border-gray-200 p-5">
+    <div
+      style={themeStyles}
+      className="bg-white rounded border border-gray-200 p-5"
+    >
       <div className="grid grid-cols-12 gap-8">
         {/* === LEFT COLUMN (General Info) === */}
         <div className="col-span-4 space-y-1">
@@ -339,7 +359,7 @@ const SalesInvoiceForm: React.FC = () => {
                 <Select options={mockData.customers} />
               </div>
             </div>
-            <textarea className="w-full h-20 border border-gray-300 rounded text-[13px] p-2 resize-none focus:ring-1 focus:border-blue-400 outline-none" />
+            <textarea className="w-full h-20 border border-gray-300 rounded text-[13px] p-2 resize-none focus:ring-1 focus:border-[var(--theme-focus)] focus:ring-[var(--theme-focus)] outline-none" />
           </AccordionSection>
 
           {/* 2. Ship To Accordion */}
@@ -358,7 +378,7 @@ const SalesInvoiceForm: React.FC = () => {
               </div>
             </div>
             <div className="relative">
-              <textarea className="w-full h-24 border border-gray-300 rounded text-[13px] p-2 resize-none focus:ring-1 focus:border-blue-400 outline-none"></textarea>
+              <textarea className="w-full h-24 border border-gray-300 rounded text-[13px] p-2 resize-none focus:ring-1 focus:border-[var(--theme-focus)] focus:ring-[var(--theme-focus)] outline-none"></textarea>
               <span className="absolute bottom-1 right-2 text-[10px] text-gray-400">
                 0/200
               </span>

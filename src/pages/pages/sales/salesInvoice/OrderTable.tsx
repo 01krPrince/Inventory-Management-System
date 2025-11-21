@@ -14,6 +14,7 @@ import {
   FileSpreadsheet,
   DollarSign,
 } from "lucide-react";
+import { COLORS } from "../../../../constants/colors";
 
 // --- TYPES ---
 interface Column {
@@ -178,48 +179,88 @@ const OrderTable: React.FC = () => {
   const tableContainerHeight = 36 + 36 + 10 * 24 + 14;
 
   return (
-    <div className="flex flex-col h-auto bg-gray-50 font-sans text-sm overflow-hidden relative z-0">
+    <div
+      className="flex flex-col h-auto font-sans text-sm overflow-hidden relative z-0"
+      style={{ backgroundColor: COLORS.background }}
+    >
       {/* --- HEADER TOOLBAR --- */}
-      {/* LOWERED Z-INDEX: Was z-50, now z-10 to sit below external sidebars */}
-      <div className="flex-none flex justify-between items-center p-2 bg-white border-b border-gray-200 z-10 relative">
+      <div
+        className="flex-none flex justify-between items-center p-2 border-b z-10 relative"
+        style={{ backgroundColor: COLORS.white, borderColor: COLORS.border }}
+      >
         <div className="flex items-center gap-4">
-          <div className="flex items-center border border-gray-300 h-9 w-72 bg-white rounded-sm">
-            <div className="px-2 border-r border-gray-300 h-full flex items-center justify-center bg-gray-50">
-              <ScanLine className="text-orange-500 w-6 h-6" />
+          <div
+            className="flex items-center border h-9 w-72 rounded-sm"
+            style={{
+              backgroundColor: COLORS.white,
+              borderColor: COLORS.borderDark,
+            }}
+          >
+            <div
+              className="px-2 border-r h-full flex items-center justify-center"
+              style={{
+                borderColor: COLORS.borderDark,
+                backgroundColor: COLORS.background,
+              }}
+            >
+              <ScanLine style={{ color: COLORS.warning }} className="w-6 h-6" />
             </div>
             <input
               type="text"
               placeholder="Scan"
-              className="px-2 outline-none text-sm w-full text-gray-700"
+              className="px-2 outline-none text-sm w-full"
+              style={{ color: COLORS.textPrimary }}
             />
           </div>
         </div>
 
-        <button className="bg-[#0e4a7b] text-white px-6 py-1.5 rounded text-xs font-bold hover:bg-blue-900 shadow-sm">
+        <button
+          className="custom-btn-primary px-6 py-1.5 rounded text-xs font-bold shadow-sm"
+          style={{ color: COLORS.white }}
+        >
           Pull From Order
         </button>
 
         <div className="flex items-center gap-3">
-          <div className="flex bg-[#0e4a7b] rounded text-white h-8 items-center shadow-sm">
-            <button className="px-3 border-r border-blue-800 h-full flex items-center hover:bg-blue-900">
+          <div
+            className="flex rounded text-white h-8 items-center shadow-sm"
+            style={{ backgroundColor: COLORS.primary }}
+          >
+            <button
+              className="px-3 border-r h-full flex items-center custom-btn-primary"
+              style={{ borderColor: COLORS.primaryHover }}
+            >
               <List size={16} />
             </button>
-            <button className="px-3 border-r border-blue-800 h-full flex items-center hover:bg-blue-900">
+            <button
+              className="px-3 border-r h-full flex items-center custom-btn-primary"
+              style={{ borderColor: COLORS.primaryHover }}
+            >
               <Settings size={16} />
             </button>
-            <button className="px-3 h-full flex items-center hover:bg-blue-900">
+            <button className="px-3 h-full flex items-center custom-btn-primary">
               <ExternalLink size={16} />
             </button>
           </div>
 
           <div className="flex gap-1">
-            <button className="h-8 w-8 flex items-center justify-center bg-[#0e4a7b] text-white rounded shadow-sm hover:bg-blue-900">
+            <button
+              className="custom-btn-primary h-8 w-8 flex items-center justify-center rounded shadow-sm"
+              style={{ color: COLORS.white }}
+            >
               <FileSpreadsheet size={16} />
             </button>
-            <button className="h-8 w-8 flex items-center justify-center bg-green-600 text-white rounded shadow-sm hover:bg-green-700 text-lg font-bold">
+            {/* Example: Success Button */}
+            <button
+              className="h-8 w-8 flex items-center justify-center rounded shadow-sm text-lg font-bold transition-colors"
+              style={{ backgroundColor: COLORS.success, color: COLORS.white }}
+            >
               <DollarSign size={16} />
             </button>
-            <button className="h-8 w-8 flex items-center justify-center bg-[#0e4a7b] text-white rounded shadow-sm hover:bg-blue-900">
+            <button
+              className="custom-btn-primary h-8 w-8 flex items-center justify-center rounded shadow-sm"
+              style={{ color: COLORS.white }}
+            >
               <Settings size={16} />
             </button>
           </div>
@@ -228,7 +269,13 @@ const OrderTable: React.FC = () => {
 
       {/* --- MAIN TABLE AREA --- */}
       <div className="flex-1 p-2 relative flex flex-col z-0">
-        <div className="w-full border border-gray-300 bg-white shadow-sm relative overflow-hidden">
+        <div
+          className="w-full border shadow-sm relative overflow-hidden"
+          style={{
+            borderColor: COLORS.borderDark,
+            backgroundColor: COLORS.white,
+          }}
+        >
           {/* Scrollable Container */}
           <div
             className="w-full overflow-auto custom-scrollbar"
@@ -237,8 +284,7 @@ const OrderTable: React.FC = () => {
             <div style={{ width: `${totalWidth}px` }}>
               <table className="border-collapse table-fixed w-full">
                 {/* --- TABLE HEADER --- */}
-                {/* Header Container is Z-20 (Standard) or Z-30 (Fixed) */}
-                <thead className="bg-[#0e4a7b] text-white sticky top-0 z-20">
+                <thead className="sticky top-0 z-20">
                   <tr className="h-6">
                     {columns.map((col, index) => {
                       const leftOffset = col.fixed
@@ -252,10 +298,12 @@ const OrderTable: React.FC = () => {
                             left: col.fixed ? leftOffset : "auto",
                             top: 0,
                             position: "sticky",
-                            // FIXED: Lowered z-index. Fixed cols=30, Scrollable=20.
                             zIndex: col.fixed ? 30 : 20,
+                            backgroundColor: COLORS.primary,
+                            color: COLORS.white,
+                            borderColor: COLORS.primaryHover,
                           }}
-                          className="border-r border-blue-900 bg-[#0e4a7b] px-1 text-xs font-normal select-none group"
+                          className="border-r px-1 text-xs font-normal select-none group"
                         >
                           <div
                             className={`flex w-full h-full items-center ${
@@ -267,7 +315,6 @@ const OrderTable: React.FC = () => {
                             {col.label}
                           </div>
                           <div
-                            // FIXED: Resizer z-index = 40 (Must be highest in table, but < sidebar)
                             className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 z-40"
                             onMouseDown={(e) => handleMouseDown(e, index)}
                           />
@@ -282,7 +329,8 @@ const OrderTable: React.FC = () => {
                   {rows.map((rowNum, rIdx) => (
                     <tr
                       key={rIdx}
-                      className="h-6 border-b border-gray-200 hover:bg-blue-50"
+                      className="h-6 border-b custom-row-hover"
+                      style={{ borderColor: COLORS.border }}
                     >
                       {columns.map((col, cIdx) => {
                         const leftOffset = col.fixed
@@ -293,39 +341,48 @@ const OrderTable: React.FC = () => {
 
                         if (col.id === "sno")
                           content = (
-                            <span className="text-gray-600">{rowNum}</span>
+                            <span style={{ color: COLORS.textSecondary }}>
+                              {rowNum}
+                            </span>
                           );
                         else if (col.id === "add")
                           content = (
                             <Plus
                               size={14}
-                              className="text-green-600 mx-auto cursor-pointer"
+                              style={{ color: COLORS.success }}
+                              className="mx-auto cursor-pointer"
                             />
                           );
                         else if (col.id === "del")
                           content = (
                             <X
                               size={14}
-                              className="text-red-600 mx-auto cursor-pointer"
+                              style={{ color: COLORS.danger }}
+                              className="mx-auto cursor-pointer"
                             />
                           );
                         else if (col.id === "srch")
                           content = (
                             <Search
                               size={14}
-                              className="text-green-600 mx-auto cursor-pointer"
+                              style={{ color: COLORS.success }}
+                              className="mx-auto cursor-pointer"
                             />
                           );
                         else if (col.id === "copy")
                           content = (
                             <Copy
                               size={14}
-                              className="text-red-400 mx-auto cursor-pointer"
+                              style={{ color: COLORS.dangerLight }}
+                              className="mx-auto cursor-pointer"
                             />
                           );
                         else if (col.id === "select" && rIdx === 6)
                           content = (
-                            <span className="text-gray-400 text-[10px] italic flex justify-between">
+                            <span
+                              style={{ color: COLORS.textMuted }}
+                              className="text-[10px] italic flex justify-between"
+                            >
                               Select... <span>▶</span>
                             </span>
                           );
@@ -333,28 +390,32 @@ const OrderTable: React.FC = () => {
                           content = (
                             <FileText
                               size={14}
-                              className="text-blue-400 mx-auto"
+                              style={{ color: COLORS.info }}
+                              className="mx-auto"
                             />
                           );
                         else if (col.id === "widg")
                           content = (
                             <BarChart2
                               size={14}
-                              className="text-blue-400 mx-auto"
+                              style={{ color: COLORS.info }}
+                              className="mx-auto"
                             />
                           );
                         else if (col.id === "sugg")
                           content = (
                             <List
                               size={14}
-                              className="text-[#0e4a7b] mx-auto"
+                              style={{ color: COLORS.primary }}
+                              className="mx-auto"
                             />
                           );
                         else if (col.id === "batch")
                           content = (
                             <Table
                               size={14}
-                              className="text-[#0e4a7b] mx-auto"
+                              style={{ color: COLORS.primary }}
+                              className="mx-auto"
                             />
                           );
                         else if (["igst", "cgst", "sgst"].includes(col.id))
@@ -369,10 +430,11 @@ const OrderTable: React.FC = () => {
                               width: `${col.width}px`,
                               left: leftOffset,
                               position: col.fixed ? "sticky" : "static",
-                              // FIXED: Body Fixed Cols = 10. Standard Cells = auto (0).
                               zIndex: col.fixed ? 10 : "auto",
+                              backgroundColor: COLORS.white,
+                              borderColor: COLORS.border,
                             }}
-                            className={`border-r border-gray-200 bg-white px-1 text-xs overflow-hidden whitespace-nowrap ${
+                            className={`border-r px-1 text-xs overflow-hidden whitespace-nowrap ${
                               col.align === "center"
                                 ? "text-center"
                                 : col.align === "right"
@@ -389,9 +451,14 @@ const OrderTable: React.FC = () => {
                 </tbody>
 
                 {/* --- TABLE FOOTER (TOTALS) --- */}
-                {/* Footer z-index must match Header levels to float above body */}
-                <tfoot className="bg-gray-100 sticky bottom-0 z-20 shadow-[0_-1px_2px_rgba(0,0,0,0.1)]">
-                  <tr className="h-9 font-bold text-gray-700">
+                <tfoot
+                  className="sticky bottom-0 z-20 shadow-[0_-1px_2px_rgba(0,0,0,0.1)]"
+                  style={{ backgroundColor: COLORS.background }}
+                >
+                  <tr
+                    className="h-9 font-bold"
+                    style={{ color: COLORS.textPrimary }}
+                  >
                     {columns.map((col, cIdx) => {
                       const leftOffset = col.fixed
                         ? getStickyLeft(cIdx)
@@ -406,10 +473,11 @@ const OrderTable: React.FC = () => {
                             left: leftOffset,
                             position: "sticky",
                             bottom: 0,
-                            // FIXED: Footer Fixed = 30, Scrollable = 20
                             zIndex: col.fixed ? 30 : 20,
+                            backgroundColor: COLORS.background,
+                            borderColor: COLORS.borderDark,
                           }}
-                          className={`border-r border-gray-300 bg-gray-50 px-1 text-xs overflow-hidden whitespace-nowrap border-t-2 border-t-gray-300 ${
+                          className={`border-r px-1 text-xs overflow-hidden whitespace-nowrap border-t-2 ${
                             col.align === "center"
                               ? "text-center"
                               : col.align === "right"
@@ -434,16 +502,27 @@ const OrderTable: React.FC = () => {
       </div>
 
       {/* --- BOTTOM TOOLBAR --- */}
-      {/* FIXED: Lowered to z-10 */}
-      <div className="flex-none h-12 bg-white border-t border-gray-200 px-4 flex justify-between items-center shadow-[0_-2px_4px_rgba(0,0,0,0.05)] z-10 relative">
+      <div
+        className="flex-none h-12 border-t px-4 flex justify-between items-center shadow-[0_-2px_4px_rgba(0,0,0,0.05)] z-10 relative"
+        style={{ backgroundColor: COLORS.white, borderColor: COLORS.border }}
+      >
         <div className="flex gap-2">
-          <button className="h-8 w-8 bg-[#0e4a7b] text-white rounded flex items-center justify-center hover:bg-blue-900 shadow-sm">
+          <button
+            className="custom-btn-primary h-8 w-8 rounded flex items-center justify-center shadow-sm"
+            style={{ color: COLORS.white }}
+          >
             <Plus size={16} />
           </button>
-          <button className="h-8 w-8 bg-[#0e4a7b] text-white rounded flex items-center justify-center hover:bg-blue-900 shadow-sm">
+          <button
+            className="custom-btn-primary h-8 w-8 rounded flex items-center justify-center shadow-sm"
+            style={{ color: COLORS.white }}
+          >
             <Search size={16} />
           </button>
-          <button className="h-8 w-8 bg-[#0e4a7b] text-white rounded flex items-center justify-center hover:bg-blue-900 font-bold shadow-sm">
+          <button
+            className="custom-btn-primary h-8 w-8 rounded flex items-center justify-center font-bold shadow-sm"
+            style={{ color: COLORS.white }}
+          >
             W
           </button>
         </div>
@@ -451,26 +530,41 @@ const OrderTable: React.FC = () => {
         <div className="pr-8"></div>
       </div>
 
-      {/* --- GLOBAL STYLES FOR SCROLLBAR --- */}
+      {/* --- GLOBAL STYLES --- */}
+      {/* This injects your global colors into standard CSS classes for Pseudo-states (Hover/Scrollbar) */}
       <style>{`
+        .custom-btn-primary {
+          background-color: ${COLORS.primary};
+          transition: background-color 0.2s;
+        }
+        .custom-btn-primary:hover {
+          background-color: ${COLORS.primaryHover};
+        }
+
+        /* Row Hover Effect */
+        .custom-row-hover:hover td {
+          background-color: ${COLORS.primaryLight} !important;
+        }
+
+        /* Scrollbar Styling */
         .custom-scrollbar::-webkit-scrollbar {
           width: 14px;
           height: 14px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: #f1f5f9;
-          border: 1px solid #e2e8f0;
+          background: ${COLORS.scrollbarTrack};
+          border: 1px solid ${COLORS.border};
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background-color: #0e4a7b;
+          background-color: ${COLORS.scrollbarThumb};
           border-radius: 10px;
-          border: 3px solid #f1f5f9;
+          border: 3px solid ${COLORS.scrollbarTrack};
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background-color: #0c3b62;
+          background-color: ${COLORS.scrollbarThumbHover};
         }
         .custom-scrollbar::-webkit-scrollbar-corner {
-            background: #f1f5f9;
+           background: ${COLORS.scrollbarTrack};
         }
       `}</style>
     </div>
