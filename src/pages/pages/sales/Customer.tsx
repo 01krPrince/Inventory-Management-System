@@ -26,7 +26,7 @@ import {
 import { PrintIcon, ExportIcon } from "../../../components/icons";
 
 // --- TYPE DEFINITIONS ---
-interface Employee {
+interface Customer {
   user: string;
   position: string;
   office: string;
@@ -37,7 +37,7 @@ interface Employee {
   [key: string]: any;
 }
 
-export type DataItem = Employee;
+export type DataItem = Customer;
 export interface Column {
   key: string;
   label: string;
@@ -88,7 +88,7 @@ interface ResizableHeaderProps {
 
 // --- MOCK DATA AND COLUMN DEFINITIONS ---
 
-const initialEmployeeData: DataItem[] = [
+const initialCustomerData: DataItem[] = [
   {
     user: "Abram Schleifer",
     position: "Sales Assistant",
@@ -118,7 +118,7 @@ const initialEmployeeData: DataItem[] = [
   },
 ];
 
-const employeeColumns: Column[] = [
+const CustomerColumns: Column[] = [
   { key: "user", label: "User", sortable: true },
   { key: "position", label: "Position", sortable: true },
   { key: "office", label: "Office", sortable: true },
@@ -270,7 +270,7 @@ const useCustomerTableLogic = (
 
 // --- Modals (omitted for brevity, assume imported or defined as above) ---
 
-const AddEmployeeModal = ({
+const AddCustomerModal = ({
   isOpen,
   onClose,
   onAdd,
@@ -309,7 +309,7 @@ const AddEmployeeModal = ({
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-2xl font-semibold mb-6 text-gray-900 dark:text-white border-b pb-2 border-gray-100 dark:border-gray-700">
-          Add New Employee
+          Add New Customer
         </h2>
         <form
           onSubmit={handleSubmit}
@@ -347,7 +347,7 @@ const AddEmployeeModal = ({
               type="submit"
               className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
             >
-              Add Employee
+              Add Customer
             </button>
           </div>
         </form>
@@ -355,7 +355,7 @@ const AddEmployeeModal = ({
     </div>
   );
 };
-const EditEmployeeModal: React.FC<EditCustomerModalProps> = ({
+const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
   isOpen,
   onClose,
   rowData,
@@ -394,7 +394,7 @@ const EditEmployeeModal: React.FC<EditCustomerModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-2xl font-semibold mb-6 text-gray-900 dark:text-white border-b pb-2 border-gray-100 dark:border-gray-700">
-          Edit Employee: {formData.user}
+          Edit Customer: {formData.user}
         </h2>
         <form
           onSubmit={handleSubmit}
@@ -433,7 +433,7 @@ const EditEmployeeModal: React.FC<EditCustomerModalProps> = ({
               type="submit"
               className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
             >
-              Update Employee
+              Update Customer
             </button>
           </div>
         </form>
@@ -548,8 +548,8 @@ const ResizableHeader = ({
   );
 };
 
-// --- EmployeeDirectory Component ---
-export default function EmployeeDirectory() {
+// --- CustomerDirectory Component ---
+export default function CustomerDirectory() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<DataItem | null>(null);
@@ -558,7 +558,7 @@ export default function EmployeeDirectory() {
   >({});
 
   const [currentColumns, setCurrentColumns] =
-    useState<Column[]>(employeeColumns);
+    useState<Column[]>(CustomerColumns);
 
   const {
     data,
@@ -579,7 +579,7 @@ export default function EmployeeDirectory() {
     pageNumbers,
     requestSort,
     renderSortIndicator,
-  } = useCustomerTableLogic(initialEmployeeData, initialPageSize);
+  } = useCustomerTableLogic(initialCustomerData, initialPageSize);
 
   // --- Drag & Drop Handlers (Type-checked) ---
   const handleDragStart = useCallback(() => {
@@ -658,7 +658,7 @@ export default function EmployeeDirectory() {
       })
       .replace(/ /g, ", ");
 
-    const newEmployee: DataItem = {
+    const newCustomer: DataItem = {
       id: newId,
       user: newCustomerData.user,
       position: newCustomerData.position,
@@ -668,7 +668,7 @@ export default function EmployeeDirectory() {
       salary: newCustomerData.salary || "$0",
     };
 
-    setData((prev: DataItem[]) => [...prev, newEmployee]);
+    setData((prev: DataItem[]) => [...prev, newCustomer]);
   };
 
   const handleUpdateCustomer = (updatedData: DataItem) => {
@@ -691,7 +691,7 @@ export default function EmployeeDirectory() {
 
   const handleDelete = (user: DataItem) => {
     if (
-      window.confirm(`Are you sure you want to delete Employee: ${user.user}?`)
+      window.confirm(`Are you sure you want to delete Customer: ${user.user}?`)
     ) {
       setData((prev: DataItem[]) =>
         prev.filter((u: DataItem) => u.id !== user.id)
@@ -764,7 +764,7 @@ export default function EmployeeDirectory() {
           <div className="flex items-center space-x-3 w-full md:w-auto justify-end">
             <button
               onClick={() =>
-                handlePrint("printable-table", "Employee Directory")
+                handlePrint("printable-table", "Customer Directory")
               }
               className="p-2 text-gray-600 dark:text-gray-300 border border-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
               title="Print Table"
@@ -774,7 +774,7 @@ export default function EmployeeDirectory() {
 
             <button
               onClick={() =>
-                handleExport(data, currentColumns, "EmployeeDirectory")
+                handleExport(data, currentColumns, "CustomerDirectory")
               }
               className="p-2 text-gray-600 dark:text-gray-300 border border-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
               title="Export to CSV"
@@ -979,13 +979,13 @@ export default function EmployeeDirectory() {
         </div>
       </div>
 
-      <AddEmployeeModal
+      <AddCustomerModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAdd={handleAddCustomer}
       />
 
-      <EditEmployeeModal
+      <EditCustomerModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         rowData={editingRow}
