@@ -14,7 +14,7 @@ import PartyBrandwiseDiscountCharges from "../pages/pages/sales/salesPriceList/P
 import UpdateListForEachItems from "../pages/pages/sales/salesPriceList/UpdateListForEachItems";
 import UpdateBarcodeRate from "../pages/pages/sales/salesPriceList/UpdateBarcodeRate";
 import SalesInvoice from "../pages/pages/sales/salesInvoice/SalseInvoice";
-import ItemMaster from "../pages/pages/inventory/itemMaster/itemMaster";
+import ItemMaster from "../pages/pages/inventory/itemMaster/ItemMaster";
 import { CustomCalculator } from "../components/CustomCalculator";
 
 const useSidebar = () => ({
