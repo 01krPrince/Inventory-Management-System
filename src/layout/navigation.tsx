@@ -111,7 +111,7 @@ export const navItems = [
         path: "/purchase-price-list",
         pro: false,
         nestedItems: [
-          { name: "Price List", path: "/price-list" },
+          { name: "Purchase Price List", path: "/purchase-price-list" },
           {
             name: "Party-Purchase Discount Rate",
             path: "/party-purchase-discount-rate",

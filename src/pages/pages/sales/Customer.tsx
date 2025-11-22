@@ -27,7 +27,7 @@ import { PrintIcon, ExportIcon } from "../../../components/icons";
 
 // --- IMPORT YOUR COMPONENT ---
 // Ensure the file path matches where you saved the previous component
-import AddNewCustomer from "./AddNewCustomer";
+import AddNewCustomer from "./AddNewCustomer.tsx";
 
 // --- TYPE DEFINITIONS ---
 interface Customer {
