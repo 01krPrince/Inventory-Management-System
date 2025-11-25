@@ -665,7 +665,7 @@ export default function ItemMaster() {
 
   const handleOpenEditModal = (row: DataItem) => {
     setEditingRow(row);
-    setIsEditModalOpen(true);
+    setIsEditModalOpen(false);
   };
 
   const handleDelete = (item: DataItem) => {
