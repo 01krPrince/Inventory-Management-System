@@ -828,7 +828,7 @@ export default function ItemMaster() {
             </div>
 
             <button
-              onClick={() => setShowAddForm(true)}
+              onClick={() => setShowAddForm(false)}
               className="px-3 py-2 flex items-center bg-[#0c5888] text-white text-sm font-medium hover:bg-[#124463] transition shadow-md whitespace-nowrap rounded-lg"
             >
               <PlusIcon className="size-4 mr-1" />
