@@ -15,7 +15,8 @@ import UpdateListForEachItems from "../pages/pages/sales/salesPriceList/UpdateLi
 import UpdateBarcodeRate from "../pages/pages/sales/salesPriceList/UpdateBarcodeRate";
 import SalesInvoice from "../pages/pages/sales/salesInvoice/SalseInvoice";
 import ItemMaster from "../pages/pages/inventory/itemMaster/ItemMaster";
-import { CustomCalculator } from "../components/CustomCalculator";
+import StockAdjustment from "../pages/pages/inventory/stockAdjustment/StockAdjustment";
+// import { CustomCalculator } from "../components/CustomCalculator";
 
 const useSidebar = () => ({
   isExpanded: false,
@@ -35,7 +36,8 @@ const ComponentMap: { [key: string]: React.FC } = {
   "/update-barcode-rate": UpdateBarcodeRate,
   "/sale-invoice": SalesInvoice,
   "/item-master": ItemMaster,
-  "/attendance": CustomCalculator,
+  "/stock-adjustment": StockAdjustment,
+  "/attendance": () => <></>,
   "/fallback": () => (
     <div className="p-6 mt-6 bg-gray-100 dark:bg-gray-800 rounded-lg shadow text-center">
       <p className="text-gray-600 dark:text-gray-300 font-medium">

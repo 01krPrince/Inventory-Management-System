@@ -15,7 +15,8 @@ import {
   SearchIcon,
   ChevronDown,
   ChevronUp,
-  ArrowLeft, // Added for the back button
+  ArrowLeft,
+  Loader2, // Added for loading state
 } from "lucide-react";
 
 import {
@@ -25,23 +26,34 @@ import {
 
 import { PrintIcon, ExportIcon } from "../../../components/icons";
 
+// --- SIMULATING THE API SERVICE IMPORT ---
+import { getAllCustomers as fetchAllCustomers } from "../../../services/customerService.ts";
+
 // --- IMPORT YOUR COMPONENT ---
-// Ensure the file path matches where you saved the previous component
 import AddNewCustomer from "./AddNewCustomer.tsx";
 
 // --- TYPE DEFINITIONS ---
+// Updated Customer interface (Must match the data structure from your API response)
 interface Customer {
-  user: string;
-  position: string;
-  office: string;
-  age: number;
-  startDate: string;
-  salary: string;
-  id: number;
+  _id: string; // Used as the unique ID
+  cust_name: string;
+  print_name: string;
+  gst_no: string;
+  identification: string;
+  code: string;
+  under_ledger: string;
+  gst: string;
+  registration_date: string;
+  cin?: string;
+  pan?: string;
+  goods_service?: string;
+  gst_category?: string;
   [key: string]: any;
 }
 
 export type DataItem = Customer;
+
+// Fixed Column interface (key is string for external function compatibility)
 export interface Column {
   key: string;
   label: string;
@@ -64,80 +76,64 @@ interface EditCustomerModalProps {
 
 interface ResizableHeaderProps {
   col: Column;
-  requestSort: (key: keyof DataItem) => void;
-  renderSortIndicator: (key: keyof DataItem) => React.JSX.Element | null;
+  requestSort: (key: string) => void;
+  renderSortIndicator: (key: string) => React.JSX.Element | null;
   setColumnWidths: Dispatch<SetStateAction<Record<string, number | undefined>>>;
   columnWidths: Record<string, number | undefined>;
-  onDragStart: (key: keyof DataItem) => void;
-  onDragOver: (key: keyof DataItem) => void;
-  onDrop: (draggedKey: keyof DataItem, droppedOverKey: keyof DataItem) => void;
+  onDragStart: (key: string) => void;
+  onDragOver: (key: string) => void;
+  onDrop: (draggedKey: string, droppedOverKey: string) => void;
   columnIndex: number;
 }
 
-// --- MOCK DATA AND COLUMN DEFINITIONS ---
-
-const initialCustomerData: DataItem[] = [
-  {
-    user: "Abram Schleifer",
-    position: "Sales Assistant",
-    office: "Edinburgh",
-    age: 57,
-    startDate: "25 Apr, 2027",
-    salary: "$89,500",
-    id: 1,
-  },
-  {
-    user: "Charlotte Anderson",
-    position: "Marketing Manager",
-    office: "London",
-    age: 42,
-    startDate: "12 Mar, 2025",
-    salary: "$105,000",
-    id: 2,
-  },
-  {
-    user: "Ethan Brown",
-    position: "Software Engineer",
-    office: "San Francisco",
-    age: 30,
-    startDate: "01 Jan, 2024",
-    salary: "$120,000",
-    id: 3,
-  },
-];
+// --- COLUMN DEFINITIONS (Based on new API structure) ---
 
 const CustomerColumns: Column[] = [
-  { key: "user", label: "User", sortable: true },
-  { key: "position", label: "Position", sortable: true },
-  { key: "office", label: "Office", sortable: true },
-  { key: "age", label: "Age", sortable: true, type: "number" },
-  { key: "startDate", label: "Start Date", sortable: true },
-  { key: "salary", label: "Salary", sortable: true },
+  { key: "cust_name", label: "Customer Name", sortable: true },
+  { key: "print_name", label: "Print Name", sortable: true },
+  { key: "code", label: "Code", sortable: true },
+  { key: "gst_no", label: "GST No", sortable: true },
+  { key: "identification", label: "Identification", sortable: false },
+  { key: "under_ledger", label: "Under Ledger", sortable: true },
+  { key: "gst", label: "GST Type", sortable: true },
+  { key: "registration_date", label: "Reg. Date", sortable: true },
 ];
 
 const formColumns: Column[] = [
-  { key: "user", label: "User", type: "text", required: true },
-  { key: "position", label: "Position", type: "text", required: true },
-  { key: "office", label: "Office", type: "text", required: false },
-  { key: "age", label: "Age", type: "number", required: false },
+  { key: "cust_name", label: "Customer Name", type: "text", required: true },
+  { key: "print_name", label: "Print Name", type: "text", required: true },
+  { key: "code", label: "Code", type: "text", required: true },
+  { key: "gst_no", label: "GST No", type: "text", required: false },
   {
-    key: "startDate",
-    label: "Start Date (e.g., 01 Jan, 2024)",
+    key: "identification",
+    label: "Identification",
     type: "text",
     required: false,
   },
+  { key: "under_ledger", label: "Under Ledger", type: "text", required: false },
+  { key: "gst", label: "GST Type", type: "text", required: false },
   {
-    key: "salary",
-    label: "Salary (e.g., $100,000)",
+    key: "registration_date",
+    label: "Reg. Date (YYYY-MM-DD)",
     type: "text",
     required: false,
   },
+  { key: "cin", label: "CIN", type: "text", required: false },
+  { key: "pan", label: "PAN", type: "text", required: false },
+  {
+    key: "goods_service",
+    label: "Goods/Service",
+    type: "text",
+    required: false,
+  },
+  { key: "gst_category", label: "GST Category", type: "text", required: false },
 ];
 
 const pageSizeOptions = [5, 10, 20, 50];
 const initialPageSize = 5;
 
 // --- CUSTOMER TABLE LOGIC HOOK ---
+// Now initialized with an empty array or data loaded from API
 const useCustomerTableLogic = (
   initialData: DataItem[],
   initialSize: number
@@ -146,12 +142,20 @@ const useCustomerTableLogic = (
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [pageSize, setPageSize] = useState<number>(initialSize);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [selectedRows, setSelectedRows] = useState<number[]>([]);
+  const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: null,
     direction: "ascending",
   });
 
+  // Effect to update data state when API data changes (passed as initialData)
+  useEffect(() => {
+    setData(initialData);
+    setCurrentPage(1);
+    setSelectedRows([]);
+  }, [initialData]);
+
+  // Effect to reset pagination on search/size change
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, pageSize, data.length]);
@@ -217,16 +221,19 @@ const useCustomerTableLogic = (
     return pages;
   }, [totalPages, currentPage]);
 
-  const requestSort = (key: keyof DataItem) => {
+  const requestSort = (key: string) => {
     let direction: "ascending" | "descending" = "ascending";
-    if (sortConfig.key === key && sortConfig.direction === "ascending") {
+    if (
+      sortConfig.key === (key as keyof DataItem) &&
+      sortConfig.direction === "ascending"
+    ) {
       direction = "descending";
     }
-    setSortConfig({ key, direction });
+    setSortConfig({ key: key as keyof DataItem, direction });
   };
 
-  const renderSortIndicator = (key: keyof DataItem) => {
-    if (sortConfig.key !== key) return null;
+  const renderSortIndicator = (key: string) => {
+    if (sortConfig.key !== (key as keyof DataItem)) return null;
     return sortConfig.direction === "ascending" ? (
       <ChevronUp className="size-3 ml-1" />
     ) : (
@@ -256,9 +263,7 @@ const useCustomerTableLogic = (
   };
 };
 
-// --- Modals ---
-// Note: We removed AddCustomerModal because we are using the new Full Page Component
-
+// --- Modals (omitted for brevity, assume they remain as previously fixed) ---
 const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
   isOpen,
   onClose,
@@ -266,28 +271,40 @@ const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
   onUpdate,
 }) => {
   const [formData, setFormData] = useState<DataItem | null>(rowData);
+
   useEffect(() => {
     setFormData(rowData ? { ...rowData } : null);
   }, [rowData]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     if (formData) {
       setFormData((prev) => ({
         ...prev!,
-        [name]: name === "age" ? parseInt(value) || 0 : value,
+        [name]: value,
       }));
     }
   };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData || !formData.user || !formData.position) {
-      alert("User and Position are required fields.");
+
+    if (
+      !formData ||
+      !formData.cust_name ||
+      !formData.print_name ||
+      !formData.code
+    ) {
+      alert("Customer Name, Print Name, and Code are required fields.");
       return;
     }
+
     onUpdate(formData);
     onClose();
   };
+
   if (!isOpen || !formData) return null;
+
   return (
     <div
       className="fixed inset-0 z-50 overflow-y-auto bg-gray-900 bg-opacity-70 flex items-center justify-center backdrop-blur-sm p-4"
@@ -298,7 +315,7 @@ const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-2xl font-semibold mb-6 text-gray-900 dark:text-white border-b pb-2 border-gray-100 dark:border-gray-700">
-          Edit Customer: {formData.user}
+          Edit Customer: {formData.cust_name}
         </h2>
         <form
           onSubmit={handleSubmit}
@@ -317,11 +334,11 @@ const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
                 id={col.key as string}
                 type={col.type || "text"}
                 name={col.key as string}
-                value={String(formData[col.key] || "")}
+                value={String(formData[col.key as keyof DataItem] || "")}
                 onChange={handleChange}
                 className="w-full p-2.5 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                 required={col.required}
-                disabled={col.key === "id"}
+                disabled={col.key === "_id"}
               />
             </div>
           ))}
@@ -358,12 +375,14 @@ const ResizableHeader = ({
 }: ResizableHeaderProps) => {
   const thRef = useRef<HTMLTableHeaderCellElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+
+  const keyString = col.key as string;
+
   const style = {
-    width: columnWidths[col.key as string]
-      ? `${columnWidths[col.key as string]}px`
-      : undefined,
+    width: columnWidths[keyString] ? `${columnWidths[keyString]}px` : undefined,
     minWidth: "100px",
   };
+
   const startResizing = useCallback(
     (mouseDownEvent: React.MouseEvent<HTMLDivElement>) => {
       mouseDownEvent.stopPropagation();
@@ -372,11 +391,13 @@ const ResizableHeader = ({
       if (!thRef.current) return;
       const initialWidth = thRef.current.offsetWidth;
       const doResizing = (mouseMoveEvent: MouseEvent) => {
-        const widthDelta = mouseMoveEvent.clientX - startX;
-        const newWidth = Math.max(initialWidth + widthDelta, 100);
+        const newWidth = Math.max(
+          initialWidth + (mouseMoveEvent.clientX - startX),
+          100
+        );
         setColumnWidths((prev: Record<string, number | undefined>) => ({
           ...prev,
-          [col.key as string]: newWidth,
+          [keyString]: newWidth,
         }));
       };
       const stopResizing = () => {
@@ -386,26 +407,32 @@ const ResizableHeader = ({
       window.addEventListener("mousemove", doResizing);
       window.addEventListener("mouseup", stopResizing);
     },
-    [col.key, setColumnWidths]
+    [keyString, setColumnWidths]
   );
+
   const handleHeaderClick = () => {
     if (col.sortable) {
       requestSort(col.key);
     }
   };
+
   const handleDragStart = (e: React.DragEvent<HTMLTableHeaderCellElement>) => {
     if (
       e.target instanceof HTMLElement &&
       e.target.className.includes("cursor-col-resize")
     )
       return;
-    e.dataTransfer.setData("text/plain", col.key as string);
+    e.dataTransfer.setData("text/plain", keyString);
     setIsDragging(true);
-    onDragStart(col.key);
+    if (keyString !== "actions" && keyString !== "checkbox") {
+      onDragStart(keyString);
+    }
   };
+
   const handleDragEnd = () => {
     setIsDragging(false);
   };
+
   const handleDragOver = (e: React.DragEvent<HTMLTableHeaderCellElement>) => {
     if (
       e.target instanceof HTMLElement &&
@@ -413,19 +440,40 @@ const ResizableHeader = ({
     )
       return;
     e.preventDefault();
-    onDragOver(col.key);
+    if (keyString !== "actions" && keyString !== "checkbox") {
+      onDragOver(keyString);
+    }
   };
+
   const handleDrop = (e: React.DragEvent<HTMLTableHeaderCellElement>) => {
     e.preventDefault();
-    const draggedColKey = e.dataTransfer.getData(
-      "text/plain"
-    ) as keyof DataItem;
-    onDrop(draggedColKey, col.key);
+    const draggedColKey = e.dataTransfer.getData("text/plain") as string;
+
+    if (keyString !== "actions" && keyString !== "checkbox") {
+      onDrop(draggedColKey, keyString);
+    }
   };
+
+  if (col.key === "actions" || col.key === "checkbox") {
+    return (
+      <th
+        key={keyString}
+        className="p-4 text-center whitespace-nowrap no-print border-r border-dashed border-gray-300 dark:border-gray-600"
+        style={{
+          width:
+            columnWidths[keyString] ||
+            (col.key === "checkbox" ? "40px" : "100px"),
+        }}
+      >
+        {col.label}
+      </th>
+    );
+  }
+
   return (
     <th
       ref={thRef}
-      key={col.key as string}
+      key={keyString}
       draggable={true}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
@@ -455,8 +503,38 @@ const ResizableHeader = ({
 
 // --- CustomerDirectory Component ---
 export default function CustomerDirectory() {
-  // NEW STATE: Toggles between Table view and Add New Form view
   const [showAddForm, setShowAddForm] = useState(false);
+  const [apiData, setApiData] = useState<DataItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // --- API DATA FETCHING EFFECT ---
+  useEffect(() => {
+    const loadCustomers = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        // Fetch data using the imported function
+        const responseData = await fetchAllCustomers();
+
+        // Assuming your API response structure is like:
+        // { success: true, message: "...", data: [Customer, ...] }
+        // The fetchAllCustomers function should handle extracting the array from 'response.data.data' if necessary,
+        // but based on the code you provided, it seems to return response.data directly,
+        // so we must assume it returns the array of Customer objects.
+        setApiData(responseData);
+      } catch (err) {
+        console.error("Failed to fetch customer data:", err);
+        setError(
+          "Failed to load customer data. Please check the network connection."
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadCustomers();
+  }, []); // Run only on mount
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<DataItem | null>(null);
@@ -467,9 +545,10 @@ export default function CustomerDirectory() {
   const [currentColumns, setCurrentColumns] =
     useState<Column[]>(CustomerColumns);
 
+  // Pass the state derived from the API to the logic hook
   const {
     data,
-    setData,
+    setData, // This setData now operates on the data derived from apiData
     searchTerm,
     setSearchTerm,
     pageSize,
@@ -486,14 +565,14 @@ export default function CustomerDirectory() {
     pageNumbers,
     requestSort,
     renderSortIndicator,
-  } = useCustomerTableLogic(initialCustomerData, initialPageSize);
+  } = useCustomerTableLogic(apiData, initialPageSize); // Use apiData here
 
-  // --- Drag & Drop Handlers ---
+  // --- Drag & Drop Handlers (signatures remain string) ---
   const handleDragStart = useCallback(() => {}, []);
   const handleDragOver = useCallback(() => {}, []);
 
   const handleDrop = useCallback(
-    (draggedKey: keyof DataItem, droppedOverKey: keyof DataItem) => {
+    (draggedKey: string, droppedOverKey: string) => {
       if (!draggedKey || !droppedOverKey) return;
 
       const draggedColIndex = currentColumns.findIndex(
@@ -521,42 +600,42 @@ export default function CustomerDirectory() {
   );
 
   // --- Data Handlers ---
-  const isSelected = (row: DataItem) => selectedRows.includes(row.id);
-
+  const isSelected = (row: DataItem) => selectedRows.includes(row._id);
   const handleSelectRow = (row: DataItem) => {
-    setSelectedRows((prev: number[]) =>
+    setSelectedRows((prev: string[]) =>
       isSelected(row)
-        ? prev.filter((id: number) => id !== row.id)
-        : [...prev, row.id]
+        ? prev.filter((id: string) => id !== row._id)
+        : [...prev, row._id]
     );
   };
 
   const handleSelectAll = () => {
-    const allIdsOnPage = paginatedData.map((row: DataItem) => row.id);
-    const areAllSelected = allIdsOnPage.every((id: number) =>
+    const allIdsOnPage = paginatedData.map((row: DataItem) => row._id);
+    const areAllSelected = allIdsOnPage.every((id: string) =>
       selectedRows.includes(id)
     );
 
     if (areAllSelected) {
-      setSelectedRows((prev: number[]) =>
-        prev.filter((id: number) => !allIdsOnPage.includes(id))
+      setSelectedRows((prev: string[]) =>
+        prev.filter((id: string) => !allIdsOnPage.includes(id))
       );
     } else {
-      setSelectedRows((prev: number[]) => [
+      setSelectedRows((prev: string[]) => [
         ...new Set([...prev, ...allIdsOnPage]),
       ]);
     }
   };
 
   const handleUpdateCustomer = (updatedData: DataItem) => {
+    // In a real app, you would call an API update function here.
     const cleanedData: DataItem = {
       ...updatedData,
-      age: parseInt(String(updatedData.age)) || 0,
     };
 
+    // Update local state temporarily
     setData((prevData: DataItem[]) =>
       prevData.map((row: DataItem) =>
-        row.id === updatedData.id ? cleanedData : row
+        row._id === updatedData._id ? cleanedData : row
       )
     );
   };
@@ -568,13 +647,16 @@ export default function CustomerDirectory() {
 
   const handleDelete = (user: DataItem) => {
     if (
-      window.confirm(`Are you sure you want to delete Customer: ${user.user}?`)
+      window.confirm(
+        `Are you sure you want to delete Customer: ${user.cust_name}?`
+      )
     ) {
+      // In a real app, you would call an API delete function here.
       setData((prev: DataItem[]) =>
-        prev.filter((u: DataItem) => u.id !== user.id)
+        prev.filter((u: DataItem) => u._id !== user._id)
       );
-      setSelectedRows((prev: number[]) =>
-        prev.filter((id: number) => id !== user.id)
+      setSelectedRows((prev: string[]) =>
+        prev.filter((id: string) => id !== user._id)
       );
     }
   };
@@ -590,8 +672,9 @@ export default function CustomerDirectory() {
         `Are you sure you want to delete ${selectedRows.length} selected row(s)?`
       )
     ) {
+      // In a real app, you would call an API bulk delete function here.
       setData((prev: DataItem[]) =>
-        prev.filter((u: DataItem) => !selectedRows.includes(u.id))
+        prev.filter((u: DataItem) => !selectedRows.includes(u._id))
       );
       setSelectedRows([]);
     }
@@ -599,12 +682,12 @@ export default function CustomerDirectory() {
 
   const areAllOnPageSelected =
     paginatedData.length > 0 &&
-    paginatedData.every((row: DataItem) => selectedRows.includes(row.id));
+    paginatedData.every((row: DataItem) => selectedRows.includes(row._id));
 
+  // --- Render Logic for Loading/Error/Form/Table ---
   if (showAddForm) {
     return (
       <div className="w-full bg-white p-6 rounded-xl shadow-lg dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-        {/* Back Button to return to Table */}
         <div className="mb-4">
           <button
             onClick={() => setShowAddForm(false)}
@@ -614,12 +697,27 @@ export default function CustomerDirectory() {
             Back to Directory
           </button>
         </div>
-
-        {/* PASS THE PROP HERE: 
-           When 'onClose' is called inside AddNewCustomer, 
-           it triggers setShowAddForm(false) here.
-        */}
         <AddNewCustomer onClose={() => setShowAddForm(false)} />
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64 bg-white p-6 rounded-xl shadow-lg dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+        <Loader2 className="size-8 text-blue-600 animate-spin mr-2" />
+        <span className="text-lg text-gray-700 dark:text-gray-300">
+          Loading customer data...
+        </span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center text-red-600 bg-red-50 dark:bg-red-900/20 border border-red-300 rounded-xl shadow-lg dark:border-red-700">
+        <p className="font-semibold text-lg">Error</p>
+        <p className="text-sm">{error}</p>
       </div>
     );
   }
@@ -697,7 +795,6 @@ export default function CustomerDirectory() {
               <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-gray-400" />
             </div>
 
-            {/* UPDATED: Toggle to Show Add Form */}
             <button
               onClick={() => setShowAddForm(true)}
               className="px-3 py-2 flex items-center bg-[#0c5888] text-white text-sm font-medium hover:bg-[#124463] transition shadow-md whitespace-nowrap rounded-lg"
@@ -757,7 +854,7 @@ export default function CustomerDirectory() {
               {paginatedData.length > 0 ? (
                 paginatedData.map((row: DataItem) => (
                   <tr
-                    key={row.id}
+                    key={row._id}
                     className="even:bg-gray-50/50 dark:even:bg-gray-700/10 border-t border-gray-100 dark:border-gray-700/50 text-sm text-gray-800 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700/30 transition duration-150"
                   >
                     {/* Checkbox Cell */}
@@ -773,20 +870,30 @@ export default function CustomerDirectory() {
                       />
                     </td>
 
-                    {/* Data Cells */}
-                    {currentColumns.map((col: Column, colIndex: number) => (
-                      <td
-                        key={colIndex}
-                        className="p-4 whitespace-nowrap overflow-hidden text-ellipsis border-r border-gray-200 dark:border-gray-700"
-                        style={{
-                          width: columnWidths[col.key as string]
-                            ? `${columnWidths[col.key as string]}px`
-                            : undefined,
-                        }}
-                      >
-                        {row[col.key]}
-                      </td>
-                    ))}
+                    {/* Data Cells (N/A Check) */}
+                    {currentColumns.map((col: Column, colIndex: number) => {
+                      const value = row[col.key as keyof DataItem];
+                      const displayValue =
+                        value === null ||
+                        value === undefined ||
+                        String(value).trim() === ""
+                          ? "N/A"
+                          : String(value);
+
+                      return (
+                        <td
+                          key={colIndex}
+                          className="p-4 whitespace-nowrap overflow-hidden text-ellipsis border-r border-gray-200 dark:border-gray-700"
+                          style={{
+                            width: columnWidths[col.key as string]
+                              ? `${columnWidths[col.key as string]}px`
+                              : undefined,
+                          }}
+                        >
+                          {displayValue}
+                        </td>
+                      );
+                    })}
 
                     {/* Actions Cell */}
                     <td
@@ -879,7 +986,6 @@ export default function CustomerDirectory() {
           </div>
         </div>
       </div>
-
       <EditCustomerModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
