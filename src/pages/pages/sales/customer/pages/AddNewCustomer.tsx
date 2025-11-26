@@ -1,4 +1,4 @@
-import React, { useState, ChangeEvent } from "react";
+import React, { useState, ChangeEvent, useEffect } from "react";
 import {
   Globe,
   Clock,
@@ -15,12 +15,19 @@ import {
   Linkedin,
   Trash2,
   Plus,
-  MessageCircle, // Using as placeholder for Skype
-  Landmark, // For Bank
+  MessageCircle,
+  Landmark,
 } from "lucide-react";
-import Attachment from "../../../components/Attachment";
+// Make sure customerUpdateApi is exported from your service
+import {
+  addCustomer,
+  fetchBankDetailsApi,
+  customerUpdateApi,
+} from "../api/customerService";
+import Attachment from "../../../../../components/Attachment";
+import { CustomerPayload } from "../models/AddCustomerPayload";
+// --- Types ---
 
-// --- Types & Interfaces ---
 interface FormData {
   // Basic Details
   gstNo: string;
@@ -73,7 +80,7 @@ interface FormData {
   salesExecutive: string;
   transporter: string;
   creditLimit: string;
-  maxCreditLimit: string;
+  maxCreditLimit: string; // Added missing field to interface
   maxCreditDays: string;
   interestRateYearly: string;
   customerOnWatch: boolean;
@@ -97,18 +104,18 @@ const INITIAL_DATA: FormData = {
   name: "",
   printName: "",
   identification: "",
-  code: "000048",
-  underLedger: "Sundry Debtors",
+  code: "",
+  underLedger: "",
   isCustomerCommon: false,
-  isSubCustomer: true,
+  isSubCustomer: false, // Changed default to false
   underCustomer: "",
   profileImage: null,
   // Statutory
-  gstRegDate: "2017-07-01",
+  gstRegDate: "",
   cin: "",
   pan: "",
-  goodsService: "Goods",
-  gstCategory: "Registered",
+  goodsService: "",
+  gstCategory: "",
   gstSuspend: false,
   distance: "0",
   tdsApplicable: false,
@@ -134,8 +141,8 @@ const INITIAL_DATA: FormData = {
   twitter: "",
   linkedin: "",
   // Defaults
-  paymentTerms: "Due on Receipt",
-  priceCategory: "Retail",
+  paymentTerms: "",
+  priceCategory: "",
   salesExecutive: "Select...",
   transporter: "Select...",
   creditLimit: "0.00",
@@ -188,7 +195,7 @@ const STEPS = [
   { id: 8, label: "Attachments" },
 ];
 
-// --- Reusable UI Components (Moved Outside) ---
+// --- Reusable UI Components ---
 
 const FormLabel = ({
   required,
@@ -307,37 +314,121 @@ const SocialInput = ({
   </div>
 );
 
+// --- Main Component ---
+
 interface AddNewCustomerProps {
   onClose: () => void;
+  initialData?: any; // The raw data from API (usually snake_case)
+  onSuccess?: () => void;
 }
 
-const AddNewCustomer: React.FC<AddNewCustomerProps> = ({ onClose }) => {
+const CrudCustomer: React.FC<AddNewCustomerProps> = ({
+  onClose,
+  initialData,
+  onSuccess,
+}) => {
   const [activeStep, setActiveStep] = useState(0);
   const [formData, setFormData] = useState<FormData>(INITIAL_DATA);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // --- New Handler for Bank Fetch ---
-  const fetchBankDetails = async () => {
-    if (!formData.ifscCode) {
-      alert("Please enter an IFSC Code first.");
-      return;
+  // Check if we are in Edit Mode
+  const isEditMode = !!initialData && !!initialData._id;
+
+  // --- Effect: Populate Form on Edit ---
+  useEffect(() => {
+    if (initialData) {
+      // Helper to safely parse strings to numbers/booleans for form state
+      const val = (v: any) => (v !== null && v !== undefined ? String(v) : "");
+
+      setFormData({
+        // Basic
+        gstNo: initialData.gst_no || "",
+        name: initialData.cust_name || "",
+        printName: initialData.print_name || "",
+        identification: initialData.identification || "",
+        code: initialData.code || "",
+        underLedger: initialData.under_ledger || "",
+        isCustomerCommon: initialData.cust_comman || false,
+        isSubCustomer: initialData.is_sub_customer || false,
+        underCustomer:
+          typeof initialData.under_customer === "string"
+            ? initialData.under_customer
+            : "",
+        profileImage: initialData.profile_photo || null,
+
+        // Statutory
+        gstRegDate: initialData.registration_date || "",
+        cin: initialData.cin || "",
+        pan: initialData.pan || "",
+        goodsService: initialData.goods_service || "",
+        gstCategory: initialData.gst_category || "",
+        gstSuspend: initialData.gst_suspend || false,
+        distance: val(initialData.distance),
+        tdsApplicable: initialData.tds_on_gst_applicable || false,
+
+        // Communication - Billing
+        billingAddress: initialData.address || "",
+        billingCountry: initialData.country || "India",
+        billingState: initialData.state || "",
+        billingCity: initialData.city || "",
+        billingPin: initialData.pin_code || "",
+        billingPhone: initialData.phone || "",
+        billingEmail: initialData.email || "",
+
+        // Communication - Shipping
+        shippingAddress: initialData.address_ship || "",
+        shippingCountry: initialData.country_ship || "India",
+        shippingState: initialData.state_ship || "",
+        shippingCity: initialData.city_ship || "",
+        shippingPin: initialData.pin_code_ship || "",
+        shippingPhone: initialData.phone_ship || "",
+        shippingEmail: initialData.email_ship || "",
+
+        // Social
+        website: initialData.website || "",
+        facebook: initialData.facebook || "",
+        skype: initialData.skype || "",
+        twitter: initialData.twitter || "",
+        linkedin: initialData.linkedin || "",
+
+        // Defaults
+        paymentTerms: initialData.payment_term || "",
+        priceCategory: initialData.price_category || "",
+        salesExecutive: initialData.sales_executive || "Select...",
+        transporter: initialData.transporter || "Select...",
+        creditLimit: val(initialData.credit_limit),
+        maxCreditLimit: val(initialData.max_credit_limit),
+        maxCreditDays: val(initialData.max_credit_days),
+        interestRateYearly: val(initialData.interest_rate_yearly),
+        customerOnWatch: initialData.customer_on_watch === "Yes",
+        firmStatus: initialData.firm_status || "Active",
+        territory: initialData.territory || "Default",
+        customerCategory: initialData.customer_category || "General",
+
+        // Bank
+        ifscCode: initialData.ifsc_code || "",
+        accountNo: initialData.account_number || "",
+        bankName: initialData.bank_name || "",
+        branch: initialData.branch || "",
+        contactPersonName: initialData.contact_person || "",
+      });
     }
+  }, [initialData]);
 
+  const fetchBankDetails = async () => {
     try {
-      const response = await fetch(
-        `https://ifsc.razorpay.com/${formData.ifscCode}`
-      );
-      if (!response.ok) {
-        throw new Error("Invalid IFSC Code or API error");
-      }
-      const data = await response.json();
+      const bankData = await fetchBankDetailsApi(formData.ifscCode);
 
       setFormData((prev) => ({
         ...prev,
-        bankName: data.BANK || "",
-        branch: data.BRANCH || "",
+        ...bankData,
       }));
     } catch (error) {
-      alert("Failed to fetch bank details. Please check the IFSC Code.");
+      if (error instanceof Error) {
+        alert(error.message);
+      } else {
+        alert("Failed to fetch bank details");
+      }
       console.error(error);
     }
   };
@@ -375,13 +466,124 @@ const AddNewCustomer: React.FC<AddNewCustomerProps> = ({ onClose }) => {
     }));
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (activeStep < STEPS.length - 1) {
       setActiveStep((prev) => prev + 1);
     } else {
-      // 2. Handle the Final Submit
-      alert("Form Submitted Successfully!");
-      onClose(); // Call the prop to return to the directory
+      // --- FINAL SUBMIT / UPDATE LOGIC ---
+      setIsSubmitting(true);
+
+      const val = (v: string | null | undefined) =>
+        v && v.trim() !== "" ? v : "N/A";
+
+      try {
+        const payload: CustomerPayload = {
+          // Basic
+          gst_no: val(formData.gstNo),
+          cust_name: val(formData.name),
+          print_name: val(formData.printName),
+          identification: val(formData.identification),
+          code: val(formData.code),
+          under_ledger: val(formData.underLedger),
+          cust_comman: formData.isCustomerCommon,
+          is_sub_customer: formData.isSubCustomer,
+          under_customer: formData.underCustomer || false,
+          profile_photo: formData.profileImage,
+
+          // Statutory
+          gst: val(formData.gstNo),
+          registration_date: val(formData.gstRegDate),
+          cin: val(formData.cin),
+          pan: val(formData.pan),
+          goods_service: val(formData.goodsService),
+          gst_category: val(formData.gstCategory),
+          gst_suspend: formData.gstSuspend,
+          distance: Number(formData.distance) || 0,
+          tds_on_gst_applicable: formData.tdsApplicable,
+
+          // Billing Address
+          address: val(formData.billingAddress),
+          country: val(formData.billingCountry),
+          state: val(formData.billingState),
+          city: val(formData.billingCity),
+          pin_code: val(formData.billingPin),
+          phone: val(formData.billingPhone),
+          email: val(formData.billingEmail),
+          longitude: "0",
+          latitude: "0",
+          route_map: "N/A",
+
+          // Shipping Address
+          address_ship: val(formData.shippingAddress),
+          country_ship: val(formData.shippingCountry),
+          state_ship: val(formData.shippingState),
+          city_ship: val(formData.shippingCity),
+          pin_code_ship: val(formData.shippingPin),
+          phone_ship: val(formData.shippingPhone),
+          email_ship: val(formData.shippingEmail),
+          longitude_ship: "0",
+          latitude_ship: "0",
+          route_map_ship: "N/A",
+
+          // Social
+          website: val(formData.website),
+          facebook: val(formData.facebook),
+          skype: val(formData.skype),
+          twitter: val(formData.twitter),
+          linkedin: val(formData.linkedin),
+
+          // Defaults
+          payment_term: val(formData.paymentTerms),
+          price_category: val(formData.priceCategory),
+          batch_rate_category: "N/A",
+          sales_executive: val(formData.salesExecutive),
+          transporter: val(formData.transporter),
+          credit_limit: val(formData.creditLimit),
+          // max_credit_limit: val(formData.maxCreditLimit),
+          max_credit_days: val(formData.maxCreditDays),
+          interest_rate_yearly: val(formData.interestRateYearly),
+          customer_on_watch: formData.customerOnWatch ? "Yes" : "No",
+          firm_status: val(formData.firmStatus),
+          territory: val(formData.territory),
+          customer_category: val(formData.customerCategory),
+          contact_person: val(formData.contactPersonName),
+
+          // Bank
+          ifsc_code: val(formData.ifscCode),
+          account_number: val(formData.accountNo),
+          bank_name: val(formData.bankName),
+          branch: val(formData.branch),
+
+          attachment: null,
+        };
+
+        let response;
+        if (isEditMode) {
+          // --- UPDATE ---
+          // Assuming customerUpdateApi takes (id, payload)
+          response = await customerUpdateApi(initialData._id, payload);
+        } else {
+          // --- CREATE ---
+          response = await addCustomer(payload);
+        }
+
+        if (response.success) {
+          alert(
+            response.message ||
+              (isEditMode
+                ? "Customer Updated Successfully!"
+                : "Customer Added Successfully!")
+          );
+          if (onSuccess) onSuccess();
+        } else {
+          alert("Operation failed: " + (response.message || "Unknown error"));
+        }
+      } catch (error) {
+        console.error("Error submitting form:", error);
+        alert("An error occurred while saving the customer.");
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -389,8 +591,7 @@ const AddNewCustomer: React.FC<AddNewCustomerProps> = ({ onClose }) => {
     if (activeStep > 0) {
       setActiveStep((prev) => prev - 1);
     } else {
-      // 3. Handle "Extreme Back" (Step 0)
-      onClose(); // Call the prop to return to the directory
+      onClose();
     }
   };
 
@@ -492,6 +693,7 @@ const AddNewCustomer: React.FC<AddNewCustomerProps> = ({ onClose }) => {
               onChange={handleInputChange}
               className="w-full border border-gray-300 rounded-l px-2 py-1 text-sm appearance-none bg-white"
             >
+              <option value="">Select...</option>
               <option>Sundry Debtors</option>
               <option>Sundry Creditors</option>
             </select>
@@ -542,6 +744,8 @@ const AddNewCustomer: React.FC<AddNewCustomerProps> = ({ onClose }) => {
               <div className="col-span-9 relative">
                 <select
                   name="underCustomer"
+                  value={formData.underCustomer}
+                  onChange={handleInputChange}
                   className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-gray-500 appearance-none bg-white"
                 >
                   <option>Select...</option>
@@ -607,8 +811,8 @@ const AddNewCustomer: React.FC<AddNewCustomerProps> = ({ onClose }) => {
         <div className="space-y-4">
           <InputField
             label="GST"
-            name="gst"
-            value={formData.gstNo} // Assuming mapped to gstNo or need new field, kept as per original
+            name="gstNo"
+            value={formData.gstNo} // Used gstNo here as per common usage, mapped to gst payload later
             onChange={handleInputChange}
           />
           <div className="grid grid-cols-12 gap-2 items-center">
@@ -1144,7 +1348,7 @@ const AddNewCustomer: React.FC<AddNewCustomerProps> = ({ onClose }) => {
         {/* Header */}
         <div className="bg-[#0c5888] px-6 py-4 text-white flex justify-between items-center">
           <h1 className="text-xl font-semibold tracking-wide">
-            ADD NEW CUSTOMER
+            {isEditMode ? "EDIT CUSTOMER" : "ADD NEW CUSTOMER"}
           </h1>
           <div className="text-sm opacity-80">
             Step {activeStep + 1} of {STEPS.length}
@@ -1222,11 +1426,19 @@ const AddNewCustomer: React.FC<AddNewCustomerProps> = ({ onClose }) => {
 
           <button
             onClick={handleNext}
-            className="flex items-center px-6 py-2 bg-[#0c5888] text-white rounded hover:bg-[#0a4a70] font-medium shadow-sm"
+            disabled={isSubmitting}
+            className={`flex items-center px-6 py-2 bg-[#0c5888] text-white rounded hover:bg-[#0a4a70] font-medium shadow-sm ${
+              isSubmitting ? "opacity-70 cursor-not-allowed" : ""
+            }`}
           >
             {activeStep === STEPS.length - 1 ? (
               <>
-                <Save className="w-4 h-4 mr-2" /> Submit
+                <Save className="w-4 h-4 mr-2" />{" "}
+                {isSubmitting
+                  ? "Processing..."
+                  : isEditMode
+                  ? "Update"
+                  : "Submit"}
               </>
             ) : (
               <>
@@ -1240,4 +1452,4 @@ const AddNewCustomer: React.FC<AddNewCustomerProps> = ({ onClose }) => {
   );
 };
 
-export default AddNewCustomer;
+export default CrudCustomer;

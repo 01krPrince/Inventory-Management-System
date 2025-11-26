@@ -6,7 +6,7 @@ import AppFooter from "./AppFooter";
 import { TabBar } from "./TabBar";
 import { AppSidebar } from "./AppSidebar";
 import Welcome from "../pages/pages/Welcome";
-import Customer from "../pages/pages/sales/Customer";
+import Customer from "../pages/pages/sales/customer/pages/Customer.tsx";
 import PriceList from "../pages/pages/sales/salesPriceList/PriceList";
 import PartySalesDiscountRate from "../pages/pages/sales/salesPriceList/PartySalesDiscountRate";
 import BrandwiseDiscountCharges from "../pages/pages/sales/salesPriceList/BrandwiseDiscountCharges";
@@ -85,7 +85,7 @@ const LayoutContent: React.FC = () => {
           <AppHeader />
           <TabBar />
 
-          <main className="flex-1 overflow-y-auto hidden-scrollbar">
+          <main className="flex-1 overflow-y-auto hidden-scrollbar px-5">
             <div className="">
               {openTabs.map((tab) => {
                 const TabComponent =
