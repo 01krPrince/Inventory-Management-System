@@ -8,6 +8,8 @@ import React, {
   useMemo,
 } from "react";
 
+import { PrintIcon, ExportIcon } from "../../../../components/icons";
+
 import {
   PlusIcon,
   TrashIcon,
@@ -17,61 +19,30 @@ import {
   ChevronUp,
   ArrowLeft,
   Loader2,
-  Package, // Widget icon
+  Package,
 } from "lucide-react";
 
 import {
   handlePrint,
   handleExport,
 } from "../../../../components/function/functions";
-
-// Mock Icons for Print/Export (as they were imported previously)
-const PrintIcon = (props: { className: string }) => (
-  <svg
-    {...props}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M6 9V2h12v7" />
-    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
-    <path d="M6 14h12v7H6z" />
-  </svg>
-);
-const ExportIcon = (props: { className: string }) => (
-  <svg
-    {...props}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-    <polyline points="14 2 14 8 20 8" />
-    <line x1="12" y1="17" x2="12" y2="10" />
-    <polyline points="15 14 12 17 9 14" />
-  </svg>
-);
+import AddNewItem from "../../../../components/addItemMaster/AddNewItem";
 
 // --- TYPE DEFINITIONS ---
 export interface DataItem {
   _id: string;
-  name: string; // Name
-  code: string; // Code
-  hsn_code: string; // HSN Code
-  category_name: string; // Category name
-  group: string; // Group
-  type: string; // Type
-  bar_code: string; // Bar Code
-  timestamp: string; // TimeStamp (Last Updated)
-  rack_box: string; // Rack Box location
-  widget: boolean; // Widget (Boolean for small item)
-  inactive: boolean; // Inactive status
+  widget: boolean;
+  inactive: boolean;
+  name: string;
+  code: string;
+  hsn_code: string;
+  category_name: string;
+  group: string;
+  type: string;
+  bar_code: string;
+  timestamp: string;
+  rack_box: string;
+  brand: string;
   [key: string]: any;
 }
 
@@ -81,7 +52,6 @@ export interface Column {
   sortable?: boolean;
   type?: string;
   required?: boolean;
-  // Custom render function for boolean fields like Widget/Inactive
   render?: (value: any) => React.ReactNode;
 }
 
@@ -90,16 +60,8 @@ interface SortConfig {
   direction: "ascending" | "descending";
 }
 
-// --- COLUMN DEFINITIONS (Based on new request) ---
+// --- COLUMN DEFINITIONS ---
 const ItemColumns: Column[] = [
-  { key: "name", label: "Name", sortable: true },
-  { key: "code", label: "Code", sortable: true },
-  { key: "hsn_code", label: "HSN Code", sortable: true },
-  { key: "category_name", label: "Category", sortable: true },
-  { key: "group", label: "Group", sortable: true },
-  { key: "type", label: "Type", sortable: true },
-  { key: "bar_code", label: "Bar Code", sortable: true },
-  { key: "rack_box", label: "Rack Box", sortable: true },
   {
     key: "widget",
     label: "Widget",
@@ -132,14 +94,22 @@ const ItemColumns: Column[] = [
       </span>
     ),
   },
+  { key: "name", label: "Name", sortable: true },
+  { key: "code", label: "Code", sortable: true },
+  { key: "brand", label: "Brand", sortable: true },
+  { key: "hsn_code", label: "HSN Code", sortable: true },
+  { key: "category_name", label: "Category", sortable: true },
+  { key: "group", label: "Group", sortable: true },
+  { key: "type", label: "Type", sortable: true },
+  { key: "bar_code", label: "Bar Code", sortable: true },
+  { key: "rack_box", label: "Rack Box", sortable: true },
   { key: "timestamp", label: "Timestamp", sortable: true },
 ];
 
 const pageSizeOptions = [5, 10, 20, 50];
 const initialPageSize = 10;
 
-// --- MOCK API DATA FETCHING (Simulating the Item API) ---
-
+// --- MOCK API DATA FETCHING ---
 const mockItemData: DataItem[] = [
   {
     _id: "item1",
@@ -152,6 +122,7 @@ const mockItemData: DataItem[] = [
     bar_code: "123456789012",
     timestamp: "2023-11-25 10:00",
     rack_box: "A1-01",
+    brand: "Dell",
     widget: false,
     inactive: false,
   },
@@ -166,6 +137,7 @@ const mockItemData: DataItem[] = [
     bar_code: "987654321098",
     timestamp: "2023-11-24 15:30",
     rack_box: "B2-05",
+    brand: "Stanley",
     widget: true,
     inactive: false,
   },
@@ -180,6 +152,7 @@ const mockItemData: DataItem[] = [
     bar_code: "112233445566",
     timestamp: "2023-11-25 09:00",
     rack_box: "A1-03",
+    brand: "Sony",
     widget: true,
     inactive: true,
   },
@@ -194,6 +167,7 @@ const mockItemData: DataItem[] = [
     bar_code: "445566778899",
     timestamp: "2023-11-23 11:45",
     rack_box: "C3-10",
+    brand: "3M",
     widget: false,
     inactive: false,
   },
@@ -208,15 +182,14 @@ const mockItemData: DataItem[] = [
     bar_code: "001122334455",
     timestamp: "2023-11-22 18:20",
     rack_box: "A2-01",
+    brand: "LG",
     widget: false,
     inactive: false,
   },
 ];
 
 const fetchAllItems = async (): Promise<DataItem[]> => {
-  // Simulate API delay
   await new Promise((resolve) => setTimeout(resolve, 500));
-  // Simulate API success by returning the data array
   return mockItemData;
 };
 
@@ -374,7 +347,7 @@ const ResizableHeader = ({
 
   const style = {
     width: columnWidths[keyString] ? `${columnWidths[keyString]}px` : undefined,
-    minWidth: "100px",
+    minWidth: "50px",
   };
 
   const startResizing = useCallback(
@@ -387,7 +360,7 @@ const ResizableHeader = ({
       const doResizing = (mouseMoveEvent: MouseEvent) => {
         const newWidth = Math.max(
           initialWidth + (mouseMoveEvent.clientX - startX),
-          100
+          50
         );
         setColumnWidths((prev: Record<string, number | undefined>) => ({
           ...prev,
@@ -479,66 +452,6 @@ const ResizableHeader = ({
   );
 };
 
-// --- Edit/Add Modals (Mocked) ---
-const AddNewItem = ({ onClose }: { onClose: () => void }) => (
-  <div className="p-8 border border-dashed border-blue-400 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200">
-    <h3 className="text-xl font-semibold mb-3">Add New Item Form</h3>
-    <p>Form content for adding a new item goes here...</p>
-    <button
-      onClick={onClose}
-      className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-    >
-      Close Form
-    </button>
-  </div>
-);
-
-const EditItemModal: React.FC<{
-  isOpen: boolean;
-  onClose: () => void;
-  rowData: DataItem | null;
-  onUpdate: (data: DataItem) => void;
-}> = ({ isOpen, onClose, rowData, onUpdate }) => {
-  if (!isOpen || !rowData) return null;
-  return (
-    <div
-      className="fixed inset-0 z-50 overflow-y-auto bg-gray-900 bg-opacity-70 flex items-center justify-center backdrop-blur-sm p-4"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-lg m-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2 className="text-2xl font-semibold mb-6 text-gray-900 dark:text-white border-b pb-2 border-gray-100 dark:border-gray-700">
-          Edit Item: {rowData.name}
-        </h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-          Editing functionality is mocked.
-        </p>
-        <div className="flex justify-end space-x-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-5 py-2.5 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600 transition font-medium"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              onUpdate(rowData);
-              onClose();
-            }} // Mock update
-            className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
-          >
-            Mock Update
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 // --- ItemMaster Component (Main Export) ---
 export default function ItemMaster() {
   const [showAddForm, setShowAddForm] = useState(false);
@@ -563,13 +476,20 @@ export default function ItemMaster() {
     };
 
     loadItems();
-  }, []); // Run only on mount
+  }, []);
 
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  // Track the row currently being edited
   const [editingRow, setEditingRow] = useState<DataItem | null>(null);
+
   const [columnWidths, setColumnWidths] = useState<
     Record<string, number | undefined>
-  >({});
+  >({
+    checkbox: 40,
+    sno: 60,
+    widget: 60,
+    inactive: 80,
+    actions: 100,
+  });
 
   const [currentColumns, setCurrentColumns] = useState<Column[]>(ItemColumns);
 
@@ -595,9 +515,10 @@ export default function ItemMaster() {
     renderSortIndicator,
   } = useItemTableLogic(apiData, initialPageSize);
 
-  // --- Drag & Drop Handlers (signatures remain string) ---
-  const handleDragStart = useCallback(() => {}, []);
-  const handleDragOver = useCallback(() => {}, []);
+  // --- Drag & Drop Handlers (FIXED TYPES) ---
+  // The interface expects (key: string), so these must accept that argument even if unused.
+  const handleDragStart = useCallback((_key: string) => {}, []);
+  const handleDragOver = useCallback((_key: string) => {}, []);
 
   const handleDrop = useCallback(
     (draggedKey: string, droppedOverKey: string) => {
@@ -654,18 +575,9 @@ export default function ItemMaster() {
     }
   };
 
-  const handleUpdateItem = (updatedData: DataItem) => {
-    // Mock update local state
-    setData((prevData: DataItem[]) =>
-      prevData.map((row: DataItem) =>
-        row._id === updatedData._id ? updatedData : row
-      )
-    );
-  };
-
   const handleOpenEditModal = (row: DataItem) => {
     setEditingRow(row);
-    setIsEditModalOpen(false);
+    setShowAddForm(true);
   };
 
   const handleDelete = (item: DataItem) => {
@@ -701,26 +613,49 @@ export default function ItemMaster() {
     }
   };
 
+  const handleCloseForm = () => {
+    setShowAddForm(false);
+    setEditingRow(null);
+  };
+
+  const handleFormSuccess = (itemData?: DataItem) => {
+    if (itemData) {
+      if (editingRow) {
+        // UPDATE LOGIC
+        setData((prev) =>
+          prev.map((item) => (item._id === itemData._id ? itemData : item))
+        );
+      } else {
+        // CREATE LOGIC
+        setData((prev) => [itemData, ...prev]);
+      }
+    }
+    handleCloseForm();
+  };
+
   const areAllOnPageSelected =
     paginatedData.length > 0 &&
     paginatedData.every((row: DataItem) => selectedRows.includes(row._id));
 
-  // --- Render Logic for Loading/Error/Form/Table ---
+  // --- Render Logic ---
   if (showAddForm) {
     return (
       <div className="w-full">
-        {/* <InventoryHeader /> */}
         <div className="bg-white p-6 rounded-xl shadow-lg dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
           <div className="mb-4">
             <button
-              onClick={() => setShowAddForm(false)}
+              onClick={handleCloseForm}
               className="flex items-center text-sm text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-white transition-colors"
             >
               <ArrowLeft className="w-4 h-4 mr-1" />
               Back to Item Master
             </button>
           </div>
-          <AddNewItem onClose={() => setShowAddForm(false)} />
+          <AddNewItem
+            onClose={handleCloseForm}
+            onSuccess={handleFormSuccess}
+            initialData={editingRow}
+          />
         </div>
       </div>
     );
@@ -729,7 +664,6 @@ export default function ItemMaster() {
   if (isLoading) {
     return (
       <div className="w-full">
-        {/* <InventoryHeader /> */}
         <div className="flex justify-center items-center h-64 bg-white p-6 rounded-xl shadow-lg dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
           <Loader2 className="size-8 text-blue-600 animate-spin mr-2" />
           <span className="text-lg text-gray-700 dark:text-gray-300">
@@ -743,7 +677,6 @@ export default function ItemMaster() {
   if (error) {
     return (
       <div className="w-full">
-        {/* <InventoryHeader /> */}
         <div className="p-8 text-center text-red-600 bg-red-50 dark:bg-red-900/20 border border-red-300 rounded-xl shadow-lg dark:border-red-700">
           <p className="font-semibold text-lg">Error</p>
           <p className="text-sm">{error}</p>
@@ -755,12 +688,10 @@ export default function ItemMaster() {
   // --- DEFAULT VIEW: THE TABLE ---
   return (
     <>
-      {/* <InventoryHeader /> */}
       <div className="bg-white p-6 rounded-xl shadow-lg dark:bg-gray-800 border border-gray-200 dark:border-gray-700 w-full">
-        {/* Control Panel (Search, Export, Add) */}
+        {/* Control Panel */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 space-y-4 md:space-y-0">
           <div className="flex items-center space-x-4">
-            {/* Show Entries Dropdown */}
             <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
               Show
               <select
@@ -768,6 +699,7 @@ export default function ItemMaster() {
                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                   setPageSize(Number(e.target.value))
                 }
+                aria-label="Entries per page"
                 className="mx-2 p-1 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 dark:text-white appearance-none cursor-pointer"
               >
                 {pageSizeOptions.map((option: number) => (
@@ -779,7 +711,6 @@ export default function ItemMaster() {
               entries
             </div>
 
-            {/* Bulk Delete Button */}
             {selectedRows.length > 0 && (
               <button
                 onClick={handleBulkDelete}
@@ -798,6 +729,7 @@ export default function ItemMaster() {
               }
               className="p-2 text-gray-600 dark:text-gray-300 border border-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
               title="Print Table"
+              aria-label="Print Table"
             >
               <PrintIcon className="size-5" />
             </button>
@@ -808,27 +740,30 @@ export default function ItemMaster() {
               }
               className="p-2 text-gray-600 dark:text-gray-300 border border-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
               title="Export to CSV"
+              aria-label="Export to CSV"
             >
               <ExportIcon className="size-5" />
             </button>
 
             <div className="relative w-full md:w-64">
-              {/* Search Button/Input */}
               <input
                 type="text"
                 placeholder="Search items by name, code, HSN..."
                 value={searchTerm}
+                aria-label="Search items"
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   setSearchTerm(e.target.value)
                 }
                 className="w-full p-2 pl-10 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
               />
-
               <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-gray-400" />
             </div>
 
             <button
-              onClick={() => setShowAddForm(false)}
+              onClick={() => {
+                setEditingRow(null);
+                setShowAddForm(true);
+              }}
               className="px-3 py-2 flex items-center bg-[#0c5888] text-white text-sm font-medium hover:bg-[#124463] transition shadow-md whitespace-nowrap rounded-lg"
             >
               <PlusIcon className="size-4 mr-1" />
@@ -853,6 +788,7 @@ export default function ItemMaster() {
                     className="rounded text-blue-600 dark:bg-gray-600 dark:border-gray-500 border-gray-300 focus:ring-blue-500"
                     checked={areAllOnPageSelected}
                     onChange={handleSelectAll}
+                    aria-label="Select all items on page"
                   />
                 </th>
 
@@ -880,7 +816,7 @@ export default function ItemMaster() {
                   />
                 ))}
 
-                {/* Actions Column (Edit, Delete) */}
+                {/* Actions Column */}
                 <th
                   className="p-4 text-center whitespace-nowrap no-print border-r border-dashed border-gray-300 dark:border-gray-600"
                   style={{ width: columnWidths["actions"] || "100px" }}
@@ -900,13 +836,16 @@ export default function ItemMaster() {
                     {/* Checkbox Cell */}
                     <td
                       className="p-4 w-10 no-print text-center border-r border-gray-200 dark:border-gray-700"
-                      style={{ width: columnWidths["checkbox"] || "40px" }}
+                      style={{
+                        width: columnWidths["checkbox"] || "40px",
+                      }}
                     >
                       <input
                         type="checkbox"
                         className="rounded text-blue-600 dark:bg-gray-600 dark:border-gray-500 border-gray-300 focus:ring-blue-500"
                         checked={isSelected(row)}
                         onChange={() => handleSelectRow(row)}
+                        aria-label={`Select item ${row.name}`}
                       />
                     </td>
 
@@ -918,11 +857,10 @@ export default function ItemMaster() {
                       {startEntry + index}
                     </td>
 
-                    {/* Data Cells (N/A Check) */}
+                    {/* Data Cells */}
                     {currentColumns.map((col: Column, colIndex: number) => {
                       const value = row[col.key as keyof DataItem];
 
-                      // Use custom render function if available (e.g., for Widget/Inactive)
                       if (col.render) {
                         return (
                           <td
@@ -964,9 +902,10 @@ export default function ItemMaster() {
                     {/* Actions Cell */}
                     <td
                       className="p-4 text-center space-x-2 whitespace-nowrap no-print border-r border-gray-200 dark:border-gray-700"
-                      style={{ width: columnWidths["actions"] || "100px" }}
+                      style={{
+                        width: columnWidths["actions"] || "100px",
+                      }}
                     >
-                      {/* Edit Button */}
                       <button
                         onClick={() => handleOpenEditModal(row)}
                         className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400 transition"
@@ -976,7 +915,6 @@ export default function ItemMaster() {
                         <EditIcon className="size-4 inline" />
                       </button>
 
-                      {/* Delete Button */}
                       <button
                         onClick={() => handleDelete(row)}
                         className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-red-600 dark:text-red-400 transition"
@@ -991,7 +929,7 @@ export default function ItemMaster() {
               ) : (
                 <tr>
                   <td
-                    colSpan={currentColumns.length + 3} // + Sno, + Checkbox, + Actions
+                    colSpan={currentColumns.length + 3}
                     className="p-8 text-center text-lg text-gray-500 dark:text-gray-400"
                   >
                     No matching item entries found. 📦
@@ -1005,8 +943,8 @@ export default function ItemMaster() {
         {/* Pagination */}
         <div className="flex flex-col sm:flex-row justify-between items-center mt-6 space-y-4 sm:space-y-0">
           <div className="text-sm text-gray-600 dark:text-gray-400">
-            Showing {startEntry} to {endEntry} of {sortedDataLength}
-            entries. (Total Pages: {totalPages})
+            Showing {startEntry} to {endEntry} of {sortedDataLength} entries.
+            (Total Pages: {totalPages})
           </div>
 
           <div className="flex space-x-2 items-center justify-center mt-4">
@@ -1054,12 +992,6 @@ export default function ItemMaster() {
           </div>
         </div>
       </div>
-      <EditItemModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        rowData={editingRow}
-        onUpdate={handleUpdateItem}
-      />
     </>
   );
 }
