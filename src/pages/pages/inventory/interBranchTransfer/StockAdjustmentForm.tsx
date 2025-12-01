@@ -233,10 +233,10 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
               </div>
             </div>
 
-            {/* Party */}
+            {/* To Store */}
             <div className="grid grid-cols-12 gap-2">
               <div className="col-span-4">
-                <Label>Party</Label>
+                <Label>To Store</Label>
               </div>
 
               <div className="col-span-8">
@@ -256,10 +256,10 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
 
           {/* RIGHT COLUMN */}
           <div className="space-y-1">
-            {/* Voucher Date */}
+            {/* Transfer Date */}
             <div className="grid grid-cols-12 gap-2">
               <div className="col-span-4">
-                <Label>Voucher Date</Label>
+                <Label>Transfer Date</Label>
               </div>
 
               <div className="col-span-8">
@@ -267,14 +267,33 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
               </div>
             </div>
 
-            {/* Voucher No */}
+            {/* Transfer No */}
             <div className="grid grid-cols-12 gap-2">
               <div className="col-span-4">
-                <Label>Voucher No</Label>
+                <Label>Transfer No</Label>
               </div>
 
               <div className="col-span-8">
                 <VoucherNoInput value="0005" />
+              </div>
+            </div>
+            {/* PostingGL  */}
+            <div className="grid grid-cols-12 gap-2">
+              <div className="col-span-4">
+                <Label>PostingGL </Label>
+              </div>
+
+              <div className="col-span-8">
+                <InputGroup>
+                  <Select
+                    options={mockData.customers}
+                    placeholder="Select..."
+                  />
+                  {/* Triggers The Logic */}
+                  <button onClick={handleAddNew}>
+                    <ActionBtn icon={<EditIcon size={16} />} />
+                  </button>
+                </InputGroup>
               </div>
             </div>
           </div>

@@ -3,9 +3,10 @@ import StockAdjustmentFormHeader from "./StockAdjustmentFormHeader";
 import StockAdjustmentForm from "./StockAdjustmentForm";
 import OrderTable from "./OrderTable";
 import InvoiceFooter from "./InvoiceFooter";
-import { COLORS } from "../../../../constants/colors";
+import { COLORS } from "../../../../../constants/colors";
+import Logistics from "./Logistics";
 
-const StockAdjustment: React.FC = () => {
+const MaterialIssueForJobWork: React.FC = () => {
   // 1. State to track if the nested form is open
   const [isOverlayOpen, setIsOverlayOpen] = useState(false);
 
@@ -36,6 +37,7 @@ const StockAdjustment: React.FC = () => {
             <>
               <OrderTable />
               <InvoiceFooter />
+              <Logistics />
             </>
           )}
         </div>
@@ -44,4 +46,4 @@ const StockAdjustment: React.FC = () => {
   );
 };
 
-export default StockAdjustment;
+export default MaterialIssueForJobWork;

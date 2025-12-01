@@ -6,7 +6,7 @@ import {
   LuList,
   LuTable,
   LuFile,
-  LuChartPie, // FIXED: Was LuPieChart
+  LuChartPie,
   LuBox,
   LuPlug,
   LuChevronRight,
@@ -26,33 +26,26 @@ import {
   LuFactory,
   LuBuilding2,
   LuUsers,
-  LuFileChartColumn, // FIXED: Was LuFileBarChart
+  LuFileChartColumn,
   LuFolderOpen,
   LuCopy,
   LuX,
   LuRotateCcw,
   LuCalculator,
-  LuCircleHelp, // FIXED: Was LuHelpCircle
+  LuCircleHelp,
   LuSettings,
 } from "react-icons/lu";
 
 type IconProps = React.SVGProps<SVGSVGElement>;
 
-// --- Fixes for the specific errors you found ---
-
-// FIXED: LuPieChart -> LuChartPie
 export const PieChartIcon = (props: IconProps) => <LuChartPie {...props} />;
 
-// FIXED: LuFileBarChart -> LuFileChartColumn
 export const ReportIcon = (props: IconProps) => (
   <LuFileChartColumn {...props} />
 );
 export const ChartIcon = (props: IconProps) => <LuFileChartColumn {...props} />;
 
-// FIXED: LuHelpCircle -> LuCircleHelp
 export const HelpIcon = (props: IconProps) => <LuCircleHelp {...props} />;
-
-// --- Rest of the icons (unchanged) ---
 
 export const GridIcon = (props: IconProps) => <LuLayoutGrid {...props} />;
 export const CalenderIcon = (props: IconProps) => <LuCalendar {...props} />;

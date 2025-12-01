@@ -4,7 +4,6 @@ const ThemeToggleButton = () => null;
 const NotificationDropdown = () => null;
 
 const AppHeader: React.FC = () => {
-  // isApplicationMenuOpen state is removed since it's no longer used for mobile toggle
   const [isUserMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -40,7 +39,7 @@ const AppHeader: React.FC = () => {
     <header className="sticky top-0 z-50 w-full bg-white border-b border-gray-200 dark:bg-gray-900 dark:border-gray-800 transition-all duration-300 ease-in-out">
       <div className="flex flex-col w-full grow lg:flex-row lg:px-6">
         {/* === HEADER TOP ROW: LOGO + RIGHT ICONS (Always Side-by-Side) === */}
-        <div className="flex items-center justify-between w-full gap-2 px-3 py-2 sm:gap-4 lg:justify-normal lg:w-auto lg:py-2">
+        <div className="flex items-center justify-between w-full gap-2 px-3  sm:gap-4 lg:justify-normal lg:w-auto lg:py-1">
           {/* Logo/Title (Left) */}
           <a href="https://solution.alignbooks.com/#/login" target="_blank">
             <div className="ml-3 p-2 h-10 flex items-center justify-center transition-all duration-300 ease-in-out">
@@ -50,9 +49,6 @@ const AppHeader: React.FC = () => {
             </div>
           </a>
 
-          {/* Right Section (Icons & Avatar) - RENDERED HERE FOR MOBILE */}
-          {/* On mobile, this div is next to the Logo. On large screens, it is hidden 
-             because the dedicated Right Section div below takes over. */}
           <div className="flex items-center gap-3 lg:hidden">
             <ThemeToggleButton />
             <NotificationDropdown />
@@ -72,7 +68,7 @@ const AppHeader: React.FC = () => {
 
               {isUserMenuOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden transition-all duration-300 ease-in-out">
-                  <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+                  <div className="px-4 py-1 border-b border-gray-200 dark:border-gray-700">
                     <p className="text-sm font-medium text-gray-800 dark:text-gray-100">
                       Admin User
                     </p>

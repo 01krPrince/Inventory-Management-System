@@ -16,6 +16,8 @@ import UpdateBarcodeRate from "../pages/pages/sales/salesPriceList/UpdateBarcode
 import SalesInvoice from "../pages/pages/sales/salesInvoice/SalseInvoice";
 import ItemMaster from "../pages/pages/inventory/itemMaster/ItemMaster";
 import StockAdjustment from "../pages/pages/inventory/stockAdjustment/StockAdjustment";
+// import InterBranchTransfer from "../pages/pages/inventory/interBranchTransfer/InterBranchTransfer.tsx";
+// import MaterialIssueForJobWork from "../pages/pages/inventory/JobWorkOutward/MaterialIssueForJobWork/MaterialIssueForJobWork.tsx";
 // import { CustomCalculator } from "../components/CustomCalculator";
 
 const useSidebar = () => ({
@@ -37,6 +39,8 @@ const ComponentMap: { [key: string]: React.FC } = {
   "/sale-invoice": SalesInvoice,
   "/item-master": ItemMaster,
   "/stock-adjustment": StockAdjustment,
+  // "/inter-branch-transfer": InterBranchTransfer,
+  // "/material-issue-for-job-work": MaterialIssueForJobWork,
   "/attendance": () => <></>,
   "/fallback": () => (
     <div className="p-6 mt-6 bg-gray-100 dark:bg-gray-800 rounded-lg shadow text-center">

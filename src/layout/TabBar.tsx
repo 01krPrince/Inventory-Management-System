@@ -38,7 +38,7 @@ export const TabBar: React.FC = React.memo(() => {
             // Apply the droppable properties
             ref={droppableProvided.innerRef}
             {...droppableProvided.droppableProps}
-            className="flex flex-wrap items-center space-x-1 border-b border-gray-200 dark:border-gray-800 px-4 pt-2 whitespace-normal"
+            className="flex flex-wrap items-center space-x-1 border-b border-gray-200 dark:border-gray-800 px-4 whitespace-normal"
           >
             {openTabs.map((tab, index) => (
               // 4. Each tab must be a Draggable component
@@ -49,7 +49,7 @@ export const TabBar: React.FC = React.memo(() => {
                     ref={draggableProvided.innerRef}
                     {...draggableProvided.draggableProps}
                     {...draggableProvided.dragHandleProps} // Makes the entire tab the drag handle
-                    className={`flex items-center px-4 py-2 text-sm rounded-t-lg transition-colors duration-150 cursor-pointer ${
+                    className={`flex items-center px-4 py-1 text-sm rounded-t-lg transition-colors duration-150 cursor-pointer ${
                       tab.path === activeTabPath
                         ? "bg-white text-[#0c5888] font-bold border-b-2 border-[#0c5888]"
                         : "text-gray-600 dark:text-gray-300 hover:text-[#0c5888]"

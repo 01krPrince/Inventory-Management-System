@@ -233,44 +233,49 @@ export const navItems = [
     subItems: [
       { name: "Item Master", path: "/item-master", pro: false },
       { name: "Stock Adjustment", path: "/stock-adjustment", pro: false },
-      { name: "Material Issue", path: "/material-issue", pro: false },
-      { name: "Material Receipt", path: "/material-receipt", pro: false },
+      // { name: "Material Issue", path: "/material-issue", pro: false },
+      // { name: "Material Receipt", path: "/material-receipt", pro: false },
+      // {
+      //   name: "Returnable Delivery Challan",
+      //   path: "/returnable-delivery-challan",
+      //   pro: false,
+      // },
+      // {
+      //   name: "Inter Branch",
+      //   path: "/inter-branch",
+      //   pro: false,
+      //   nestedItems: [
+      //     {
+      //       name: "Inter Branch Issue Request",
+      //       path: "/inter-branch-issue-request",
+      //       pro: false,
+      //     },
+      //     {
+      //       name: "Inter Branch Issue",
+      //       path: "/inter-branch-issue",
+      //       pro: false,
+      //     },
+      //     {
+      //       name: "Inter Branch Receipt",
+      //       path: "/inter-branch-receipt",
+      //       pro: false,
+      //     },
+      //     {
+      //       name: "Inter Branch Transfer",
+      //       path: "/inter-branch-transfer",
+      //       pro: false,
+      //     },
+      //     {
+      //       name: "Process IB Request For Promotion",
+      //       path: "/process-ib-request-for-promotion",
+      //       pro: false,
+      //     },
+      //   ],
+      // },
       {
-        name: "Returnable Delivery Challan",
-        path: "/returnable-delivery-challan",
+        name: "Inter Branch Transfer",
+        path: "/inter-branch-transfer",
         pro: false,
-      },
-      {
-        name: "Inter Branch",
-        path: "/inter-branch",
-        pro: false,
-        nestedItems: [
-          {
-            name: "Inter Branch Issue Request",
-            path: "/inter-branch-issue-request",
-            pro: false,
-          },
-          {
-            name: "Inter Branch Issue",
-            path: "/inter-branch-issue",
-            pro: false,
-          },
-          {
-            name: "Inter Branch Receipt",
-            path: "/inter-branch-receipt",
-            pro: false,
-          },
-          {
-            name: "Inter Branch Transfer",
-            path: "/inter-branch-transfer",
-            pro: false,
-          },
-          {
-            name: "Process IB Request For Promotion",
-            path: "/process-ib-request-for-promotion",
-            pro: false,
-          },
-        ],
       },
       {
         name: "Job Work Outward",
