@@ -1,15 +1,19 @@
 import React, { useState } from "react";
 import { CalenderIcon } from "../../../../components/icons";
 import DocumentInventoryModal from "../../../../components/DocumentCategoryInventory";
-import CrudCustomer from "../../sales/customer/pages/AddNewCustomer";
-import { EditIcon, ArrowLeft } from "lucide-react";
+import { LocationMaster } from "../../../../components/LocationMaster";
+// Added Plus icon for the "Create" button
+import { EditIcon, ArrowLeft, Plus } from "lucide-react";
+import ChartOfAccounts, {
+  AccountFormData,
+} from "../../../../components/ChartOfAccount";
 
 // --- Types ---
 interface MockData {
   gstTypes: string[];
   creditTypes: string[];
   stores: string[];
-  customers: string[];
+  customers: { name: string; underGroup: string; code: string }[];
   priceCategories: string[];
   salesmen: string[];
   taxOptions: string[];
@@ -20,9 +24,10 @@ interface MockData {
 
 interface ActionBtnProps {
   icon: React.ReactElement;
+  onClick?: () => void; // Added onClick to interface
+  className?: string; // Added className for styling flexibility
 }
 
-// 1. UPDATE THE INTERFACE to accept the new prop
 export interface SalesInvoiceFormProps {
   themeColor?: string;
   onOverlayChange?: (isOpen: boolean) => void;
@@ -38,9 +43,10 @@ interface InputGroupProps {
 }
 
 interface SelectProps {
-  options: string[];
+  options: { label: string; value: string }[] | string[]; // Updated to support object array
   placeholder?: string;
   value?: string;
+  onChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void; // Added onChange
 }
 
 // --- Mock Data ---
@@ -48,7 +54,23 @@ const mockData: MockData = {
   gstTypes: ["BillOfSupply", "GST Invoice", "Export"],
   creditTypes: ["Credit", "Cash"],
   stores: ["SPORTS HUB", "TECH WORLD", "FASHION POINT"],
-  customers: ["John Doe", "Jane Smith", "Acme Corp"],
+  customers: [
+    {
+      name: "John Doe",
+      underGroup: "Retail",
+      code: "CUST001",
+    },
+    {
+      name: "Jane Smith",
+      underGroup: "Wholesale",
+      code: "CUST002",
+    },
+    {
+      name: "Acme Corp",
+      underGroup: "Corporate",
+      code: "CUST003",
+    },
+  ],
   priceCategories: ["Retail", "Wholesale", "Dealer"],
   salesmen: ["Alice", "Bob", "Charlie"],
   taxOptions: ["Inclusive", "Exclusive"],
@@ -68,25 +90,34 @@ const InputGroup: React.FC<InputGroupProps> = ({ children }) => (
   <div className="flex items-center w-full relative gap-1">{children}</div>
 );
 
+// Updated Select to handle objects, strings, and onChange events
 const Select: React.FC<SelectProps> = ({
   options,
   placeholder = "Select...",
   value,
+  onChange,
 }) => (
   <div className="relative w-full">
     <select
       className="w-full h-[30px] bg-white border border-gray-300 rounded-sm px-2 text-[13px] text-gray-700 focus:outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)] appearance-none"
-      defaultValue={value}
+      value={value}
+      onChange={onChange}
+      defaultValue={!value ? "" : undefined} // handle default if controlled
     >
       <option value="" disabled>
         {placeholder}
       </option>
 
-      {options.map((opt) => (
-        <option key={opt} value={opt}>
-          {opt}
-        </option>
-      ))}
+      {options.map((opt) => {
+        const isString = typeof opt === "string";
+        const val = isString ? opt : opt.value;
+        const lab = isString ? opt : opt.label;
+        return (
+          <option key={val} value={val}>
+            {lab}
+          </option>
+        );
+      })}
     </select>
     <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
       <svg width="8" height="6" fill="currentColor" viewBox="0 0 24 24">
@@ -96,8 +127,11 @@ const Select: React.FC<SelectProps> = ({
   </div>
 );
 
-const ActionBtn: React.FC<ActionBtnProps> = ({ icon }) => (
-  <button className="h-[30px] w-[30px] bg-[var(--theme-primary)] text-white flex items-center justify-center rounded-sm border border-[var(--theme-primary)] hover:opacity-90 transition-opacity ml-[-1px] z-10">
+const ActionBtn: React.FC<ActionBtnProps> = ({ icon, onClick, className }) => (
+  <button
+    onClick={onClick}
+    className={`h-[30px] w-[30px] bg-[var(--theme-primary)] text-white flex items-center justify-center rounded-sm border border-[var(--theme-primary)] hover:opacity-90 transition-opacity z-10 ${className}`}
+  >
     {icon}
   </button>
 );
@@ -130,32 +164,36 @@ const VoucherNoInput: React.FC<{ value: string }> = ({ value }) => (
 // --- Main Component ---
 const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
   themeColor = "#0f3c63",
-  onOverlayChange, // 2. Receive the prop
+  onOverlayChange,
 }) => {
   const themeStyles = {
     "--theme-primary": themeColor,
     "--theme-focus": "#60a5fa",
   } as React.CSSProperties;
 
-  const [documentInventoryModal, setDocumentInventoryModal] = useState(false);
-  const [editingRow, setEditingRow] = useState<null>(null);
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  // --- States ---
+  const [documentInventoryModalCompo, setDocumentInventoryModalCompo] =
+    useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false); // Used for LocationMaster
+
+  // Chart of Accounts States
+  const [showChartOfAccounts, setShowChartOfAccounts] = useState(false);
+  const [coaFormData, setCoaFormData] = useState<AccountFormData | null>(null);
+  const [selectedGL, setSelectedGL] = useState<string>("");
+
+  // --- Handlers ---
 
   const handleDocumentInventoryModal = () => {
-    setDocumentInventoryModal(true);
+    setDocumentInventoryModalCompo(true);
   };
 
-  const handleAddNew = () => {
-    setEditingRow(null);
+  const handleAddNewLocation = () => {
     setIsFormOpen(true);
-    // 3. Notify Parent to HIDE Table/Footer
     if (onOverlayChange) onOverlayChange(true);
   };
 
   const handleCloseForm = () => {
     setIsFormOpen(false);
-    setEditingRow(null);
-    // 4. Notify Parent to SHOW Table/Footer
     if (onOverlayChange) onOverlayChange(false);
   };
 
@@ -163,8 +201,55 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
     handleCloseForm();
   };
 
-  // If the form is open, we can just return the CRUD form immediately
-  // This replaces the StockAdjustment Inputs with the Customer Inputs
+  // 1. Create New GL Account
+  const handleCreateGL = () => {
+    setCoaFormData(null); // Ensure data is null for "Create" mode
+    setShowChartOfAccounts(true);
+  };
+
+  // 2. Edit Selected GL Account
+  const handleEditGL = () => {
+    if (!selectedGL) {
+      alert("Please select an account to edit first.");
+      return;
+    }
+
+    // Find the mock data object
+    const account = mockData.customers.find((c) => c.code === selectedGL);
+
+    if (account) {
+      // Map mock data to the AccountFormData structure required by the component
+      const dataToEdit: AccountFormData = {
+        id: account.code,
+        name: account.name,
+        code: account.code,
+        underGroup: account.underGroup,
+        // Defaulting other required fields since mock data is simple
+        identification: "",
+        isSubledger: false,
+        type: "General",
+        accountNo: "",
+        rtgsIfsc: "",
+        classification: "",
+        isLoanAccount: false,
+        tdsApplicable: false,
+        address: "",
+        pan: "",
+        attrEmployee: false,
+        attrGroup: false,
+      };
+      setCoaFormData(dataToEdit);
+      setShowChartOfAccounts(true);
+    }
+  };
+
+  const handleSaveGL = (data: AccountFormData) => {
+    console.log("Saved GL Data:", data);
+    // Here you would typically update your state/backend
+    setShowChartOfAccounts(false);
+  };
+
+  // If LocationMaster form is open
   if (isFormOpen) {
     return (
       <div
@@ -180,17 +265,20 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
             Back to Stock Adjustment
           </button>
         </div>
-
-        <CrudCustomer
+        <LocationMaster
           onClose={handleCloseForm}
-          initialData={editingRow}
           onSuccess={handleFormSuccess}
         />
       </div>
     );
   }
 
-  // Otherwise, return the normal StockAdjustment inputs
+  const customerOptions = mockData.customers.map((customer) => ({
+    label: `${customer.name} | ${customer.underGroup} | ${customer.code}`,
+    value: customer.code,
+  }));
+
+  // --- Render ---
   return (
     <>
       <div
@@ -205,16 +293,16 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
               <div className="col-span-4">
                 <Label required>Category</Label>
               </div>
-
               <div className="col-span-8">
                 <InputGroup>
                   <Select
                     options={mockData.priceCategories}
                     placeholder="Select..."
                   />
-                  <button onClick={handleDocumentInventoryModal}>
-                    <ActionBtn icon={<EditIcon size={16} />} />
-                  </button>
+                  <ActionBtn
+                    icon={<EditIcon size={16} />}
+                    onClick={handleDocumentInventoryModal}
+                  />
                 </InputGroup>
               </div>
             </div>
@@ -224,7 +312,6 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
               <div className="col-span-4">
                 <Label required>Store</Label>
               </div>
-
               <div className="col-span-8">
                 <InputGroup>
                   <Select options={mockData.stores} value="SPORTS HUB" />
@@ -238,17 +325,13 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
               <div className="col-span-4">
                 <Label>To Store</Label>
               </div>
-
               <div className="col-span-8">
                 <InputGroup>
-                  <Select
-                    options={mockData.customers}
-                    placeholder="Select..."
+                  <Select options={customerOptions} placeholder="Select..." />
+                  <ActionBtn
+                    icon={<EditIcon size={16} />}
+                    onClick={handleAddNewLocation}
                   />
-                  {/* Triggers The Logic */}
-                  <button onClick={handleAddNew}>
-                    <ActionBtn icon={<EditIcon size={16} />} />
-                  </button>
                 </InputGroup>
               </div>
             </div>
@@ -261,7 +344,6 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
               <div className="col-span-4">
                 <Label>Transfer Date</Label>
               </div>
-
               <div className="col-span-8">
                 <VoucherDateInput value="25/11/2025" />
               </div>
@@ -272,27 +354,37 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
               <div className="col-span-4">
                 <Label>Transfer No</Label>
               </div>
-
               <div className="col-span-8">
                 <VoucherNoInput value="0005" />
               </div>
             </div>
-            {/* PostingGL  */}
+
+            {/* PostingGL (UPDATED SECTION) */}
             <div className="grid grid-cols-12 gap-2">
               <div className="col-span-4">
                 <Label>PostingGL </Label>
               </div>
-
               <div className="col-span-8">
                 <InputGroup>
                   <Select
-                    options={mockData.customers}
-                    placeholder="Select..."
+                    options={customerOptions}
+                    placeholder="Select customer..."
+                    value={selectedGL}
+                    onChange={(e) => setSelectedGL(e.target.value)}
                   />
-                  {/* Triggers The Logic */}
-                  <button onClick={handleAddNew}>
-                    <ActionBtn icon={<EditIcon size={16} />} />
-                  </button>
+
+                  {/* Button 1: Create New */}
+                  <ActionBtn
+                    icon={<Plus size={16} />}
+                    onClick={handleCreateGL}
+                    className="mr-0"
+                  />
+
+                  {/* Button 2: Edit Selected */}
+                  <ActionBtn
+                    icon={<EditIcon size={16} />}
+                    onClick={handleEditGL}
+                  />
                 </InputGroup>
               </div>
             </div>
@@ -300,16 +392,24 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
         </div>
 
         {/* ITEM GROUP MODAL OVERLAY */}
-        {documentInventoryModal && (
+        {documentInventoryModalCompo && (
           <div className="fixed inset-0 z-[30] flex items-center justify-center bg-transparent bg-opacity-50 backdrop-blur-sm p-4">
             <div className=" w-auto h-auto bg-white rounded-lg shadow-2xl overflow-hidden relative">
               <DocumentInventoryModal
-                isOpen={documentInventoryModal}
-                onClose={() => setDocumentInventoryModal(false)}
+                isOpen={documentInventoryModalCompo}
+                onClose={() => setDocumentInventoryModalCompo(false)}
               />
             </div>
           </div>
         )}
+
+        {/* CHART OF ACCOUNTS MODAL (NEW) */}
+        <ChartOfAccounts
+          isOpen={showChartOfAccounts}
+          onClose={() => setShowChartOfAccounts(false)}
+          initialData={coaFormData}
+          onSave={handleSaveGL}
+        />
       </div>
     </>
   );

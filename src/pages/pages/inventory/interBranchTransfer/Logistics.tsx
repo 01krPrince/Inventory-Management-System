@@ -6,6 +6,7 @@ import {
   FileText,
   Edit2,
 } from "lucide-react";
+import Transporter from "../../../../components/Transporter";
 
 // --- Reusable UI Components (Local for self-containment) ---
 
@@ -111,7 +112,11 @@ const Logistics: React.FC = () => {
   const shippingModes = ["Road", "Air", "Sea", "Rail"];
   const chargeTypes = ["Paid", "To Pay", "Free"];
   const shippingCompanies = ["DHL", "FedEx", "BlueDart", "Delhivery"];
+  const [transporterCompo, setTransporterCompo] = useState(false);
 
+  const handleTransporterCompo = () => {
+    setTransporterCompo(true);
+  };
   return (
     <div className="w-full bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden mb-4">
       {/* Accordion Header */}
@@ -161,7 +166,9 @@ const Logistics: React.FC = () => {
                 </div>
                 <div className="col-span-8 flex gap-1">
                   <Select options={shippingCompanies} placeholder="Select..." />
-                  <ActionBtn icon={<Edit2 size={14} />} />
+                  <button onClick={handleTransporterCompo}>
+                    <ActionBtn icon={<Edit2 size={14} />} />
+                  </button>
                 </div>
               </div>
 
@@ -358,6 +365,16 @@ const Logistics: React.FC = () => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+      {transporterCompo && (
+        <div className="fixed inset-0 z-[30] flex items-center justify-center bg-transparent bg-opacity-50 backdrop-blur-sm p-4">
+          <div className=" w-auto h-auto bg-white rounded-lg shadow-2xl overflow-hidden relative">
+            <Transporter
+              isOpen={transporterCompo}
+              onClose={() => setTransporterCompo(false)}
+            />
           </div>
         </div>
       )}

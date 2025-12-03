@@ -6,7 +6,11 @@ import {
   ChevronUp,
   ChevronDown,
   FileText,
+  Plus,
 } from "lucide-react";
+import DocumentInventoryModal from "../../../../../components/DocumentCategoryInventory";
+import CrudCustomer from "../../../sales/customer/pages/AddNewCustomer";
+import AddNewItem from "../../../../../components/addItemMaster/AddNewItem";
 
 // --- Types ---
 export interface SalesInvoiceFormProps {
@@ -16,6 +20,7 @@ export interface SalesInvoiceFormProps {
 interface ActionBtnProps {
   icon: React.ReactElement;
   onClick?: () => void;
+  className?: string;
 }
 
 interface LabelProps {
@@ -28,75 +33,18 @@ interface InputGroupProps {
 }
 
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
-  options: string[];
+  options: (string | { label: string; value: string | number })[];
   placeholder?: string;
 }
-
-// --- MOCK COMPONENTS ---
-const DocumentInventoryModal: React.FC<{
-  isOpen: boolean;
-  onClose: () => void;
-}> = ({ isOpen, onClose }) => {
-  if (!isOpen) return null;
-  return (
-    <div className="bg-white p-6 rounded-lg w-96 relative">
-      <button
-        onClick={onClose}
-        className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-      >
-        ✕
-      </button>
-      <h3 className="text-lg font-semibold mb-4 text-[#0f3c63]">
-        Document Inventory
-      </h3>
-      <p className="text-gray-600 mb-4">
-        This is a placeholder for the Document Inventory Modal.
-      </p>
-      <button
-        onClick={onClose}
-        className="w-full bg-[#0f3c63] text-white py-2 rounded hover:opacity-90"
-      >
-        Close
-      </button>
-    </div>
-  );
-};
-
-const CrudCustomer: React.FC<{
-  onClose: () => void;
-  initialData: any;
-  onSuccess: () => void;
-}> = ({ onClose, onSuccess }) => {
-  return (
-    <div className="p-1">
-      <h2 className="text-xl font-bold text-[#0f3c63] mb-4">
-        Add New Customer
-      </h2>
-      <div className="bg-gray-50 border border-gray-200 rounded p-8 text-center text-gray-500 mb-6">
-        [Customer CRUD Form Content]
-      </div>
-      <div className="flex justify-end gap-3">
-        <button
-          onClick={onClose}
-          className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={onSuccess}
-          className="px-4 py-2 bg-[#0f3c63] text-white rounded hover:opacity-90"
-        >
-          Save Customer
-        </button>
-      </div>
-    </div>
-  );
-};
 
 // --- Mock Data ---
 const mockData = {
   stores: ["SPORTS HUB", "TECH WORLD"],
-  customers: ["John Doe", "Jane Smith", "Acme Corp"],
+  customers: [
+    { id: 101, name: "John Doe", code: "C001" },
+    { id: 102, name: "Jane Smith", code: "C002" },
+    { id: 103, name: "Acme Corp", code: "C003" },
+  ],
   categories: ["Retail", "Wholesale", "Raw Material"],
   processes: ["Cutting", "Stitching", "Packing"],
   freshRework: ["Fresh", "Rework", "Damaged"],
@@ -128,11 +76,15 @@ const Select: React.FC<SelectProps> = ({
       <option value="" disabled>
         {placeholder}
       </option>
-      {options.map((opt) => (
-        <option key={opt} value={opt}>
-          {opt}
-        </option>
-      ))}
+      {options.map((opt, index) => {
+        const value = typeof opt === "object" ? opt.value : opt;
+        const label = typeof opt === "object" ? opt.label : opt;
+        return (
+          <option key={`${value}-${index}`} value={value}>
+            {label}
+          </option>
+        );
+      })}
     </select>
     <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
       <svg width="8" height="6" fill="currentColor" viewBox="0 0 24 24">
@@ -142,10 +94,11 @@ const Select: React.FC<SelectProps> = ({
   </div>
 );
 
-const ActionBtn: React.FC<ActionBtnProps> = ({ icon, onClick }) => (
+const ActionBtn: React.FC<ActionBtnProps> = ({ icon, onClick, className }) => (
   <button
     onClick={onClick}
-    className="h-[30px] w-[30px] bg-[#0f3c63] text-white flex items-center justify-center rounded-sm border border-[#0f3c63] hover:opacity-90 transition-opacity flex-shrink-0"
+    type="button"
+    className={`h-[30px] w-[30px] bg-[#0f3c63] text-white flex items-center justify-center rounded-sm border border-[#0f3c63] hover:opacity-90 transition-opacity flex-shrink-0 ${className}`}
   >
     {icon}
   </button>
@@ -221,15 +174,60 @@ const CollapsibleCard: React.FC<{
 const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
   onOverlayChange,
 }) => {
-  const [documentInventoryModal, setDocumentInventoryModal] = useState(false);
-  const [editingRow, setEditingRow] = useState<null>(null);
+  const themeStyles = {
+    "--theme-primary": "#0f3c63",
+    "--theme-focus": "#60a5fa",
+  } as React.CSSProperties;
+
+  const [documentInventoryModalCompo, setDocumentInventoryModalCompo] =
+    useState(false);
+  const [editingRow, setEditingRow] = useState<any>(null);
+
+  // State for Customer/Vendor Form
   const [isFormOpen, setIsFormOpen] = useState(false);
 
-  // Overlay Handlers
-  const handleAddNew = () => {
+  // State for Item/Process Form (Added for inline behavior)
+  const [isItemFormOpen, setIsItemFormOpen] = useState(false);
+
+  const [selectedVendor, setSelectedVendor] = useState<string>("");
+
+  const handleDocumentInventoryModal = () => {
+    setDocumentInventoryModalCompo(true);
+  };
+
+  // --- Handlers for Item/Process Form ---
+  const handleInventoryForm = () => {
+    setIsItemFormOpen(true);
+    if (onOverlayChange) onOverlayChange(true);
+  };
+
+  const handleCloseItemForm = () => {
+    setIsItemFormOpen(false);
+    if (onOverlayChange) onOverlayChange(false);
+  };
+
+  // --- Handlers for Vendor/Customer Form ---
+  // 1. Create New Vendor (Pass null data)
+  const handleAddNewVendor = () => {
     setEditingRow(null);
     setIsFormOpen(true);
     if (onOverlayChange) onOverlayChange(true);
+  };
+
+  // 2. Edit Selected Vendor (Pass selected object)
+  const handleEditVendor = () => {
+    if (!selectedVendor) {
+      alert("Please select a vendor to edit.");
+      return;
+    }
+    const vendorData = mockData.customers.find(
+      (c) => c.id.toString() === selectedVendor
+    );
+    if (vendorData) {
+      setEditingRow(vendorData);
+      setIsFormOpen(true);
+      if (onOverlayChange) onOverlayChange(true);
+    }
   };
 
   const handleCloseForm = () => {
@@ -238,11 +236,17 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
     if (onOverlayChange) onOverlayChange(false);
   };
 
-  // If overlay is open (adding new vendor)
+  // Prepare Vendor Options for the Select component
+  const vendorOptions = mockData.customers.map((c) => ({
+    label: c.name,
+    value: c.id,
+  }));
+
+  // Render: Customer/Vendor Form (Inline)
   if (isFormOpen) {
     return (
       <div className="w-full bg-white rounded-xl shadow-md border border-gray-200 p-6 animate-in fade-in zoom-in-95 duration-200">
-        <div className="mb-4 border-b pb-4">
+        <div style={themeStyles} className="mb-4 border-b pb-4">
           <button
             onClick={handleCloseForm}
             className="flex items-center text-sm font-medium text-gray-600 hover:text-[#0f3c63] transition-colors"
@@ -255,6 +259,28 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
           onClose={handleCloseForm}
           initialData={editingRow}
           onSuccess={handleCloseForm}
+        />
+      </div>
+    );
+  }
+
+  // Render: Item/Process Form (Inline) - Matching style of Customer Form
+  if (isItemFormOpen) {
+    return (
+      <div className="w-full bg-white rounded-xl shadow-md border border-gray-200 p-6 animate-in fade-in zoom-in-95 duration-200">
+        <div style={themeStyles} className="mb-4 border-b pb-4">
+          <button
+            onClick={handleCloseItemForm}
+            className="flex items-center text-sm font-medium text-gray-600 hover:text-[#0f3c63] transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Stock Adjustment
+          </button>
+        </div>
+        <AddNewItem
+          onClose={handleCloseItemForm}
+          onSuccess={handleCloseItemForm}
+          initialData={null} // or pass data if editing
         />
       </div>
     );
@@ -276,7 +302,7 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
                   <Select options={mockData.categories} />
                   <ActionBtn
                     icon={<EditIcon size={14} />}
-                    onClick={() => setDocumentInventoryModal(true)}
+                    onClick={handleDocumentInventoryModal}
                   />
                 </InputGroup>
               </div>
@@ -302,10 +328,21 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
               </div>
               <div className="col-span-8">
                 <InputGroup>
-                  <Select options={mockData.customers} />
+                  <Select
+                    options={vendorOptions}
+                    value={selectedVendor}
+                    onChange={(e) => setSelectedVendor(e.target.value)}
+                    placeholder="Select Vendor..."
+                  />
+                  {/* Create Button */}
+                  <ActionBtn
+                    icon={<Plus size={14} />}
+                    onClick={handleAddNewVendor}
+                  />
+                  {/* Edit Button */}
                   <ActionBtn
                     icon={<EditIcon size={14} />}
-                    onClick={handleAddNew}
+                    onClick={handleEditVendor}
                   />
                 </InputGroup>
               </div>
@@ -342,7 +379,9 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
               <div className="col-span-8">
                 <InputGroup>
                   <Select options={mockData.processes} />
-                  <ActionBtn icon={<EditIcon size={14} />} />
+                  <button onClick={handleInventoryForm}>
+                    <ActionBtn icon={<EditIcon size={14} />} />
+                  </button>
                 </InputGroup>
               </div>
             </div>
@@ -423,13 +462,13 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
         </div>
       </div>
 
-      {/* Item Group Modal (Overlay) */}
-      {documentInventoryModal && (
+      {/* ITEM GROUP MODAL OVERLAY */}
+      {documentInventoryModalCompo && (
         <div className="fixed inset-0 z-[30] flex items-center justify-center bg-transparent bg-opacity-50 backdrop-blur-sm p-4">
-          <div className="w-auto h-auto bg-white rounded-lg shadow-2xl overflow-hidden relative">
+          <div className=" w-auto h-auto bg-white rounded-lg shadow-2xl overflow-hidden relative">
             <DocumentInventoryModal
-              isOpen={documentInventoryModal}
-              onClose={() => setDocumentInventoryModal(false)}
+              isOpen={documentInventoryModalCompo}
+              onClose={() => setDocumentInventoryModalCompo(false)}
             />
           </div>
         </div>
