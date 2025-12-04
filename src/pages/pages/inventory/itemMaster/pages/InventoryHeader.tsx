@@ -1,7 +1,7 @@
 import React from "react";
 import { PrinterIcon, DownloadIcon, PlusCircleIcon } from "lucide-react"; // Using proper, clear icons from lucide-react
-import { COLORS } from "../../../../constants/colors";
-import { RestoreIcon } from "../../../../components/icons";
+import { COLORS } from "../../../../../constants/colors";
+import { RestoreIcon } from "../../../../../components/icons";
 
 // --- Interfaces ---
 interface HeaderButtonProps {

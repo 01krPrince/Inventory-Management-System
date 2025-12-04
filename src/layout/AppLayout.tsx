@@ -14,7 +14,7 @@ import PartyBrandwiseDiscountCharges from "../pages/pages/sales/salesPriceList/P
 import UpdateListForEachItems from "../pages/pages/sales/salesPriceList/UpdateListForEachItems";
 import UpdateBarcodeRate from "../pages/pages/sales/salesPriceList/UpdateBarcodeRate";
 import SalesInvoice from "../pages/pages/sales/salesInvoice/SalseInvoice";
-import ItemMaster from "../pages/pages/inventory/itemMaster/ItemMaster";
+import ItemMaster from "../pages/pages/inventory/itemMaster/pages/ItemMaster";
 import StockAdjustment from "../pages/pages/inventory/stockAdjustment/StockAdjustment";
 import InterBranchTransfer from "../pages/pages/inventory/interBranchTransfer/InterBranchTransfer.tsx";
 import MaterialIssueForJobWork from "../pages/pages/inventory/JobWorkOutward/MaterialIssueForJobWork/MaterialIssueForJobWork.tsx";

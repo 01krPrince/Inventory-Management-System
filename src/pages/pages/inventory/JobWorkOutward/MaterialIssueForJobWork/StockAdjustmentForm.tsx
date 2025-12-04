@@ -280,7 +280,7 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
         <AddNewItem
           onClose={handleCloseItemForm}
           onSuccess={handleCloseItemForm}
-          initialData={null} // or pass data if editing
+          initialData={undefined} // or pass data if editing
         />
       </div>
     );

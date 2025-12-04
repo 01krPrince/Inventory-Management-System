@@ -8,41 +8,76 @@ import React, {
   useMemo,
 } from "react";
 
-import { PrintIcon, ExportIcon } from "../../../../components/icons";
-
+// --- REPLACED CUSTOM ICONS WITH LUCIDE-REACT ---
 import {
-  PlusIcon,
-  TrashIcon,
-  EditIcon,
-  SearchIcon,
+  Plus,
+  Trash2, // Used as TrashIcon
+  Edit, // Used as EditIcon
+  Search, // Used as SearchIcon
   ChevronDown,
   ChevronUp,
   ArrowLeft,
   Loader2,
   Package,
+  Printer, // Used as PrintIcon
+  Download, // Used as ExportIcon
 } from "lucide-react";
 
-import {
-  handlePrint,
-  handleExport,
-} from "../../../../components/function/functions";
-import AddNewItem from "../../../../components/addItemMaster/AddNewItem";
+// --- FIXED LOCAL IMPORTS ---
+// Assuming these files are in the same directory for this environment
+import AddNewItem from "../../../../../components/addItemMaster/AddNewItem";
+import { ItemApiData } from "../models/ItemModel";
+import { fetchItems, deleteItemApi } from "../api/itemService";
+
+// --- INLINED UTILITY FUNCTIONS ---
+const handlePrint = (elementId: string, title: string) => {
+  const content = document.getElementById(elementId);
+  if (content) {
+    const printWindow = window.open("", "_blank");
+    if (printWindow) {
+      printWindow.document.write(`<html><head><title>${title}</title>`);
+      // Add basic styles for printing
+      printWindow.document.write(`<style>
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        .no-print { display: none; }
+      </style>`);
+      printWindow.document.write(`</head><body>`);
+      printWindow.document.write(content.innerHTML);
+      printWindow.document.write(`</body></html>`);
+      printWindow.document.close();
+      printWindow.print();
+    }
+  }
+};
+
+const handleExport = (data: any[], columns: Column[], fileName: string) => {
+  // Simple CSV export implementation
+  const headers = columns
+    .filter((col) => col.key !== "actions" && col.key !== "checkbox")
+    .map((col) => col.label)
+    .join(",");
+  const rows = data
+    .map((row) =>
+      columns
+        .filter((col) => col.key !== "actions" && col.key !== "checkbox")
+        .map((col) => `"${row[col.key] || ""}"`) // Escape quotes
+        .join(",")
+    )
+    .join("\n");
+
+  const csvContent = "data:text/csv;charset=utf-8," + headers + "\n" + rows;
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", `${fileName}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
 
 // --- TYPE DEFINITIONS ---
-export interface DataItem {
-  _id: string;
-  widget: boolean;
-  inactive: boolean;
-  name: string;
-  code: string;
-  hsn_code: string;
-  category_name: string;
-  group: string;
-  type: string;
-  bar_code: string;
-  timestamp: string;
-  rack_box: string;
-  brand: string;
+export interface DataItem extends ItemApiData {
   [key: string]: any;
 }
 
@@ -74,7 +109,7 @@ const ItemColumns: Column[] = [
             : "bg-gray-100 text-gray-500 dark:bg-gray-700"
         }`}
       >
-        <Package className="size-4" />
+        <Package className="size-3" />
       </span>
     ),
   },
@@ -84,7 +119,7 @@ const ItemColumns: Column[] = [
     sortable: true,
     render: (value: boolean) => (
       <span
-        className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+        className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${
           value
             ? "bg-red-100 text-red-600 dark:bg-red-900/40"
             : "bg-green-100 text-green-600 dark:bg-green-900/40"
@@ -97,101 +132,17 @@ const ItemColumns: Column[] = [
   { key: "name", label: "Name", sortable: true },
   { key: "code", label: "Code", sortable: true },
   { key: "brand", label: "Brand", sortable: true },
-  { key: "hsn_code", label: "HSN Code", sortable: true },
-  { key: "category_name", label: "Category", sortable: true },
-  { key: "group", label: "Group", sortable: true },
+  { key: "gst_classfication", label: "HSN Code", sortable: true },
+  { key: "category", label: "Category", sortable: true },
+  { key: "under_group", label: "Group", sortable: true },
   { key: "type", label: "Type", sortable: true },
-  { key: "bar_code", label: "Bar Code", sortable: true },
-  { key: "rack_box", label: "Rack Box", sortable: true },
+  { key: "barcode", label: "Bar Code", sortable: true },
+  { key: "rackbin_no", label: "Rack Box", sortable: true },
   { key: "timestamp", label: "Timestamp", sortable: true },
 ];
 
 const pageSizeOptions = [5, 10, 20, 50];
 const initialPageSize = 10;
-
-// --- MOCK API DATA FETCHING ---
-const mockItemData: DataItem[] = [
-  {
-    _id: "item1",
-    name: "Laptop Charger",
-    code: "LC001",
-    hsn_code: "8504",
-    category_name: "Electronics",
-    group: "Accessories",
-    type: "Power",
-    bar_code: "123456789012",
-    timestamp: "2023-11-25 10:00",
-    rack_box: "A1-01",
-    brand: "Dell",
-    widget: false,
-    inactive: false,
-  },
-  {
-    _id: "item2",
-    name: "Screwdriver Set",
-    code: "TS005",
-    hsn_code: "8205",
-    category_name: "Tools",
-    group: "Hand Tools",
-    type: "Kit",
-    bar_code: "987654321098",
-    timestamp: "2023-11-24 15:30",
-    rack_box: "B2-05",
-    brand: "Stanley",
-    widget: true,
-    inactive: false,
-  },
-  {
-    _id: "item3",
-    name: "HDMI Cable (3m)",
-    code: "HC03M",
-    hsn_code: "8544",
-    category_name: "Electronics",
-    group: "Cables",
-    type: "Video",
-    bar_code: "112233445566",
-    timestamp: "2023-11-25 09:00",
-    rack_box: "A1-03",
-    brand: "Sony",
-    widget: true,
-    inactive: true,
-  },
-  {
-    _id: "item4",
-    name: "Safety Gloves",
-    code: "SG010",
-    hsn_code: "6116",
-    category_name: "Safety",
-    group: "PPE",
-    type: "Wearable",
-    bar_code: "445566778899",
-    timestamp: "2023-11-23 11:45",
-    rack_box: "C3-10",
-    brand: "3M",
-    widget: false,
-    inactive: false,
-  },
-  {
-    _id: "item5",
-    name: "LED Monitor",
-    code: "MON27",
-    hsn_code: "8528",
-    category_name: "Electronics",
-    group: "Displays",
-    type: "Display",
-    bar_code: "001122334455",
-    timestamp: "2023-11-22 18:20",
-    rack_box: "A2-01",
-    brand: "LG",
-    widget: false,
-    inactive: false,
-  },
-];
-
-const fetchAllItems = async (): Promise<DataItem[]> => {
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  return mockItemData;
-};
 
 // --- TABLE LOGIC HOOK ---
 const useItemTableLogic = (initialData: DataItem[], initialSize: number) => {
@@ -207,27 +158,29 @@ const useItemTableLogic = (initialData: DataItem[], initialSize: number) => {
 
   useEffect(() => {
     setData(initialData);
-    setCurrentPage(1);
+    if (initialData.length < data.length) setCurrentPage(1);
     setSelectedRows([]);
   }, [initialData]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, pageSize, data.length]);
+  }, [searchTerm, pageSize]);
 
   const sortedAndFilteredData = useMemo(() => {
     let sortableData = [...data];
     let filteredData = sortableData.filter((item) =>
       Object.values(item).some((val) =>
-        String(val).toLowerCase().includes(searchTerm.toLowerCase())
+        String(val || "")
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase())
       )
     );
 
     if (sortConfig.key) {
       filteredData.sort((a, b) => {
         const sortKey = sortConfig.key!;
-        const aVal = a[sortKey];
-        const bVal = b[sortKey];
+        const aVal = a[sortKey] || "";
+        const bVal = b[sortKey] || "";
 
         if (aVal < bVal) return sortConfig.direction === "ascending" ? -1 : 1;
         if (aVal > bVal) return sortConfig.direction === "ascending" ? 1 : -1;
@@ -347,7 +300,7 @@ const ResizableHeader = ({
 
   const style = {
     width: columnWidths[keyString] ? `${columnWidths[keyString]}px` : undefined,
-    minWidth: "50px",
+    minWidth: "30px",
   };
 
   const startResizing = useCallback(
@@ -360,7 +313,7 @@ const ResizableHeader = ({
       const doResizing = (mouseMoveEvent: MouseEvent) => {
         const newWidth = Math.max(
           initialWidth + (mouseMoveEvent.clientX - startX),
-          50
+          30
         );
         setColumnWidths((prev: Record<string, number | undefined>) => ({
           ...prev,
@@ -459,41 +412,47 @@ export default function ItemMaster() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // --- API DATA FETCHING EFFECT ---
-  useEffect(() => {
-    const loadItems = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const responseData = await fetchAllItems();
-        setApiData(responseData);
-      } catch (err) {
-        console.error("Failed to fetch item data:", err);
-        setError("Failed to load item data.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  // --- API DATA FETCHING ---
+  const loadItems = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await fetchItems();
 
+      // Transform API data to include UI specific flags
+      const processedData: DataItem[] = result.map((item) => ({
+        ...item,
+        widget: false, // Default
+        inactive: false, // Default
+      }));
+
+      setApiData(processedData);
+    } catch (err) {
+      console.error("Failed to fetch item data:", err);
+      setError("Failed to load item data. Please try again later.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     loadItems();
   }, []);
 
-  // Track the row currently being edited
   const [editingRow, setEditingRow] = useState<DataItem | null>(null);
 
   const [columnWidths, setColumnWidths] = useState<
     Record<string, number | undefined>
   >({
-    checkbox: 40,
-    sno: 60,
-    widget: 60,
-    inactive: 80,
+    checkbox: 30, // Smaller
+    sno: 40, // Smaller
+    widget: 50, // Smaller
+    inactive: 70, // Smaller
     actions: 100,
   });
 
   const [currentColumns, setCurrentColumns] = useState<Column[]>(ItemColumns);
 
-  // Pass the state derived from the API to the logic hook
   const {
     data,
     setData,
@@ -515,8 +474,7 @@ export default function ItemMaster() {
     renderSortIndicator,
   } = useItemTableLogic(apiData, initialPageSize);
 
-  // --- Drag & Drop Handlers (FIXED TYPES) ---
-  // The interface expects (key: string), so these must accept that argument even if unused.
+  // --- Drag & Drop Handlers ---
   const handleDragStart = useCallback((_key: string) => {}, []);
   const handleDragOver = useCallback((_key: string) => {}, []);
 
@@ -549,17 +507,20 @@ export default function ItemMaster() {
   );
 
   // --- Data Handlers ---
-  const isSelected = (row: DataItem) => selectedRows.includes(row._id);
+  const isSelected = (row: DataItem) =>
+    selectedRows.includes(row._id as string);
   const handleSelectRow = (row: DataItem) => {
     setSelectedRows((prev: string[]) =>
       isSelected(row)
         ? prev.filter((id: string) => id !== row._id)
-        : [...prev, row._id]
+        : [...prev, row._id as string]
     );
   };
 
   const handleSelectAll = () => {
-    const allIdsOnPage = paginatedData.map((row: DataItem) => row._id);
+    const allIdsOnPage = paginatedData.map(
+      (row: DataItem) => row._id as string
+    );
     const areAllSelected = allIdsOnPage.every((id: string) =>
       selectedRows.includes(id)
     );
@@ -580,22 +541,36 @@ export default function ItemMaster() {
     setShowAddForm(true);
   };
 
-  const handleDelete = (item: DataItem) => {
+  const handleDelete = async (item: DataItem) => {
+    if (!item._id) return;
+
     if (
       window.confirm(
-        `Are you sure you want to delete Item: ${item.name} (${item.code})?`
+        `Are you sure you want to delete Item: ${item.name} (${
+          item.code || "No Code"
+        })?`
       )
     ) {
-      setData((prev: DataItem[]) =>
-        prev.filter((u: DataItem) => u._id !== item._id)
-      );
-      setSelectedRows((prev: string[]) =>
-        prev.filter((id: string) => id !== item._id)
-      );
+      try {
+        const response = await deleteItemApi(item._id);
+
+        setData((prev: DataItem[]) =>
+          prev.filter((u: DataItem) => u._id !== item._id)
+        );
+        setSelectedRows((prev: string[]) =>
+          prev.filter((id: string) => id !== item._id)
+        );
+
+        if (!response.success && response.message !== "Item not found") {
+          alert(`Warning: ${response.message}`);
+        }
+      } catch (error) {
+        alert("Failed to delete item from server.");
+      }
     }
   };
 
-  const handleBulkDelete = () => {
+  const handleBulkDelete = async () => {
     if (selectedRows.length === 0) {
       alert("Please select at least one row to delete.");
       return;
@@ -606,10 +581,17 @@ export default function ItemMaster() {
         `Are you sure you want to delete ${selectedRows.length} selected row(s)?`
       )
     ) {
-      setData((prev: DataItem[]) =>
-        prev.filter((u: DataItem) => !selectedRows.includes(u._id))
-      );
-      setSelectedRows([]);
+      try {
+        setIsLoading(true);
+        const deletePromises = selectedRows.map((id) => deleteItemApi(id));
+        await Promise.all(deletePromises);
+
+        await loadItems();
+        setSelectedRows([]);
+      } catch (err) {
+        alert("Some items could not be deleted.");
+        setIsLoading(false);
+      }
     }
   };
 
@@ -618,24 +600,17 @@ export default function ItemMaster() {
     setEditingRow(null);
   };
 
-  const handleFormSuccess = (itemData?: DataItem) => {
-    if (itemData) {
-      if (editingRow) {
-        // UPDATE LOGIC
-        setData((prev) =>
-          prev.map((item) => (item._id === itemData._id ? itemData : item))
-        );
-      } else {
-        // CREATE LOGIC
-        setData((prev) => [itemData, ...prev]);
-      }
-    }
+  // --- FIXED: Removed unused parameter ---
+  const handleFormSuccess = () => {
+    loadItems();
     handleCloseForm();
   };
 
   const areAllOnPageSelected =
     paginatedData.length > 0 &&
-    paginatedData.every((row: DataItem) => selectedRows.includes(row._id));
+    paginatedData.every((row: DataItem) =>
+      selectedRows.includes(row._id as string)
+    );
 
   // --- Render Logic ---
   if (showAddForm) {
@@ -654,7 +629,10 @@ export default function ItemMaster() {
           <AddNewItem
             onClose={handleCloseForm}
             onSuccess={handleFormSuccess}
-            initialData={editingRow}
+            // --- FIX: Type Casting to prevent 'undefined' mismatch ---
+            initialData={
+              editingRow ? (editingRow as unknown as ItemApiData) : undefined
+            }
           />
         </div>
       </div>
@@ -680,6 +658,12 @@ export default function ItemMaster() {
         <div className="p-8 text-center text-red-600 bg-red-50 dark:bg-red-900/20 border border-red-300 rounded-xl shadow-lg dark:border-red-700">
           <p className="font-semibold text-lg">Error</p>
           <p className="text-sm">{error}</p>
+          <button
+            onClick={loadItems}
+            className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -716,7 +700,7 @@ export default function ItemMaster() {
                 onClick={handleBulkDelete}
                 className="px-3 py-1.5 flex items-center bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition shadow-sm"
               >
-                <TrashIcon className="size-4 mr-1" />
+                <Trash2 className="size-4 mr-1" />
                 Bulk Delete ({selectedRows.length})
               </button>
             )}
@@ -731,7 +715,7 @@ export default function ItemMaster() {
               title="Print Table"
               aria-label="Print Table"
             >
-              <PrintIcon className="size-5" />
+              <Printer className="size-5" />
             </button>
 
             <button
@@ -742,13 +726,13 @@ export default function ItemMaster() {
               title="Export to CSV"
               aria-label="Export to CSV"
             >
-              <ExportIcon className="size-5" />
+              <Download className="size-5" />
             </button>
 
             <div className="relative w-full md:w-64">
               <input
                 type="text"
-                placeholder="Search items by name, code, HSN..."
+                placeholder="Search items..."
                 value={searchTerm}
                 aria-label="Search items"
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
@@ -756,7 +740,7 @@ export default function ItemMaster() {
                 }
                 className="w-full p-2 pl-10 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
               />
-              <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-gray-400" />
             </div>
 
             <button
@@ -766,7 +750,7 @@ export default function ItemMaster() {
               }}
               className="px-3 py-2 flex items-center bg-[#0c5888] text-white text-sm font-medium hover:bg-[#124463] transition shadow-md whitespace-nowrap rounded-lg"
             >
-              <PlusIcon className="size-4 mr-1" />
+              <Plus className="size-4 mr-1" />
               Add New Item
             </button>
           </div>
@@ -781,7 +765,7 @@ export default function ItemMaster() {
                 {/* Checkbox Column */}
                 <th
                   className="p-4 w-10 no-print text-center border-r border-dashed border-gray-300 dark:border-gray-600"
-                  style={{ width: columnWidths["checkbox"] || "40px" }}
+                  style={{ width: columnWidths["checkbox"] || "30px" }}
                 >
                   <input
                     type="checkbox"
@@ -795,7 +779,7 @@ export default function ItemMaster() {
                 {/* Sno. Column */}
                 <th
                   className="p-4 w-12 text-center border-r border-dashed border-gray-300 dark:border-gray-600"
-                  style={{ width: columnWidths["sno"] || "60px" }}
+                  style={{ width: columnWidths["sno"] || "40px" }}
                 >
                   Sno.
                 </th>
@@ -837,7 +821,7 @@ export default function ItemMaster() {
                     <td
                       className="p-4 w-10 no-print text-center border-r border-gray-200 dark:border-gray-700"
                       style={{
-                        width: columnWidths["checkbox"] || "40px",
+                        width: columnWidths["checkbox"] || "30px",
                       }}
                     >
                       <input
@@ -852,7 +836,7 @@ export default function ItemMaster() {
                     {/* Sno. Cell */}
                     <td
                       className="p-4 w-12 text-center border-r border-gray-200 dark:border-gray-700"
-                      style={{ width: columnWidths["sno"] || "60px" }}
+                      style={{ width: columnWidths["sno"] || "40px" }}
                     >
                       {startEntry + index}
                     </td>
@@ -877,11 +861,12 @@ export default function ItemMaster() {
                         );
                       }
 
+                      // Logic: If column created but data is not available show null
                       const displayValue =
                         value === null ||
                         value === undefined ||
                         String(value).trim() === ""
-                          ? "N/A"
+                          ? "null"
                           : String(value);
 
                       return (
@@ -912,7 +897,7 @@ export default function ItemMaster() {
                         aria-label="Edit"
                         title="Edit"
                       >
-                        <EditIcon className="size-4 inline" />
+                        <Edit className="size-4 inline" />
                       </button>
 
                       <button
@@ -921,7 +906,7 @@ export default function ItemMaster() {
                         aria-label="Delete"
                         title="Delete"
                       >
-                        <TrashIcon className="size-4 inline" />
+                        <Trash2 className="size-4 inline" />
                       </button>
                     </td>
                   </tr>
