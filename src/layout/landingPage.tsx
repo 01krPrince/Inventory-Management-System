@@ -1,11 +1,4 @@
-import {
-  useState,
-  useEffect,
-  useRef,
-  Dispatch,
-  SetStateAction,
-  FormEvent,
-} from "react";
+import { useState, useEffect, useRef, FormEvent } from "react";
 import {
   Box,
   Layers,
@@ -108,11 +101,6 @@ const LANDING_METRICS = [
     color: "text-cyan-400",
   },
 ];
-
-// FIX: Define the interface with boolean type to match App.tsx
-interface LandingPageProps {
-  setIsLoggedIn: Dispatch<SetStateAction<boolean>>;
-}
 
 // FIX: Use the interface in the component definition
 const LandingPage = () => {
