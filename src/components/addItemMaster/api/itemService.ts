@@ -158,6 +158,22 @@ export const fetchBrands = async (): Promise<BrandData[]> => {
   }
 };
 
+export interface CreateBrandPayload {
+  name: string;
+  salesman?: string;
+  image?: string | null;
+}
+
+export const createItemBrand = async (payload: CreateBrandPayload): Promise<ItemResponse> => {
+  try {
+    const response = await api.post<ItemResponse>('/itembrand/create_item_brand', payload);
+    return response.data;
+  } catch (error) {
+    console.error("Failed to create item brand:", error);
+    throw error;
+  }
+};
+
 export const fetchStockUnits = async (): Promise<StockUnitData[]> => {
   try {
     const response = await api.get<ListResponse<StockUnitData>>('/stockunit/get_stock_unit');
@@ -177,5 +193,30 @@ export const fetchGstClassifications = async (): Promise<GstClassificationData[]
   } catch (error) {
     console.error("Error fetching GST classifications:", error);
     return [];
+  }
+};
+
+
+// --- Types & Interfaces ---
+export interface CreateCategoryPayload {
+  name: string;
+  image: string | null;
+}
+
+export interface ApiResponse {
+  success: boolean;
+  message: string;
+  data?: any;
+}
+
+export const createItemCategory = async (payload: CreateCategoryPayload): Promise<ApiResponse> => {
+  try {
+    // FIX: Passed 'payload' (the variable) instead of 'CreateCategoryPayload' (the type)
+    const response = await api.post<ApiResponse>(`/itemcategory/create_item_category`, payload);
+    return response.data;
+  } catch (error) {
+    // FIX: Updated error message to say "category" instead of "brand"
+    console.error("Failed to create item category:", error);
+    throw error;
   }
 };

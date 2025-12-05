@@ -1,5 +1,7 @@
 import React, { useState, ChangeEvent, useEffect } from "react";
 import { Edit, Save, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
+import Brand from "./Brand";
+import ItemCategory from "./ItemCategory";
 
 // --- Internal Components ---
 import Attachment from "../Attachment";
@@ -204,6 +206,10 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
   const [showItemGroupModal, setShowItemGroupModal] = useState(false);
   const [showStockUnit, setShowStockUnit] = useState(false);
 
+  // States for the new modals
+  const [isBrandOpen, setIsBrandOpen] = useState(false);
+  const [isItemCategory, setIsItemCategory] = useState(false);
+
   // --- API DATA STATE ---
   const [categories, setCategories] = useState<CategoryData[]>([]);
   const [brands, setBrands] = useState<BrandData[]>([]);
@@ -370,9 +376,10 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
                 onChange={handleInputChange}
                 className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm bg-white outline-none"
               >
-                <option value="Regular">Regular</option>
                 <option value="Inventory">Inventory</option>
+                <option value="Non-Inventory">Non-Inventory</option>
                 <option value="Service">Service</option>
+                <option value="Bundle">Bundle</option>
               </select>
             </div>
           </div>
@@ -537,20 +544,64 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
       <div className="bg-white border rounded-lg p-6 shadow-sm mt-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="col-span-1 md:col-span-2 space-y-4 max-w-4xl">
-            <SelectField
-              label="Category"
-              name="category"
-              value={formData.category}
-              onChange={handleInputChange}
-              options={categoryOptions}
-            />
-            <SelectField
-              label="Brand"
-              name="brand"
-              value={formData.brand}
-              onChange={handleInputChange}
-              options={brandOptions}
-            />
+            {/* --- MODIFIED CATEGORY FIELD WITH EDIT BUTTON --- */}
+            <div className="mb-3">
+              <FormLabel>Category</FormLabel>
+              <div className="flex w-full">
+                <select
+                  name="category"
+                  value={formData.category}
+                  onChange={handleInputChange}
+                  className="w-full border border-gray-300 rounded-l px-2 py-1.5 text-sm bg-white focus:outline-none focus:border-[#0c5888]"
+                >
+                  <option value="">Select...</option>
+                  {categoryOptions.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setIsItemCategory(true);
+                  }}
+                  className="bg-[#0c5888] text-white px-2 rounded-r hover:bg-[#0a4a70] transition-colors"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* --- MODIFIED BRAND FIELD WITH EDIT BUTTON --- */}
+            <div className="mb-3">
+              <FormLabel>Brand</FormLabel>
+              <div className="flex w-full">
+                <select
+                  name="brand"
+                  value={formData.brand}
+                  onChange={handleInputChange}
+                  className="w-full border border-gray-300 rounded-l px-2 py-1.5 text-sm bg-white focus:outline-none focus:border-[#0c5888]"
+                >
+                  <option value="">Select...</option>
+                  {brandOptions.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setIsBrandOpen(true);
+                  }}
+                  className="bg-[#0c5888] text-white px-2 rounded-r hover:bg-[#0a4a70] transition-colors"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
             <SelectField
               label="Type"
               name="type"
@@ -963,6 +1014,24 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded shadow-lg">
             <StockUnit onClose={() => setShowStockUnit(false)} />
+          </div>
+        </div>
+      )}
+
+      {/* --- ADDED ITEM CATEGORY MODAL --- */}
+      {isItemCategory && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded shadow-lg">
+            <ItemCategory onClose={() => setIsItemCategory(false)} />
+          </div>
+        </div>
+      )}
+
+      {/* --- ADDED BRAND MODAL --- */}
+      {isBrandOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded shadow-lg">
+            <Brand onClose={() => setIsBrandOpen(false)} />
           </div>
         </div>
       )}
