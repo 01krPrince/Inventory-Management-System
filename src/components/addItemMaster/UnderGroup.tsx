@@ -110,15 +110,11 @@ export default function UnderGroup({ onClose }: UnderGroupProps) {
         </button>
       </div>
 
-      {/* SCROLLABLE BODY */}
       <div className="flex-1 overflow-y-auto p-3 min-h-auto">
         <div className="bg-white p-3 rounded-sm shadow-sm border border-gray-300 min-h-auto relative">
-          {/* Section 1: Basic Information */}
           <SectionHeader title="Basic Information" />
           <div className="grid grid-cols-12 gap-4 mb-2">
-            {/* Left Form Area (Columns 1-9) */}
             <div className="col-span-12 md:col-span-9 space-y-2 pr-2">
-              {/* Item Group Mode */}
               <div className="grid grid-cols-12 gap-2 items-center">
                 <div className="col-span-3 text-right md:text-left">
                   <Label>Item Group Mode</Label>
@@ -137,7 +133,6 @@ export default function UnderGroup({ onClose }: UnderGroupProps) {
                 </div>
               </div>
 
-              {/* Name */}
               <div className="grid grid-cols-12 gap-2 items-center">
                 <div className="col-span-3 text-right md:text-left">
                   <Label required>Name</Label>
@@ -152,7 +147,6 @@ export default function UnderGroup({ onClose }: UnderGroupProps) {
                 </div>
               </div>
 
-              {/* Under Group */}
               <div className="grid grid-cols-12 gap-2 items-center">
                 <div className="col-span-3 text-right md:text-left">
                   <Label required>Under Group</Label>
@@ -169,7 +163,6 @@ export default function UnderGroup({ onClose }: UnderGroupProps) {
                 </div>
               </div>
 
-              {/* Code */}
               <div className="grid grid-cols-12 gap-2 items-center">
                 <div className="col-span-3 text-right md:text-left">
                   <Label required>Code</Label>
@@ -184,7 +177,6 @@ export default function UnderGroup({ onClose }: UnderGroupProps) {
                 </div>
               </div>
 
-              {/* Description */}
               <div className="grid grid-cols-12 gap-2 items-start">
                 <div className="col-span-3 text-right md:text-left pt-1">
                   <Label>Description</Label>
@@ -202,7 +194,6 @@ export default function UnderGroup({ onClose }: UnderGroupProps) {
               </div>
             </div>
 
-            {/* Right Image Area (Columns 10-12) */}
             <div className="col-span-12 md:col-span-3 flex flex-col items-center">
               <div className="w-32 h-32 bg-gray-100 border border-dashed border-gray-400 relative flex items-center justify-center mb-2">
                 {formData.image ? (
@@ -240,10 +231,8 @@ export default function UnderGroup({ onClose }: UnderGroupProps) {
             </div>
           </div>
 
-          {/* Section 2: Item Default */}
           <SectionHeader title="Item Default" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
-            {/* Left Column */}
             <div className="space-y-2">
               <div className="grid grid-cols-12 gap-2 items-center">
                 <div className="col-span-4">
@@ -378,7 +367,6 @@ export default function UnderGroup({ onClose }: UnderGroupProps) {
               </div>
             </div>
 
-            {/* Right Column */}
             <div className="space-y-2">
               <div className="grid grid-cols-12 gap-2 items-center">
                 <div className="col-span-5">
@@ -480,7 +468,6 @@ export default function UnderGroup({ onClose }: UnderGroupProps) {
         </div>
       </div>
 
-      {/* FOOTER */}
       <div className="bg-[#0c4a75] px-3 py-2 flex gap-2 shrink-0 border-t border-blue-800">
         <button className="flex items-center px-3 py-1 border border-white text-white rounded-sm hover:bg-[#093859] text-xs font-medium">
           Save
@@ -493,7 +480,6 @@ export default function UnderGroup({ onClose }: UnderGroupProps) {
         </button>
       </div>
 
-      {/* STOCK UNIT MODAL OVERLAY */}
       {showStockUnit && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-transparent backdrop-blur-sm p-4">
           <div className="w-auto h-auto bg-white rounded-lg shadow-2xl overflow-hidden relative">

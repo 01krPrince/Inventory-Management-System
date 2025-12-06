@@ -28,8 +28,6 @@ const HeaderButton: React.FC<HeaderButtonProps> = ({
   return (
     <button
       onClick={onClick}
-      // Replaced hardcoded blue border with border-white/30
-      // This ensures it looks good on the COLORS.primary background
       className="flex items-center gap-2 px-3 py-1 border border-white/30 rounded-[3px] text-white text-xs font-medium hover:bg-white/10 hover:border-white/50 transition-colors active:bg-white/20"
     >
       <span className="w-4 h-4 flex items-center justify-center">{icon}</span>
@@ -38,7 +36,7 @@ const HeaderButton: React.FC<HeaderButtonProps> = ({
   );
 };
 
-export default function StockAdjustmentFormHeader() {
+export default function MaterialIssueForJobWorkHeader() {
   return (
     <div
       className="w-full border-t"

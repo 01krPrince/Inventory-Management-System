@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import StockAdjustmentFormHeader from "./StockAdjustmentFormHeader";
+import InterBranchTransferHeader from "./InterBranchTransferHeader";
 import InterBranchTransferForm from "./InterBranchTransferForm";
 import OrderTable from "./OrderTable";
-import InvoiceFooter from "./InvoiceFooter";
+import InterBranchTransferAttachment from "./InterBranchTransferAttachment";
 import { COLORS } from "../../../../constants/colors";
 import Logistics from "./Logistics";
 import { LocationMaster } from "../../../../components/LocationMaster";
@@ -67,7 +67,7 @@ const InterBranchTransfer: React.FC<ModalProps> = ({
       {/* Header (Fixed at top) */}
       {!isOverlayOpen && (
         <>
-          <StockAdjustmentFormHeader />
+          <InterBranchTransferHeader />
         </>
       )}
 
@@ -82,7 +82,7 @@ const InterBranchTransfer: React.FC<ModalProps> = ({
           {!isOverlayOpen && (
             <>
               <OrderTable />
-              <InvoiceFooter />
+              <InterBranchTransferAttachment />
               <Logistics />
             </>
           )}

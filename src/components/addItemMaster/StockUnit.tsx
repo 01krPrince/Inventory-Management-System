@@ -1,22 +1,19 @@
 import React, { useState } from "react";
 import { X, Save, Trash2 } from "lucide-react";
 
-// 1. Defined Interface for Props
 interface StockUnitProps {
   onClose?: () => void;
 }
 
-// 2. Defined Interface for State to prevent type conflicts
 interface FormDataState {
   code: string;
   name: string;
   description: string;
-  roundoffDecimal: number | string; // Allow string to handle input changes gracefully
+  roundoffDecimal: number | string;
   uqc: string;
 }
 
 export default function StockUnit({ onClose }: StockUnitProps) {
-  // State for form fields
   const [formData, setFormData] = useState<FormDataState>({
     code: "0054",
     name: "",
@@ -30,23 +27,18 @@ export default function StockUnit({ onClose }: StockUnitProps) {
   ) => {
     const { name, value, type } = e.target;
 
-    // Logic to handle number input specifically if you want strict numbers in state
-    // Otherwise, standard string handling is fine given the interface above
     setFormData((prev) => ({
       ...prev,
       [name]: type === "number" ? (value === "" ? "" : Number(value)) : value,
     }));
   };
 
-  // Styling constants
-  const labelClass = "text-sm text-gray-700 font-normal cursor-pointer"; // Added cursor-pointer
+  const labelClass = "text-sm text-gray-700 font-normal cursor-pointer";
   const inputClass =
     "w-full border border-gray-300 px-2 py-1 text-sm text-gray-800 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all";
 
   return (
-    // Modal Container
     <div className="w-[450px] bg-white rounded-t-md shadow-xl border border-gray-400 overflow-hidden font-sans">
-      {/* --- Header --- */}
       <div className="bg-[#104a7b] px-3 py-2 flex justify-between items-center text-white">
         <h2 className="text-sm font-semibold tracking-wide">
           Unit Of Measurement
@@ -61,10 +53,8 @@ export default function StockUnit({ onClose }: StockUnitProps) {
         </button>
       </div>
 
-      {/* --- Body (Form) --- */}
       <div className="p-4 bg-white">
         <div className="grid grid-cols-12 gap-y-3 gap-x-4 items-center">
-          {/* Code */}
           <div className="col-span-4">
             <label htmlFor="code" className={labelClass}>
               Code
@@ -81,7 +71,6 @@ export default function StockUnit({ onClose }: StockUnitProps) {
             />
           </div>
 
-          {/* Name */}
           <div className="col-span-4">
             <label htmlFor="name" className={labelClass}>
               Name
@@ -98,7 +87,6 @@ export default function StockUnit({ onClose }: StockUnitProps) {
             />
           </div>
 
-          {/* Description */}
           <div className="col-span-4 self-start pt-1">
             <label htmlFor="description" className={labelClass}>
               Description
@@ -115,7 +103,6 @@ export default function StockUnit({ onClose }: StockUnitProps) {
             />
           </div>
 
-          {/* Roundoff Decimal */}
           <div className="col-span-4">
             <label htmlFor="roundoffDecimal" className={labelClass}>
               Roundoff Decimal
@@ -132,7 +119,6 @@ export default function StockUnit({ onClose }: StockUnitProps) {
             />
           </div>
 
-          {/* UQC */}
           <div className="col-span-4">
             <label htmlFor="uqc" className={labelClass}>
               UQC
@@ -162,7 +148,6 @@ export default function StockUnit({ onClose }: StockUnitProps) {
         </div>
       </div>
 
-      {/* --- Footer --- */}
       <div className="bg-[#104a7b] px-3 py-2 flex gap-2 border-t border-blue-800">
         <button
           type="button"

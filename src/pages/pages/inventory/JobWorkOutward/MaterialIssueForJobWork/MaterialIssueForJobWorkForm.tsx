@@ -171,7 +171,7 @@ const CollapsibleCard: React.FC<{
 };
 
 // --- Main Component ---
-const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
+const MaterialIssueForJobWorkForm: React.FC<SalesInvoiceFormProps> = ({
   onOverlayChange,
 }) => {
   const themeStyles = {
@@ -477,4 +477,4 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
   );
 };
 
-export default StockAdjustmentForm;
+export default MaterialIssueForJobWorkForm;

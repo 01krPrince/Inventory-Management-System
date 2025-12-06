@@ -28,6 +28,7 @@ import {
 import AddNewItem from "../../../../../components/addItemMaster/AddNewItem";
 import { ItemApiData } from "../models/ItemModel";
 import { fetchItems, deleteItemApi } from "../api/itemService";
+import ItemMasterHeader from "./ItemMasterHeader";
 
 // --- INLINED UTILITY FUNCTIONS ---
 const handlePrint = (elementId: string, title: string) => {
@@ -672,6 +673,7 @@ export default function ItemMaster() {
   // --- DEFAULT VIEW: THE TABLE ---
   return (
     <>
+      <ItemMasterHeader />
       <div className="bg-white p-6 rounded-xl shadow-lg dark:bg-gray-800 border border-gray-200 dark:border-gray-700 w-full">
         {/* Control Panel */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 space-y-4 md:space-y-0">

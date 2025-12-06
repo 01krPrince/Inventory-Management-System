@@ -30,15 +30,11 @@ export interface SalesAndPurchaseGL {
   __v: number;
 }
 
-// The Input interface (Request Body for Creation)
-// This creates a type with all fields from SalesAndPurchaseGL 
-// EXCEPT the system generated ones (_id, createdAt, etc.)
 export type SalesAndPurchaseGLInput = Omit<
   SalesAndPurchaseGL, 
   '_id' | 'createdAt' | 'updatedAt' | 'code' | '__v'
 >;
 
-// API Response Wrappers
 export interface GetSalesGlResponse {
   success: boolean;
   total: number;
@@ -55,7 +51,6 @@ export interface CreateSalesGlResponse {
 // 2. API Functions
 // ==========================================
 
-// --- GET: Fetch All Entries ---
 export const fetchSalesAndPurchaseGL = async (): Promise<SalesAndPurchaseGL[]> => {
   try {
     const response = await api.get<GetSalesGlResponse>('/salespurchasegl/get_salespurchasegl_all');
@@ -66,7 +61,6 @@ export const fetchSalesAndPurchaseGL = async (): Promise<SalesAndPurchaseGL[]> =
   }
 };
 
-// --- POST: Create New Entry ---
 export const createSalesAndPurchaseGL = async (
   formData: SalesAndPurchaseGLInput
 ): Promise<CreateSalesGlResponse | null> => {
@@ -76,7 +70,6 @@ export const createSalesAndPurchaseGL = async (
       formData
     );
     
-    // You might want to log the success message here
     console.log(response.data.message);
     
     return response.data;

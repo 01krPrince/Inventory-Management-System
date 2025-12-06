@@ -88,7 +88,6 @@ export const updateCoaGroup = async (
   formData: CoaGroupInput
 ): Promise<UpdateCoaGroupResponse> => {
   try {
-    // Using PUT for update by ID
     const response = await api.put<UpdateCoaGroupResponse>(
       `/coagroups/update_by/${id}`,
       formData

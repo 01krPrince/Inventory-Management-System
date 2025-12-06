@@ -2,7 +2,7 @@ import React from "react";
 import { COLORS } from "../../../../../constants/colors";
 import Attachment from "../../../../../components/Attachment";
 
-const InvoiceFooter: React.FC = () => {
+const MaterialIssueForJobWorkFooter: React.FC = () => {
   return (
     <div
       className="w-2/3 p-4 font-sans text-sm min-w-[600px]"
@@ -68,4 +68,4 @@ const InvoiceFooter: React.FC = () => {
   );
 };
 
-export default InvoiceFooter;
+export default MaterialIssueForJobWorkFooter;

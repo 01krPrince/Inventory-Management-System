@@ -4,13 +4,11 @@ import api from "../../../services/api";
 
 const BASE_URL = "https://sports-hub-h2um.onrender.com/api/item_master";
 
-// --- HELPER ---
 const toNull = (value: any): any => {
   if (value === "" || value === undefined || value === "Select...") return null;
   return value;
 };
 
-// --- TRANSFORM ---
 const transformFormDataToPayload = (formData: ItemFormData): ItemApiData => {
   return {
     item_mode: toNull(formData.itemMode),
@@ -68,8 +66,6 @@ const transformFormDataToPayload = (formData: ItemFormData): ItemApiData => {
   };
 };
 
-// --- API CALLS (Create/Update) ---
-
 export const createItem = async (formData: ItemFormData): Promise<ItemResponse> => {
   const payload = transformFormDataToPayload(formData);
   try {
@@ -96,8 +92,6 @@ export const updateItem = async (id: string, formData: ItemFormData): Promise<It
   }
 };
 
-// --- INTERFACES ---
-
 export interface CategoryData {
   _id: string;
   name: string;
@@ -121,7 +115,6 @@ export interface StockUnitData {
   uqc: string;
 }
 
-// --- NEW GST INTERFACE ---
 export interface GstClassificationData {
   _id: string;
   type: string;           // "Goods"
@@ -135,8 +128,6 @@ export interface ListResponse<T> {
   data: T[];
   message?: string;
 }
-
-// --- FETCH FUNCTIONS ---
 
 export const fetchCategories = async (): Promise<CategoryData[]> => {
   try {
@@ -184,10 +175,8 @@ export const fetchStockUnits = async (): Promise<StockUnitData[]> => {
   }
 };
 
-// --- NEW GST FETCH FUNCTION ---
 export const fetchGstClassifications = async (): Promise<GstClassificationData[]> => {
   try {
-    // Matches the URL provided
     const response = await api.get<ListResponse<GstClassificationData>>('/gstclassification/get_gst_classification');
     return response.data.data || [];
   } catch (error) {
@@ -197,7 +186,6 @@ export const fetchGstClassifications = async (): Promise<GstClassificationData[]
 };
 
 
-// --- Types & Interfaces ---
 export interface CreateCategoryPayload {
   name: string;
   image: string | null;
@@ -211,11 +199,9 @@ export interface ApiResponse {
 
 export const createItemCategory = async (payload: CreateCategoryPayload): Promise<ApiResponse> => {
   try {
-    // FIX: Passed 'payload' (the variable) instead of 'CreateCategoryPayload' (the type)
     const response = await api.post<ApiResponse>(`/itemcategory/create_item_category`, payload);
     return response.data;
   } catch (error) {
-    // FIX: Updated error message to say "category" instead of "brand"
     console.error("Failed to create item category:", error);
     throw error;
   }

@@ -9,14 +9,9 @@ const InvoiceFooter: React.FC = () => {
       style={{ backgroundColor: COLORS.white }}
     >
       <div className="flex flex-col lg:flex-row gap-8">
-        {/* --- LEFT SECTION (Inputs & Attachments) --- */}
         <div className="flex-1 flex flex-col gap-4">
-          {/* Remarks */}
           <div className="flex flex-col sm:flex-row gap-4">
-            <label
-              className="w-32 mt-1"
-              style={{ color: COLORS.textPrimary }} // Was text-gray-700
-            >
+            <label className="w-32 mt-1" style={{ color: COLORS.textPrimary }}>
               Remarks
             </label>
             <div className="flex-1 relative">
@@ -24,25 +19,21 @@ const InvoiceFooter: React.FC = () => {
                 className="w-full border rounded-sm p-2 h-20 outline-none resize-none text-xs custom-input"
                 placeholder=""
                 style={{
-                  borderColor: COLORS.borderDark, // Was border-gray-300
+                  borderColor: COLORS.borderDark,
                   color: COLORS.textPrimary,
                 }}
               />
               <span
                 className="absolute bottom-2 right-2 text-xs"
-                style={{ color: COLORS.textMuted }} // Was text-gray-400
+                style={{ color: COLORS.textMuted }}
               >
                 0/250
               </span>
             </div>
           </div>
 
-          {/* --- Attachment Section --- */}
           <div className="flex flex-col sm:flex-row gap-4 mt-2">
-            <label
-              className="w-32 pt-2"
-              style={{ color: COLORS.textPrimary }} // Was text-gray-700
-            >
+            <label className="w-32 pt-2" style={{ color: COLORS.textPrimary }}>
               Attachment
             </label>
             <Attachment />
@@ -50,7 +41,6 @@ const InvoiceFooter: React.FC = () => {
         </div>
       </div>
 
-      {/* --- GLOBAL STYLES FOR HOVER & FOCUS --- */}
       <style>{`
         .custom-btn-primary {
           background-color: ${COLORS.primary};

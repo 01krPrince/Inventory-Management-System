@@ -38,7 +38,7 @@ const HeaderButton: React.FC<HeaderButtonProps> = ({
   );
 };
 
-export default function StockAdjustmentFormHeader() {
+export default function InterBranchTransferHeader() {
   return (
     <div
       className="w-full border-t"

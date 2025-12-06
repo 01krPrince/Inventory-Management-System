@@ -11,7 +11,7 @@ import {
 import { createItemBrand, CreateBrandPayload } from "./api/itemService";
 
 interface BrandProps {
-  onClose: () => void; // Parent callback to close the component
+  onClose: () => void;
 }
 
 const Brand: React.FC<BrandProps> = ({ onClose }) => {
@@ -23,7 +23,6 @@ const Brand: React.FC<BrandProps> = ({ onClose }) => {
   });
   const [isLoading, setIsLoading] = useState(false);
 
-  // Handle image selection
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -34,10 +33,8 @@ const Brand: React.FC<BrandProps> = ({ onClose }) => {
     }
   };
 
-  // Clear image
   const clearImage = () => setData({ ...data, image: null });
 
-  // Handle Save with API Call
   const handleSave = async () => {
     if (!data.name.trim()) {
       alert("Brand Name is required");
@@ -47,7 +44,6 @@ const Brand: React.FC<BrandProps> = ({ onClose }) => {
     setIsLoading(true);
 
     try {
-      // Map state to API Payload
       const payload: CreateBrandPayload = {
         name: data.name,
         salesman: data.salesman || undefined,
@@ -59,7 +55,7 @@ const Brand: React.FC<BrandProps> = ({ onClose }) => {
       if (response.success) {
         alert("Brand Created Successfully!");
         console.log("Saved Brand:", response.data);
-        onClose(); // Close modal on success
+        onClose();
       } else {
         alert(`Error: ${response.message}`);
       }
@@ -76,7 +72,6 @@ const Brand: React.FC<BrandProps> = ({ onClose }) => {
 
   return (
     <div className="w-[450px] bg-white border border-gray-300 shadow-lg font-sans text-sm">
-      {/* --- Header --- */}
       <div className="bg-[#104a8e] text-white px-4 py-2 flex justify-between items-center select-none">
         <h3 className="font-semibold text-base">Brand</h3>
         <button
@@ -87,9 +82,7 @@ const Brand: React.FC<BrandProps> = ({ onClose }) => {
         </button>
       </div>
 
-      {/* --- Body --- */}
       <div className="p-5 flex flex-col gap-3">
-        {/* Row: Code */}
         <div className="flex items-center">
           <label className="w-24 text-gray-700 font-medium shrink-0">
             Code
@@ -102,7 +95,6 @@ const Brand: React.FC<BrandProps> = ({ onClose }) => {
           />
         </div>
 
-        {/* Row: Name */}
         <div className="flex items-center">
           <label className="w-24 text-gray-700 font-medium shrink-0">
             Name
@@ -116,7 +108,6 @@ const Brand: React.FC<BrandProps> = ({ onClose }) => {
           />
         </div>
 
-        {/* Row: Salesman */}
         <div className="flex items-center">
           <label className="w-24 text-gray-700 font-medium shrink-0">
             Salesman
@@ -137,7 +128,6 @@ const Brand: React.FC<BrandProps> = ({ onClose }) => {
           </div>
         </div>
 
-        {/* Row: Image */}
         <div className="flex items-start mt-1">
           <label className="w-24 text-gray-700 font-medium shrink-0 pt-1">
             Image
@@ -180,7 +170,6 @@ const Brand: React.FC<BrandProps> = ({ onClose }) => {
         </div>
       </div>
 
-      {/* --- Footer --- */}
       <div className="bg-[#104a8e] p-2 flex justify-between items-center">
         <div className="flex gap-2">
           <button
