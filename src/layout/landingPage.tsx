@@ -180,7 +180,7 @@ const LandingPage = () => {
             </div>
             <div>
               <h1 className="text-xl font-bold tracking-tight text-white">
-                NEXUS<span className="text-indigo-500">INV</span>
+                INFO<span className="text-indigo-500">ERA</span>
               </h1>
               <p className="text-[10px] text-slate-400 tracking-widest uppercase">
                 Enterprise V2.5
@@ -247,7 +247,7 @@ const LandingPage = () => {
                   Authenticate
                 </h3>
                 <p className="text-xs text-slate-400 mt-1">
-                  Enter admin credentials to access the nexus.
+                  Enter admin credentials to access the Info-Era.
                 </p>
               </div>
 
@@ -687,7 +687,7 @@ const LandingPage = () => {
             <div className="flex items-center gap-2 mb-6">
               <Box className="text-indigo-500 w-8 h-8" />
               <span className="font-bold text-white text-2xl">
-                NEXUS<span className="text-indigo-500">INV</span>
+                Info<span className="text-indigo-500">Era</span>
               </span>
             </div>
             <p className="text-slate-500 text-sm max-w-sm leading-relaxed mb-6">
@@ -757,7 +757,7 @@ const LandingPage = () => {
           </div>
         </div>
         <div className="w-full px-6 lg:px-12 mt-16 pt-8 border-t border-slate-900 text-center text-slate-600 text-sm">
-          &copy; 2025 Nexus Inventory Systems. All rights reserved. System
+          &copy; 2025 Info-Era Inventory Systems. All rights reserved. System
           Status: <span className="text-emerald-500">Operational</span>
         </div>
       </footer>

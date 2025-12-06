@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import StockAdjustmentFormHeader from "./StockAdjustmentFormHeader";
-import StockAdjustmentForm from "./StockAdjustmentForm";
+import InterBranchTransferForm from "./InterBranchTransferForm";
 import OrderTable from "./OrderTable";
 import InvoiceFooter from "./InvoiceFooter";
 import { COLORS } from "../../../../constants/colors";
@@ -74,7 +74,7 @@ const InterBranchTransfer: React.FC<ModalProps> = ({
       <div className="flex-1 overflow-auto p-4">
         <div className="flex flex-col gap-4">
           {/* Pass the setter function down to the form */}
-          <StockAdjustmentForm
+          <InterBranchTransferForm
             onOverlayChange={(isOpen) => setIsOverlayOpen(isOpen)}
           />
 

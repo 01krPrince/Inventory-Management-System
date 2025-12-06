@@ -1,57 +1,75 @@
 import React, { useState, useEffect } from "react";
-import { X, ChevronDown, ChevronUp, Globe, Edit2 } from "lucide-react";
+import { X, ChevronDown, ChevronUp, Globe, Edit2, Loader2 } from "lucide-react";
+import {
+  createSalesAndPurchaseGL,
+  SalesAndPurchaseGLInput,
+} from "./addItemMaster/api/saleAndPurchaseGL";
+import { fetchCoaGroups, CoaGroup } from "./addItemMaster/api/chartOfAccount";
+import COAGroupsModal, { COAGroupData } from "./COAGroupsModal"; // Import COAGroupData interface
 
 // --- Types ---
 export interface AccountFormData {
-  id?: string | number; // Optional for new records
+  _id?: string;
   name: string;
   code: string;
   identification: string;
   isSubledger: boolean;
-  underGroup: string;
+  salesGlUnderGroup: string;
+  inactive: boolean;
   type: string;
   accountNo: string;
-  rtgsIfsc: string;
+  rtgsIfscCode: string;
   classification: string;
+
+  // Loan Details
   isLoanAccount: boolean;
+  intrestRate: string;
+  calculationOn: string;
+
+  // TDS Details
   tdsApplicable: boolean;
+  tdsSection: string;
+
   address: string;
   pan: string;
+
   // Attributes
-  attrEmployee: boolean;
-  attrGroup: boolean;
+  employee: boolean;
+  group: boolean;
 }
 
 interface ChartOfAccountsProps {
-  initialData?: AccountFormData | null; // Pass null for "Create", object for "Edit"
+  initialData?: AccountFormData | any | null;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: AccountFormData) => void;
-  onDelete?: (id: string | number) => void;
+  onSave: (data: any) => void;
+  onDelete?: (id: string) => void;
 }
 
-// --- Default State (Empty Form) ---
+// --- Default State ---
 const defaultState: AccountFormData = {
   name: "",
-  code: "00000001", // Example default sequence
+  code: "00000001",
   identification: "",
   isSubledger: false,
-  underGroup: "",
+  salesGlUnderGroup: "",
+  inactive: false,
   type: "General",
   accountNo: "",
-  rtgsIfsc: "",
+  rtgsIfscCode: "",
   classification: "",
   isLoanAccount: false,
+  intrestRate: "",
+  calculationOn: "",
   tdsApplicable: false,
+  tdsSection: "",
   address: "",
   pan: "",
-  attrEmployee: false,
-  attrGroup: false,
+  employee: false,
+  group: false,
 };
 
 // --- Helper Components ---
-
-// 1. Custom Toggle Switch (Matches screenshot style)
 const ToggleSwitch = ({
   value,
   onChange,
@@ -62,7 +80,7 @@ const ToggleSwitch = ({
   <button
     type="button"
     onClick={() => onChange(!value)}
-    className={`flex items-center w-16 h-6 rounded-sm transition-colors border ${
+    className={`relative flex items-center w-16 h-6 rounded-sm transition-colors border ${
       value ? "bg-blue-900 border-blue-900" : "bg-gray-200 border-gray-300"
     }`}
   >
@@ -80,17 +98,14 @@ const ToggleSwitch = ({
     >
       OFF
     </div>
-
-    {/* The Slider Square */}
     <div
-      className={`absolute w-8 h-5 bg-white shadow-sm border border-gray-300 rounded-sm transform transition-transform ${
+      className={`absolute top-[-1px] left-[-1px] w-8 h-6 bg-white shadow-sm border border-gray-300 rounded-sm transform transition-transform ${
         value ? "translate-x-8" : "translate-x-0"
       }`}
     />
   </button>
 );
 
-// 2. Form Row Layout
 const FormRow = ({
   label,
   required = false,
@@ -116,25 +131,83 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
   onSave,
   onDelete,
 }) => {
-  // State management
   const [formData, setFormData] = useState<AccountFormData>(defaultState);
   const [sections, setSections] = useState({ basic: true, attribute: true });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Mode detection
-  const isEditMode = !!initialData;
+  // State for Dynamic COA Groups
+  const [coaGroupOptions, setCoaGroupOptions] = useState<CoaGroup[]>([]);
+  const [isCoaGroupModalOpen, setIsCoaGroupModalOpen] = useState(false);
+  // NEW: State to hold the full object of the selected COA Group for editing
+  const [selectedCoaGroup, setSelectedCoaGroup] = useState<COAGroupData | null>(
+    null
+  );
 
-  // Effect: Load data if in Edit mode, otherwise reset to default
+  const isEditMode = !!initialData && !!initialData._id;
+
+  // --- 1. Fetch COA Groups on Mount ---
+  useEffect(() => {
+    if (isOpen) {
+      loadGroups();
+    }
+  }, [isOpen]);
+
+  const loadGroups = async () => {
+    const groups = await fetchCoaGroups();
+    if (groups) {
+      setCoaGroupOptions(groups);
+    }
+  };
+
+  // --- 2. Initialize Form Data ---
   useEffect(() => {
     if (initialData) {
-      setFormData(initialData);
+      setFormData({
+        ...defaultState,
+        ...initialData,
+        salesGlUnderGroup:
+          initialData.salesGlUnderGroup || initialData.underGroup || "",
+        rtgsIfscCode: initialData.rtgsIfscCode || initialData.rtgsIfsc || "",
+        employee:
+          initialData.employee === "Yes" ||
+          initialData.employee === true ||
+          initialData.attrEmployee === true,
+        group:
+          initialData.group === "Yes" ||
+          initialData.group === true ||
+          initialData.attrGroup === true,
+      });
     } else {
       setFormData(defaultState);
     }
   }, [initialData, isOpen]);
 
+  // --- 3. Update Selected COA Group when options or form data changes ---
+  useEffect(() => {
+    if (formData.salesGlUnderGroup && coaGroupOptions.length > 0) {
+      const foundGroup = coaGroupOptions.find(
+        (g) => g.name === formData.salesGlUnderGroup
+      );
+      if (foundGroup) {
+        // Map CoaGroup to COAGroupData (if they differ, otherwise just cast/pass)
+        setSelectedCoaGroup({
+          _id: foundGroup._id,
+          name: foundGroup.name,
+          code: foundGroup.code,
+          inactive: foundGroup.inactive,
+          underGroup: foundGroup.underGroup || "", // Handle optional fields
+          nature: foundGroup.nature,
+        });
+      } else {
+        setSelectedCoaGroup(null);
+      }
+    } else {
+      setSelectedCoaGroup(null);
+    }
+  }, [formData.salesGlUnderGroup, coaGroupOptions]);
+
   if (!isOpen) return null;
 
-  // Handlers
   const handleChange = (field: keyof AccountFormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -143,17 +216,66 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
     setSections((prev) => ({ ...prev, [section]: !prev[section] }));
   };
 
-  const handleSubmit = () => {
-    // Basic validation logic could go here
-    if (!formData.name || !formData.underGroup) {
-      alert("Please fill required fields");
+  const handleSubmit = async () => {
+    if (!formData.name || !formData.salesGlUnderGroup) {
+      alert("Please fill required fields (Name, Under Group)");
       return;
     }
-    onSave(formData);
+
+    setIsSubmitting(true);
+
+    try {
+      if (isEditMode) {
+        onSave(formData); // Implement update API logic here if needed
+      } else {
+        const apiPayload: SalesAndPurchaseGLInput = {
+          name: formData.name,
+          identification: formData.identification,
+          isSubledger: formData.isSubledger,
+          salesGlUnderGroup: formData.salesGlUnderGroup,
+          inactive: formData.inactive,
+          type: formData.type,
+          accountNo: formData.accountNo,
+          rtgsIfscCode: formData.rtgsIfscCode,
+          classification: formData.classification,
+          isLoanAccount: formData.isLoanAccount,
+          intrestRate: formData.intrestRate,
+          calculationOn: formData.calculationOn,
+          tdsSection: formData.tdsSection,
+          tdsApplicable: formData.tdsApplicable,
+          address: formData.address,
+          pan: formData.pan,
+          attributeApplicable: formData.employee || formData.group,
+          employee: formData.employee ? "Yes" : "No",
+          group: formData.group ? "Yes" : "No",
+        };
+
+        const response = await createSalesAndPurchaseGL(apiPayload);
+
+        if (response && response.success) {
+          onSave(response.data);
+        } else {
+          alert("Failed to create GL Account.");
+        }
+      }
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      alert("An error occurred while saving.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleClear = () => {
     setFormData(defaultState);
+  };
+
+  // Handler for COA Group Modal Save (Update/Create)
+  const handleCoaGroupSave = (savedGroup: CoaGroup) => {
+    // 1. Refresh list
+    loadGroups();
+    // 2. Select the updated/created group in the main form
+    handleChange("salesGlUnderGroup", savedGroup.name);
   };
 
   return (
@@ -187,7 +309,6 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
 
             {sections.basic && (
               <div className="space-y-1">
-                {/* Name */}
                 <FormRow label="Name" required>
                   <div className="flex">
                     <input
@@ -202,18 +323,16 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
                   </div>
                 </FormRow>
 
-                {/* Code */}
                 <FormRow label="Code">
                   <input
                     type="text"
-                    disabled={true} // Usually code is auto-gen or locked in edit
+                    disabled={true}
                     className="w-full border border-gray-300 bg-gray-50 px-2 py-1 text-sm text-gray-600"
                     value={formData.code}
                     onChange={(e) => handleChange("code", e.target.value)}
                   />
                 </FormRow>
 
-                {/* Identification */}
                 <FormRow label="Identification">
                   <input
                     type="text"
@@ -225,7 +344,6 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
                   />
                 </FormRow>
 
-                {/* Is Subledger */}
                 <FormRow label="Is Subledger">
                   <ToggleSwitch
                     value={formData.isSubledger}
@@ -233,32 +351,41 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
                   />
                 </FormRow>
 
-                {/* Under Group */}
+                {/* --- Under Group (Mapped from API) --- */}
                 <FormRow label="Under Group" required>
                   <div className="flex relative">
                     <select
                       className="w-full border border-gray-300 px-2 py-1 text-sm bg-white focus:outline-none focus:border-blue-500 appearance-none"
-                      value={formData.underGroup}
+                      value={formData.salesGlUnderGroup}
                       onChange={(e) =>
-                        handleChange("underGroup", e.target.value)
+                        handleChange("salesGlUnderGroup", e.target.value)
                       }
                     >
                       <option value="">Select...</option>
-                      <option value="Assets">Assets</option>
-                      <option value="Liabilities">Liabilities</option>
-                      <option value="Income">Income</option>
-                      <option value="Expenses">Expenses</option>
+                      {/* Map dynamic options */}
+                      {coaGroupOptions.map((group) => (
+                        <option key={group._id} value={group.name}>
+                          {group.name}
+                        </option>
+                      ))}
                     </select>
-                    <div className="absolute right-0 top-0 h-full flex items-center pr-8 pointer-events-none">
-                      {/* Dropdown arrow handled by browser or custom CSS usually, kept simple here */}
-                    </div>
-                    <button className="bg-[#1e4e79] text-white p-1 ml-1 rounded-sm absolute right-0 top-0 h-full w-7 flex items-center justify-center">
+                    {/* Edit Button for COA Groups */}
+                    <button
+                      onClick={() => setIsCoaGroupModalOpen(true)}
+                      className="bg-[#1e4e79] text-white p-1 ml-1 rounded-sm absolute right-0 top-0 h-full w-7 flex items-center justify-center"
+                    >
                       <Edit2 size={12} />
                     </button>
                   </div>
                 </FormRow>
 
-                {/* Type */}
+                <FormRow label="Inactive">
+                  <ToggleSwitch
+                    value={formData.inactive}
+                    onChange={(val) => handleChange("inactive", val)}
+                  />
+                </FormRow>
+
                 <FormRow label="Type">
                   <select
                     className="w-full border border-gray-300 px-2 py-1 text-sm bg-white focus:outline-none focus:border-blue-500"
@@ -271,7 +398,6 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
                   </select>
                 </FormRow>
 
-                {/* AccountNo */}
                 <FormRow label="AccountNo">
                   <input
                     type="text"
@@ -281,17 +407,17 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
                   />
                 </FormRow>
 
-                {/* RTGS/IFSC */}
                 <FormRow label="RTGS/IFSC Code">
                   <input
                     type="text"
                     className="w-full border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-blue-500"
-                    value={formData.rtgsIfsc}
-                    onChange={(e) => handleChange("rtgsIfsc", e.target.value)}
+                    value={formData.rtgsIfscCode}
+                    onChange={(e) =>
+                      handleChange("rtgsIfscCode", e.target.value)
+                    }
                   />
                 </FormRow>
 
-                {/* Classification */}
                 <FormRow label="Classification">
                   <input
                     type="text"
@@ -303,7 +429,6 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
                   />
                 </FormRow>
 
-                {/* Is Loan Account */}
                 <FormRow label="Is Loan Account">
                   <ToggleSwitch
                     value={formData.isLoanAccount}
@@ -311,7 +436,35 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
                   />
                 </FormRow>
 
-                {/* TDS Applicable */}
+                {formData.isLoanAccount && (
+                  <>
+                    <FormRow label="Interest Rate">
+                      <input
+                        type="text"
+                        placeholder="e.g. 9.5%"
+                        className="w-full border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-blue-500"
+                        value={formData.intrestRate}
+                        onChange={(e) =>
+                          handleChange("intrestRate", e.target.value)
+                        }
+                      />
+                    </FormRow>
+                    <FormRow label="Calculation On">
+                      <select
+                        className="w-full border border-gray-300 px-2 py-1 text-sm bg-white focus:outline-none focus:border-blue-500"
+                        value={formData.calculationOn}
+                        onChange={(e) =>
+                          handleChange("calculationOn", e.target.value)
+                        }
+                      >
+                        <option value="">Select...</option>
+                        <option value="Monthly">Monthly</option>
+                        <option value="Yearly">Yearly</option>
+                      </select>
+                    </FormRow>
+                  </>
+                )}
+
                 <FormRow label="TDS Applicable">
                   <ToggleSwitch
                     value={formData.tdsApplicable}
@@ -319,7 +472,19 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
                   />
                 </FormRow>
 
-                {/* Address */}
+                {formData.tdsApplicable && (
+                  <FormRow label="TDS Section">
+                    <input
+                      type="text"
+                      className="w-full border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-blue-500"
+                      value={formData.tdsSection}
+                      onChange={(e) =>
+                        handleChange("tdsSection", e.target.value)
+                      }
+                    />
+                  </FormRow>
+                )}
+
                 <FormRow label="Address">
                   <textarea
                     rows={3}
@@ -329,7 +494,6 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
                   />
                 </FormRow>
 
-                {/* PAN */}
                 <FormRow label="PAN">
                   <input
                     type="text"
@@ -362,14 +526,14 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
               <div className="space-y-1">
                 <FormRow label="Employee">
                   <ToggleSwitch
-                    value={formData.attrEmployee}
-                    onChange={(val) => handleChange("attrEmployee", val)}
+                    value={formData.employee}
+                    onChange={(val) => handleChange("employee", val)}
                   />
                 </FormRow>
                 <FormRow label="Group">
                   <ToggleSwitch
-                    value={formData.attrGroup}
-                    onChange={(val) => handleChange("attrGroup", val)}
+                    value={formData.group}
+                    onChange={(val) => handleChange("group", val)}
                   />
                 </FormRow>
               </div>
@@ -381,29 +545,40 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
         <div className="bg-[#1e4e79] px-4 py-2 flex gap-2 rounded-b-sm">
           <button
             onClick={handleSubmit}
-            className="border border-white text-white px-4 py-1 text-sm rounded hover:bg-blue-800 transition-colors"
+            disabled={isSubmitting}
+            className={`border border-white text-white px-4 py-1 text-sm rounded transition-colors flex items-center ${
+              isSubmitting
+                ? "bg-blue-800 opacity-70 cursor-not-allowed"
+                : "hover:bg-blue-800"
+            }`}
           >
-            Save
+            {isSubmitting ? (
+              <>
+                <Loader2 className="animate-spin w-3 h-3 mr-2" /> Saving...
+              </>
+            ) : (
+              "Save"
+            )}
           </button>
 
           <button
             onClick={handleClear}
+            disabled={isSubmitting}
             className="border border-white text-white px-4 py-1 text-sm rounded hover:bg-blue-800 transition-colors"
           >
             Clear
           </button>
 
-          {isEditMode && onDelete && (
+          {isEditMode && onDelete && formData._id && (
             <button
-              onClick={() => onDelete(formData.id!)}
+              onClick={() => onDelete(formData._id!)}
+              disabled={isSubmitting}
               className="border border-white text-white px-4 py-1 text-sm rounded hover:bg-red-600 transition-colors ml-auto"
             >
               Delete
             </button>
           )}
 
-          {/* Add a fake delete button if in create mode just to match screenshot strictly, 
-               or conditionally hide it as per logic above */}
           {!isEditMode && (
             <button className="border border-white text-white px-4 py-1 text-sm rounded hover:bg-blue-800 transition-colors">
               Delete
@@ -411,6 +586,18 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
           )}
         </div>
       </div>
+
+      {/* --- COA GROUPS MODAL INTEGRATION --- */}
+      {isCoaGroupModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+          <COAGroupsModal
+            isOpen={isCoaGroupModalOpen}
+            onClose={() => setIsCoaGroupModalOpen(false)}
+            initialData={selectedCoaGroup} // Pass the FULL selected object here!
+            onSave={handleCoaGroupSave} // Updates list after save
+          />
+        </div>
+      )}
     </div>
   );
 };

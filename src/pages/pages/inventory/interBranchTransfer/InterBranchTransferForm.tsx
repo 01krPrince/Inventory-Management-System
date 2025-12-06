@@ -1,14 +1,40 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { CalenderIcon } from "../../../../components/icons";
 import DocumentInventoryModal from "../../../../components/DocumentCategoryInventory";
 import { LocationMaster } from "../../../../components/LocationMaster";
-// Added Plus icon for the "Create" button
 import { EditIcon, ArrowLeft, Plus } from "lucide-react";
-import ChartOfAccounts, {
-  AccountFormData,
-} from "../../../../components/ChartOfAccount";
+
+// --- Imports from your project structure ---
+import ChartOfAccounts from "../../../../components/ChartOfAccount";
+import {
+  fetchSalesAndPurchaseGL,
+  SalesAndPurchaseGL,
+} from "../../../../components/addItemMaster/api/saleAndPurchaseGL";
 
 // --- Types ---
+export interface AccountFormData {
+  _id?: string;
+  name: string;
+  code: string;
+  identification: string;
+  isSubledger: boolean;
+  salesGlUnderGroup: string;
+  inactive: boolean;
+  type: string;
+  accountNo: string;
+  rtgsIfscCode: string;
+  classification: string;
+  isLoanAccount: boolean;
+  intrestRate: string;
+  calculationOn: string;
+  tdsApplicable: boolean;
+  tdsSection: string;
+  address: string;
+  pan: string;
+  employee: boolean;
+  group: boolean;
+}
+
 interface MockData {
   gstTypes: string[];
   creditTypes: string[];
@@ -24,8 +50,8 @@ interface MockData {
 
 interface ActionBtnProps {
   icon: React.ReactElement;
-  onClick?: () => void; // Added onClick to interface
-  className?: string; // Added className for styling flexibility
+  onClick?: () => void;
+  className?: string;
 }
 
 export interface SalesInvoiceFormProps {
@@ -43,10 +69,10 @@ interface InputGroupProps {
 }
 
 interface SelectProps {
-  options: { label: string; value: string }[] | string[]; // Updated to support object array
+  options: { label: string; value: string }[] | string[];
   placeholder?: string;
   value?: string;
-  onChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void; // Added onChange
+  onChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 }
 
 // --- Mock Data ---
@@ -55,28 +81,15 @@ const mockData: MockData = {
   creditTypes: ["Credit", "Cash"],
   stores: ["SPORTS HUB", "TECH WORLD", "FASHION POINT"],
   customers: [
-    {
-      name: "John Doe",
-      underGroup: "Retail",
-      code: "CUST001",
-    },
-    {
-      name: "Jane Smith",
-      underGroup: "Wholesale",
-      code: "CUST002",
-    },
-    {
-      name: "Acme Corp",
-      underGroup: "Corporate",
-      code: "CUST003",
-    },
+    { name: "John Doe", underGroup: "Retail", code: "CUST001" },
+    { name: "Jane Smith", underGroup: "Wholesale", code: "CUST002" },
   ],
   priceCategories: ["Retail", "Wholesale", "Dealer"],
-  salesmen: ["Alice", "Bob", "Charlie"],
+  salesmen: ["Alice", "Bob"],
   taxOptions: ["Inclusive", "Exclusive"],
-  shipToOptions: ["Warehouse A", "Warehouse B", "Store Front"],
-  paymentTerms: ["Immediate", "Net 15", "Net 30"],
-  paymentLinks: ["PayTM", "Razorpay", "Stripe", "Direct Transfer"],
+  shipToOptions: ["Warehouse A", "Store Front"],
+  paymentTerms: ["Immediate", "Net 30"],
+  paymentLinks: ["PayTM", "Razorpay"],
 };
 
 // --- UI Components ---
@@ -90,7 +103,6 @@ const InputGroup: React.FC<InputGroupProps> = ({ children }) => (
   <div className="flex items-center w-full relative gap-1">{children}</div>
 );
 
-// Updated Select to handle objects, strings, and onChange events
 const Select: React.FC<SelectProps> = ({
   options,
   placeholder = "Select...",
@@ -102,12 +114,11 @@ const Select: React.FC<SelectProps> = ({
       className="w-full h-[30px] bg-white border border-gray-300 rounded-sm px-2 text-[13px] text-gray-700 focus:outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)] appearance-none"
       value={value}
       onChange={onChange}
-      defaultValue={!value ? "" : undefined} // handle default if controlled
+      defaultValue={!value ? "" : undefined}
     >
       <option value="" disabled>
         {placeholder}
       </option>
-
       {options.map((opt) => {
         const isString = typeof opt === "string";
         const val = isString ? opt : opt.value;
@@ -162,7 +173,7 @@ const VoucherNoInput: React.FC<{ value: string }> = ({ value }) => (
 );
 
 // --- Main Component ---
-const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
+const InterBranchTransferForm: React.FC<SalesInvoiceFormProps> = ({
   themeColor = "#0f3c63",
   onOverlayChange,
 }) => {
@@ -174,12 +185,34 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
   // --- States ---
   const [documentInventoryModalCompo, setDocumentInventoryModalCompo] =
     useState(false);
-  const [isFormOpen, setIsFormOpen] = useState(false); // Used for LocationMaster
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
   // Chart of Accounts States
   const [showChartOfAccounts, setShowChartOfAccounts] = useState(false);
   const [coaFormData, setCoaFormData] = useState<AccountFormData | null>(null);
+
+  // API Data States
+  const [glDataFull, setGlDataFull] = useState<SalesAndPurchaseGL[]>([]);
+  const [glOptions, setGlOptions] = useState<
+    { label: string; value: string }[]
+  >([]);
   const [selectedGL, setSelectedGL] = useState<string>("");
+
+  // --- Effects ---
+  useEffect(() => {
+    const loadGLData = async () => {
+      const data = await fetchSalesAndPurchaseGL();
+      if (data) {
+        setGlDataFull(data);
+        const options = data.map((item: SalesAndPurchaseGL) => ({
+          label: item.name,
+          value: item.name,
+        }));
+        setGlOptions(options);
+      }
+    };
+    loadGLData();
+  }, []);
 
   // --- Handlers ---
 
@@ -201,51 +234,76 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
     handleCloseForm();
   };
 
-  // 1. Create New GL Account
   const handleCreateGL = () => {
-    setCoaFormData(null); // Ensure data is null for "Create" mode
+    setCoaFormData(null);
     setShowChartOfAccounts(true);
   };
 
-  // 2. Edit Selected GL Account
   const handleEditGL = () => {
     if (!selectedGL) {
       alert("Please select an account to edit first.");
       return;
     }
 
-    // Find the mock data object
-    const account = mockData.customers.find((c) => c.code === selectedGL);
+    const account = glDataFull.find((c) => c.name === selectedGL);
 
     if (account) {
-      // Map mock data to the AccountFormData structure required by the component
       const dataToEdit: AccountFormData = {
-        id: account.code,
+        _id: account._id,
         name: account.name,
         code: account.code,
-        underGroup: account.underGroup,
-        // Defaulting other required fields since mock data is simple
-        identification: "",
-        isSubledger: false,
-        type: "General",
-        accountNo: "",
-        rtgsIfsc: "",
-        classification: "",
-        isLoanAccount: false,
-        tdsApplicable: false,
-        address: "",
-        pan: "",
-        attrEmployee: false,
-        attrGroup: false,
+        identification: account.identification,
+        isSubledger: account.isSubledger,
+        salesGlUnderGroup: account.salesGlUnderGroup,
+        inactive: account.inactive,
+        type: account.type,
+        accountNo: account.accountNo,
+        rtgsIfscCode: account.rtgsIfscCode,
+        classification: account.classification,
+        isLoanAccount: account.isLoanAccount,
+        intrestRate: account.intrestRate,
+        calculationOn: account.calculationOn,
+        tdsSection: account.tdsSection,
+        tdsApplicable: account.tdsApplicable,
+        address: account.address,
+        pan: account.pan,
+        employee: account.employee === "Yes" || account.employee === "true",
+        group: account.group === "Yes" || account.group === "true",
       };
+
       setCoaFormData(dataToEdit);
       setShowChartOfAccounts(true);
     }
   };
 
-  const handleSaveGL = (data: AccountFormData) => {
-    console.log("Saved GL Data:", data);
-    // Here you would typically update your state/backend
+  const handleSaveGL = (savedData: SalesAndPurchaseGL) => {
+    const savedName = savedData.name;
+
+    // 1. Update the Full Data Cache
+    setGlDataFull((prev: SalesAndPurchaseGL[]) => {
+      const exists = prev.find(
+        (item: SalesAndPurchaseGL) => item._id === savedData._id
+      );
+      if (exists) {
+        return prev.map((item: SalesAndPurchaseGL) =>
+          item._id === savedData._id ? savedData : item
+        );
+      }
+      return [...prev, savedData];
+    });
+
+    // 2. Update Options
+    setGlOptions((prev: { label: string; value: string }[]) => {
+      const exists = prev.find(
+        (opt: { label: string; value: string }) => opt.value === savedName
+      );
+      if (exists) return prev;
+      return [...prev, { label: savedName, value: savedName }];
+    });
+
+    // 3. Select the new/updated item
+    setSelectedGL(savedName);
+
     setShowChartOfAccounts(false);
   };
 
@@ -273,6 +331,7 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
     );
   }
 
+  // --- Options for other selects ---
   const customerOptions = mockData.customers.map((customer) => ({
     label: `${customer.name} | ${customer.underGroup} | ${customer.code}`,
     value: customer.code,
@@ -359,7 +418,7 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
               </div>
             </div>
 
-            {/* PostingGL (UPDATED SECTION) */}
+            {/* PostingGL (DYNAMIC SECTION) */}
             <div className="grid grid-cols-12 gap-2">
               <div className="col-span-4">
                 <Label>PostingGL </Label>
@@ -367,8 +426,8 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
               <div className="col-span-8">
                 <InputGroup>
                   <Select
-                    options={customerOptions}
-                    placeholder="Select customer..."
+                    options={glOptions}
+                    placeholder="Select GL Account..."
                     value={selectedGL}
                     onChange={(e) => setSelectedGL(e.target.value)}
                   />
@@ -403,7 +462,7 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
           </div>
         )}
 
-        {/* CHART OF ACCOUNTS MODAL (NEW) */}
+        {/* CHART OF ACCOUNTS MODAL */}
         <ChartOfAccounts
           isOpen={showChartOfAccounts}
           onClose={() => setShowChartOfAccounts(false)}
@@ -415,4 +474,4 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
   );
 };
 
-export default StockAdjustmentForm;
+export default InterBranchTransferForm;

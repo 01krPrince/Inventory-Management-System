@@ -21,7 +21,15 @@ import {
   StockUnitData,
   GstClassificationData,
 } from "./api/itemService";
+
+// IMPORT THE GL API AND INTERFACES
+import {
+  fetchSalesAndPurchaseGL,
+  SalesAndPurchaseGL,
+} from "./api/saleAndPurchaseGL";
+
 import { ItemFormData, ItemApiData } from "./models/ItemModel";
+import ChartOfAccounts from "../ChartOfAccount";
 
 const INITIAL_DATA: ItemFormData = {
   // Basic Details
@@ -150,7 +158,7 @@ const InputField = ({
   <div className="mb-3">
     <FormLabel required={required}>{label}</FormLabel>
     <input
-      type={type}
+      type="text"
       name={name}
       value={value}
       onChange={onChange}
@@ -160,8 +168,6 @@ const InputField = ({
   </div>
 );
 
-// --- FIXED SELECT FIELD ---
-// Added a default "Select..." option at the top to prevent empty rows
 const SelectField = ({
   label,
   name,
@@ -210,6 +216,22 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
   const [isBrandOpen, setIsBrandOpen] = useState(false);
   const [isItemCategory, setIsItemCategory] = useState(false);
 
+  // --- CHART OF ACCOUNTS STATE ---
+  const [showChartOfAccounts, setShowChartOfAccounts] = useState(false);
+  const [coaFormData, setCoaFormData] = useState<SalesAndPurchaseGL | null>(
+    null
+  );
+  const [activeGLType, setActiveGLType] = useState<"sales" | "purchase" | null>(
+    null
+  );
+
+  // --- GL DATA STATE ---
+  // glDataFull stores the COMPLETE OBJECTS from the API
+  const [glDataFull, setGlDataFull] = useState<SalesAndPurchaseGL[]>([]);
+  // These lists just store the names for the dropdown UI
+  const [salesGLList, setSalesGLList] = useState<string[]>([]);
+  const [purchaseGLList, setPurchaseGLList] = useState<string[]>([]);
+
   // --- API DATA STATE ---
   const [categories, setCategories] = useState<CategoryData[]>([]);
   const [brands, setBrands] = useState<BrandData[]>([]);
@@ -218,20 +240,36 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
 
   const isEditMode = !!initialData && !!initialData._id;
 
-  // --- FETCH DROPDOWN DATA ---
+  // --- FETCH DROPDOWN DATA (Includes GL API) ---
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [cats, brnds, units, gsts] = await Promise.all([
+        const [cats, brnds, units, gsts, glData] = await Promise.all([
           fetchCategories(),
           fetchBrands(),
           fetchStockUnits(),
           fetchGstClassifications(),
+          fetchSalesAndPurchaseGL(), // Fetching full objects
         ]);
+
         setCategories(cats || []);
         setBrands(brnds || []);
         setStockUnitList(units || []);
         setGstList(gsts || []);
+
+        // Process GL Data
+        if (glData && Array.isArray(glData)) {
+          // 1. Store the full objects in state so we can find them later
+          setGlDataFull(glData);
+
+          // 2. Extract just the names for the dropdown
+          const glNames = glData
+            .filter((item) => item.name && item.name.trim() !== "")
+            .map((item) => item.name);
+
+          setSalesGLList(glNames);
+          setPurchaseGLList(glNames);
+        }
       } catch (error) {
         console.error("Failed to load dropdown data", error);
       }
@@ -359,6 +397,67 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
     }
   };
 
+  // --- LOGIC FOR CHART OF ACCOUNTS MODAL ---
+  const handleOpenCOA = (type: "sales" | "purchase", currentValue: string) => {
+    setActiveGLType(type);
+
+    if (currentValue && currentValue.trim() !== "") {
+      // 1. Search for the FULL OBJECT in our glDataFull state
+      // This ensures we pass the complete data (address, bank, etc.) to the modal
+      const selectedItem = glDataFull.find(
+        (item) => item.name === currentValue
+      );
+
+      if (selectedItem) {
+        setCoaFormData(selectedItem); // Pass full object
+      } else {
+        // Fallback: If not found in array but name exists, just pass name
+        // (Type assertion needed here as temporary fix or adjust type)
+        setCoaFormData({ name: currentValue } as SalesAndPurchaseGL);
+      }
+    } else {
+      // Create Mode
+      setCoaFormData(null);
+    }
+
+    setShowChartOfAccounts(true);
+  };
+
+  const handleSaveCOA = (savedData: SalesAndPurchaseGL) => {
+    // Extract name
+    const savedName = savedData?.name;
+
+    if (savedName) {
+      // 1. Update the Full Data Cache so future edits work immediately without refresh
+      setGlDataFull((prev) => {
+        // Check if it already exists to update or push new
+        const exists = prev.find((item) => item.name === savedName);
+        if (exists) {
+          // Replace existing
+          return prev.map((item) =>
+            item.name === savedName ? savedData : item
+          );
+        }
+        // Add new
+        return [...prev, savedData];
+      });
+
+      // 2. Update the Dropdown Lists and Form Selection
+      if (activeGLType === "sales") {
+        setSalesGLList((prev) =>
+          prev.includes(savedName) ? prev : [...prev, savedName]
+        );
+        setFormData((prev) => ({ ...prev, salesGL: savedName }));
+      } else if (activeGLType === "purchase") {
+        setPurchaseGLList((prev) =>
+          prev.includes(savedName) ? prev : [...prev, savedName]
+        );
+        setFormData((prev) => ({ ...prev, purchaseGL: savedName }));
+      }
+    }
+    setShowChartOfAccounts(false);
+  };
+
   // --- Render Sections ---
   const renderBasicDetails = () => (
     <div className="bg-white border rounded-lg p-6 shadow-sm mt-4">
@@ -414,7 +513,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
                 <option value="">Select...</option>
                 <option value="Grocery">Grocery</option>
                 <option value="Electronics">Electronics</option>
-                {/* Dynamically added categories with filtering */}
                 {categories
                   .filter((cat) => cat.name && cat.name.trim() !== "")
                   .map((cat) => (
@@ -448,7 +546,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
                 className="w-full border border-gray-300 rounded-l px-2 py-1.5 text-sm outline-none"
               >
                 <option value="">Select...</option>
-                {/* Dynamically added Stock Units with filtering */}
                 {stockUnitList
                   .filter((unit) => unit.name && unit.name.trim() !== "")
                   .map((unit) => (
@@ -482,7 +579,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
                 className="w-full border border-gray-300 rounded-l px-2 py-1.5 text-sm outline-none"
               >
                 <option value="">Select...</option>
-                {/* Dynamically added GST List with filtering */}
                 {gstList.length > 0 ? (
                   gstList
                     .filter(
@@ -530,8 +626,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
   );
 
   const renderAdvanceInfo = () => {
-    // FIX: Removing the manual empty string from these arrays
-    // The SelectField component now adds the "Select..." option automatically
     const categoryOptions = categories
       .filter((c) => c.name && c.name.trim() !== "")
       .map((c) => c.name);
@@ -544,7 +638,7 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
       <div className="bg-white border rounded-lg p-6 shadow-sm mt-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="col-span-1 md:col-span-2 space-y-4 max-w-4xl">
-            {/* --- MODIFIED CATEGORY FIELD WITH EDIT BUTTON --- */}
+            {/* --- CATEGORY FIELD --- */}
             <div className="mb-3">
               <FormLabel>Category</FormLabel>
               <div className="flex w-full">
@@ -573,7 +667,7 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
               </div>
             </div>
 
-            {/* --- MODIFIED BRAND FIELD WITH EDIT BUTTON --- */}
+            {/* --- BRAND FIELD --- */}
             <div className="mb-3">
               <FormLabel>Brand</FormLabel>
               <div className="flex w-full">
@@ -673,14 +767,35 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
               rows={3}
             />
           </div>
-          {/* Sales GL is now Required */}
-          <InputField
-            label="Sales GL"
-            name="salesGL"
-            value={formData.salesGL}
-            onChange={handleInputChange}
-            required={true}
-          />
+          {/* Sales GL with Select and Edit Button */}
+          <div className="mb-3">
+            <FormLabel required>Sales GL</FormLabel>
+            <div className="flex w-full">
+              <select
+                name="salesGL"
+                value={formData.salesGL}
+                onChange={handleInputChange}
+                className="w-full border border-gray-300 rounded-l px-2 py-1.5 text-sm bg-white focus:outline-none focus:border-[#0c5888]"
+              >
+                <option value="">Select...</option>
+                {salesGLList.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  // Trigger COA Modal for Sales.
+                  handleOpenCOA("sales", formData.salesGL);
+                }}
+                className="bg-[#0c5888] text-white px-2 rounded-r hover:bg-[#0a4a70] transition-colors"
+              >
+                <Edit className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         </div>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-4">
@@ -740,59 +855,82 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
     </div>
   );
 
-  const purchageConfig = () => (
-    <div className="bg-white border rounded-lg p-6 shadow-sm mt-4">
-      <div className="grid grid-cols-12 gap-8">
-        <div className="col-span-12 md:col-span-7 space-y-6">
-          <div>
-            <FormLabel>Description</FormLabel>
-            <textarea
-              name="purchaseDescription"
-              value={formData.purchaseDescription}
+  const purchageConfig = () => {
+    return (
+      <div className="bg-white border rounded-lg p-6 shadow-sm mt-4">
+        <div className="grid grid-cols-12 gap-8">
+          <div className="col-span-12 md:col-span-7 space-y-6">
+            <div>
+              <FormLabel>Description</FormLabel>
+              <textarea
+                name="purchaseDescription"
+                value={formData.purchaseDescription}
+                onChange={handleInputChange}
+                className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none"
+                rows={3}
+              />
+            </div>
+
+            {/* Purchase GL with Select and Edit Button */}
+            <div className="mb-3">
+              <FormLabel required>Purchase GL</FormLabel>
+              <div className="flex w-full">
+                <select
+                  name="purchaseGL"
+                  value={formData.purchaseGL}
+                  onChange={handleInputChange}
+                  className="w-full border border-gray-300 rounded-l px-2 py-1.5 text-sm bg-white focus:outline-none focus:border-[#0c5888]"
+                >
+                  <option value="">Select...</option>
+                  {purchaseGLList.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    // Trigger COA Modal for Purchase.
+                    handleOpenCOA("purchase", formData.purchaseGL);
+                  }}
+                  className="bg-[#0c5888] text-white px-2 rounded-r hover:bg-[#0a4a70] transition-colors"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="col-span-12 md:col-span-5 space-y-3">
+            <InputField
+              label="Purchase Rate"
+              name="purchaseRate"
+              value={formData.purchaseRate}
               onChange={handleInputChange}
-              className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none"
-              rows={3}
+            />
+            <InputField
+              label="Rate Factor"
+              name="purchaseRateFactor"
+              value={formData.purchaseRateFactor}
+              onChange={handleInputChange}
+            />
+            <InputField
+              label="Discount 1"
+              name="purchaseDiscount1"
+              value={formData.purchaseDiscount1}
+              onChange={handleInputChange}
+            />
+            <InputField
+              label="Discount %"
+              name="purchaseDiscount2"
+              value={formData.purchaseDiscount2}
+              onChange={handleInputChange}
             />
           </div>
-          {/* Purchase GL is now Required */}
-          <SelectField
-            label="Purchase GL"
-            name="purchaseGL"
-            value={formData.purchaseGL}
-            onChange={handleInputChange}
-            options={["GL-PURCHASE-4002", "Purchases - Traded Goods"]}
-            required={true}
-          />
-        </div>
-        <div className="col-span-12 md:col-span-5 space-y-3">
-          <InputField
-            label="Purchase Rate"
-            name="purchaseRate"
-            value={formData.purchaseRate}
-            onChange={handleInputChange}
-          />
-          <InputField
-            label="Rate Factor"
-            name="purchaseRateFactor"
-            value={formData.purchaseRateFactor}
-            onChange={handleInputChange}
-          />
-          <InputField
-            label="Discount 1"
-            name="purchaseDiscount1"
-            value={formData.purchaseDiscount1}
-            onChange={handleInputChange}
-          />
-          <InputField
-            label="Discount %"
-            name="purchaseDiscount2"
-            value={formData.purchaseDiscount2}
-            onChange={handleInputChange}
-          />
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const attributesConfig = () => (
     <div className="bg-white border rounded-lg p-6 shadow-sm mt-4">
@@ -1032,6 +1170,20 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded shadow-lg">
             <Brand onClose={() => setIsBrandOpen(false)} />
+          </div>
+        </div>
+      )}
+
+      {/* --- CHART OF ACCOUNTS MODAL --- */}
+      {showChartOfAccounts && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded shadow-lg w-full max-w-4xl max-h-[90vh] overflow-auto">
+            <ChartOfAccounts
+              isOpen={showChartOfAccounts}
+              onClose={() => setShowChartOfAccounts(false)}
+              initialData={coaFormData} // Sends FULL OBJECT for Update, or null for Create
+              onSave={handleSaveCOA} // Updates local list and selection
+            />
           </div>
         </div>
       )}

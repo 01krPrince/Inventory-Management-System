@@ -110,9 +110,9 @@ export interface ItemApiData {
   batch_wise_rate: boolean;
   drug_type: string | null;
   salt: string | null;
-  skip_item_from_loyalty: string | null; // "Yes" | "No"
+  skip_item_from_loyalty: string | null;
   exclude_cvss_applist: boolean;
-  ask_udf_in_document: string | null; // "Y" | "N"
+  ask_udf_in_document: string | null;
   attachment: string | null;
   code?: string | null;
   __v?: number;
