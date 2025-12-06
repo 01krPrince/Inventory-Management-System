@@ -27,6 +27,7 @@ import {
 
 import { ItemFormData, ItemApiData } from "./models/ItemModel";
 import ChartOfAccounts from "../ChartOfAccount";
+import { GstClassificationForm } from "../GstClassificationForm";
 
 const INITIAL_DATA: ItemFormData = {
   // Basic Details
@@ -210,6 +211,10 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
   const [isBrandOpen, setIsBrandOpen] = useState(false);
   const [isItemCategory, setIsItemCategory] = useState(false);
 
+  // --- GST MODAL STATE ---
+  const [isGstModalOpen, setIsGstModalOpen] = useState(false);
+  const [gstInitialData, setGstInitialData] = useState<any>(undefined);
+
   // --- CHART OF ACCOUNTS STATE ---
   const [showChartOfAccounts, setShowChartOfAccounts] = useState(false);
   const [coaFormData, setCoaFormData] = useState<SalesAndPurchaseGL | null>(
@@ -384,6 +389,67 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
     }
   };
 
+  // --- GST Handler Logic ---
+  const handleGstEditClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const currentSelection = formData.gstClassification;
+    // Find full object from current list based on description match
+    const selectedItem = gstList.find(
+      (item) => item.hsn_description === currentSelection
+    );
+
+    if (selectedItem) {
+      // Edit Mode: Pass existing data
+      setGstInitialData({
+        type: selectedItem.type || "HSN",
+        code: selectedItem.code,
+        hsnSacCode: selectedItem.hsn_sac_code,
+        hsnSacDescription: selectedItem.hsn_description,
+      });
+    } else {
+      // Create Mode: Pass undefined
+      setGstInitialData(undefined);
+    }
+    setIsGstModalOpen(true);
+  };
+
+  const handleGstSave = (savedData: any) => {
+    // 1. Update the form value with the new/updated description
+    setFormData((prev) => ({
+      ...prev,
+      gstClassification: savedData.hsnSacDescription,
+    }));
+
+    // 2. Update the local list so the dropdown reflects the new item immediately
+    setGstList((prev) => {
+      // Check if it already exists (Edit scenario)
+      const existingIndex = prev.findIndex(
+        (item) => item.hsn_description === savedData.hsnSacDescription
+      );
+
+      const newItem: GstClassificationData = {
+        _id: `temp_${Date.now()}`, // Temporary ID until page refresh
+        type: savedData.type,
+        hsn_sac_code: savedData.hsnSacCode,
+        hsn_description: savedData.hsnSacDescription,
+        code: savedData.code,
+      };
+
+      if (existingIndex >= 0) {
+        const updatedList = [...prev];
+        updatedList[existingIndex] = {
+          ...updatedList[existingIndex],
+          ...newItem,
+        };
+        return updatedList;
+      } else {
+        return [...prev, newItem];
+      }
+    });
+
+    setIsGstModalOpen(false);
+  };
+
   const handleOpenCOA = (type: "sales" | "purchase", currentValue: string) => {
     setActiveGLType(type);
 
@@ -537,6 +603,7 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
             </div>
           </div>
 
+          {/* --- GST CLASSIFICATION SECTION (UPDATED) --- */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4 md:col-span-3">
               <FormLabel>GST Classification(HSN/SAC)</FormLabel>
@@ -567,8 +634,15 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
                   </>
                 )}
               </select>
+              <button
+                onClick={handleGstEditClick}
+                className="bg-[#0c5888] text-white px-2 rounded-r"
+              >
+                <Edit className="w-4 h-4" />
+              </button>
             </div>
           </div>
+          {/* --- END GST CLASSIFICATION SECTION --- */}
         </div>
         <div className="col-span-12 md:col-span-3 flex flex-col items-center">
           <div className="w-full h-[180px] bg-gray-100 border border-dashed rounded flex flex-col items-center justify-center mb-2 overflow-hidden relative">
@@ -1105,6 +1179,8 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
         </div>
       </div>
 
+      {/* --- MODALS SECTION --- */}
+
       {showItemGroupModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded shadow-lg">
@@ -1132,6 +1208,20 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded shadow-lg">
             <Brand onClose={() => setIsBrandOpen(false)} />
+          </div>
+        </div>
+      )}
+
+      {/* --- GST MODAL --- */}
+      {isGstModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-auto">
+            {/* This checks if we have initial data (edit mode) or undefined (create mode) */}
+            <GstClassificationForm
+              initialData={gstInitialData}
+              onSubmit={handleGstSave}
+              onCancel={() => setIsGstModalOpen(false)}
+            />
           </div>
         </div>
       )}

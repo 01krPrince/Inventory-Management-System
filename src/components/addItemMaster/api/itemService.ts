@@ -185,6 +185,30 @@ export const fetchGstClassifications = async (): Promise<GstClassificationData[]
   }
 };
 
+export type CreateGstClassificationPayload = {
+  type: string;
+  code: string;
+  hsn_sac_code: string;
+  hsn_description: string;
+};
+
+export type CreateGstClassificationResponse = GstClassificationData;
+
+export const createGstClassification = async (
+  payload: CreateGstClassificationPayload
+): Promise<CreateGstClassificationResponse | null> => {
+  try {
+    const response = await api.post<CreateGstClassificationResponse>(
+      '/gstclassification/create_gst_classification',
+      payload
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error creating GST classification:", error);
+    return null;
+  }
+};
+
 
 export interface CreateCategoryPayload {
   name: string;
