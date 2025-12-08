@@ -1,10 +1,10 @@
-import React, { useState, useRef, MouseEvent } from "react";
+import React, { useState, useRef, MouseEvent, useEffect, useMemo } from "react";
+import ReactDOM from "react-dom";
 import {
   Plus,
   X,
   Search,
   Copy,
-  List,
   FileText,
   BarChart2,
   ScanLine,
@@ -13,128 +13,466 @@ import {
   ExternalLink,
   FileSpreadsheet,
   DollarSign,
+  List,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { COLORS } from "../../../../constants/colors";
-
+import { fetchItems } from "../itemMaster/api/itemService";
+// --- FIX: Import the type from your model file instead of defining it locally ---
+import { ItemApiData } from "../itemMaster/models/ItemModel";
+import AttributePanel from "../../../../components/AttributePanel";
 // --- TYPES ---
 interface Column {
   id: string;
   label: string;
   width: number;
-  fixed?: boolean;
   align: "left" | "center" | "right";
+  sticky?: "left";
+  resizable?: boolean;
+}
+
+// Interface for the Editable Row Data
+interface RowData {
+  [key: string]: string | number;
 }
 
 const OrderTable: React.FC = () => {
+  // --- STATE MANAGEMENT ---
+  const [items, setItems] = useState<ItemApiData[]>([]);
+  const [tableData, setTableData] = useState<Record<number, RowData>>({});
+
+  // Sort State
+  const [sortConfig, setSortConfig] = useState<{
+    key: string;
+    direction: "asc" | "desc";
+  } | null>(null);
+
+  // Popup State (Item Selection List)
+  const [popupState, setPopupState] = useState<{
+    visible: boolean;
+    top: number;
+    left: number;
+    activeRowIndex: number | null;
+  }>({ visible: false, top: 0, left: 0, activeRowIndex: null });
+
+  // Attribute Panel State (Form)
+  const [attributePanelState, setAttributePanelState] = useState<{
+    visible: boolean;
+    activeRowIndex: number | null;
+    tempItemData: ItemApiData | null;
+  }>({ visible: false, activeRowIndex: null, tempItemData: null });
+
+  // --- FETCH DATA ON MOUNT ---
+  useEffect(() => {
+    const loadItems = async () => {
+      try {
+        const data = await fetchItems();
+        if (Array.isArray(data)) {
+          setItems(data);
+        } else {
+          setItems([]);
+        }
+      } catch (error) {
+        console.error("Failed to load items", error);
+      }
+    };
+    loadItems();
+  }, []);
+
   // --- 1. COLUMN CONFIGURATION ---
   const initialColumns: Column[] = [
-    // --- FIXED COLUMNS (First 7) ---
-    { id: "sno", label: "SNo", width: 40, fixed: true, align: "center" },
-    { id: "add", label: "", width: 40, fixed: true, align: "center" },
-    { id: "del", label: "", width: 40, fixed: true, align: "center" },
-    { id: "srch", label: "", width: 40, fixed: true, align: "center" },
-    { id: "copy", label: "", width: 40, fixed: true, align: "center" },
+    // --- FIXED COLUMNS ---
+    {
+      id: "sno",
+      label: "SNo",
+      width: 40,
+      sticky: "left",
+      align: "center",
+      resizable: true,
+    },
+    {
+      id: "add",
+      label: "",
+      width: 35,
+      sticky: "left",
+      align: "center",
+      resizable: true,
+    },
+    {
+      id: "del",
+      label: "",
+      width: 35,
+      sticky: "left",
+      align: "center",
+      resizable: true,
+    },
+    {
+      id: "srch",
+      label: "",
+      width: 35,
+      sticky: "left",
+      align: "center",
+      resizable: true,
+    },
+    {
+      id: "copy",
+      label: "",
+      width: 35,
+      sticky: "left",
+      align: "center",
+      resizable: true,
+    },
+    {
+      id: "reciss",
+      label: "Rec Iss",
+      width: 70,
+      align: "right",
+      sticky: "left",
+      resizable: true,
+    },
     {
       id: "select",
       label: "Select Item",
-      width: 120,
-      fixed: true,
+      width: 110,
+      sticky: "left",
       align: "left",
+      resizable: true,
     },
     {
       id: "desc",
       label: "Description",
-      width: 200,
-      fixed: true,
+      width: 180,
+      sticky: "left",
       align: "left",
+      resizable: true,
     },
 
     // --- SCROLLABLE COLUMNS ---
-    { id: "attr", label: "Attribute", width: 60, align: "center" },
-    { id: "widg", label: "Widget", width: 60, align: "center" },
-    { id: "sugg", label: "Suggested", width: 100, align: "center" },
-    { id: "batch", label: "Batch", width: 60, align: "center" },
-    { id: "punit", label: "Pack Unit", width: 80, align: "left" },
-    { id: "pqty", label: "Pack Qty", width: 80, align: "right" },
-    { id: "unit", label: "Unit", width: 60, align: "left" },
-    { id: "qty", label: "Quantity", width: 80, align: "right" },
-    { id: "free", label: "Free Qty", width: 80, align: "right" },
-    { id: "rateper", label: "Rate Per", width: 80, align: "left" },
-    { id: "rate", label: "Rate", width: 80, align: "right" },
-    { id: "amount", label: "Amount", width: 90, align: "right" },
-    { id: "minrate", label: "Min Rate", width: 80, align: "right" },
-    { id: "disc", label: "Discount", width: 80, align: "right" },
-    { id: "disc_perc", label: "Discount %", width: 80, align: "right" },
-    { id: "taxcode", label: "Tax Code", width: 80, align: "left" },
-    { id: "taxrate", label: "Tax Rate", width: 70, align: "right" },
-    { id: "taxable", label: "Taxable", width: 90, align: "right" },
-    { id: "taxamt", label: "TaxAmt", width: 80, align: "right" },
-    { id: "mrp", label: "MRP", width: 80, align: "right" },
-    { id: "netrate", label: "Net Rate", width: 90, align: "right" },
-    { id: "remark", label: "Remark", width: 150, align: "left" },
-    { id: "printdesc", label: "Print Desc", width: 150, align: "left" },
-    { id: "service", label: "Service", width: 80, align: "center" },
-    { id: "serviceloc", label: "Service Loc", width: 100, align: "left" },
-    { id: "itembarcode", label: "Item Barcode", width: 120, align: "left" },
-    { id: "postinggl", label: "PostingGL", width: 100, align: "left" },
-    { id: "promoqty", label: "PromoQty", width: 80, align: "right" },
-    { id: "promotion", label: "Promotion", width: 100, align: "left" },
-    { id: "barcodedisc", label: "BarcodeDisc", width: 90, align: "right" },
-    { id: "coupon", label: "Coupon", width: 80, align: "left" },
-    { id: "sovno", label: "SO VNo", width: 80, align: "left" },
-    { id: "sorefno", label: "SO Ref No", width: 100, align: "left" },
-    { id: "sorefdate", label: "SO Ref Date", width: 100, align: "left" },
-    { id: "sovdate", label: "SO VDate", width: 100, align: "left" },
-    { id: "gpvno", label: "GP VNo", width: 80, align: "left" },
-    { id: "gprefno", label: "GP Ref No", width: 100, align: "left" },
-    { id: "gprefdate", label: "GP Ref Date", width: 100, align: "left" },
-    { id: "gpvdate", label: "GP VDate", width: 100, align: "left" },
-    { id: "bdbatchno", label: "BD Batch No", width: 100, align: "left" },
-    { id: "bdexpdate", label: "BD Exp.Date", width: 100, align: "left" },
-    { id: "bdsalerate", label: "BD Sale rate", width: 90, align: "right" },
-    { id: "itembalance", label: "Itembalance", width: 90, align: "right" },
-    { id: "barcode", label: "Barcode", width: 100, align: "left" },
-    { id: "linelevel", label: "Line Level Barcode", width: 130, align: "left" },
-    { id: "igst", label: "IGST", width: 80, align: "right" },
-    { id: "cgst", label: "CGST", width: 80, align: "right" },
-    { id: "sgst", label: "SGST", width: 80, align: "right" },
-    { id: "hsn", label: "HSN Code", width: 80, align: "left" },
-    { id: "brand", label: "Brand", width: 100, align: "left" },
+    {
+      id: "attr",
+      label: "Attribute",
+      width: 40,
+      align: "center",
+      resizable: true,
+    },
+    {
+      id: "widg",
+      label: "Widget",
+      width: 40,
+      align: "center",
+      resizable: true,
+    },
+    {
+      id: "batch",
+      label: "Batch",
+      width: 45,
+      align: "center",
+      resizable: true,
+    },
+    {
+      id: "punit",
+      label: "Pack Unit",
+      width: 50,
+      align: "left",
+      resizable: true,
+    },
+    {
+      id: "pqty",
+      label: "Pack Qty",
+      width: 50,
+      align: "right",
+      resizable: true,
+    },
+    { id: "unit", label: "Unit", width: 50, align: "left", resizable: true },
+
+    // Editable Fields
+    {
+      id: "qty",
+      label: "Quantity",
+      width: 70,
+      align: "right",
+      resizable: true,
+    },
+    {
+      id: "rateper",
+      label: "Rate Per",
+      width: 70,
+      align: "left",
+      resizable: true,
+    },
+    { id: "rate", label: "Rate", width: 70, align: "right", resizable: true },
+    {
+      id: "amount",
+      label: "Amount",
+      width: 80,
+      align: "right",
+      resizable: true,
+    },
+    {
+      id: "minrate",
+      label: "Min Rate",
+      width: 70,
+      align: "right",
+      resizable: true,
+    },
+    { id: "mrp", label: "MRP", width: 70, align: "right", resizable: true },
+    {
+      id: "netrate",
+      label: "Net Rate",
+      width: 80,
+      align: "right",
+      resizable: true,
+    },
+    {
+      id: "remark",
+      label: "Remark",
+      width: 120,
+      align: "left",
+      resizable: true,
+    },
+    {
+      id: "printdesc",
+      label: "Print Desc",
+      width: 120,
+      align: "left",
+      resizable: true,
+    },
+    {
+      id: "service",
+      label: "Service Location",
+      width: 90,
+      align: "center",
+      resizable: true,
+    },
+    {
+      id: "itembarcode",
+      label: "Item Barcode",
+      width: 100,
+      align: "left",
+      resizable: true,
+    },
+
+    // --- SYSTEM COLUMNS ---
+    {
+      id: "bdbatchno",
+      label: "BD Batch No",
+      width: 90,
+      align: "left",
+      resizable: false,
+    },
+    {
+      id: "bdexpdate",
+      label: "BD Exp.Date",
+      width: 90,
+      align: "left",
+      resizable: false,
+    },
+    {
+      id: "bdsalerate",
+      label: "BD Sale rate",
+      width: 90,
+      align: "right",
+      resizable: false,
+    },
+    {
+      id: "itembalance",
+      label: "Itembalance",
+      width: 80,
+      align: "right",
+      resizable: false,
+    },
+    {
+      id: "barcode",
+      label: "Barcode",
+      width: 100,
+      align: "left",
+      resizable: false,
+    },
+    {
+      id: "linelevel",
+      label: "Line Level Barcode",
+      width: 110,
+      align: "left",
+      resizable: false,
+    },
+    {
+      id: "hsn",
+      label: "HSN Code",
+      width: 70,
+      align: "left",
+      resizable: false,
+    },
+    { id: "brand", label: "Brand", width: 90, align: "left", resizable: false },
   ];
 
-  // Increase row count to demonstrate scrolling
   const [columns, setColumns] = useState<Column[]>(initialColumns);
-  const [rows] = useState<number[]>(
-    Array.from({ length: 100 }, (_, i) => i + 1)
-  );
+  const [rows] = useState<number[]>(Array.from({ length: 50 }, (_, i) => i));
 
-  // Define which columns should show totals
-  const totalColumns = [
-    "pqty",
-    "qty",
-    "free",
-    "amount",
-    "disc",
-    "disc_perc",
-    "taxable",
-    "taxamt",
-    "igst",
-    "cgst",
-    "sgst",
-  ];
+  // --- 2. EDITING LOGIC ---
+  const handleInputChange = (
+    rowIndex: number,
+    columnId: string,
+    value: string
+  ) => {
+    setTableData((prev) => ({
+      ...prev,
+      [rowIndex]: {
+        ...prev[rowIndex],
+        [columnId]: value,
+      },
+    }));
+  };
 
-  // --- 2. RESIZING LOGIC ---
+  // --- 3. SORTING LOGIC ---
+  const handleHeaderClick = (columnId: string) => {
+    const nonSortable = [
+      "sno",
+      "add",
+      "del",
+      "srch",
+      "copy",
+      "attr",
+      "widg",
+      "batch",
+    ];
+    if (nonSortable.includes(columnId)) return;
+
+    setSortConfig((current) => {
+      if (current?.key === columnId && current.direction === "asc") {
+        return { key: columnId, direction: "desc" };
+      }
+      return { key: columnId, direction: "asc" };
+    });
+  };
+
+  const sortedRows = useMemo(() => {
+    let sortableRows = [...rows];
+    if (sortConfig !== null) {
+      sortableRows.sort((a, b) => {
+        const rowA = tableData[a];
+        const rowB = tableData[b];
+
+        // Empty rows logic: push to bottom
+        if (!rowA && !rowB) return 0;
+        if (!rowA) return 1;
+        if (!rowB) return -1;
+
+        const valA = rowA[sortConfig.key] || "";
+        const valB = rowB[sortConfig.key] || "";
+
+        // String Sort
+        if (typeof valA === "string" && typeof valB === "string") {
+          return sortConfig.direction === "asc"
+            ? valA.localeCompare(valB)
+            : valB.localeCompare(valA);
+        }
+
+        // Numeric Sort
+        if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
+        if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
+        return 0;
+      });
+    }
+    return sortableRows;
+  }, [rows, tableData, sortConfig]);
+
+  // --- 4. SELECTION & FLOW LOGIC ---
+
+  // A. Trigger Popup
+  const handleSelectClick = (
+    e: React.MouseEvent<HTMLDivElement>,
+    rowIndex: number
+  ) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    setPopupState({
+      visible: true,
+      top: rect.bottom + window.scrollY,
+      left: rect.left + window.scrollX,
+      activeRowIndex: rowIndex,
+    });
+  };
+
+  const closePopup = () => {
+    setPopupState((prev) => ({
+      ...prev,
+      visible: false,
+      activeRowIndex: null,
+    }));
+  };
+
+  // B. Handle Item Selection from Popup
+  const handleItemSelect = (item: ItemApiData) => {
+    if (popupState.activeRowIndex !== null) {
+      // Don't save to table yet. Store in temp state and open Attribute Panel.
+      setAttributePanelState({
+        visible: true,
+        activeRowIndex: popupState.activeRowIndex,
+        tempItemData: item,
+      });
+      closePopup(); // Close selection popup
+    }
+  };
+
+  // C. Save Data from Attribute Panel to Table
+  const handleAttributeSave = (attributeData: any) => {
+    const { activeRowIndex, tempItemData } = attributePanelState;
+
+    if (activeRowIndex !== null && tempItemData) {
+      // 1. Prepare Base Data from API selection
+      const baseRowData: RowData = {
+        select: tempItemData.code || "",
+        desc: tempItemData.name || "",
+        unit: tempItemData.stock_unit || "",
+        hsn: tempItemData.gst_classfication || "",
+        brand: tempItemData.brand || "",
+        qty: "1",
+        amount: "0.00",
+        service: "Main Store", // Default
+        barcode: tempItemData.barcode || "",
+
+        // Defaults if user cancels or doesn't change anything in Attribute Panel
+        mrp: tempItemData.mrp || "0",
+        rate: tempItemData.sales_rate || "0",
+        rateper: tempItemData.sales_rate || "0",
+        netrate: tempItemData.sales_rate || "0",
+        printdesc: tempItemData.name || "",
+        itembarcode: tempItemData.barcode || "",
+      };
+
+      // 2. Merge with data coming from Attribute Panel
+      const finalRowData = { ...baseRowData, ...attributeData };
+
+      // 3. Update Table State
+      setTableData((prev) => ({
+        ...prev,
+        [activeRowIndex]: finalRowData,
+      }));
+    }
+    closeAttributePanel();
+  };
+
+  const closeAttributePanel = () => {
+    setAttributePanelState({
+      visible: false,
+      activeRowIndex: null,
+      tempItemData: null,
+    });
+  };
+
+  // --- 5. RESIZING LOGIC ---
   const resizingRef = useRef<number | null>(null);
   const startXRef = useRef<number>(0);
   const startWidthRef = useRef<number>(0);
 
   const handleMouseDown = (e: MouseEvent<HTMLDivElement>, index: number) => {
+    if (!columns[index].resizable) return;
     e.preventDefault();
     e.stopPropagation();
     resizingRef.current = index;
     startXRef.current = e.clientX;
     startWidthRef.current = columns[index].width;
-
     document.addEventListener("mousemove", handleMouseMove as any);
     document.addEventListener("mouseup", handleMouseUp);
   };
@@ -142,8 +480,7 @@ const OrderTable: React.FC = () => {
   const handleMouseMove = (e: MouseEvent | globalThis.MouseEvent) => {
     if (resizingRef.current === null) return;
     const deltaX = e.clientX - startXRef.current;
-    const newWidth = Math.max(40, startWidthRef.current + deltaX);
-
+    const newWidth = Math.max(30, startWidthRef.current + deltaX);
     setColumns((prev) => {
       if (resizingRef.current === null) return prev;
       const newCols = [...prev];
@@ -161,21 +498,16 @@ const OrderTable: React.FC = () => {
     document.removeEventListener("mouseup", handleMouseUp);
   };
 
-  // --- 3. STICKY OFFSET CALCULATION ---
   const getStickyLeft = (index: number): number => {
+    if (columns[index].sticky !== "left") return 0;
     let offset = 0;
     for (let i = 0; i < index; i++) {
-      if (columns[i].fixed) {
-        offset += columns[i].width;
-      }
+      if (columns[i].sticky === "left") offset += columns[i].width;
     }
     return offset;
   };
 
   const totalWidth = columns.reduce((acc, col) => acc + col.width, 0);
-
-  // --- 4. HEIGHT CALCULATION ---
-  // Header (36px/h-9) + Footer (36px/h-9) + 10 Rows (32px/h-8 each) + 14px Scrollbar buffer
   const tableContainerHeight = 36 + 36 + 10 * 24 + 14;
 
   return (
@@ -183,7 +515,7 @@ const OrderTable: React.FC = () => {
       className="flex flex-col h-auto font-sans text-sm overflow-hidden relative z-0"
       style={{ backgroundColor: COLORS.background }}
     >
-      {/* --- HEADER TOOLBAR --- */}
+      {/* HEADER TOOLBAR */}
       <div
         className="flex-none flex justify-between items-center p-2 border-b z-10 relative"
         style={{ backgroundColor: COLORS.white, borderColor: COLORS.border }}
@@ -213,14 +545,12 @@ const OrderTable: React.FC = () => {
             />
           </div>
         </div>
-
         <button
           className="custom-btn-primary px-6 py-1.5 rounded text-xs font-bold shadow-sm"
           style={{ color: COLORS.white }}
         >
           Pull From Order
         </button>
-
         <div className="flex items-center gap-3">
           <div
             className="flex rounded text-white h-8 items-center shadow-sm"
@@ -242,7 +572,6 @@ const OrderTable: React.FC = () => {
               <ExternalLink size={16} />
             </button>
           </div>
-
           <div className="flex gap-1">
             <button
               className="custom-btn-primary h-8 w-8 flex items-center justify-center rounded shadow-sm"
@@ -250,7 +579,6 @@ const OrderTable: React.FC = () => {
             >
               <FileSpreadsheet size={16} />
             </button>
-            {/* Example: Success Button */}
             <button
               className="h-8 w-8 flex items-center justify-center rounded shadow-sm text-lg font-bold transition-colors"
               style={{ backgroundColor: COLORS.success, color: COLORS.white }}
@@ -267,7 +595,7 @@ const OrderTable: React.FC = () => {
         </div>
       </div>
 
-      {/* --- MAIN TABLE AREA --- */}
+      {/* MAIN TABLE AREA */}
       <div className="flex-1 p-2 relative flex flex-col z-0">
         <div
           className="w-full border shadow-sm relative overflow-hidden"
@@ -276,181 +604,255 @@ const OrderTable: React.FC = () => {
             backgroundColor: COLORS.white,
           }}
         >
-          {/* Scrollable Container */}
           <div
             className="w-full overflow-auto custom-scrollbar"
             style={{ height: `${tableContainerHeight}px` }}
           >
             <div style={{ width: `${totalWidth}px` }}>
               <table className="border-collapse table-fixed w-full">
-                {/* --- TABLE HEADER --- */}
+                {/* TABLE HEADER */}
                 <thead className="sticky top-0 z-20">
                   <tr className="h-6">
                     {columns.map((col, index) => {
-                      const leftOffset = col.fixed
+                      const isLeft = col.sticky === "left";
+                      const leftOffset = isLeft
                         ? getStickyLeft(index)
                         : undefined;
+                      const isSortActive = sortConfig?.key === col.id;
                       return (
                         <th
                           key={col.id}
                           style={{
                             width: `${col.width}px`,
-                            left: col.fixed ? leftOffset : "auto",
+                            left: isLeft ? leftOffset : "auto",
                             top: 0,
-                            position: "sticky",
-                            zIndex: col.fixed ? 30 : 20,
+                            position: isLeft ? "sticky" : "relative",
+                            zIndex: isLeft ? 30 : 20,
                             backgroundColor: COLORS.primary,
                             color: COLORS.white,
                             borderColor: COLORS.primaryHover,
+                            cursor: "pointer",
                           }}
-                          className="border-r px-1 text-xs font-normal select-none group"
+                          className="border-r px-1 text-xs font-normal select-none group relative hover:bg-opacity-90"
+                          onClick={() => handleHeaderClick(col.id)}
                         >
                           <div
-                            className={`flex w-full h-full items-center ${
+                            className={`flex w-full h-full items-center overflow-hidden ${
                               col.align === "center"
                                 ? "justify-center"
-                                : "justify-start px-1"
+                                : "justify-between px-1"
                             }`}
                           >
-                            {col.label}
+                            <span
+                              title={col.label}
+                              style={{
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                display: "block",
+                              }}
+                            >
+                              {col.label}
+                            </span>
+                            {isSortActive && (
+                              <span className="ml-1">
+                                {sortConfig.direction === "asc" ? (
+                                  <ArrowUp size={10} />
+                                ) : (
+                                  <ArrowDown size={10} />
+                                )}
+                              </span>
+                            )}
                           </div>
-                          <div
-                            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 z-40"
-                            onMouseDown={(e) => handleMouseDown(e, index)}
-                          />
+                          {col.resizable && (
+                            <div
+                              className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 z-40 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onMouseDown={(e) => handleMouseDown(e, index)}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          )}
                         </th>
                       );
                     })}
                   </tr>
                 </thead>
 
-                {/* --- TABLE BODY --- */}
+                {/* TABLE BODY */}
                 <tbody>
-                  {rows.map((rowNum, rIdx) => (
-                    <tr
-                      key={rIdx}
-                      className="h-6 border-b custom-row-hover"
-                      style={{ borderColor: COLORS.border }}
-                    >
-                      {columns.map((col, cIdx) => {
-                        const leftOffset = col.fixed
-                          ? getStickyLeft(cIdx)
-                          : undefined;
+                  {sortedRows.map((originalIndex, visualIndex) => {
+                    const rowData = tableData[originalIndex] || {};
 
-                        let content: React.ReactNode = null;
+                    return (
+                      <tr
+                        key={originalIndex}
+                        className="h-6 border-b custom-row-hover"
+                        style={{ borderColor: COLORS.border }}
+                      >
+                        {columns.map((col, cIdx) => {
+                          const isLeft = col.sticky === "left";
+                          const leftOffset = isLeft
+                            ? getStickyLeft(cIdx)
+                            : undefined;
+                          let content: React.ReactNode = null;
 
-                        if (col.id === "sno")
-                          content = (
-                            <span style={{ color: COLORS.textSecondary }}>
-                              {rowNum}
-                            </span>
-                          );
-                        else if (col.id === "add")
-                          content = (
-                            <Plus
-                              size={14}
-                              style={{ color: COLORS.success }}
-                              className="mx-auto cursor-pointer"
-                            />
-                          );
-                        else if (col.id === "del")
-                          content = (
-                            <X
-                              size={14}
-                              style={{ color: COLORS.danger }}
-                              className="mx-auto cursor-pointer"
-                            />
-                          );
-                        else if (col.id === "srch")
-                          content = (
-                            <Search
-                              size={14}
-                              style={{ color: COLORS.success }}
-                              className="mx-auto cursor-pointer"
-                            />
-                          );
-                        else if (col.id === "copy")
-                          content = (
-                            <Copy
-                              size={14}
-                              style={{ color: COLORS.dangerLight }}
-                              className="mx-auto cursor-pointer"
-                            />
-                          );
-                        else if (col.id === "select" && rIdx === 6)
-                          content = (
-                            <span
-                              style={{ color: COLORS.textMuted }}
-                              className="text-[10px] italic flex justify-between"
+                          // --- ICONS & BUTTONS ---
+                          if (col.id === "sno")
+                            content = (
+                              <span style={{ color: COLORS.textSecondary }}>
+                                {visualIndex + 1}
+                              </span>
+                            );
+                          else if (col.id === "add")
+                            content = (
+                              <Plus
+                                size={12}
+                                className="mx-auto text-green-600 cursor-pointer"
+                              />
+                            );
+                          else if (col.id === "del")
+                            content = (
+                              <X
+                                size={12}
+                                className="mx-auto text-red-500 cursor-pointer"
+                              />
+                            );
+                          else if (col.id === "srch")
+                            content = (
+                              <Search
+                                size={12}
+                                className="mx-auto text-blue-500 cursor-pointer"
+                              />
+                            );
+                          else if (col.id === "copy")
+                            content = (
+                              <Copy
+                                size={12}
+                                className="mx-auto text-orange-400 cursor-pointer"
+                              />
+                            );
+                          else if (col.id === "attr")
+                            content = (
+                              <FileText
+                                size={12}
+                                className="mx-auto text-blue-400"
+                              />
+                            );
+                          else if (col.id === "widg")
+                            content = (
+                              <BarChart2
+                                size={12}
+                                className="mx-auto text-blue-400"
+                              />
+                            );
+                          else if (col.id === "batch")
+                            content = (
+                              <Table
+                                size={12}
+                                className="mx-auto text-blue-600"
+                              />
+                            );
+                          // --- SELECT POPUP TRIGGER ---
+                          else if (col.id === "select") {
+                            content = (
+                              <div
+                                className="text-[10px] italic text-gray-400 flex justify-between cursor-pointer hover:bg-gray-50 h-full items-center px-1"
+                                onClick={(e) =>
+                                  handleSelectClick(e, originalIndex)
+                                }
+                              >
+                                {rowData.select || "Select..."} <span>▶</span>
+                              </div>
+                            );
+                          }
+
+                          // --- EDITABLE INPUTS ---
+                          else if (
+                            [
+                              "qty",
+                              "rateper",
+                              "rate",
+                              "amount",
+                              "mrp",
+                              "netrate",
+                              "remark",
+                              "printdesc",
+                              "service",
+                              "itembarcode",
+                            ].includes(col.id)
+                          ) {
+                            content = (
+                              <input
+                                type="text"
+                                value={rowData[col.id] || ""}
+                                onChange={(e) =>
+                                  handleInputChange(
+                                    originalIndex,
+                                    col.id,
+                                    e.target.value
+                                  )
+                                }
+                                className="w-full h-full bg-transparent outline-none px-1"
+                                style={{
+                                  textAlign:
+                                    col.align === "right"
+                                      ? "right"
+                                      : col.align === "center"
+                                      ? "center"
+                                      : "left",
+                                  color: COLORS.textPrimary,
+                                }}
+                              />
+                            );
+                          }
+
+                          // --- READ ONLY DATA (Mapped) ---
+                          else if (col.id === "desc")
+                            content = rowData.desc || "";
+                          else if (col.id === "unit")
+                            content = rowData.unit || "";
+                          else if (col.id === "hsn")
+                            content = rowData.hsn || "";
+                          else if (col.id === "barcode")
+                            content = rowData.barcode || "";
+                          else if (col.id === "brand")
+                            content = rowData.brand || "";
+                          // --- DEFAULT ---
+                          else {
+                            content = "";
+                          }
+
+                          const isReadOnly = !col.resizable && !col.sticky;
+
+                          return (
+                            <td
+                              key={col.id}
+                              style={{
+                                width: `${col.width}px`,
+                                left: isLeft ? leftOffset : "auto",
+                                position: isLeft ? "sticky" : "static",
+                                zIndex: isLeft ? 10 : "auto",
+                                backgroundColor: isReadOnly
+                                  ? "#FAFAFA"
+                                  : COLORS.white,
+                                borderColor: COLORS.border,
+                              }}
+                              className={`border-r px-1 text-xs overflow-hidden whitespace-nowrap ${
+                                col.align === "center"
+                                  ? "text-center"
+                                  : col.align === "right"
+                                  ? "text-right"
+                                  : "text-left"
+                              } ${isReadOnly ? "text-gray-500" : ""}`}
                             >
-                              Select... <span>▶</span>
-                            </span>
+                              {content}
+                            </td>
                           );
-                        else if (col.id === "attr")
-                          content = (
-                            <FileText
-                              size={14}
-                              style={{ color: COLORS.info }}
-                              className="mx-auto"
-                            />
-                          );
-                        else if (col.id === "widg")
-                          content = (
-                            <BarChart2
-                              size={14}
-                              style={{ color: COLORS.info }}
-                              className="mx-auto"
-                            />
-                          );
-                        else if (col.id === "sugg")
-                          content = (
-                            <List
-                              size={14}
-                              style={{ color: COLORS.primary }}
-                              className="mx-auto"
-                            />
-                          );
-                        else if (col.id === "batch")
-                          content = (
-                            <Table
-                              size={14}
-                              style={{ color: COLORS.primary }}
-                              className="mx-auto"
-                            />
-                          );
-                        else if (["igst", "cgst", "sgst"].includes(col.id))
-                          content = "₹0.00";
-                        else if (["bdsalerate", "itembalance"].includes(col.id))
-                          content = "0";
-
-                        return (
-                          <td
-                            key={col.id}
-                            style={{
-                              width: `${col.width}px`,
-                              left: leftOffset,
-                              position: col.fixed ? "sticky" : "static",
-                              zIndex: col.fixed ? 10 : "auto",
-                              backgroundColor: COLORS.white,
-                              borderColor: COLORS.border,
-                            }}
-                            className={`border-r px-1 text-xs overflow-hidden whitespace-nowrap ${
-                              col.align === "center"
-                                ? "text-center"
-                                : col.align === "right"
-                                ? "text-right"
-                                : "text-left"
-                            }`}
-                          >
-                            {content}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
+                        })}
+                      </tr>
+                    );
+                  })}
                 </tbody>
-
-                {/* --- TABLE FOOTER (TOTALS) --- */}
+                {/* FOOTER */}
                 <tfoot
                   className="sticky bottom-0 z-20 shadow-[0_-1px_2px_rgba(0,0,0,0.1)]"
                   style={{ backgroundColor: COLORS.background }}
@@ -460,20 +862,26 @@ const OrderTable: React.FC = () => {
                     style={{ color: COLORS.textPrimary }}
                   >
                     {columns.map((col, cIdx) => {
-                      const leftOffset = col.fixed
+                      const isLeft = col.sticky === "left";
+                      const leftOffset = isLeft
                         ? getStickyLeft(cIdx)
                         : undefined;
-                      const isTotalCol = totalColumns.includes(col.id);
-
+                      const isTotalCol = [
+                        "pqty",
+                        "qty",
+                        "amount",
+                        "mrp",
+                        "netrate",
+                      ].includes(col.id);
                       return (
                         <td
                           key={col.id}
                           style={{
                             width: `${col.width}px`,
-                            left: leftOffset,
+                            left: isLeft ? leftOffset : "auto",
                             position: "sticky",
                             bottom: 0,
-                            zIndex: col.fixed ? 30 : 20,
+                            zIndex: isLeft ? 30 : 20,
                             backgroundColor: COLORS.background,
                             borderColor: COLORS.borderDark,
                           }}
@@ -501,65 +909,109 @@ const OrderTable: React.FC = () => {
         </div>
       </div>
 
-      {/* --- BOTTOM TOOLBAR --- */}
-      <div
-        className="flex-none h-12 border-t px-4 flex justify-between items-center shadow-[0_-2px_4px_rgba(0,0,0,0.05)] z-10 relative"
-        style={{ backgroundColor: COLORS.white, borderColor: COLORS.border }}
-      >
-        <div className="flex gap-2">
-          <button
-            className="custom-btn-primary h-8 w-8 rounded flex items-center justify-center shadow-sm"
-            style={{ color: COLORS.white }}
-          >
-            <Plus size={16} />
-          </button>
-          <button
-            className="custom-btn-primary h-8 w-8 rounded flex items-center justify-center shadow-sm"
-            style={{ color: COLORS.white }}
-          >
-            <Search size={16} />
-          </button>
-        </div>
+      {/* --- ATTRIBUTE PANEL (Rendered conditionally) --- */}
+      <AttributePanel
+        isOpen={attributePanelState.visible}
+        onClose={closeAttributePanel}
+        onSave={handleAttributeSave}
+        initialData={attributePanelState.tempItemData}
+      />
 
-        <div className="pr-8"></div>
-      </div>
+      {/* --- ITEM POPUP (Rendered via Portal) --- */}
+      {popupState.visible &&
+        ReactDOM.createPortal(
+          <>
+            <div
+              className="fixed inset-0 z-[9998] cursor-default bg-transparent"
+              onClick={closePopup}
+            />
+            <div
+              className="fixed z-[9999] bg-white border shadow-xl flex flex-col rounded"
+              style={{
+                top: popupState.top,
+                left: popupState.left,
+                borderColor: COLORS.borderDark,
+                width: "500px",
+                maxHeight: "300px",
+                transform:
+                  popupState.top + 300 > window.innerHeight
+                    ? "translateY(-100%)"
+                    : "none",
+              }}
+            >
+              <div
+                className="flex justify-between items-center p-2 border-b h-8"
+                style={{ backgroundColor: COLORS.primary, color: COLORS.white }}
+              >
+                <span className="font-bold text-xs pl-1">Select Item</span>
+                <button
+                  onClick={closePopup}
+                  className="hover:bg-red-500 hover:text-white p-0.5 rounded transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+              <div className="flex-1 overflow-auto p-0">
+                <table className="w-full text-xs text-left border-collapse">
+                  <thead className="sticky top-0 bg-gray-100 z-10 shadow-sm">
+                    <tr>
+                      <th className="p-1.5 border font-semibold text-gray-700 w-24">
+                        Code
+                      </th>
+                      <th className="p-1.5 border font-semibold text-gray-700">
+                        Name
+                      </th>
+                      <th className="p-1.5 border font-semibold text-gray-700 w-20">
+                        HSN
+                      </th>
+                      <th className="p-1.5 border font-semibold text-gray-700 w-24">
+                        Barcode
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.length > 0 ? (
+                      items.map((item, idx) => (
+                        <tr
+                          key={item._id || idx}
+                          className="border-b hover:bg-blue-50 cursor-pointer transition-colors"
+                          onClick={() => handleItemSelect(item)}
+                        >
+                          <td className="p-1.5 border">{item.code}</td>
+                          <td className="p-1.5 border">{item.name}</td>
+                          <td className="p-1.5 border">
+                            {item.gst_classfication}
+                          </td>
+                          <td className="p-1.5 border">{item.barcode}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={4}
+                          className="p-4 text-center text-gray-500"
+                        >
+                          Loading items...
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>,
+          document.body
+        )}
 
-      {/* --- GLOBAL STYLES --- */}
-      {/* This injects your global colors into standard CSS classes for Pseudo-states (Hover/Scrollbar) */}
       <style>{`
-        .custom-btn-primary {
-          background-color: ${COLORS.primary};
-          transition: background-color 0.2s;
-        }
-        .custom-btn-primary:hover {
-          background-color: ${COLORS.primaryHover};
-        }
-
-        /* Row Hover Effect */
-        .custom-row-hover:hover td {
-          background-color: ${COLORS.primaryLight} !important;
-        }
-
-        /* Scrollbar Styling */
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 14px;
-          height: 14px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: ${COLORS.scrollbarTrack};
-          border: 1px solid ${COLORS.border};
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background-color: ${COLORS.scrollbarThumb};
-          border-radius: 10px;
-          border: 3px solid ${COLORS.scrollbarTrack};
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background-color: ${COLORS.scrollbarThumbHover};
-        }
-        .custom-scrollbar::-webkit-scrollbar-corner {
-           background: ${COLORS.scrollbarTrack};
-        }
+        .custom-btn-primary { background-color: ${COLORS.primary}; transition: background-color 0.2s; }
+        .custom-btn-primary:hover { background-color: ${COLORS.primaryHover}; }
+        .custom-row-hover:hover td { background-color: ${COLORS.primaryLight} !important; }
+        .custom-scrollbar::-webkit-scrollbar { width: 14px; height: 14px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: ${COLORS.scrollbarTrack}; border: 1px solid ${COLORS.border}; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: ${COLORS.scrollbarThumb}; border-radius: 10px; border: 3px solid ${COLORS.scrollbarTrack}; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: ${COLORS.scrollbarThumbHover}; }
+        .custom-scrollbar::-webkit-scrollbar-corner { background: ${COLORS.scrollbarTrack}; }
       `}</style>
     </div>
   );

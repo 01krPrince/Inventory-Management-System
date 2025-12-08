@@ -1,4 +1,4 @@
-import React, { useState, ChangeEvent } from "react";
+import React, { useState, ChangeEvent, useEffect } from "react";
 import {
   X,
   Save,
@@ -7,13 +7,24 @@ import {
   Globe,
   RotateCcw,
   Edit,
+  Trash2, // Added Trash icon
 } from "lucide-react";
 
+// --- Import API Functions & Types ---
+import {
+  createLocation,
+  updateLocation,
+  deleteLocation,
+  LocationMaster as LocationMasterType,
+  LocationMasterInput,
+} from "../pages/pages/inventory/stockAdjustment/api/LocationMaster";
+
+// --- Initial State ---
 const INITIAL_LOCATION_DATA = {
   name: "",
   code: "",
   party: "",
-  profileImage: null,
+  profileImage: "", // UI uses 'profileImage', API uses 'profilePic'
   gstNo: "",
   defaultParty: "",
   ewayUsername: "",
@@ -40,6 +51,7 @@ const STEPS = [
   { id: 2, label: "Address" },
 ];
 
+// --- Sub-Components ---
 const FormLabel = ({ required, children, className = "" }: any) => (
   <label className={`block text-xs font-medium text-gray-700 ${className}`}>
     {children} {required && <span className="text-red-500">*</span>}
@@ -69,19 +81,59 @@ const InputField = ({
   </div>
 );
 
+// --- Props Interface ---
 interface LocationMasterProps {
   onClose: () => void;
   onSuccess?: (data?: any) => void;
+  onSelect?: (locationName: string) => void; // Optional: if you want to pass data back on click
+  initialData?: LocationMasterType | null; // <--- Added initialData
 }
 
 export const LocationMaster: React.FC<LocationMasterProps> = ({
   onClose,
   onSuccess,
+  onSelect,
+  initialData,
 }) => {
   const [activeStep, setActiveStep] = useState(0);
   const [formData, setFormData] = useState<any>(INITIAL_LOCATION_DATA);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // --- EFFECT: Populate Form on Edit ---
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        name: initialData.name || "",
+        code: initialData.code || "",
+        party: initialData.party || "",
+        profileImage: initialData.profilePic || "", // Map API 'profilePic' to UI 'profileImage'
+        gstNo: initialData.gstNo || "",
+        // Note: 'defaultParty' wasn't in your API Interface, mapping assuming it might exist or default empty
+        defaultParty: (initialData as any).defaultParty || "",
+        ewayUsername: initialData.ewayUsername || "",
+        ewayPassword: initialData.ewayPassword || "",
+        gstnUsername: initialData.gstInUsername || "", // Map API 'gstInUsername'
+        gstnPassword: initialData.gstInPassword || "", // Map API 'gstInPassword'
+        otherLicense1: initialData.othelicense1 || "",
+        otherLicense2: initialData.othelicense2 || "",
+        bankDetails: initialData.bankDetails || "",
+        address: initialData.address || "",
+        country: initialData.country || "India",
+        state: initialData.state || "",
+        city: initialData.city || "",
+        pinCode: initialData.pinCode || "",
+        phone: initialData.phone || "",
+        email: initialData.email || "",
+        // Assuming longitude/latitude might be in API but missing from strict interface, or managed separately
+        longitude: (initialData as any).longitude || "",
+        latitude: (initialData as any).latitude || "",
+      });
+    } else {
+      setFormData(INITIAL_LOCATION_DATA);
+    }
+  }, [initialData]);
+
+  // --- Input Handler ---
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
@@ -90,18 +142,96 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
     setFormData((prev: any) => ({ ...prev, [name]: value }));
   };
 
-  const handleNext = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (activeStep < STEPS.length - 1) setActiveStep((prev) => prev + 1);
-    else {
-      setIsSubmitting(true);
-      await new Promise((resolve) => setTimeout(resolve, 500));
+  // --- SUBMIT HANDLER (Create / Update) ---
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    try {
+      // 1. Prepare Payload (Map UI keys back to API keys)
+      const payload: LocationMasterInput = {
+        name: formData.name,
+        code: formData.code,
+        party: formData.party,
+        profilePic: formData.profileImage, // UI 'profileImage' -> API 'profilePic'
+        gstNo: formData.gstNo,
+        ewayUsername: formData.ewayUsername,
+        ewayPassword: formData.ewayPassword,
+        gstInUsername: formData.gstnUsername, // UI 'gstn' -> API 'gstIn'
+        gstInPassword: formData.gstnPassword,
+        othelicense1: formData.otherLicense1,
+        othelicense2: formData.otherLicense2,
+        bankDetails: formData.bankDetails,
+        address: formData.address,
+        country: formData.country,
+        state: formData.state,
+        city: formData.city,
+        pinCode: formData.pinCode,
+        phone: formData.phone,
+        email: formData.email,
+        // If your backend accepts extra fields like longitude/latitude/defaultParty, add them here
+        // @ts-ignore
+        longitude: formData.longitude,
+        // @ts-ignore
+        latitude: formData.latitude,
+      };
+
+      // 2. Determine Action
+      if (initialData && initialData._id) {
+        // >>> UPDATE <<<
+        await updateLocation(initialData._id, payload);
+        alert("Location updated successfully!");
+      } else {
+        // >>> CREATE <<<
+        await createLocation(payload);
+        alert("Location created successfully!");
+      }
+
+      // 3. Cleanup
       if (onSuccess) onSuccess(formData);
+      // If used as a selector, pass name back
+      if (onSelect) onSelect(formData.name);
+
+      onClose();
+    } catch (error) {
+      console.error("Operation failed", error);
+      alert("Failed to save location.");
+    } finally {
       setIsSubmitting(false);
     }
   };
 
+  // --- DELETE HANDLER ---
+  const handleDelete = async () => {
+    if (!initialData?._id) return;
+
+    if (confirm("Are you sure you want to delete this location?")) {
+      setIsSubmitting(true);
+      try {
+        await deleteLocation(initialData._id);
+        alert("Location deleted successfully!");
+        if (onSuccess) onSuccess();
+        onClose();
+      } catch (error) {
+        console.error("Delete failed", error);
+        alert("Failed to delete location.");
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
+  };
+
+  // --- Step Navigation ---
+  const handleNext = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (activeStep < STEPS.length - 1) {
+      setActiveStep((prev) => prev + 1);
+    } else {
+      // Final Step: Submit
+      handleSubmit();
+    }
+  };
+
+  // --- RENDERERS ---
   const renderBasicDetails = () => (
     <div className="bg-white border rounded-lg p-6 shadow-sm mt-4">
       <div className="grid grid-cols-12 gap-6">
@@ -162,6 +292,7 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
               >
                 <option value="">Select Party...</option>
                 <option value="Party A">Party A</option>
+                <option value="ABC Traders">ABC Traders</option>
               </select>
               <button
                 type="button"
@@ -380,12 +511,17 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
 
   return (
     <div className="h-full flex flex-col bg-white">
+      {/* HEADER */}
       <div className="bg-[#104a7d] px-6 py-4 text-white flex justify-between items-center shrink-0">
-        <h1 className="text-xl font-semibold tracking-wide">LOCATION MASTER</h1>
+        <h1 className="text-xl font-semibold tracking-wide">
+          {initialData ? "EDIT LOCATION" : "NEW LOCATION"}
+        </h1>
         <div className="text-sm opacity-80">
           Step {activeStep + 1} of {STEPS.length}
         </div>
       </div>
+
+      {/* STEP NAV */}
       <div className="bg-gray-100 border-b overflow-x-auto shrink-0">
         <div className="flex min-w-max px-4">
           {STEPS.map((step, index) => (
@@ -416,41 +552,64 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
           ))}
         </div>
       </div>
+
+      {/* BODY */}
       <div className="p-6 overflow-y-auto flex-1">
         {activeStep === 0 && renderBasicDetails()}
         {activeStep === 1 && renderCompliance()}
         {activeStep === 2 && renderAddress()}
       </div>
-      <div className="bg-gray-50 px-6 py-4 border-t flex justify-end gap-3 shrink-0">
-        <button
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (activeStep > 0) setActiveStep((p) => p - 1);
-            else onClose();
-          }}
-          className="flex items-center px-4 py-2 rounded border font-medium text-gray-700 border-gray-300 hover:bg-gray-100 bg-white"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" /> Back
-        </button>
-        <button
-          type="button"
-          onClick={handleNext}
-          disabled={isSubmitting}
-          className="flex items-center px-6 py-2 bg-[#104a7d] text-white rounded hover:bg-[#0c3b63] font-medium shadow-sm"
-        >
-          {activeStep === STEPS.length - 1 ? (
-            <>
-              <Save className="w-4 h-4 mr-2" /> Submit
-            </>
-          ) : (
-            <>
-              <span className="mr-2">Save & Next</span>{" "}
-              <ArrowRight className="w-4 h-4" />
-            </>
+
+      {/* FOOTER */}
+      <div className="bg-gray-50 px-6 py-4 border-t flex justify-between shrink-0">
+        {/* Left Side: Delete or Empty */}
+        <div>
+          {initialData && initialData._id && (
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={isSubmitting}
+              className="flex items-center px-4 py-2 rounded border border-red-300 text-red-600 hover:bg-red-50 bg-white transition-colors"
+            >
+              <Trash2 className="w-4 h-4 mr-2" /> Delete
+            </button>
           )}
-        </button>
+        </div>
+
+        {/* Right Side: Navigation */}
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (activeStep > 0) setActiveStep((p) => p - 1);
+              else onClose();
+            }}
+            className="flex items-center px-4 py-2 rounded border font-medium text-gray-700 border-gray-300 hover:bg-gray-100 bg-white"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" /> Back
+          </button>
+
+          <button
+            type="button"
+            onClick={handleNext}
+            disabled={isSubmitting}
+            className="flex items-center px-6 py-2 bg-[#104a7d] text-white rounded hover:bg-[#0c3b63] font-medium shadow-sm disabled:opacity-50"
+          >
+            {activeStep === STEPS.length - 1 ? (
+              <>
+                <Save className="w-4 h-4 mr-2" />
+                {isSubmitting ? "Saving..." : initialData ? "Update" : "Submit"}
+              </>
+            ) : (
+              <>
+                <span className="mr-2">Save & Next</span>{" "}
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );

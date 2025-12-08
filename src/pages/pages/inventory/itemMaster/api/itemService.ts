@@ -2,13 +2,10 @@
 import api from "../../../../../services/api";
 import { ItemResponse, ItemApiData } from "../models/ItemModel";
 
-// FIX 1: Remove "/api" (handled by base URL) and just keep the route name
 const ENDPOINT = "/item_master";
 
 export const fetchItems = async (): Promise<ItemApiData[]> => {
   try {
-    // FIX 2: Simplied path. 
-    // Result: [BaseURL] + /item_master + /get_all_item
     const response = await api.get<ItemResponse>(`${ENDPOINT}/get_all_item`); 
     const result = response.data;
     
