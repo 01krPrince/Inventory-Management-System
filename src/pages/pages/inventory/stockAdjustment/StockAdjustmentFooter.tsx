@@ -2,7 +2,20 @@ import React from "react";
 import { COLORS } from "../../../../constants/colors";
 import Attachment from "../../../../components/Attachment";
 
-const InvoiceFooter: React.FC = () => {
+// --- 1. Define Interfaces for Props ---
+interface FooterData {
+  remarks: string;
+}
+
+interface InvoiceFooterProps {
+  data: FooterData;
+  onDataChange: (data: FooterData) => void;
+}
+
+const InvoiceFooter: React.FC<InvoiceFooterProps> = ({
+  data,
+  onDataChange,
+}) => {
   return (
     <div
       className="w-2/3 p-4 font-sans text-sm min-w-[600px]"
@@ -17,17 +30,24 @@ const InvoiceFooter: React.FC = () => {
             <div className="flex-1 relative">
               <textarea
                 className="w-full border rounded-sm p-2 h-20 outline-none resize-none text-xs custom-input"
-                placeholder=""
+                placeholder="Enter remarks..."
+                // --- 2. Bind Data to Parent State ---
+                value={data.remarks || ""}
+                onChange={(e) =>
+                  onDataChange({ ...data, remarks: e.target.value })
+                }
                 style={{
                   borderColor: COLORS.borderDark,
                   color: COLORS.textPrimary,
                 }}
+                maxLength={250}
               />
               <span
                 className="absolute bottom-2 right-2 text-xs"
                 style={{ color: COLORS.textMuted }}
               >
-                0/250
+                {/* --- 3. Update Character Count Dynamically --- */}
+                {(data.remarks || "").length}/250
               </span>
             </div>
           </div>
@@ -36,6 +56,7 @@ const InvoiceFooter: React.FC = () => {
             <label className="w-32 pt-2" style={{ color: COLORS.textPrimary }}>
               Attachment
             </label>
+            {/* If Attachment needs to pass data back, you would pass props here too */}
             <Attachment />
           </div>
         </div>

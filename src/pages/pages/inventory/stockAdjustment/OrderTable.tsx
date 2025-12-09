@@ -41,16 +41,28 @@ interface RowData {
   [key: string]: string | number;
 }
 
-const OrderTable: React.FC = () => {
+// --- PROPS INTERFACE FOR LIFTED STATE ---
+interface OrderTableProps {
+  rows: string[];
+  setRows: React.Dispatch<React.SetStateAction<string[]>>;
+  tableData: Record<string, RowData>;
+  setTableData: React.Dispatch<React.SetStateAction<Record<string, RowData>>>;
+}
+
+const OrderTable: React.FC<OrderTableProps> = ({
+  rows,
+  setRows,
+  tableData,
+  setTableData,
+}) => {
   // --- UTILS ---
   const generateRowId = () =>
     `row-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-  // --- STATE ---
+  // --- STATE (Local UI State only) ---
   const [items, setItems] = useState<ItemApiData[]>([]);
   const [stockUnits, setStockUnits] = useState<StockUnitData[]>([]);
-  const [tableData, setTableData] = useState<Record<string, RowData>>({});
-  const [rows, setRows] = useState<string[]>([]);
+  // tableData and rows are now Props
   const [sortConfig, setSortConfig] = useState<{
     key: string;
     direction: "asc" | "desc";
@@ -87,16 +99,24 @@ const OrderTable: React.FC = () => {
   const [addNewItemForm, setAddNewItemForm] = useState(false);
 
   // --- INITIALIZATION ---
+
+  // 1. Row Initialization Effect: Runs on mount AND when rows are cleared (length becomes 0)
   useEffect(() => {
-    const initialRows = Array.from({ length: 15 }, () => generateRowId());
-    setRows(initialRows);
+    if (rows.length === 0) {
+      const initialRows = Array.from({ length: 15 }, () => generateRowId());
+      setRows(initialRows);
 
-    const initialData: Record<string, RowData> = {};
-    initialRows.forEach((id) => {
-      initialData[id] = { reciss: "Receipt" };
-    });
-    setTableData(initialData);
+      const initialData: Record<string, RowData> = {};
+      initialRows.forEach((id) => {
+        initialData[id] = { reciss: "Receipt" };
+      });
+      setTableData(initialData);
+    }
+    // Dependency on rows.length ensures this runs when parent resets state
+  }, [rows.length, setRows, setTableData]);
 
+  // 2. Data Loading Effect: Runs ONLY once on mount
+  useEffect(() => {
     loadMasterData();
   }, []);
 
@@ -898,14 +918,9 @@ const OrderTable: React.FC = () => {
                               </div>
                             );
                           } else if (
-                            [
-                              "qty",
-                              "rate",
-                              "amount",
-                              "mrp",
-                              "netrate",
-                            ].includes(col.id)
+                            ["qty", "rate", "amount", "mrp"].includes(col.id)
                           ) {
+                            // --- EDITABLE INPUTS ---
                             content = (
                               <input
                                 type="text"
@@ -921,10 +936,21 @@ const OrderTable: React.FC = () => {
                               />
                             );
                           } else if (
-                            ["desc", "hsn", "barcode", "brand"].includes(col.id)
-                          )
+                            [
+                              "desc",
+                              "hsn",
+                              "barcode",
+                              "brand",
+                              "punit",
+                              "pqty",
+                              "minrate",
+                              "netrate",
+                            ].includes(col.id)
+                          ) {
+                            // --- READ ONLY TEXT ---
                             content = rowData[col.id] || "";
-                          else
+                          } else {
+                            // --- DEFAULT INPUT ---
                             content = (
                               <input
                                 type="text"
@@ -939,6 +965,7 @@ const OrderTable: React.FC = () => {
                                 }
                               />
                             );
+                          }
 
                           const isReadOnly = !col.resizable && !col.sticky;
                           return (

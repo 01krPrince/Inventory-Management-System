@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { CalenderIcon } from "../../../../components/icons";
 import CrudCustomer from "../../sales/customer/pages/AddNewCustomer";
-import { EditIcon, ArrowLeft } from "lucide-react";
+import { EditIcon, ArrowLeft, RefreshCw } from "lucide-react";
 
 // --- IMPORTS ---
 import DocumentInventoryModal from "../../../../components/DocumentCategoryInventory";
@@ -21,7 +21,16 @@ import {
   Customer,
 } from "../../sales/customer/api/customerService";
 
-import Dropdown, { ColumnDef } from "./Dropdown"; // Assuming you saved the TableDropdown as Dropdown
+import Dropdown, { ColumnDef } from "./Dropdown";
+
+// --- DATA INTERFACE ---
+export interface StockAdjustmentHeaderData {
+  voucherDate: string;
+  voucherNo: string;
+  category: string;
+  store: string;
+  party: string;
+}
 
 // --- Types ---
 interface ActionBtnProps {
@@ -32,6 +41,9 @@ interface ActionBtnProps {
 export interface SalesInvoiceFormProps {
   themeColor?: string;
   onOverlayChange?: (isOpen: boolean) => void;
+  // --- LIFTED STATE PROPS ---
+  data: StockAdjustmentHeaderData;
+  onDataChange: (data: StockAdjustmentHeaderData) => void;
 }
 
 interface LabelProps {
@@ -42,6 +54,17 @@ interface LabelProps {
 interface InputGroupProps {
   children: React.ReactNode;
 }
+
+// --- HELPER: Random Voucher Generator (Uppercase + Numbers) ---
+const generateVoucherNo = () => {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let result = "";
+  const length = 10; // Length of the random ID
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+};
 
 // --- UI Components ---
 const Label: React.FC<LabelProps> = ({ children, required }) => (
@@ -57,6 +80,7 @@ const InputGroup: React.FC<InputGroupProps> = ({ children }) => (
 const ActionBtn: React.FC<ActionBtnProps> = ({ icon, onClick }) => (
   <button
     onClick={onClick}
+    type="button"
     className="h-[32px] w-[32px] bg-[var(--theme-primary)] text-white flex items-center justify-center rounded-sm border border-[var(--theme-primary)] hover:opacity-90 transition-opacity ml-[-1px] z-10 shadow-sm"
   >
     {icon}
@@ -74,12 +98,11 @@ const VoucherDateInput: React.FC<{
     <div className="relative w-full h-[32px]">
       <input
         ref={inputRef}
-        type="date" // Changed to date type
-        value={value}
+        type="date"
+        value={value || ""} // Handle undefined/null gracefully
         onChange={onChange}
         className="w-full h-[32px] bg-white border border-gray-300 rounded-sm px-3 text-[13px] text-gray-700 focus:outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)] pr-8 uppercase"
       />
-      {/* Button now triggers the date picker */}
       <button
         type="button"
         onClick={() => inputRef.current?.showPicker()}
@@ -95,9 +118,10 @@ const VoucherNoInput: React.FC<{ value: string }> = ({ value }) => (
   <div className="w-full">
     <input
       type="text"
-      defaultValue={value}
+      value={value || ""} // Ensure it is never uncontrolled
       readOnly
-      className="w-full h-[32px] bg-white border border-gray-300 rounded-sm px-3 text-[13px] text-gray-700 focus:outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)]"
+      placeholder="Click button to generate"
+      className="w-full h-[32px] bg-white border border-gray-300 rounded-sm px-3 text-[13px] text-gray-700 focus:outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)] bg-gray-50"
     />
   </div>
 );
@@ -106,6 +130,8 @@ const VoucherNoInput: React.FC<{ value: string }> = ({ value }) => (
 const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
   themeColor = "#0f3c63",
   onOverlayChange,
+  data, // Recieve Data
+  onDataChange, // Receive Updater
 }) => {
   const themeStyles = {
     "--theme-primary": themeColor,
@@ -117,23 +143,12 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<Customer | null>(null);
 
-  // --- FORM STATE ---
-  // Initialize with today's date in YYYY-MM-DD format
-  const [voucherDate, setVoucherDate] = useState<string>(
-    new Date().toISOString().split("T")[0]
-  );
-
-  // --- DATA ---
+  // --- DATA Lists ---
   const [categoryList, setCategoryList] = useState<DocumentCategoryInventory[]>(
     []
   );
-  const [selectedCategoryName, setSelectedCategoryName] = useState<string>("");
-
   const [locationList, setLocationList] = useState<LocationMasterType[]>([]);
-  const [selectedStoreName, setSelectedStoreName] = useState<string>("");
-
   const [customerList, setCustomerList] = useState<Customer[]>([]);
-  const [selectedPartyName, setSelectedPartyName] = useState<string>("");
 
   // --- COLUMNS CONFIGURATION ---
   const categoryColumns: ColumnDef<DocumentCategoryInventory>[] = [
@@ -160,10 +175,12 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
     loadCustomers();
   }, []);
 
+  // --- NOTE: Auto-generation useEffect removed so it stays empty initially ---
+
   const loadCategories = async () => {
     try {
-      const data = await fetchDocumentCategoryInventory();
-      setCategoryList(data);
+      const result = await fetchDocumentCategoryInventory();
+      setCategoryList(result);
     } catch (error) {
       console.error(error);
     }
@@ -171,8 +188,8 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
 
   const loadLocations = async () => {
     try {
-      const data = await fetchAllLocations();
-      setLocationList(data);
+      const result = await fetchAllLocations();
+      setLocationList(result);
     } catch (error) {
       console.error(error);
     }
@@ -180,22 +197,39 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
 
   const loadCustomers = async () => {
     try {
-      const data = await getAllCustomers();
-      setCustomerList(data);
+      const result = await getAllCustomers();
+      setCustomerList(result);
     } catch (error) {
       console.error(error);
     }
   };
 
+  // --- HELPER: Update Parent State ---
+  const handleFieldChange = (
+    field: keyof StockAdjustmentHeaderData,
+    value: string
+  ) => {
+    onDataChange({
+      ...data,
+      [field]: value,
+    });
+  };
+
+  // --- HANDLER: Manual Generate Voucher ---
+  const handleGenerateVoucher = () => {
+    const newVoucher = generateVoucherNo();
+    handleFieldChange("voucherNo", newVoucher);
+  };
+
   // --- SELECTION HELPERS ---
   const getSelectedCategoryObject = () =>
-    categoryList.find((cat) => cat.name === selectedCategoryName) || null;
+    categoryList.find((cat) => cat.name === data.category) || null;
 
   const getSelectedLocationObject = () =>
-    locationList.find((loc) => loc.name === selectedStoreName) || null;
+    locationList.find((loc) => loc.name === data.store) || null;
 
   const getSelectedCustomerObject = () =>
-    customerList.find((cust) => cust.cust_name === selectedPartyName) || null;
+    customerList.find((cust) => cust.cust_name === data.party) || null;
 
   // --- HANDLERS ---
   const handleEditCategoryClick = () => setDocumentInventoryModal(true);
@@ -263,10 +297,10 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
                   <Dropdown
                     data={categoryList}
                     columns={categoryColumns}
-                    value={selectedCategoryName}
+                    value={data.category}
                     valueKey="name"
                     onChange={(item) =>
-                      setSelectedCategoryName(item?.name || "")
+                      handleFieldChange("category", item?.name || "")
                     }
                     placeholder="Select Category..."
                   />
@@ -288,9 +322,11 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
                   <Dropdown
                     data={locationList}
                     columns={locationColumns}
-                    value={selectedStoreName}
+                    value={data.store}
                     valueKey="name"
-                    onChange={(item) => setSelectedStoreName(item?.name || "")}
+                    onChange={(item) =>
+                      handleFieldChange("store", item?.name || "")
+                    }
                     placeholder="Select Store..."
                   />
                   <ActionBtn
@@ -311,10 +347,10 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
                   <Dropdown
                     data={customerList}
                     columns={partyColumns}
-                    value={selectedPartyName}
+                    value={data.party}
                     valueKey="cust_name"
                     onChange={(item) =>
-                      setSelectedPartyName(item?.cust_name || "")
+                      handleFieldChange("party", item?.cust_name || "")
                     }
                     placeholder="Select Party..."
                   />
@@ -334,10 +370,11 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
                 <Label>Voucher Date</Label>
               </div>
               <div className="col-span-8">
-                {/* FIXED: Passed state and onChange to VoucherDateInput */}
                 <VoucherDateInput
-                  value={voucherDate}
-                  onChange={(e) => setVoucherDate(e.target.value)}
+                  value={data.voucherDate}
+                  onChange={(e) =>
+                    handleFieldChange("voucherDate", e.target.value)
+                  }
                 />
               </div>
             </div>
@@ -346,7 +383,13 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
                 <Label>Voucher No</Label>
               </div>
               <div className="col-span-8">
-                <VoucherNoInput value="0005" />
+                <InputGroup>
+                  <VoucherNoInput value={data.voucherNo} />
+                  <ActionBtn
+                    icon={<RefreshCw size={16} />}
+                    onClick={handleGenerateVoucher}
+                  />
+                </InputGroup>
               </div>
             </div>
           </div>
