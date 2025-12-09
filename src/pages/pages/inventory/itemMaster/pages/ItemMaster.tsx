@@ -1,619 +1,356 @@
-import React, {
-  useState,
-  useRef,
-  useCallback,
-  Dispatch,
-  SetStateAction,
-  useEffect,
-  useMemo,
-} from "react";
-
-// --- REPLACED CUSTOM ICONS WITH LUCIDE-REACT ---
+import React, { useState, useRef, MouseEvent, useEffect, useMemo } from "react";
+import ReactDOM from "react-dom";
 import {
   Plus,
-  Trash2, // Used as TrashIcon
-  Edit, // Used as EditIcon
-  Search, // Used as SearchIcon
+  X,
+  Search,
+  Copy,
+  FileText,
+  BarChart2,
+  ScanLine,
+  Table,
   ChevronDown,
-  ChevronUp,
-  ArrowLeft,
-  Loader2,
-  Package,
-  Printer, // Used as PrintIcon
-  Download, // Used as ExportIcon
+  ArrowUp,
+  ArrowDown,
+  ArrowLeft, // Added missing import
 } from "lucide-react";
+import { COLORS } from "../../../../../constants/colors";
 
-// --- FIXED LOCAL IMPORTS ---
-// Assuming these files are in the same directory for this environment
 import AddNewItem from "../../../../../components/addItemMaster/AddNewItem";
+
+// --- API IMPORTS ---
+import { fetchItems } from "../api/itemService";
+import {
+  fetchStockUnits,
+  StockUnitData,
+} from "../../../../../components/addItemMaster/api/itemService";
 import { ItemApiData } from "../models/ItemModel";
-import { fetchItems, deleteItemApi } from "../api/itemService";
+import AttributePanel from "../../../../../components/AttributePanel";
 
-// --- INLINED UTILITY FUNCTIONS ---
-const handlePrint = (elementId: string, title: string) => {
-  const content = document.getElementById(elementId);
-  if (content) {
-    const printWindow = window.open("", "_blank");
-    if (printWindow) {
-      printWindow.document.write(`<html><head><title>${title}</title>`);
-      // Add basic styles for printing
-      printWindow.document.write(`<style>
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        .no-print { display: none; }
-      </style>`);
-      printWindow.document.write(`</head><body>`);
-      printWindow.document.write(content.innerHTML);
-      printWindow.document.write(`</body></html>`);
-      printWindow.document.close();
-      printWindow.print();
-    }
-  }
-};
-
-const handleExport = (data: any[], columns: Column[], fileName: string) => {
-  // Simple CSV export implementation
-  const headers = columns
-    .filter((col) => col.key !== "actions" && col.key !== "checkbox")
-    .map((col) => col.label)
-    .join(",");
-  const rows = data
-    .map((row) =>
-      columns
-        .filter((col) => col.key !== "actions" && col.key !== "checkbox")
-        .map((col) => `"${row[col.key] || ""}"`) // Escape quotes
-        .join(",")
-    )
-    .join("\n");
-
-  const csvContent = "data:text/csv;charset=utf-8," + headers + "\n" + rows;
-  const encodedUri = encodeURI(csvContent);
-  const link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", `${fileName}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-};
-
-// --- TYPE DEFINITIONS ---
-export interface DataItem extends ItemApiData {
-  [key: string]: any;
-}
-
-export interface Column {
-  key: string;
+// --- TYPES ---
+interface Column {
+  id: string;
   label: string;
-  sortable?: boolean;
-  type?: string;
-  required?: boolean;
-  render?: (value: any) => React.ReactNode;
+  width: number;
+  align: "left" | "center" | "right";
+  sticky?: "left";
+  resizable?: boolean;
 }
 
-interface SortConfig {
-  key: keyof DataItem | null;
-  direction: "ascending" | "descending";
+interface RowData {
+  [key: string]: string | number;
 }
 
-// --- COLUMN DEFINITIONS ---
-const ItemColumns: Column[] = [
-  {
-    key: "widget",
-    label: "Widget",
-    sortable: true,
-    render: (value: boolean) => (
-      <span
-        className={`inline-flex items-center justify-center p-1 rounded-full ${
-          value
-            ? "bg-blue-100 text-blue-600 dark:bg-blue-900/40"
-            : "bg-gray-100 text-gray-500 dark:bg-gray-700"
-        }`}
-      >
-        <Package className="size-3" />
-      </span>
-    ),
-  },
-  {
-    key: "inactive",
-    label: "Inactive",
-    sortable: true,
-    render: (value: boolean) => (
-      <span
-        className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${
-          value
-            ? "bg-red-100 text-red-600 dark:bg-red-900/40"
-            : "bg-green-100 text-green-600 dark:bg-green-900/40"
-        }`}
-      >
-        {value ? "YES" : "NO"}
-      </span>
-    ),
-  },
-  { key: "name", label: "Name", sortable: true },
-  { key: "code", label: "Code", sortable: true },
-  { key: "brand", label: "Brand", sortable: true },
-  { key: "gst_classfication", label: "HSN Code", sortable: true },
-  { key: "category", label: "Category", sortable: true },
-  { key: "under_group", label: "Group", sortable: true },
-  { key: "type", label: "Type", sortable: true },
-  { key: "barcode", label: "Bar Code", sortable: true },
-  { key: "rackbin_no", label: "Rack Box", sortable: true },
-  { key: "timestamp", label: "Timestamp", sortable: true },
-];
+const OrderTable: React.FC = () => {
+  // --- UTILS ---
+  const generateRowId = () =>
+    `row-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-const pageSizeOptions = [5, 10, 20, 50];
-const initialPageSize = 10;
+  // --- STATE ---
+  const [items, setItems] = useState<ItemApiData[]>([]);
+  const [stockUnits, setStockUnits] = useState<StockUnitData[]>([]);
+  const [tableData, setTableData] = useState<Record<string, RowData>>({});
+  const [rows, setRows] = useState<string[]>([]);
+  const [sortConfig, setSortConfig] = useState<{
+    key: string;
+    direction: "asc" | "desc";
+  } | null>(null);
 
-// --- TABLE LOGIC HOOK ---
-const useItemTableLogic = (initialData: DataItem[], initialSize: number) => {
-  const [data, setData] = useState<DataItem[]>(initialData);
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [pageSize, setPageSize] = useState<number>(initialSize);
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [selectedRows, setSelectedRows] = useState<string[]>([]);
-  const [sortConfig, setSortConfig] = useState<SortConfig>({
-    key: null,
-    direction: "ascending",
+  // Popups State
+  const [popupState, setPopupState] = useState<{
+    visible: boolean;
+    top: number;
+    left: number;
+    activeRowId: string | null;
+  }>({ visible: false, top: 0, left: 0, activeRowId: null });
+
+  const [unitPopupState, setUnitPopupState] = useState<{
+    visible: boolean;
+    top: number;
+    left: number;
+    activeRowId: string | null;
+    targetColumn: "unit" | "rateper" | null;
+  }>({
+    visible: false,
+    top: 0,
+    left: 0,
+    activeRowId: null,
+    targetColumn: null,
   });
 
+  const [attributePanelState, setAttributePanelState] = useState<{
+    visible: boolean;
+    activeRowId: string | null;
+    tempItemData: ItemApiData | null;
+  }>({ visible: false, activeRowId: null, tempItemData: null });
+
+  // --- INITIALIZATION ---
   useEffect(() => {
-    setData(initialData);
-    if (initialData.length < data.length) setCurrentPage(1);
-    setSelectedRows([]);
-  }, [initialData]);
+    const initialRows = Array.from({ length: 15 }, () => generateRowId());
+    setRows(initialRows);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, pageSize]);
+    const initialData: Record<string, RowData> = {};
+    initialRows.forEach((id) => {
+      initialData[id] = { reciss: "Receipt" };
+    });
+    setTableData(initialData);
 
-  const sortedAndFilteredData = useMemo(() => {
-    let sortableData = [...data];
-    let filteredData = sortableData.filter((item) =>
-      Object.values(item).some((val) =>
-        String(val || "")
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase())
-      )
-    );
-
-    if (sortConfig.key) {
-      filteredData.sort((a, b) => {
-        const sortKey = sortConfig.key!;
-        const aVal = a[sortKey] || "";
-        const bVal = b[sortKey] || "";
-
-        if (aVal < bVal) return sortConfig.direction === "ascending" ? -1 : 1;
-        if (aVal > bVal) return sortConfig.direction === "ascending" ? 1 : -1;
-        return 0;
-      });
-    }
-    return filteredData;
-  }, [data, searchTerm, sortConfig]);
-
-  const sortedDataLength = sortedAndFilteredData.length;
-  const totalPages = Math.ceil(sortedDataLength / pageSize);
-
-  const paginatedData = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    const end = start + pageSize;
-    return sortedAndFilteredData.slice(start, end);
-  }, [sortedAndFilteredData, currentPage, pageSize]);
-
-  useEffect(() => {
-    if (currentPage > totalPages && totalPages > 0) {
-      setCurrentPage(totalPages);
-    } else if (currentPage === 0 && totalPages > 0) {
-      setCurrentPage(1);
-    }
-  }, [totalPages, currentPage]);
-
-  const startEntry = Math.min(
-    sortedDataLength,
-    (currentPage - 1) * pageSize + 1
-  );
-  const endEntry = Math.min(sortedDataLength, currentPage * pageSize);
-
-  const pageNumbers = useMemo(() => {
-    const pages: number[] = [];
-    const maxPageButtons = 5;
-    let start = Math.max(1, currentPage - Math.floor(maxPageButtons / 2));
-    let end = Math.min(totalPages, start + maxPageButtons - 1);
-
-    if (end - start + 1 < maxPageButtons) {
-      start = Math.max(1, end - maxPageButtons + 1);
-    }
-
-    for (let i = start; i <= end; i++) {
-      pages.push(i);
-    }
-    return pages;
-  }, [totalPages, currentPage]);
-
-  const requestSort = (key: string) => {
-    let direction: "ascending" | "descending" = "ascending";
-    if (
-      sortConfig.key === (key as keyof DataItem) &&
-      sortConfig.direction === "ascending"
-    ) {
-      direction = "descending";
-    }
-    setSortConfig({ key: key as keyof DataItem, direction });
-  };
-
-  const renderSortIndicator = (key: string) => {
-    if (sortConfig.key !== (key as keyof DataItem)) return null;
-    return sortConfig.direction === "ascending" ? (
-      <ChevronUp className="size-3 ml-1" />
-    ) : (
-      <ChevronDown className="size-3 ml-1" />
-    );
-  };
-
-  return {
-    data,
-    setData,
-    searchTerm,
-    setSearchTerm,
-    pageSize,
-    setPageSize,
-    currentPage,
-    setCurrentPage,
-    selectedRows,
-    setSelectedRows,
-    paginatedData,
-    sortedDataLength,
-    totalPages,
-    startEntry,
-    endEntry,
-    pageNumbers,
-    requestSort,
-    renderSortIndicator,
-  };
-};
-
-interface ResizableHeaderProps {
-  col: Column;
-  requestSort: (key: string) => void;
-  renderSortIndicator: (key: string) => React.JSX.Element | null;
-  setColumnWidths: Dispatch<SetStateAction<Record<string, number | undefined>>>;
-  columnWidths: Record<string, number | undefined>;
-  onDragStart: (key: string) => void;
-  onDragOver: (key: string) => void;
-  onDrop: (draggedKey: string, droppedOverKey: string) => void;
-  columnIndex: number;
-}
-
-const ResizableHeader = ({
-  col,
-  requestSort,
-  renderSortIndicator,
-  setColumnWidths,
-  columnWidths,
-  onDragStart,
-  onDragOver,
-  onDrop,
-}: ResizableHeaderProps) => {
-  const thRef = useRef<HTMLTableHeaderCellElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
-
-  const keyString = col.key as string;
-
-  const style = {
-    width: columnWidths[keyString] ? `${columnWidths[keyString]}px` : undefined,
-    minWidth: "30px",
-  };
-
-  const startResizing = useCallback(
-    (mouseDownEvent: React.MouseEvent<HTMLDivElement>) => {
-      mouseDownEvent.stopPropagation();
-      mouseDownEvent.preventDefault();
-      const startX = mouseDownEvent.clientX;
-      if (!thRef.current) return;
-      const initialWidth = thRef.current.offsetWidth;
-      const doResizing = (mouseMoveEvent: MouseEvent) => {
-        const newWidth = Math.max(
-          initialWidth + (mouseMoveEvent.clientX - startX),
-          30
-        );
-        setColumnWidths((prev: Record<string, number | undefined>) => ({
-          ...prev,
-          [keyString]: newWidth,
-        }));
-      };
-      const stopResizing = () => {
-        window.removeEventListener("mousemove", doResizing);
-        window.removeEventListener("mouseup", stopResizing);
-      };
-      window.addEventListener("mousemove", doResizing);
-      window.addEventListener("mouseup", stopResizing);
-    },
-    [keyString, setColumnWidths]
-  );
-
-  const handleHeaderClick = () => {
-    if (col.sortable) {
-      requestSort(col.key);
-    }
-  };
-
-  const handleDragStart = (e: React.DragEvent<HTMLTableHeaderCellElement>) => {
-    if (
-      e.target instanceof HTMLElement &&
-      e.target.className.includes("cursor-col-resize")
-    )
-      return;
-    e.dataTransfer.setData("text/plain", keyString);
-    setIsDragging(true);
-    if (keyString !== "actions" && keyString !== "checkbox") {
-      onDragStart(keyString);
-    }
-  };
-
-  const handleDragEnd = () => {
-    setIsDragging(false);
-  };
-
-  const handleDragOver = (e: React.DragEvent<HTMLTableHeaderCellElement>) => {
-    if (
-      e.target instanceof HTMLElement &&
-      e.target.className.includes("cursor-col-resize")
-    )
-      return;
-    e.preventDefault();
-    if (keyString !== "actions" && keyString !== "checkbox") {
-      onDragOver(keyString);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLTableHeaderCellElement>) => {
-    e.preventDefault();
-    const draggedColKey = e.dataTransfer.getData("text/plain") as string;
-
-    if (keyString !== "actions" && keyString !== "checkbox") {
-      onDrop(draggedColKey, keyString);
-    }
-  };
-
-  return (
-    <th
-      ref={thRef}
-      key={keyString}
-      draggable={true}
-      onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
-      onDragEnd={handleDragEnd}
-      className={`p-4 relative cursor-move text-left ${
-        col.sortable
-          ? "hover:bg-gray-100 dark:hover:bg-gray-700/80 transition duration-150"
-          : ""
-      } ${
-        isDragging ? "opacity-50 border-blue-500 border-2" : ""
-      } border-r border-dashed border-gray-300 dark:border-gray-600`}
-      onClick={handleHeaderClick}
-      style={style}
-    >
-      <span className="flex items-center whitespace-nowrap pointer-events-none">
-        {col.label} {col.sortable && renderSortIndicator(col.key)}
-      </span>
-      <div
-        className="absolute top-0 right-0 h-full w-2 cursor-col-resize z-20 opacity-0 hover:opacity-100 transition duration-150 bg-transparent hover:bg-blue-400 dark:hover:bg-blue-600"
-        onMouseDown={startResizing}
-        onClick={(e) => e.stopPropagation()}
-      />
-    </th>
-  );
-};
-
-// --- ItemMaster Component (Main Export) ---
-export default function ItemMaster() {
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [apiData, setApiData] = useState<DataItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // --- API DATA FETCHING ---
-  const loadItems = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const result = await fetchItems();
-
-      // Transform API data to include UI specific flags
-      const processedData: DataItem[] = result.map((item) => ({
-        ...item,
-        widget: false, // Default
-        inactive: false, // Default
-      }));
-
-      setApiData(processedData);
-    } catch (err) {
-      console.error("Failed to fetch item data:", err);
-      setError("Failed to load item data. Please try again later.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadItems();
+    loadMasterData();
   }, []);
 
-  const [editingRow, setEditingRow] = useState<DataItem | null>(null);
+  const loadMasterData = async () => {
+    try {
+      const itemsData = await fetchItems();
+      if (Array.isArray(itemsData)) setItems(itemsData);
 
-  const [columnWidths, setColumnWidths] = useState<
-    Record<string, number | undefined>
-  >({
-    checkbox: 30, // Smaller
-    sno: 40, // Smaller
-    widget: 50, // Smaller
-    inactive: 70, // Smaller
-    actions: 100,
-  });
+      const unitsData = await fetchStockUnits();
+      if (Array.isArray(unitsData)) setStockUnits(unitsData);
+    } catch (error) {
+      console.error("Failed to load table master data", error);
+    }
+  };
 
-  const [currentColumns, setCurrentColumns] = useState<Column[]>(ItemColumns);
-
-  const {
-    data,
-    setData,
-    searchTerm,
-    setSearchTerm,
-    pageSize,
-    setPageSize,
-    currentPage,
-    setCurrentPage,
-    selectedRows,
-    setSelectedRows,
-    paginatedData,
-    sortedDataLength,
-    totalPages,
-    startEntry,
-    endEntry,
-    pageNumbers,
-    requestSort,
-    renderSortIndicator,
-  } = useItemTableLogic(apiData, initialPageSize);
-
-  // --- Drag & Drop Handlers ---
-  const handleDragStart = useCallback((_key: string) => {}, []);
-  const handleDragOver = useCallback((_key: string) => {}, []);
-
-  const handleDrop = useCallback(
-    (draggedKey: string, droppedOverKey: string) => {
-      if (!draggedKey || !droppedOverKey) return;
-
-      const draggedColIndex = currentColumns.findIndex(
-        (col) => col.key === draggedKey
-      );
-      const droppedOverIndex = currentColumns.findIndex(
-        (col) => col.key === droppedOverKey
-      );
-
-      if (
-        draggedColIndex === -1 ||
-        droppedOverIndex === -1 ||
-        draggedColIndex === droppedOverIndex
-      ) {
-        return;
-      }
-
-      const newColumns = [...currentColumns];
-      const [draggedItem] = newColumns.splice(draggedColIndex, 1);
-      newColumns.splice(droppedOverIndex, 0, draggedItem);
-
-      setCurrentColumns(newColumns);
+  // --- COLUMN CONFIG ---
+  const initialColumns: Column[] = [
+    {
+      id: "sno",
+      label: "SNo",
+      width: 40,
+      sticky: "left",
+      align: "center",
+      resizable: true,
     },
-    [currentColumns]
-  );
+    {
+      id: "add",
+      label: "",
+      width: 35,
+      sticky: "left",
+      align: "center",
+      resizable: true,
+    },
+    {
+      id: "del",
+      label: "",
+      width: 35,
+      sticky: "left",
+      align: "center",
+      resizable: true,
+    },
+    {
+      id: "srch",
+      label: "",
+      width: 35,
+      sticky: "left",
+      align: "center",
+      resizable: true,
+    },
+    {
+      id: "copy",
+      label: "",
+      width: 35,
+      sticky: "left",
+      align: "center",
+      resizable: true,
+    },
+    {
+      id: "reciss",
+      label: "Rec Iss",
+      width: 80,
+      align: "center",
+      sticky: "left",
+      resizable: true,
+    },
+    {
+      id: "select",
+      label: "Select Item",
+      width: 110,
+      sticky: "left",
+      align: "left",
+      resizable: true,
+    },
+    {
+      id: "desc",
+      label: "Description",
+      width: 180,
+      sticky: "left",
+      align: "left",
+      resizable: true,
+    },
+    {
+      id: "attr",
+      label: "Attribute",
+      width: 40,
+      align: "center",
+      resizable: true,
+    },
+    {
+      id: "widg",
+      label: "Widget",
+      width: 40,
+      align: "center",
+      resizable: true,
+    },
+    {
+      id: "batch",
+      label: "Batch",
+      width: 45,
+      align: "center",
+      resizable: true,
+    },
+    {
+      id: "punit",
+      label: "Pack Unit",
+      width: 50,
+      align: "left",
+      resizable: true,
+    },
+    {
+      id: "pqty",
+      label: "Pack Qty",
+      width: 50,
+      align: "right",
+      resizable: true,
+    },
+    { id: "unit", label: "Unit", width: 70, align: "left", resizable: true },
+    {
+      id: "qty",
+      label: "Quantity",
+      width: 70,
+      align: "right",
+      resizable: true,
+    },
+    {
+      id: "rateper",
+      label: "Rate Per",
+      width: 80,
+      align: "left",
+      resizable: true,
+    },
+    { id: "rate", label: "Rate", width: 70, align: "right", resizable: true },
+    {
+      id: "amount",
+      label: "Amount",
+      width: 80,
+      align: "right",
+      resizable: true,
+    },
+    {
+      id: "minrate",
+      label: "Min Rate",
+      width: 70,
+      align: "right",
+      resizable: true,
+    },
+    { id: "mrp", label: "MRP", width: 70, align: "right", resizable: true },
+    {
+      id: "netrate",
+      label: "Net Rate",
+      width: 80,
+      align: "right",
+      resizable: true,
+    },
+    {
+      id: "remark",
+      label: "Remark",
+      width: 120,
+      align: "left",
+      resizable: true,
+    },
+    {
+      id: "printdesc",
+      label: "Print Desc",
+      width: 120,
+      align: "left",
+      resizable: true,
+    },
+    {
+      id: "service",
+      label: "Service Location",
+      width: 90,
+      align: "center",
+      resizable: true,
+    },
+    {
+      id: "itembarcode",
+      label: "Item Barcode",
+      width: 100,
+      align: "left",
+      resizable: true,
+    },
+    {
+      id: "bdbatchno",
+      label: "BD Batch No",
+      width: 90,
+      align: "left",
+      resizable: false,
+    },
+    {
+      id: "bdexpdate",
+      label: "BD Exp.Date",
+      width: 90,
+      align: "left",
+      resizable: false,
+    },
+    {
+      id: "bdsalerate",
+      label: "BD Sale rate",
+      width: 90,
+      align: "right",
+      resizable: false,
+    },
+    {
+      id: "itembalance",
+      label: "Itembalance",
+      width: 80,
+      align: "right",
+      resizable: false,
+    },
+    {
+      id: "barcode",
+      label: "Barcode",
+      width: 100,
+      align: "left",
+      resizable: false,
+    },
+    {
+      id: "linelevel",
+      label: "Line Level Barcode",
+      width: 110,
+      align: "left",
+      resizable: false,
+    },
+    {
+      id: "hsn",
+      label: "HSN Code",
+      width: 70,
+      align: "left",
+      resizable: false,
+    },
+    { id: "brand", label: "Brand", width: 90, align: "left", resizable: false },
+  ];
 
-  // --- Data Handlers ---
-  const isSelected = (row: DataItem) =>
-    selectedRows.includes(row._id as string);
-  const handleSelectRow = (row: DataItem) => {
-    setSelectedRows((prev: string[]) =>
-      isSelected(row)
-        ? prev.filter((id: string) => id !== row._id)
-        : [...prev, row._id as string]
-    );
-  };
+  const [columns, setColumns] = useState<Column[]>(initialColumns);
 
-  const handleSelectAll = () => {
-    const allIdsOnPage = paginatedData.map(
-      (row: DataItem) => row._id as string
-    );
-    const areAllSelected = allIdsOnPage.every((id: string) =>
-      selectedRows.includes(id)
-    );
+  const [addNewItemForm, setAddNewItemForm] = useState(false);
 
-    if (areAllSelected) {
-      setSelectedRows((prev: string[]) =>
-        prev.filter((id: string) => !allIdsOnPage.includes(id))
-      );
-    } else {
-      setSelectedRows((prev: string[]) => [
-        ...new Set([...prev, ...allIdsOnPage]),
-      ]);
-    }
-  };
-
-  const handleOpenEditModal = (row: DataItem) => {
-    setEditingRow(row);
-    setShowAddForm(true);
-  };
-
-  const handleDelete = async (item: DataItem) => {
-    if (!item._id) return;
-
-    if (
-      window.confirm(
-        `Are you sure you want to delete Item: ${item.name} (${
-          item.code || "No Code"
-        })?`
-      )
-    ) {
-      try {
-        const response = await deleteItemApi(item._id);
-
-        setData((prev: DataItem[]) =>
-          prev.filter((u: DataItem) => u._id !== item._id)
-        );
-        setSelectedRows((prev: string[]) =>
-          prev.filter((id: string) => id !== item._id)
-        );
-
-        if (!response.success && response.message !== "Item not found") {
-          alert(`Warning: ${response.message}`);
-        }
-      } catch (error) {
-        alert("Failed to delete item from server.");
-      }
-    }
-  };
-
-  const handleBulkDelete = async () => {
-    if (selectedRows.length === 0) {
-      alert("Please select at least one row to delete.");
-      return;
-    }
-
-    if (
-      window.confirm(
-        `Are you sure you want to delete ${selectedRows.length} selected row(s)?`
-      )
-    ) {
-      try {
-        setIsLoading(true);
-        const deletePromises = selectedRows.map((id) => deleteItemApi(id));
-        await Promise.all(deletePromises);
-
-        await loadItems();
-        setSelectedRows([]);
-      } catch (err) {
-        alert("Some items could not be deleted.");
-        setIsLoading(false);
-      }
-    }
+  // --- FORM HANDLERS (Moved up to be accessible before return) ---
+  const handleCreateItemClick = () => {
+    setPopupState((prev) => ({ ...prev, visible: false }));
+    setAddNewItemForm(true);
   };
 
   const handleCloseForm = () => {
-    setShowAddForm(false);
-    setEditingRow(null);
+    setAddNewItemForm(false);
   };
 
-  // --- FIXED: Removed unused parameter ---
-  const handleFormSuccess = () => {
-    loadItems();
-    handleCloseForm();
+  const handleFormSuccess = async () => {
+    // Refresh the items list to include the newly created item
+    await loadMasterData();
+    setAddNewItemForm(false);
   };
-
-  const areAllOnPageSelected =
-    paginatedData.length > 0 &&
-    paginatedData.every((row: DataItem) =>
-      selectedRows.includes(row._id as string)
-    );
 
   // --- Render Logic ---
-  if (showAddForm) {
+  if (addNewItemForm) {
     return (
       <div className="w-full">
         <div className="bg-white p-6 rounded-xl shadow-lg dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
@@ -629,355 +366,856 @@ export default function ItemMaster() {
           <AddNewItem
             onClose={handleCloseForm}
             onSuccess={handleFormSuccess}
-            // --- FIX: Type Casting to prevent 'undefined' mismatch ---
-            initialData={
-              editingRow ? (editingRow as unknown as ItemApiData) : undefined
-            }
+            initialData={undefined} // No editingRow needed for "Add New"
           />
         </div>
       </div>
     );
   }
+  // --- HANDLERS ---
+  const handleInputChange = (
+    rowId: string,
+    columnId: string,
+    value: string
+  ) => {
+    setTableData((prev) => ({
+      ...prev,
+      [rowId]: { ...prev[rowId], [columnId]: value },
+    }));
+  };
 
-  if (isLoading) {
-    return (
-      <div className="w-full">
-        <div className="flex justify-center items-center h-64 bg-white p-6 rounded-xl shadow-lg dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-          <Loader2 className="size-8 text-blue-600 animate-spin mr-2" />
-          <span className="text-lg text-gray-700 dark:text-gray-300">
-            Loading item data...
-          </span>
-        </div>
-      </div>
-    );
-  }
+  const handleDeleteRow = (rowIdToDelete: string) => {
+    if (rows.length > 15) {
+      setRows((prev) => prev.filter((id) => id !== rowIdToDelete));
+      setTableData((prev) => {
+        const next = { ...prev };
+        delete next[rowIdToDelete];
+        return next;
+      });
+    } else {
+      setTableData((prev) => ({
+        ...prev,
+        [rowIdToDelete]: { reciss: "Receipt" },
+      }));
+    }
+  };
 
-  if (error) {
-    return (
-      <div className="w-full">
-        <div className="p-8 text-center text-red-600 bg-red-50 dark:bg-red-900/20 border border-red-300 rounded-xl shadow-lg dark:border-red-700">
-          <p className="font-semibold text-lg">Error</p>
-          <p className="text-sm">{error}</p>
-          <button
-            onClick={loadItems}
-            className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const handleAddRow = (afterRowId: string) => {
+    const newId = generateRowId();
+    const index = rows.indexOf(afterRowId);
+    if (index !== -1) {
+      const newRows = [...rows];
+      newRows.splice(index + 1, 0, newId);
+      setRows(newRows);
+      setTableData((prev) => ({ ...prev, [newId]: { reciss: "Receipt" } }));
+    }
+  };
 
-  // --- DEFAULT VIEW: THE TABLE ---
+  const handleCopyRow = (sourceRowId: string) => {
+    const sourceData = tableData[sourceRowId];
+    if (!sourceData) return;
+    let targetRowId: string | null = null;
+    const sourceIndex = rows.indexOf(sourceRowId);
+    for (let i = sourceIndex + 1; i < rows.length; i++) {
+      const rId = rows[i];
+      if (!tableData[rId]?.select) {
+        targetRowId = rId;
+        break;
+      }
+    }
+    if (!targetRowId) {
+      targetRowId = generateRowId();
+      setRows((prev) => [...prev, targetRowId!]);
+    }
+    setTableData((prev) => ({ ...prev, [targetRowId!]: { ...sourceData } }));
+  };
+
+  // --- POPUP TRIGGERS (UPDATED FOR FIXED POSITIONING) ---
+  const handleSelectClick = (
+    e: React.MouseEvent<HTMLDivElement>,
+    rowId: string
+  ) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    // For fixed positioning, we use rect.bottom (Viewport relative) NOT rect.bottom + scrollY
+    setPopupState({
+      visible: true,
+      top: rect.bottom,
+      left: rect.left,
+      activeRowId: rowId,
+    });
+  };
+
+  const handleUnitClick = (
+    e: React.MouseEvent<HTMLDivElement>,
+    rowId: string,
+    colId: "unit" | "rateper"
+  ) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    // For fixed positioning, we use rect.bottom (Viewport relative)
+    setUnitPopupState({
+      visible: true,
+      top: rect.bottom,
+      left: rect.left,
+      activeRowId: rowId,
+      targetColumn: colId,
+    });
+  };
+
+  const closePopup = () => {
+    setPopupState((prev) => ({ ...prev, visible: false, activeRowId: null }));
+  };
+
+  const handleAttributeClick = (rowId: string) => {
+    const data = tableData[rowId];
+    if (data && data.select) {
+      const reconstructedItem: any = {
+        code: data.select,
+        name: data.desc,
+        stock_unit: data.unit,
+        gst_classfication: data.hsn,
+        brand: data.brand,
+        sales_rate: data.rate,
+        mrp: data.mrp,
+        barcode: data.barcode,
+      };
+      setAttributePanelState({
+        visible: true,
+        activeRowId: rowId,
+        tempItemData: reconstructedItem,
+      });
+    }
+  };
+
+  // --- SELECTION HANDLERS ---
+  const handleItemSelect = (item: ItemApiData) => {
+    if (popupState.activeRowId) {
+      setAttributePanelState({
+        visible: true,
+        activeRowId: popupState.activeRowId,
+        tempItemData: item,
+      });
+      setPopupState((prev) => ({ ...prev, visible: false, activeRowId: null }));
+    }
+  };
+
+  const handleUnitSelect = (unit: StockUnitData) => {
+    const { activeRowId, targetColumn } = unitPopupState;
+    if (activeRowId && targetColumn) {
+      handleInputChange(activeRowId, targetColumn, unit.name);
+      setUnitPopupState((prev) => ({
+        ...prev,
+        visible: false,
+        activeRowId: null,
+        targetColumn: null,
+      }));
+    }
+  };
+
+  const handleCreateUnitClick = () => {
+    console.log("Open Create Unit Modal");
+    setUnitPopupState((prev) => ({ ...prev, visible: false }));
+  };
+
+  const handleAttributeSave = (attributeData: any) => {
+    const { activeRowId, tempItemData } = attributePanelState;
+    if (activeRowId && tempItemData) {
+      const baseData: RowData = {
+        reciss: "Receipt",
+        select: tempItemData.code || "",
+        desc: tempItemData.name || "",
+        unit: tempItemData.stock_unit || "",
+        hsn: tempItemData.gst_classfication || "",
+        brand: tempItemData.brand || "",
+        qty: "1",
+        amount: "0.00",
+        service: "Main Store",
+        barcode: tempItemData.barcode || "",
+        mrp: tempItemData.mrp || "0",
+        rate: tempItemData.sales_rate || "0",
+        rateper: tempItemData.sales_rate || "0",
+        netrate: tempItemData.sales_rate || "0",
+        printdesc: tempItemData.name || "",
+        itembarcode: tempItemData.barcode || "",
+      };
+      setTableData((prev) => ({
+        ...prev,
+        [activeRowId]: { ...prev[activeRowId], ...baseData, ...attributeData },
+      }));
+    }
+    setAttributePanelState({
+      visible: false,
+      activeRowId: null,
+      tempItemData: null,
+    });
+  };
+
+  // --- RESIZING & SORTING ---
+  const resizingRef = useRef<number | null>(null);
+  const startXRef = useRef<number>(0);
+  const startWidthRef = useRef<number>(0);
+
+  const handleHeaderClick = (columnId: string) => {
+    if (
+      [
+        "sno",
+        "add",
+        "del",
+        "srch",
+        "copy",
+        "attr",
+        "widg",
+        "batch",
+        "reciss",
+      ].includes(columnId)
+    )
+      return;
+    setSortConfig((curr) => ({
+      key: columnId,
+      direction:
+        curr?.key === columnId && curr.direction === "asc" ? "desc" : "asc",
+    }));
+  };
+
+  const sortedRowIds = useMemo(() => {
+    let sortable = [...rows];
+    if (sortConfig) {
+      sortable.sort((a, b) => {
+        const rowA = tableData[a],
+          rowB = tableData[b];
+        if (!rowA && !rowB) return 0;
+        if (!rowA) return 1;
+        if (!rowB) return -1;
+        const valA = rowA[sortConfig.key] || "",
+          valB = rowB[sortConfig.key] || "";
+        return typeof valA === "string" && typeof valB === "string"
+          ? sortConfig.direction === "asc"
+            ? valA.localeCompare(valB)
+            : valB.localeCompare(valA)
+          : sortConfig.direction === "asc"
+          ? valA < valB
+            ? -1
+            : 1
+          : valA > valB
+          ? -1
+          : 1;
+      });
+    }
+    return sortable;
+  }, [rows, tableData, sortConfig]);
+
+  const handleMouseDown = (e: MouseEvent, index: number) => {
+    if (!columns[index].resizable) return;
+    e.preventDefault();
+    e.stopPropagation();
+    resizingRef.current = index;
+    startXRef.current = e.clientX;
+    startWidthRef.current = columns[index].width;
+    document.addEventListener("mousemove", handleMouseMove as any);
+    document.addEventListener("mouseup", handleMouseUp);
+  };
+  const handleMouseMove = (e: MouseEvent | globalThis.MouseEvent) => {
+    if (resizingRef.current === null) return;
+    setColumns((prev) => {
+      const next = [...prev];
+      next[resizingRef.current!] = {
+        ...next[resizingRef.current!],
+        width: Math.max(
+          30,
+          startWidthRef.current + (e.clientX - startXRef.current)
+        ),
+      };
+      return next;
+    });
+  };
+  const handleMouseUp = () => {
+    resizingRef.current = null;
+    document.removeEventListener("mousemove", handleMouseMove as any);
+    document.removeEventListener("mouseup", handleMouseUp);
+  };
+  const getStickyLeft = (idx: number) =>
+    columns
+      .slice(0, idx)
+      .reduce((acc, col) => (col.sticky === "left" ? acc + col.width : acc), 0);
+
+  // --- CALCULATION LOGIC ---
+  const totals = useMemo(() => {
+    const sums: Record<string, number> = {
+      pqty: 0,
+      qty: 0,
+      amount: 0,
+      mrp: 0,
+      netrate: 0,
+    };
+    rows.forEach((rowId) => {
+      const row = tableData[rowId];
+      if (row) {
+        const addVal = (field: string) => {
+          const val = parseFloat(String(row[field] || "0"));
+          if (!isNaN(val)) sums[field] += val;
+        };
+        addVal("pqty");
+        addVal("qty");
+        addVal("amount");
+        addVal("mrp");
+        addVal("netrate");
+      }
+    });
+    return {
+      pqty: sums.pqty.toFixed(2),
+      qty: sums.qty.toFixed(2),
+      amount: sums.amount.toFixed(2),
+      mrp: sums.mrp.toFixed(2),
+      netrate: sums.netrate.toFixed(2),
+    };
+  }, [rows, tableData]);
+
   return (
-    <>
-      {/* <ItemMasterHeader /> */}
-      <div className="bg-white p-6 rounded-xl shadow-lg dark:bg-gray-800 border border-gray-200 dark:border-gray-700 w-full">
-        {/* Control Panel */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 space-y-4 md:space-y-0">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-              Show
-              <select
-                value={pageSize}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                  setPageSize(Number(e.target.value))
-                }
-                aria-label="Entries per page"
-                className="mx-2 p-1 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 dark:text-white appearance-none cursor-pointer"
-              >
-                {pageSizeOptions.map((option: number) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-              entries
+    <div
+      className="flex flex-col h-auto font-sans text-sm overflow-hidden relative z-0"
+      style={{ backgroundColor: COLORS.background }}
+    >
+      {/* HEADER */}
+      <div
+        className="flex-none flex justify-between items-center p-2 border-b z-10 relative bg-white"
+        style={{ borderColor: COLORS.border }}
+      >
+        <div className="flex items-center gap-4">
+          <div
+            className="flex items-center border h-9 w-72 rounded-sm bg-white"
+            style={{ borderColor: COLORS.borderDark }}
+          >
+            <div className="px-2 border-r h-full flex items-center justify-center bg-gray-50">
+              <ScanLine className="w-6 h-6 text-orange-500" />
             </div>
-
-            {selectedRows.length > 0 && (
-              <button
-                onClick={handleBulkDelete}
-                className="px-3 py-1.5 flex items-center bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition shadow-sm"
-              >
-                <Trash2 className="size-4 mr-1" />
-                Bulk Delete ({selectedRows.length})
-              </button>
-            )}
-          </div>
-
-          <div className="flex items-center space-x-3 w-full md:w-auto justify-end">
-            <button
-              onClick={() =>
-                handlePrint("printable-table", "Item Master Directory")
-              }
-              className="p-2 text-gray-600 dark:text-gray-300 border border-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-              title="Print Table"
-              aria-label="Print Table"
-            >
-              <Printer className="size-5" />
-            </button>
-
-            <button
-              onClick={() =>
-                handleExport(data, currentColumns, "ItemMasterDirectory")
-              }
-              className="p-2 text-gray-600 dark:text-gray-300 border border-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-              title="Export to CSV"
-              aria-label="Export to CSV"
-            >
-              <Download className="size-5" />
-            </button>
-
-            <div className="relative w-full md:w-64">
-              <input
-                type="text"
-                placeholder="Search items..."
-                value={searchTerm}
-                aria-label="Search items"
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setSearchTerm(e.target.value)
-                }
-                className="w-full p-2 pl-10 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
-              />
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-gray-400" />
-            </div>
-
-            <button
-              onClick={() => {
-                setEditingRow(null);
-                setShowAddForm(true);
-              }}
-              className="px-3 py-2 flex items-center bg-[#0c5888] text-white text-sm font-medium hover:bg-[#124463] transition shadow-md whitespace-nowrap rounded-lg"
-            >
-              <Plus className="size-4 mr-1" />
-              Add New Item
-            </button>
+            <input
+              type="text"
+              placeholder="Scan"
+              className="px-2 outline-none text-sm w-full"
+            />
           </div>
         </div>
-        <hr className="mb-4 border-gray-100 dark:border-gray-700" />
+        <button
+          className="px-6 py-1.5 rounded text-xs font-bold text-white shadow-sm"
+          style={{ backgroundColor: COLORS.primary }}
+        >
+          Pull From Order
+        </button>
+      </div>
 
-        {/* Table Section */}
-        <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
-          <table className="min-w-full table-fixed" id="printable-table">
-            <thead>
-              <tr className="bg-gray-50 dark:bg-gray-700/50 text-left text-xs font-semibold uppercase text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700">
-                {/* Checkbox Column */}
-                <th
-                  className="p-4 w-10 no-print text-center border-r border-dashed border-gray-300 dark:border-gray-600"
-                  style={{ width: columnWidths["checkbox"] || "30px" }}
-                >
-                  <input
-                    type="checkbox"
-                    className="rounded text-blue-600 dark:bg-gray-600 dark:border-gray-500 border-gray-300 focus:ring-blue-500"
-                    checked={areAllOnPageSelected}
-                    onChange={handleSelectAll}
-                    aria-label="Select all items on page"
-                  />
-                </th>
+      {/* TABLE */}
+      <div className="flex-1 p-2 relative flex flex-col z-0">
+        <div
+          className="w-full border shadow-sm relative overflow-hidden bg-white"
+          style={{ borderColor: COLORS.borderDark }}
+        >
+          <div
+            className="w-full overflow-auto custom-scrollbar"
+            style={{ height: "400px" }}
+          >
+            <div style={{ width: columns.reduce((a, c) => a + c.width, 0) }}>
+              <table className="border-collapse table-fixed w-full">
+                <thead className="sticky top-0 z-20">
+                  <tr className="h-6">
+                    {columns.map((col, idx) => (
+                      <th
+                        key={col.id}
+                        style={{
+                          width: col.width,
+                          left:
+                            col.sticky === "left"
+                              ? getStickyLeft(idx)
+                              : undefined,
+                          position:
+                            col.sticky === "left" ? "sticky" : "relative",
+                          zIndex: col.sticky === "left" ? 30 : 20,
+                          backgroundColor: COLORS.primary,
+                          color: "white",
+                          borderColor: COLORS.primaryHover,
+                        }}
+                        className="border-r px-1 text-xs font-normal cursor-pointer relative group"
+                        onClick={() => handleHeaderClick(col.id)}
+                      >
+                        <div
+                          className={`flex w-full h-full items-center ${
+                            col.align === "center"
+                              ? "justify-center"
+                              : "justify-between px-1"
+                          }`}
+                        >
+                          <span className="truncate">{col.label}</span>
+                          {sortConfig?.key === col.id &&
+                            (sortConfig.direction === "asc" ? (
+                              <ArrowUp size={10} />
+                            ) : (
+                              <ArrowDown size={10} />
+                            ))}
+                        </div>
+                        {col.resizable && (
+                          <div
+                            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 opacity-0 group-hover:opacity-100"
+                            onMouseDown={(e) => handleMouseDown(e, idx)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        )}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedRowIds.map((rowId, vIdx) => {
+                    const rowData = tableData[rowId] || {};
+                    return (
+                      <tr
+                        key={rowId}
+                        className="h-6 border-b hover:bg-blue-50"
+                        style={{ borderColor: COLORS.border }}
+                      >
+                        {columns.map((col, cIdx) => {
+                          const isLeft = col.sticky === "left";
+                          let content: React.ReactNode = null;
 
-                {/* Sno. Column */}
-                <th
-                  className="p-4 w-12 text-center border-r border-dashed border-gray-300 dark:border-gray-600"
-                  style={{ width: columnWidths["sno"] || "40px" }}
-                >
-                  Sno.
-                </th>
+                          if (col.id === "sno")
+                            content = (
+                              <span className="text-gray-500">{vIdx + 1}</span>
+                            );
+                          else if (col.id === "add")
+                            content = (
+                              <Plus
+                                size={12}
+                                className="mx-auto text-green-600 cursor-pointer"
+                                onClick={() => handleAddRow(rowId)}
+                              />
+                            );
+                          else if (col.id === "del")
+                            content = (
+                              <X
+                                size={12}
+                                className="mx-auto text-red-500 cursor-pointer"
+                                onClick={() => handleDeleteRow(rowId)}
+                              />
+                            );
+                          else if (col.id === "srch")
+                            content = (
+                              <Search
+                                size={12}
+                                className="mx-auto text-blue-500 cursor-pointer"
+                              />
+                            );
+                          else if (col.id === "copy")
+                            content = (
+                              <Copy
+                                size={12}
+                                className="mx-auto text-orange-400 cursor-pointer"
+                                onClick={() => handleCopyRow(rowId)}
+                              />
+                            );
+                          else if (col.id === "attr")
+                            content = (
+                              <FileText
+                                size={12}
+                                className="mx-auto text-blue-400 cursor-pointer"
+                                onClick={() => handleAttributeClick(rowId)}
+                              />
+                            );
+                          else if (col.id === "widg")
+                            content = (
+                              <BarChart2
+                                size={12}
+                                className="mx-auto text-blue-400"
+                              />
+                            );
+                          else if (col.id === "batch")
+                            content = (
+                              <Table
+                                size={12}
+                                className="mx-auto text-blue-600"
+                              />
+                            );
+                          else if (col.id === "reciss") {
+                            content = (
+                              <div className="relative w-full h-full group">
+                                <div className="flex justify-between items-center h-full px-1 text-[10px]">
+                                  <span
+                                    style={{
+                                      color:
+                                        rowData.reciss === "Issue"
+                                          ? "red"
+                                          : "inherit",
+                                    }}
+                                  >
+                                    {rowData.reciss || "Receipt"}
+                                  </span>
+                                  <ChevronDown
+                                    size={10}
+                                    className="text-gray-400"
+                                  />
+                                </div>
+                                <select
+                                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                  value={rowData.reciss || "Receipt"}
+                                  onChange={(e) =>
+                                    handleInputChange(
+                                      rowId,
+                                      "reciss",
+                                      e.target.value
+                                    )
+                                  }
+                                >
+                                  <option value="Receipt">Receipt</option>
+                                  <option value="Issue">Issue</option>
+                                </select>
+                              </div>
+                            );
+                          } else if (col.id === "select") {
+                            content = (
+                              <div
+                                className="text-[10px] italic text-gray-400 flex justify-between cursor-pointer hover:bg-gray-100 h-full items-center px-1"
+                                onClick={(e) => handleSelectClick(e, rowId)}
+                              >
+                                {rowData.select || "Select..."} <span>▶</span>
+                              </div>
+                            );
+                          } else if (
+                            col.id === "unit" ||
+                            col.id === "rateper"
+                          ) {
+                            content = (
+                              <div
+                                className="w-full h-full flex justify-between items-center px-1 cursor-pointer hover:bg-gray-100 group min-h-[24px]"
+                                onClick={(e) =>
+                                  handleUnitClick(
+                                    e,
+                                    rowId,
+                                    col.id as "unit" | "rateper"
+                                  )
+                                }
+                              >
+                                <span>{rowData[col.id] || ""}</span>
+                                <ChevronDown
+                                  size={10}
+                                  className="text-gray-300 group-hover:text-gray-500"
+                                />
+                              </div>
+                            );
+                          } else if (
+                            [
+                              "qty",
+                              "rate",
+                              "amount",
+                              "mrp",
+                              "netrate",
+                            ].includes(col.id)
+                          ) {
+                            content = (
+                              <input
+                                type="text"
+                                className="w-full h-full bg-transparent outline-none px-1 text-right"
+                                value={rowData[col.id] || ""}
+                                onChange={(e) =>
+                                  handleInputChange(
+                                    rowId,
+                                    col.id,
+                                    e.target.value
+                                  )
+                                }
+                              />
+                            );
+                          } else if (
+                            ["desc", "hsn", "barcode", "brand"].includes(col.id)
+                          )
+                            content = rowData[col.id] || "";
+                          else
+                            content = (
+                              <input
+                                type="text"
+                                className="w-full h-full bg-transparent outline-none px-1"
+                                value={rowData[col.id] || ""}
+                                onChange={(e) =>
+                                  handleInputChange(
+                                    rowId,
+                                    col.id,
+                                    e.target.value
+                                  )
+                                }
+                              />
+                            );
 
-                {/* Data Columns */}
-                {currentColumns.map((col: Column, index: number) => (
-                  <ResizableHeader
-                    key={col.key as string}
-                    col={col}
-                    requestSort={requestSort}
-                    renderSortIndicator={renderSortIndicator}
-                    setColumnWidths={setColumnWidths}
-                    columnIndex={index}
-                    columnWidths={columnWidths}
-                    onDragStart={handleDragStart}
-                    onDragOver={handleDragOver}
-                    onDrop={handleDrop}
-                  />
-                ))}
-
-                {/* Actions Column */}
-                <th
-                  className="p-4 text-center whitespace-nowrap no-print border-r border-dashed border-gray-300 dark:border-gray-600"
-                  style={{ width: columnWidths["actions"] || "100px" }}
-                >
-                  Actions
-                </th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {paginatedData.length > 0 ? (
-                paginatedData.map((row: DataItem, index: number) => (
-                  <tr
-                    key={row._id}
-                    className="even:bg-gray-50/50 dark:even:bg-gray-700/10 border-t border-gray-100 dark:border-gray-700/50 text-sm text-gray-800 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700/30 transition duration-150"
-                  >
-                    {/* Checkbox Cell */}
-                    <td
-                      className="p-4 w-10 no-print text-center border-r border-gray-200 dark:border-gray-700"
-                      style={{
-                        width: columnWidths["checkbox"] || "30px",
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        className="rounded text-blue-600 dark:bg-gray-600 dark:border-gray-500 border-gray-300 focus:ring-blue-500"
-                        checked={isSelected(row)}
-                        onChange={() => handleSelectRow(row)}
-                        aria-label={`Select item ${row.name}`}
-                      />
-                    </td>
-
-                    {/* Sno. Cell */}
-                    <td
-                      className="p-4 w-12 text-center border-r border-gray-200 dark:border-gray-700"
-                      style={{ width: columnWidths["sno"] || "40px" }}
-                    >
-                      {startEntry + index}
-                    </td>
-
-                    {/* Data Cells */}
-                    {currentColumns.map((col: Column, colIndex: number) => {
-                      const value = row[col.key as keyof DataItem];
-
-                      if (col.render) {
-                        return (
-                          <td
-                            key={colIndex}
-                            className="p-4 whitespace-nowrap overflow-hidden text-ellipsis text-center border-r border-gray-200 dark:border-gray-700"
-                            style={{
-                              width: columnWidths[col.key as string]
-                                ? `${columnWidths[col.key as string]}px`
-                                : undefined,
-                            }}
-                          >
-                            {col.render(value)}
-                          </td>
-                        );
-                      }
-
-                      // Logic: If column created but data is not available show null
-                      const displayValue =
-                        value === null ||
-                        value === undefined ||
-                        String(value).trim() === ""
-                          ? "null"
-                          : String(value);
+                          const isReadOnly = !col.resizable && !col.sticky;
+                          return (
+                            <td
+                              key={col.id}
+                              style={{
+                                width: col.width,
+                                left: isLeft ? getStickyLeft(cIdx) : undefined,
+                                position: isLeft ? "sticky" : "static",
+                                zIndex: isLeft ? 10 : "auto",
+                                backgroundColor: isReadOnly
+                                  ? "#FAFAFA"
+                                  : "white",
+                                borderColor: COLORS.border,
+                              }}
+                              className={`border-r px-1 text-xs overflow-hidden whitespace-nowrap ${
+                                col.align === "center"
+                                  ? "text-center"
+                                  : col.align === "right"
+                                  ? "text-right"
+                                  : "text-left"
+                              } ${isReadOnly ? "text-gray-500" : ""}`}
+                            >
+                              {content}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot className="sticky bottom-0 z-20 bg-gray-50">
+                  <tr className="h-9 font-bold">
+                    {columns.map((col, idx) => {
+                      let content: React.ReactNode = "";
+                      if (col.id === "desc") content = "TOTAL";
+                      else if (col.id === "pqty") content = totals.pqty;
+                      else if (col.id === "qty") content = totals.qty;
+                      else if (col.id === "amount") content = totals.amount;
 
                       return (
                         <td
-                          key={colIndex}
-                          className="p-4 whitespace-nowrap overflow-hidden text-ellipsis border-r border-gray-200 dark:border-gray-700"
+                          key={col.id}
                           style={{
-                            width: columnWidths[col.key as string]
-                              ? `${columnWidths[col.key as string]}px`
-                              : undefined,
+                            left:
+                              col.sticky === "left"
+                                ? getStickyLeft(idx)
+                                : undefined,
+                            position:
+                              col.sticky === "left" ? "sticky" : "static",
+                            zIndex: col.sticky === "left" ? 30 : 20,
+                            backgroundColor: COLORS.background,
                           }}
+                          className="border-r border-t-2 px-1 text-xs text-right"
                         >
-                          {displayValue}
+                          {content}
                         </td>
                       );
                     })}
-
-                    {/* Actions Cell */}
-                    <td
-                      className="p-4 text-center space-x-2 whitespace-nowrap no-print border-r border-gray-200 dark:border-gray-700"
-                      style={{
-                        width: columnWidths["actions"] || "100px",
-                      }}
-                    >
-                      <button
-                        onClick={() => handleOpenEditModal(row)}
-                        className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400 transition"
-                        aria-label="Edit"
-                        title="Edit"
-                      >
-                        <Edit className="size-4 inline" />
-                      </button>
-
-                      <button
-                        onClick={() => handleDelete(row)}
-                        className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-red-600 dark:text-red-400 transition"
-                        aria-label="Delete"
-                        title="Delete"
-                      >
-                        <Trash2 className="size-4 inline" />
-                      </button>
-                    </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td
-                    colSpan={currentColumns.length + 3}
-                    className="p-8 text-center text-lg text-gray-500 dark:text-gray-400"
-                  >
-                    No matching item entries found. 📦
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        <div className="flex flex-col sm:flex-row justify-between items-center mt-6 space-y-4 sm:space-y-0">
-          <div className="text-sm text-gray-600 dark:text-gray-400">
-            Showing {startEntry} to {endEntry} of {sortedDataLength} entries.
-            (Total Pages: {totalPages})
-          </div>
-
-          <div className="flex space-x-2 items-center justify-center mt-4">
-            <button
-              onClick={() =>
-                setCurrentPage((prev: number) => Math.max(prev - 1, 1))
-              }
-              disabled={currentPage === 1}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
-                currentPage === 1
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-700/40 dark:text-gray-500"
-                  : "bg-white text-gray-700 border border-gray-300 hover:bg-[#0c5888]/10 hover:text-[#0c5888] dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-[#0c5888]/20"
-              }`}
-            >
-              Previous
-            </button>
-
-            {pageNumbers.map((page: number) => (
-              <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
-                  currentPage === page
-                    ? "bg-[#0c5888] text-white shadow-md border border-transparent dark:bg-[#0c5888]"
-                    : "bg-white text-gray-700 border border-gray-300 hover:bg-[#0c5888]/10 hover:text-[#0c5888] dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-[#0c5888]/20"
-                }`}
-              >
-                {page}
-              </button>
-            ))}
-
-            <button
-              onClick={() =>
-                setCurrentPage((prev: number) => Math.min(prev + 1, totalPages))
-              }
-              disabled={currentPage >= totalPages}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
-                currentPage >= totalPages
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-700/40 dark:text-gray-500"
-                  : "bg-white text-gray-700 border border-gray-300 hover:bg-[#0c5888]/10 hover:text-[#0c5888] dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-[#0c5888]/20"
-              }`}
-            >
-              Next
-            </button>
+                </tfoot>
+              </table>
+            </div>
           </div>
         </div>
       </div>
-    </>
+
+      <AttributePanel
+        isOpen={attributePanelState.visible}
+        onClose={() =>
+          setAttributePanelState({ ...attributePanelState, visible: false })
+        }
+        onSave={handleAttributeSave}
+        initialData={attributePanelState.tempItemData}
+      />
+
+      {/* --- ITEM POPUP (Rendered via Portal) --- */}
+      {popupState.visible &&
+        ReactDOM.createPortal(
+          <>
+            <div
+              className="fixed inset-0 z-[9998] cursor-default bg-transparent"
+              onClick={closePopup}
+            />
+            <div
+              className="fixed z-[9999] bg-white border shadow-xl flex flex-col rounded"
+              style={{
+                top: popupState.top,
+                left: popupState.left,
+                borderColor: COLORS.borderDark,
+                width: "500px",
+                maxHeight: "300px",
+                transform:
+                  popupState.top + 300 > window.innerHeight
+                    ? "translateY(-100%)"
+                    : "none",
+              }}
+            >
+              {/* HEADER WITH + ICON */}
+              <div
+                className="flex justify-between items-center p-2 border-b h-8"
+                style={{ backgroundColor: COLORS.primary, color: COLORS.white }}
+              >
+                <span className="font-bold text-xs pl-1">Select Item</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleCreateItemClick}
+                    className="hover:bg-green-600 hover:text-white p-0.5 rounded transition-colors"
+                    title="Create New Item"
+                  >
+                    <Plus size={14} />
+                  </button>
+                  <button
+                    onClick={closePopup}
+                    className="hover:bg-red-500 hover:text-white p-0.5 rounded transition-colors"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-auto p-0">
+                <table className="w-full text-xs text-left border-collapse">
+                  <thead className="sticky top-0 bg-gray-100 z-10 shadow-sm">
+                    <tr>
+                      <th className="p-1.5 border font-semibold text-gray-700 w-24">
+                        Code
+                      </th>
+                      <th className="p-1.5 border font-semibold text-gray-700">
+                        Name
+                      </th>
+                      <th className="p-1.5 border font-semibold text-gray-700 w-20">
+                        HSN
+                      </th>
+                      <th className="p-1.5 border font-semibold text-gray-700 w-24">
+                        Barcode
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.length > 0 ? (
+                      items.map((item, idx) => (
+                        <tr
+                          key={item._id || idx}
+                          className="border-b hover:bg-blue-50 cursor-pointer transition-colors"
+                          onClick={() => handleItemSelect(item)}
+                        >
+                          <td className="p-1.5 border">{item.code}</td>
+                          <td className="p-1.5 border">{item.name}</td>
+                          <td className="p-1.5 border">
+                            {item.gst_classfication}
+                          </td>
+                          <td className="p-1.5 border">{item.barcode}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={4}
+                          className="p-4 text-center text-gray-500"
+                        >
+                          Loading items...
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>,
+          document.body
+        )}
+
+      {/* --- UNIT POPUP (MATCHING STYLE) --- */}
+      {unitPopupState.visible &&
+        ReactDOM.createPortal(
+          <>
+            <div
+              className="fixed inset-0 z-[9998] cursor-default bg-transparent"
+              onClick={() =>
+                setUnitPopupState((prev) => ({ ...prev, visible: false }))
+              }
+            />
+            <div
+              className="fixed z-[9999] bg-white border shadow-xl flex flex-col rounded"
+              style={{
+                top: unitPopupState.top,
+                left: unitPopupState.left,
+                borderColor: COLORS.borderDark,
+                width: "300px",
+                maxHeight: "250px",
+                transform:
+                  unitPopupState.top + 250 > window.innerHeight
+                    ? "translateY(-100%)"
+                    : "none",
+              }}
+            >
+              <div
+                className="flex justify-between items-center p-2 border-b h-8"
+                style={{ backgroundColor: COLORS.primary, color: COLORS.white }}
+              >
+                <span className="font-bold text-xs pl-1">Select Unit</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleCreateUnitClick}
+                    className="hover:bg-green-600 hover:text-white p-0.5 rounded transition-colors"
+                  >
+                    <Plus size={14} />
+                  </button>
+                  <button
+                    onClick={() =>
+                      setUnitPopupState((prev) => ({ ...prev, visible: false }))
+                    }
+                    className="hover:bg-red-500 hover:text-white p-0.5 rounded transition-colors"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              </div>
+              <div className="flex-1 overflow-auto p-0">
+                <table className="w-full text-xs text-left border-collapse">
+                  <thead className="sticky top-0 bg-gray-100 z-10 shadow-sm">
+                    <tr>
+                      <th className="p-1.5 border font-semibold text-gray-700 w-16">
+                        Code
+                      </th>
+                      <th className="p-1.5 border font-semibold text-gray-700">
+                        Name
+                      </th>
+                      <th className="p-1.5 border font-semibold text-gray-700 w-16">
+                        UQC
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stockUnits.length > 0 ? (
+                      stockUnits.map((unit, idx) => (
+                        <tr
+                          key={unit._id || idx}
+                          className="border-b hover:bg-blue-50 cursor-pointer transition-colors"
+                          onClick={() => handleUnitSelect(unit)}
+                        >
+                          <td className="p-1.5 border">{unit.code}</td>
+                          <td className="p-1.5 border">{unit.name}</td>
+                          <td className="p-1.5 border">{unit.uqc}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={3}
+                          className="p-4 text-center text-gray-500"
+                        >
+                          Loading units...
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>,
+          document.body
+        )}
+
+      <style>{`
+        .custom-btn-primary { background-color: ${COLORS.primary}; transition: background-color 0.2s; }
+        .custom-btn-primary:hover { background-color: ${COLORS.primaryHover}; }
+        .custom-row-hover:hover td { background-color: ${COLORS.primaryLight} !important; }
+        .custom-scrollbar::-webkit-scrollbar { width: 14px; height: 14px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: ${COLORS.scrollbarThumb}; border: 3px solid transparent; background-clip: content-box; border-radius: 99px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: ${COLORS.scrollbarTrack}; }
+      `}</style>
+    </div>
   );
-}
+};
+
+export default OrderTable;

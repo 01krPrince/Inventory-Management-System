@@ -4,10 +4,14 @@ import api from "../../../services/api";
 
 const BASE_URL = "https://sports-hub-h2um.onrender.com/api/item_master";
 
+/* -------------------------------- HELPERS -------------------------------- */
+
 const toNull = (value: any): any => {
   if (value === "" || value === undefined || value === "Select...") return null;
   return value;
 };
+
+/* ----------------------- ITEM PAYLOAD TRANSFORMER ------------------------- */
 
 const transformFormDataToPayload = (formData: ItemFormData): ItemApiData => {
   return {
@@ -16,14 +20,14 @@ const transformFormDataToPayload = (formData: ItemFormData): ItemApiData => {
     under_group: toNull(formData.underGroup),
     stock_unit: toNull(formData.stockUnit),
     gst_classfication: toNull(formData.gstClassification),
-    
+
     category: toNull(formData.category),
     brand: toNull(formData.brand),
     type: toNull(formData.type),
     unit_option: toNull(formData.unitOption),
     barcode: toNull(formData.barCode),
     auto_barcode: toNull(formData.autoBarcodePrefix),
-    
+
     gst_applicable: !formData.gstInputNotApplicable, 
     print_barcode: !!formData.printBarcode,
 
@@ -52,19 +56,21 @@ const transformFormDataToPayload = (formData: ItemFormData): ItemApiData => {
     weighscale_mapping_code: toNull(formData.weighscaleMappingCode),
     rackbin_no: toNull(formData.rackBinNo),
     add_in_item_set_template: toNull(formData.itemSetTemplate),
-    
+
     batch_wise_inventory: !!formData.batchWiseInventory,
     batch_wise_rate: !!formData.batchWiseRate,
     drug_type: toNull(formData.drugType),
     salt: toNull(formData.salt),
-    
+
     skip_item_from_loyalty: formData.skipLoyaltyPoints ? "Yes" : "No",
     exclude_cvss_applist: !!formData.excludeInCvss,
     ask_udf_in_document: formData.askUdfInDocument ? "Y" : "N",
-    
+
     attachment: toNull(formData.profileImage),
   };
 };
+
+/* -------------------------------- ITEM APIs ------------------------------- */
 
 export const createItem = async (formData: ItemFormData): Promise<ItemResponse> => {
   const payload = transformFormDataToPayload(formData);
@@ -81,16 +87,24 @@ export const createItem = async (formData: ItemFormData): Promise<ItemResponse> 
   }
 };
 
-export const updateItem = async (id: string, formData: ItemFormData): Promise<ItemResponse> => {
+export const updateItem = async (
+  id: string,
+  formData: ItemFormData
+): Promise<ItemResponse> => {
   const payload = transformFormDataToPayload(formData);
   try {
-    const response = await api.put<ItemResponse>(`/item_master/update_item/${id}`, payload);
+    const response = await api.put<ItemResponse>(
+      `/item_master/update_item/${id}`,
+      payload
+    );
     return response.data;
   } catch (error) {
     console.error("Update Error:", error);
     throw error;
   }
 };
+
+/* ------------------------------- DATA TYPES -------------------------------- */
 
 export interface CategoryData {
   _id: string;
@@ -117,9 +131,9 @@ export interface StockUnitData {
 
 export interface GstClassificationData {
   _id: string;
-  type: string;           // "Goods"
-  hsn_sac_code: string;   // "1001"
-  hsn_description: string;// "Agricultural product"
+  type: string;
+  hsn_sac_code: string;
+  hsn_description: string;
   code: string;
 }
 
@@ -129,9 +143,13 @@ export interface ListResponse<T> {
   message?: string;
 }
 
+/* ---------------------------- FETCH LIST APIs ----------------------------- */
+
 export const fetchCategories = async (): Promise<CategoryData[]> => {
   try {
-    const response = await api.get<ListResponse<CategoryData>>('/itemcategory/get_all_item_category');
+    const response = await api.get<ListResponse<CategoryData>>(
+      "/itemcategory/get_all_item_category"
+    );
     return response.data.data || [];
   } catch (error) {
     console.error("Error fetching categories:", error);
@@ -141,7 +159,9 @@ export const fetchCategories = async (): Promise<CategoryData[]> => {
 
 export const fetchBrands = async (): Promise<BrandData[]> => {
   try {
-    const response = await api.get<ListResponse<BrandData>>('/itembrand/get_item_brand');
+    const response = await api.get<ListResponse<BrandData>>(
+      "/itembrand/get_item_brand"
+    );
     return response.data.data || [];
   } catch (error) {
     console.error("Error fetching brands:", error);
@@ -149,25 +169,11 @@ export const fetchBrands = async (): Promise<BrandData[]> => {
   }
 };
 
-export interface CreateBrandPayload {
-  name: string;
-  salesman?: string;
-  image?: string | null;
-}
-
-export const createItemBrand = async (payload: CreateBrandPayload): Promise<ItemResponse> => {
-  try {
-    const response = await api.post<ItemResponse>('/itembrand/create_item_brand', payload);
-    return response.data;
-  } catch (error) {
-    console.error("Failed to create item brand:", error);
-    throw error;
-  }
-};
-
 export const fetchStockUnits = async (): Promise<StockUnitData[]> => {
   try {
-    const response = await api.get<ListResponse<StockUnitData>>('/stockunit/get_stock_unit');
+    const response = await api.get<ListResponse<StockUnitData>>(
+      "/stockunit/get_stock_unit"
+    );
     return response.data.data || [];
   } catch (error) {
     console.error("Error fetching stock units:", error);
@@ -177,13 +183,72 @@ export const fetchStockUnits = async (): Promise<StockUnitData[]> => {
 
 export const fetchGstClassifications = async (): Promise<GstClassificationData[]> => {
   try {
-    const response = await api.get<ListResponse<GstClassificationData>>('/gstclassification/get_gst_classification');
+    const response = await api.get<ListResponse<GstClassificationData>>(
+      "/gstclassification/get_gst_classification"
+    );
     return response.data.data || [];
   } catch (error) {
     console.error("Error fetching GST classifications:", error);
     return [];
   }
 };
+
+/* ----------------------------- CREATE APIS -------------------------------- */
+
+/* ✅ CREATE STOCK UNIT */
+
+export interface CreateStockUnitPayload {
+  name: string;
+  desc: string;
+  roundoff_decimal: string;
+  uqc: string;
+}
+
+export interface CreateStockUnitResponse {
+  success: boolean;
+  message: string;
+  data: StockUnitData;
+}
+
+export const createStockUnit = async (
+  payload: CreateStockUnitPayload
+): Promise<CreateStockUnitResponse> => {
+  try {
+    const response = await api.post<CreateStockUnitResponse>(
+      "/stockunit/create_stock_unit",
+      payload
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Failed to create stock unit:", error);
+    throw error;
+  }
+};
+
+/* ✅ CREATE BRAND */
+
+export interface CreateBrandPayload {
+  name: string;
+  salesman?: string;
+  image?: string | null;
+}
+
+export const createItemBrand = async (
+  payload: CreateBrandPayload
+): Promise<ItemResponse> => {
+  try {
+    const response = await api.post<ItemResponse>(
+      "/itembrand/create_item_brand",
+      payload
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Failed to create item brand:", error);
+    throw error;
+  }
+};
+
+/* ✅ CREATE GST CLASSIFICATION */
 
 export type CreateGstClassificationPayload = {
   type: string;
@@ -199,7 +264,7 @@ export const createGstClassification = async (
 ): Promise<CreateGstClassificationResponse | null> => {
   try {
     const response = await api.post<CreateGstClassificationResponse>(
-      '/gstclassification/create_gst_classification',
+      "/gstclassification/create_gst_classification",
       payload
     );
     return response.data;
@@ -209,6 +274,7 @@ export const createGstClassification = async (
   }
 };
 
+/* ✅ CREATE ITEM CATEGORY */
 
 export interface CreateCategoryPayload {
   name: string;
@@ -221,9 +287,14 @@ export interface ApiResponse {
   data?: any;
 }
 
-export const createItemCategory = async (payload: CreateCategoryPayload): Promise<ApiResponse> => {
+export const createItemCategory = async (
+  payload: CreateCategoryPayload
+): Promise<ApiResponse> => {
   try {
-    const response = await api.post<ApiResponse>(`/itemcategory/create_item_category`, payload);
+    const response = await api.post<ApiResponse>(
+      "/itemcategory/create_item_category",
+      payload
+    );
     return response.data;
   } catch (error) {
     console.error("Failed to create item category:", error);
