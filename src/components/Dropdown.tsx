@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { ChevronDown, Search, X } from "lucide-react";
 
 export interface ColumnDef<T> {
@@ -10,8 +10,7 @@ export interface ColumnDef<T> {
 interface TableDropdownProps<T> {
   data: T[];
   columns: ColumnDef<T>[];
-  value: string | undefined;
-  // Updated type to allow null (for deselection)
+  value: string | number | undefined;
   onChange: (item: T | null) => void;
   placeholder?: string;
   valueKey: keyof T;
@@ -42,20 +41,31 @@ const Dropdown = <T extends object>({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const filteredData = data.filter((item) => {
-    return columns.some((col) => {
-      const val = item[col.key];
-      return String(val).toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredData = useMemo(() => {
+    if (!searchTerm) return data;
+
+    return data.filter((item) => {
+      return columns.some((col) => {
+        const val = item[col.key];
+        return String(val).toLowerCase().includes(searchTerm.toLowerCase());
+      });
     });
-  });
+  }, [data, columns, searchTerm]);
+
+  const selectedItemObj = useMemo(() => {
+    return data.find((item) => String(item[valueKey]) === String(value));
+  }, [data, value, valueKey]);
+
+  const displayLabel = selectedItemObj
+    ? String(selectedItemObj[columns[1]?.key || columns[0]?.key])
+    : value || placeholder;
 
   const handleSelect = (e: React.MouseEvent, item: T) => {
     e.stopPropagation();
-    // Logic: If clicked item is ALREADY selected, deselect it.
     const isSelected = String(item[valueKey]) === String(value);
 
     if (isSelected) {
-      onChange(null); // Pass null to clear
+      onChange(null);
     } else {
       onChange(item);
     }
@@ -67,6 +77,7 @@ const Dropdown = <T extends object>({
     e.stopPropagation();
     onChange(null);
     setIsOpen(false);
+    setSearchTerm("");
   };
 
   return (
@@ -81,11 +92,10 @@ const Dropdown = <T extends object>({
             !value ? "text-gray-500" : "text-gray-700 font-medium"
           }`}
         >
-          {value || placeholder}
+          {displayLabel}
         </span>
 
         <div className="flex items-center gap-1">
-          {/* Show 'X' to clear if value exists */}
           {value && (
             <div
               onClick={handleClear}
@@ -100,9 +110,11 @@ const Dropdown = <T extends object>({
 
       {/* DROPDOWN BODY */}
       {isOpen && (
-        <div className="absolute top-full left-0 w-[450px] min-w-full bg-white border border-gray-200 shadow-2xl rounded-md z-50 mt-1 flex flex-col max-h-[350px] animate-in fade-in zoom-in-95 duration-100">
-          {/* Search Bar */}
-          <div className="p-2 border-b border-gray-100 bg-gray-50/50 sticky top-0 z-20 rounded-t-md">
+        <div className="absolute top-full left-0 w-[450px] min-w-full bg-white border border-gray-200 shadow-2xl rounded-md z-50 mt-1 flex flex-col max-h-[300px] overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+          {/* FIX 1: Search Bar 
+             Removed 'sticky'. Added 'shrink-0' so it never collapses.
+          */}
+          <div className="p-2 border-b border-gray-100 bg-gray-50/50 shrink-0 z-20">
             <div className="relative">
               <Search
                 size={14}
@@ -120,11 +132,14 @@ const Dropdown = <T extends object>({
             </div>
           </div>
 
-          {/* Table Header */}
-          <div className="flex bg-gray-100 border-b border-gray-200 text-xs font-bold text-gray-600 px-3 py-2 sticky top-[50px] z-10">
-            {columns.map((col, idx) => (
+          {/* FIX 2: Table Header
+             Removed 'sticky' and top calculation. Added 'shrink-0'.
+             It will now sit naturally below the search bar.
+          */}
+          <div className="flex bg-gray-100 border-b border-gray-200 text-xs font-bold text-gray-600 px-3 py-2 shrink-0 z-10">
+            {columns.map((col) => (
               <div
-                key={idx}
+                key={col.key as string}
                 className={`${col.width || "flex-1"} px-2 text-left`}
               >
                 {col.header}
@@ -132,15 +147,19 @@ const Dropdown = <T extends object>({
             ))}
           </div>
 
-          {/* Table List */}
-          <div className="overflow-y-auto flex-1 p-1">
+          {/* FIX 3: Scrollable List
+             1. flex-1: Takes up all REMAINING height after Search and Header.
+             2. overflow-y-auto: Only this section scrolls.
+             3. min-h-0: Prevents flex child from overflowing parent.
+          */}
+          <div className="overflow-y-auto flex-1 p-1 min-h-0">
             {filteredData.length > 0 ? (
-              filteredData.map((item, idx) => {
+              filteredData.map((item) => {
                 const isSelected = String(item[valueKey]) === String(value);
 
                 return (
                   <div
-                    key={idx}
+                    key={String(item[valueKey])}
                     className={`flex items-center text-[13px] px-3 py-2.5 border-b border-gray-50 cursor-pointer transition-colors rounded-sm
                       ${
                         isSelected
@@ -150,9 +169,9 @@ const Dropdown = <T extends object>({
                     `}
                     onClick={(e) => handleSelect(e, item)}
                   >
-                    {columns.map((col, cIdx) => (
+                    {columns.map((col) => (
                       <div
-                        key={cIdx}
+                        key={col.key as string}
                         className={`${col.width || "flex-1"} px-2 truncate`}
                       >
                         {String(item[col.key] || "-")}

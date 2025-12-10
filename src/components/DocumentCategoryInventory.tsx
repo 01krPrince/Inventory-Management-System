@@ -149,9 +149,9 @@ const DocumentCategoryInventoryModal: React.FC<ModalProps> = ({
 
           {/* Location Master Component */}
           <div className="flex-1 overflow-hidden">
-            {/* NOTE: I added `onSelect` here. 
-               You need to update your LocationMaster component to accept this prop 
-               and call it when the user clicks a location row. 
+            {/* NOTE: I added `onSelect` here.
+               You need to update your LocationMaster component to accept this prop
+               and call it when the user clicks a location row.
             */}
             <LocationMaster
               onClose={() => setShowLocationMaster(false)}

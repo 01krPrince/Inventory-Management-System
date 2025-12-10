@@ -1,62 +1,48 @@
 import React, { useState, useEffect } from "react";
-import { CalenderIcon } from "../../../../components/icons";
+import { EditIcon, RefreshCw } from "lucide-react";
+import Dropdown, { ColumnDef } from "../../../../components/Dropdown";
 import DocumentInventoryModal from "../../../../components/DocumentCategoryInventory";
 import { LocationMaster } from "../../../../components/LocationMaster";
-import { EditIcon, ArrowLeft, Plus } from "lucide-react";
-
-// --- Imports from your project structure ---
 import ChartOfAccounts from "../../../../components/ChartOfAccount";
+import DateInput from "../../../../components/DateInput";
+
+import {
+  fetchDocumentCategoryInventory,
+  DocumentCategoryInventory,
+} from "../stockAdjustment/api/DocumentCategoryInventory";
+
+import {
+  fetchAllLocations,
+  LocationMaster as LocationMasterType,
+} from "../stockAdjustment/api/LocationMaster";
+
 import {
   fetchSalesAndPurchaseGL,
   SalesAndPurchaseGL,
 } from "../../../../components/addItemMaster/api/saleAndPurchaseGL";
 
-// --- Types ---
-export interface AccountFormData {
-  _id?: string;
-  name: string;
-  code: string;
-  identification: string;
-  isSubledger: boolean;
-  salesGlUnderGroup: string;
-  inactive: boolean;
-  type: string;
-  accountNo: string;
-  rtgsIfscCode: string;
-  classification: string;
-  isLoanAccount: boolean;
-  intrestRate: string;
-  calculationOn: string;
-  tdsApplicable: boolean;
-  tdsSection: string;
-  address: string;
-  pan: string;
-  employee: boolean;
-  group: boolean;
+// --- EXPORT DATA TYPE FOR PARENT ---
+export interface InterBranchTransferData {
+  category: string;
+  store: string;
+  toStore: string;
+  transferDate: string;
+  transferNo: string;
+  postingGL: string;
 }
 
-interface MockData {
-  gstTypes: string[];
-  creditTypes: string[];
-  stores: string[];
-  customers: { name: string; underGroup: string; code: string }[];
-  priceCategories: string[];
-  salesmen: string[];
-  taxOptions: string[];
-  shipToOptions: string[];
-  paymentTerms: string[];
-  paymentLinks: string[];
+// --- UPDATE PROPS ---
+export interface SalesInvoiceFormProps {
+  themeColor?: string;
+  onOverlayChange?: (isOpen: boolean) => void;
+  // New Props for Data Binding
+  data: InterBranchTransferData;
+  onDataChange: (data: InterBranchTransferData) => void;
 }
 
 interface ActionBtnProps {
   icon: React.ReactElement;
   onClick?: () => void;
-  className?: string;
-}
-
-export interface SalesInvoiceFormProps {
-  themeColor?: string;
-  onOverlayChange?: (isOpen: boolean) => void;
 }
 
 interface LabelProps {
@@ -68,33 +54,19 @@ interface InputGroupProps {
   children: React.ReactNode;
 }
 
-interface SelectProps {
-  options: { label: string; value: string }[] | string[];
-  placeholder?: string;
-  value?: string;
-  onChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
-}
-
-// --- Mock Data ---
-const mockData: MockData = {
-  gstTypes: ["BillOfSupply", "GST Invoice", "Export"],
-  creditTypes: ["Credit", "Cash"],
-  stores: ["SPORTS HUB", "TECH WORLD", "FASHION POINT"],
-  customers: [
-    { name: "John Doe", underGroup: "Retail", code: "CUST001" },
-    { name: "Jane Smith", underGroup: "Wholesale", code: "CUST002" },
-  ],
-  priceCategories: ["Retail", "Wholesale", "Dealer"],
-  salesmen: ["Alice", "Bob"],
-  taxOptions: ["Inclusive", "Exclusive"],
-  shipToOptions: ["Warehouse A", "Store Front"],
-  paymentTerms: ["Immediate", "Net 30"],
-  paymentLinks: ["PayTM", "Razorpay"],
+const generateTransferNo = () => {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let result = "";
+  const length = 10;
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
 };
 
-// --- UI Components ---
+// ... (Keep Label, InputGroup, ActionBtn, DateInput, ReadOnlyInputWithGen components same as before) ...
 const Label: React.FC<LabelProps> = ({ children, required }) => (
-  <label className="text-[13px] text-gray-700 font-medium flex items-center h-[30px] whitespace-nowrap">
+  <label className="text-[13px] text-gray-700 font-medium flex items-center h-[32px] whitespace-nowrap">
     {children} {required && <span className="text-red-500 ml-1">*</span>}
   </label>
 );
@@ -103,293 +75,259 @@ const InputGroup: React.FC<InputGroupProps> = ({ children }) => (
   <div className="flex items-center w-full relative gap-1">{children}</div>
 );
 
-const Select: React.FC<SelectProps> = ({
-  options,
-  placeholder = "Select...",
-  value,
-  onChange,
-}) => (
-  <div className="relative w-full">
-    <select
-      className="w-full h-[30px] bg-white border border-gray-300 rounded-sm px-2 text-[13px] text-gray-700 focus:outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)] appearance-none"
-      value={value}
-      onChange={onChange}
-      defaultValue={!value ? "" : undefined}
-    >
-      <option value="" disabled>
-        {placeholder}
-      </option>
-      {options.map((opt) => {
-        const isString = typeof opt === "string";
-        const val = isString ? opt : opt.value;
-        const lab = isString ? opt : opt.label;
-        return (
-          <option key={val} value={val}>
-            {lab}
-          </option>
-        );
-      })}
-    </select>
-    <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
-      <svg width="8" height="6" fill="currentColor" viewBox="0 0 24 24">
-        <path d="M7 10l5 5 5-5z" />
-      </svg>
-    </div>
-  </div>
-);
-
-const ActionBtn: React.FC<ActionBtnProps> = ({ icon, onClick, className }) => (
+const ActionBtn: React.FC<ActionBtnProps> = ({ icon, onClick }) => (
   <button
     onClick={onClick}
-    className={`h-[30px] w-[30px] bg-[var(--theme-primary)] text-white flex items-center justify-center rounded-sm border border-[var(--theme-primary)] hover:opacity-90 transition-opacity z-10 ${className}`}
+    type="button"
+    className="h-[32px] w-[32px] bg-[var(--theme-primary)] text-white flex items-center justify-center rounded-sm border border-[var(--theme-primary)] hover:opacity-90 transition-opacity ml-[-1px] z-10 shadow-sm"
   >
     {icon}
   </button>
 );
 
-const VoucherDateInput: React.FC<{ value: string }> = ({ value }) => (
-  <div className="relative w-full h-[30px]">
-    <input
-      type="text"
-      defaultValue={value}
-      readOnly
-      className="w-full h-[30px] bg-white border border-gray-300 rounded-sm px-2 text-[13px] text-gray-700 focus:outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)] pr-8"
-    />
-    <button className="absolute right-0 top-0 h-full w-8 flex items-center justify-center bg-gray-100 rounded-r-sm border-l border-gray-300 hover:bg-gray-200 transition-colors">
-      <CalenderIcon />
-    </button>
-  </div>
-);
-
-const VoucherNoInput: React.FC<{ value: string }> = ({ value }) => (
+const ReadOnlyInputWithGen: React.FC<{ value: string }> = ({ value }) => (
   <div className="w-full">
     <input
       type="text"
-      defaultValue={value}
+      value={value || ""}
       readOnly
-      className="w-full h-[30px] bg-white border border-gray-300 rounded-sm px-2 text-[13px] text-gray-700 focus:outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)]"
+      placeholder="Click button to generate"
+      className="w-full h-[32px] bg-white border border-gray-300 rounded-sm px-3 text-[13px] text-gray-700 focus:outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)] bg-gray-50"
     />
   </div>
 );
 
-// --- Main Component ---
 const InterBranchTransferForm: React.FC<SalesInvoiceFormProps> = ({
   themeColor = "#0f3c63",
   onOverlayChange,
+  data, // <--- Receive Data from Parent
+  onDataChange, // <--- Receive Updater from Parent
 }) => {
   const themeStyles = {
     "--theme-primary": themeColor,
     "--theme-focus": "#60a5fa",
   } as React.CSSProperties;
 
-  // --- States ---
-  const [documentInventoryModalCompo, setDocumentInventoryModalCompo] =
-    useState(false);
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  // We REMOVED the local useState for 'data' here.
 
-  // Chart of Accounts States
-  const [showChartOfAccounts, setShowChartOfAccounts] = useState(false);
-  const [coaFormData, setCoaFormData] = useState<AccountFormData | null>(null);
+  const [categoryModal, setCategoryModal] = useState(false);
+  const [locationModal, setLocationModal] = useState(false);
+  const [glModal, setGlModal] = useState(false);
+  const [editingLocationField, setEditingLocationField] = useState<
+    "store" | "toStore" | null
+  >(null);
 
-  // API Data States
-  const [glDataFull, setGlDataFull] = useState<SalesAndPurchaseGL[]>([]);
-  const [glOptions, setGlOptions] = useState<
-    { label: string; value: string }[]
-  >([]);
-  const [selectedGL, setSelectedGL] = useState<string>("");
+  const [categoryList, setCategoryList] = useState<DocumentCategoryInventory[]>(
+    []
+  );
+  // Ensure LocationMasterType includes 'code' (based on your JSON)
+  const [locationList, setLocationList] = useState<any[]>([]);
+  const [glList, setGlList] = useState<SalesAndPurchaseGL[]>([]);
 
-  // --- Effects ---
+  // Columns Definitions
+  const categoryColumns: ColumnDef<DocumentCategoryInventory>[] = [
+    { header: "Code", key: "code", width: "w-20" },
+    { header: "Name", key: "name", width: "flex-1" },
+  ];
+  const locationColumns: ColumnDef<LocationMasterType>[] = [
+    { header: "Code", key: "code", width: "w-20" },
+    { header: "Name", key: "name", width: "flex-1" },
+  ];
+  const glColumns: ColumnDef<SalesAndPurchaseGL>[] = [
+    { header: "Name", key: "name", width: "flex-1" },
+    { header: "Code", key: "code", width: "w-24" },
+    { header: "Group", key: "salesGlUnderGroup", width: "w-32" },
+  ];
+
   useEffect(() => {
-    const loadGLData = async () => {
-      const data = await fetchSalesAndPurchaseGL();
-      if (data) {
-        setGlDataFull(data);
-        const options = data.map((item: SalesAndPurchaseGL) => ({
-          label: item.name,
-          value: item.name,
-        }));
-        setGlOptions(options);
-      }
-    };
-    loadGLData();
+    loadCategories();
+    loadLocations();
+    loadGLs();
   }, []);
 
-  // --- Handlers ---
-
-  const handleDocumentInventoryModal = () => {
-    setDocumentInventoryModalCompo(true);
+  const loadCategories = async () => {
+    try {
+      const result = await fetchDocumentCategoryInventory();
+      setCategoryList(result || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+  const loadLocations = async () => {
+    try {
+      const result = await fetchAllLocations();
+      setLocationList(result || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+  const loadGLs = async () => {
+    try {
+      const result = await fetchSalesAndPurchaseGL();
+      setGlList(result || []);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const handleAddNewLocation = () => {
-    setIsFormOpen(true);
-    if (onOverlayChange) onOverlayChange(true);
+  // --- UPDATED HANDLER: Validates using .code property ---
+  const handleFieldChange = (
+    field: keyof InterBranchTransferData,
+    value: string
+  ) => {
+    // 1. Validation Logic for "Store" (Source)
+    if (field === "store" && value) {
+      // Find the object for the NEW selection
+      const newSourceStore = locationList.find((l) => l.name === value);
+      // Find the object for the CURRENT existing destination
+      const existingDestStore = locationList.find(
+        (l) => l.name === data.toStore
+      );
+
+      // Compare using .code directly
+      if (
+        newSourceStore?.code &&
+        existingDestStore?.code &&
+        newSourceStore.code === existingDestStore.code
+      ) {
+        alert("Source Store and Destination Store cannot have the same Code!");
+        return; // Prevent update
+      }
+    }
+
+    // 2. Validation Logic for "To Store" (Destination)
+    if (field === "toStore" && value) {
+      // Find the object for the NEW selection
+      const newDestStore = locationList.find((l) => l.name === value);
+      // Find the object for the CURRENT existing source
+      const existingSourceStore = locationList.find(
+        (l) => l.name === data.store
+      );
+
+      // Compare using .code directly
+      if (
+        newDestStore?.code &&
+        existingSourceStore?.code &&
+        newDestStore.code === existingSourceStore.code
+      ) {
+        alert("Destination Store and Source Store cannot have the same Code!");
+        return; // Prevent update
+      }
+    }
+
+    // If validation passes, update parent
+    onDataChange({
+      ...data,
+      [field]: value,
+    });
   };
 
-  const handleCloseForm = () => {
-    setIsFormOpen(false);
+  const handleGenerateTransferNo = () => {
+    const newNo = generateTransferNo();
+    handleFieldChange("transferNo", newNo);
+  };
+
+  const getSelectedCategory = () =>
+    categoryList.find((c) => c.name === data.category) || null;
+  const getSelectedStore = () =>
+    locationList.find((l) => l.name === data.store) || null;
+  const getSelectedToStore = () =>
+    locationList.find((l) => l.name === data.toStore) || null;
+  const getSelectedGL = () =>
+    glList.find((g) => g.name === data.postingGL) || null;
+
+  const openCategoryModal = () => setCategoryModal(true);
+  const openLocationModal = (field: "store" | "toStore") => {
+    setEditingLocationField(field);
+    setLocationModal(true);
+    if (onOverlayChange) onOverlayChange(true); // Notify parent to hide headers
+  };
+  const closeLocationModal = () => {
+    setLocationModal(false);
+    setEditingLocationField(null);
     if (onOverlayChange) onOverlayChange(false);
   };
 
-  const handleFormSuccess = () => {
-    handleCloseForm();
-  };
+  const openGLModal = () => setGlModal(true);
 
-  const handleCreateGL = () => {
-    setCoaFormData(null);
-    setShowChartOfAccounts(true);
-  };
-
-  const handleEditGL = () => {
-    if (!selectedGL) {
-      alert("Please select an account to edit first.");
-      return;
-    }
-
-    const account = glDataFull.find((c) => c.name === selectedGL);
-
-    if (account) {
-      const dataToEdit: AccountFormData = {
-        _id: account._id,
-        name: account.name,
-        code: account.code,
-        identification: account.identification,
-        isSubledger: account.isSubledger,
-        salesGlUnderGroup: account.salesGlUnderGroup,
-        inactive: account.inactive,
-        type: account.type,
-        accountNo: account.accountNo,
-        rtgsIfscCode: account.rtgsIfscCode,
-        classification: account.classification,
-        isLoanAccount: account.isLoanAccount,
-        intrestRate: account.intrestRate,
-        calculationOn: account.calculationOn,
-        tdsSection: account.tdsSection,
-        tdsApplicable: account.tdsApplicable,
-        address: account.address,
-        pan: account.pan,
-        employee: account.employee === "Yes" || account.employee === "true",
-        group: account.group === "Yes" || account.group === "true",
-      };
-
-      setCoaFormData(dataToEdit);
-      setShowChartOfAccounts(true);
-    }
-  };
-
-  const handleSaveGL = (savedData: SalesAndPurchaseGL) => {
-    const savedName = savedData.name;
-
-    // 1. Update the Full Data Cache
-    setGlDataFull((prev: SalesAndPurchaseGL[]) => {
-      const exists = prev.find(
-        (item: SalesAndPurchaseGL) => item._id === savedData._id
-      );
-      if (exists) {
-        return prev.map((item: SalesAndPurchaseGL) =>
-          item._id === savedData._id ? savedData : item
-        );
-      }
-      return [...prev, savedData];
-    });
-
-    // 2. Update Options
-    setGlOptions((prev: { label: string; value: string }[]) => {
-      const exists = prev.find(
-        (opt: { label: string; value: string }) => opt.value === savedName
-      );
-      if (exists) return prev;
-      return [...prev, { label: savedName, value: savedName }];
-    });
-
-    // 3. Select the new/updated item
-    setSelectedGL(savedName);
-
-    setShowChartOfAccounts(false);
-  };
-
-  // If LocationMaster form is open
-  if (isFormOpen) {
-    return (
-      <div
-        className="w-full bg-white rounded-xl shadow-md border border-gray-200 p-6 animate-in fade-in zoom-in-95 duration-200"
-        style={themeStyles}
-      >
-        <div className="mb-4 border-b pb-4">
-          <button
-            onClick={handleCloseForm}
-            className="flex items-center text-sm font-medium text-gray-600 hover:text-[var(--theme-primary)] transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Stock Adjustment
-          </button>
-        </div>
-        <LocationMaster
-          onClose={handleCloseForm}
-          onSuccess={handleFormSuccess}
-        />
-      </div>
-    );
-  }
-
-  // --- Options for other selects ---
-  const customerOptions = mockData.customers.map((customer) => ({
-    label: `${customer.name} | ${customer.underGroup} | ${customer.code}`,
-    value: customer.code,
-  }));
-
-  // --- Render ---
   return (
     <>
       <div
         style={themeStyles}
-        className="bg-white rounded-lg shadow-md border border-gray-200 p-5 w-full"
+        className="bg-white rounded-lg shadow-md border border-gray-200 p-6 w-full"
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-1">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
           {/* LEFT COLUMN */}
-          <div className="space-y-1">
-            {/* Category */}
-            <div className="grid grid-cols-12 gap-2">
+          <div className="space-y-4">
+            <div className="grid grid-cols-12 gap-3 items-center">
               <div className="col-span-4">
                 <Label required>Category</Label>
               </div>
               <div className="col-span-8">
                 <InputGroup>
-                  <Select
-                    options={mockData.priceCategories}
-                    placeholder="Select..."
+                  <Dropdown
+                    data={categoryList}
+                    columns={categoryColumns}
+                    value={data.category}
+                    valueKey="name"
+                    onChange={(item) =>
+                      handleFieldChange("category", item?.name || "")
+                    }
+                    placeholder="Select Category..."
                   />
                   <ActionBtn
                     icon={<EditIcon size={16} />}
-                    onClick={handleDocumentInventoryModal}
+                    onClick={openCategoryModal}
                   />
                 </InputGroup>
               </div>
             </div>
-
             {/* Store */}
-            <div className="grid grid-cols-12 gap-2">
+            <div className="grid grid-cols-12 gap-3 items-center">
               <div className="col-span-4">
                 <Label required>Store</Label>
               </div>
               <div className="col-span-8">
                 <InputGroup>
-                  <Select options={mockData.stores} value="SPORTS HUB" />
-                  <ActionBtn icon={<EditIcon size={16} />} />
+                  <Dropdown
+                    // Filter out the selected "To Store" by name so it doesn't appear in the list
+                    data={locationList.filter((l) => l.name !== data.toStore)}
+                    columns={locationColumns}
+                    value={data.store}
+                    valueKey="name"
+                    onChange={(item) =>
+                      handleFieldChange("store", item?.name || "")
+                    }
+                    placeholder="Select Store..."
+                  />
+                  <ActionBtn
+                    icon={<EditIcon size={16} />}
+                    onClick={() => openLocationModal("store")}
+                  />
                 </InputGroup>
               </div>
             </div>
-
             {/* To Store */}
-            <div className="grid grid-cols-12 gap-2">
+            <div className="grid grid-cols-12 gap-3 items-center">
               <div className="col-span-4">
-                <Label>To Store</Label>
+                <Label required>To Store</Label>
               </div>
               <div className="col-span-8">
                 <InputGroup>
-                  <Select options={customerOptions} placeholder="Select..." />
+                  <Dropdown
+                    // Filter out the selected "Store" by name so it doesn't appear in the list
+                    data={locationList.filter((l) => l.name !== data.store)}
+                    columns={locationColumns}
+                    value={data.toStore}
+                    valueKey="name"
+                    onChange={(item) =>
+                      handleFieldChange("toStore", item?.name || "")
+                    }
+                    placeholder="Select Destination..."
+                  />
                   <ActionBtn
                     icon={<EditIcon size={16} />}
-                    onClick={handleAddNewLocation}
+                    onClick={() => openLocationModal("toStore")}
                   />
                 </InputGroup>
               </div>
@@ -397,52 +335,53 @@ const InterBranchTransferForm: React.FC<SalesInvoiceFormProps> = ({
           </div>
 
           {/* RIGHT COLUMN */}
-          <div className="space-y-1">
-            {/* Transfer Date */}
-            <div className="grid grid-cols-12 gap-2">
+          <div className="space-y-4">
+            <div className="grid grid-cols-12 gap-3 items-center">
               <div className="col-span-4">
                 <Label>Transfer Date</Label>
               </div>
               <div className="col-span-8">
-                <VoucherDateInput value="25/11/2025" />
+                <DateInput
+                  value={data.transferDate}
+                  onChange={(e) =>
+                    handleFieldChange("transferDate", e.target.value)
+                  }
+                />
               </div>
             </div>
-
-            {/* Transfer No */}
-            <div className="grid grid-cols-12 gap-2">
+            <div className="grid grid-cols-12 gap-3 items-center">
               <div className="col-span-4">
                 <Label>Transfer No</Label>
               </div>
               <div className="col-span-8">
-                <VoucherNoInput value="0005" />
+                <InputGroup>
+                  <ReadOnlyInputWithGen value={data.transferNo} />
+                  <ActionBtn
+                    icon={<RefreshCw size={16} />}
+                    onClick={handleGenerateTransferNo}
+                  />
+                </InputGroup>
               </div>
             </div>
-
-            {/* PostingGL (DYNAMIC SECTION) */}
-            <div className="grid grid-cols-12 gap-2">
+            <div className="grid grid-cols-12 gap-3 items-center">
               <div className="col-span-4">
-                <Label>PostingGL </Label>
+                <Label>Posting GL</Label>
               </div>
               <div className="col-span-8">
                 <InputGroup>
-                  <Select
-                    options={glOptions}
+                  <Dropdown
+                    data={glList}
+                    columns={glColumns}
+                    value={data.postingGL}
+                    valueKey="name"
+                    onChange={(item) =>
+                      handleFieldChange("postingGL", item?.name || "")
+                    }
                     placeholder="Select GL Account..."
-                    value={selectedGL}
-                    onChange={(e) => setSelectedGL(e.target.value)}
                   />
-
-                  {/* Button 1: Create New */}
-                  <ActionBtn
-                    icon={<Plus size={16} />}
-                    onClick={handleCreateGL}
-                    className="mr-0"
-                  />
-
-                  {/* Button 2: Edit Selected */}
                   <ActionBtn
                     icon={<EditIcon size={16} />}
-                    onClick={handleEditGL}
+                    onClick={openGLModal}
                   />
                 </InputGroup>
               </div>
@@ -450,25 +389,49 @@ const InterBranchTransferForm: React.FC<SalesInvoiceFormProps> = ({
           </div>
         </div>
 
-        {/* ITEM GROUP MODAL OVERLAY */}
-        {documentInventoryModalCompo && (
+        {/* MODALS */}
+        {categoryModal && (
           <div className="fixed inset-0 z-[30] flex items-center justify-center bg-transparent bg-opacity-50 backdrop-blur-sm p-4">
-            <div className=" w-auto h-auto bg-white rounded-lg shadow-2xl overflow-hidden relative">
+            <div className="w-auto h-auto bg-white rounded-lg shadow-2xl overflow-hidden relative">
               <DocumentInventoryModal
-                isOpen={documentInventoryModalCompo}
-                onClose={() => setDocumentInventoryModalCompo(false)}
+                isOpen={categoryModal}
+                onClose={() => setCategoryModal(false)}
+                initialData={getSelectedCategory()}
+                onSuccess={() => loadCategories()}
               />
             </div>
           </div>
         )}
 
-        {/* CHART OF ACCOUNTS MODAL */}
-        <ChartOfAccounts
-          isOpen={showChartOfAccounts}
-          onClose={() => setShowChartOfAccounts(false)}
-          initialData={coaFormData}
-          onSave={handleSaveGL}
-        />
+        {locationModal && (
+          <div className="fixed inset-0 z-[30] flex items-center justify-center bg-transparent bg-opacity-50 backdrop-blur-sm p-4">
+            <div className="w-auto h-auto bg-white rounded-lg shadow-2xl overflow-hidden relative">
+              <LocationMaster
+                onClose={closeLocationModal}
+                initialData={
+                  editingLocationField === "toStore"
+                    ? getSelectedToStore()
+                    : getSelectedStore()
+                }
+                onSuccess={() => loadLocations()}
+              />
+            </div>
+          </div>
+        )}
+
+        {glModal && (
+          <div className="fixed inset-0 z-[30] flex items-center justify-center bg-transparent bg-opacity-50 backdrop-blur-sm p-4">
+            <ChartOfAccounts
+              isOpen={glModal}
+              onClose={() => setGlModal(false)}
+              initialData={getSelectedGL() as any}
+              onSave={(savedItem) => {
+                loadGLs();
+                handleFieldChange("postingGL", savedItem.name);
+              }}
+            />
+          </div>
+        )}
       </div>
     </>
   );

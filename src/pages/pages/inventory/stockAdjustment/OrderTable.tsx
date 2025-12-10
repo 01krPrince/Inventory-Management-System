@@ -61,7 +61,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
 
   // --- STATE (Local UI State only) ---
   const [items, setItems] = useState<ItemApiData[]>([]);
-  const [stockUnits, setStockUnits] = useState<StockUnitData[]>([]);
+  const [, setStockUnits] = useState<StockUnitData[]>([]);
   // tableData and rows are now Props
   const [sortConfig, setSortConfig] = useState<{
     key: string;
@@ -75,20 +75,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
     left: number;
     activeRowId: string | null;
   }>({ visible: false, top: 0, left: 0, activeRowId: null });
-
-  const [unitPopupState, setUnitPopupState] = useState<{
-    visible: boolean;
-    top: number;
-    left: number;
-    activeRowId: string | null;
-    targetColumn: "unit" | "rateper" | null;
-  }>({
-    visible: false,
-    top: 0,
-    left: 0,
-    activeRowId: null,
-    targetColumn: null,
-  });
 
   const [attributePanelState, setAttributePanelState] = useState<{
     visible: boolean;
@@ -440,22 +426,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
     });
   };
 
-  const handleUnitClick = (
-    e: React.MouseEvent<HTMLDivElement>,
-    rowId: string,
-    colId: "unit" | "rateper"
-  ) => {
-    e.stopPropagation();
-    const rect = e.currentTarget.getBoundingClientRect();
-    setUnitPopupState({
-      visible: true,
-      top: rect.bottom,
-      left: rect.left,
-      activeRowId: rowId,
-      targetColumn: colId,
-    });
-  };
-
   const closePopup = () => {
     setPopupState((prev) => ({ ...prev, visible: false, activeRowId: null }));
   };
@@ -491,24 +461,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
       });
       setPopupState((prev) => ({ ...prev, visible: false, activeRowId: null }));
     }
-  };
-
-  const handleUnitSelect = (unit: StockUnitData) => {
-    const { activeRowId, targetColumn } = unitPopupState;
-    if (activeRowId && targetColumn) {
-      handleInputChange(activeRowId, targetColumn, unit.name);
-      setUnitPopupState((prev) => ({
-        ...prev,
-        visible: false,
-        activeRowId: null,
-        targetColumn: null,
-      }));
-    }
-  };
-
-  const handleCreateUnitClick = () => {
-    console.log("Open Create Unit Modal");
-    setUnitPopupState((prev) => ({ ...prev, visible: false }));
   };
 
   const handleAttributeSave = (attributeData: any) => {
@@ -900,21 +852,8 @@ const OrderTable: React.FC<OrderTableProps> = ({
                             col.id === "rateper"
                           ) {
                             content = (
-                              <div
-                                className="w-full h-full flex justify-between items-center px-1 cursor-pointer hover:bg-gray-100 group min-h-[24px]"
-                                onClick={(e) =>
-                                  handleUnitClick(
-                                    e,
-                                    rowId,
-                                    col.id as "unit" | "rateper"
-                                  )
-                                }
-                              >
+                              <div className="w-full h-full flex justify-between items-center px-1 cursor-pointer hover:bg-gray-100 group min-h-[24px]">
                                 <span>{rowData[col.id] || ""}</span>
-                                <ChevronDown
-                                  size={10}
-                                  className="text-gray-300 group-hover:text-gray-500"
-                                />
                               </div>
                             );
                           } else if (
@@ -1128,98 +1067,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
                           className="p-4 text-center text-gray-500"
                         >
                           Loading items...
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </>,
-          document.body
-        )}
-
-      {/* --- UNIT POPUP (MATCHING STYLE) --- */}
-      {unitPopupState.visible &&
-        ReactDOM.createPortal(
-          <>
-            <div
-              className="fixed inset-0 z-[9998] cursor-default bg-transparent"
-              onClick={() =>
-                setUnitPopupState((prev) => ({ ...prev, visible: false }))
-              }
-            />
-            <div
-              className="fixed z-[9999] bg-white border shadow-xl flex flex-col rounded"
-              style={{
-                top: unitPopupState.top,
-                left: unitPopupState.left,
-                borderColor: COLORS.borderDark,
-                width: "300px",
-                maxHeight: "250px",
-                transform:
-                  unitPopupState.top + 250 > window.innerHeight
-                    ? "translateY(-100%)"
-                    : "none",
-              }}
-            >
-              <div
-                className="flex justify-between items-center p-2 border-b h-8"
-                style={{ backgroundColor: COLORS.primary, color: COLORS.white }}
-              >
-                <span className="font-bold text-xs pl-1">Select Unit</span>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleCreateUnitClick}
-                    className="hover:bg-green-600 hover:text-white p-0.5 rounded transition-colors"
-                  >
-                    <Plus size={14} />
-                  </button>
-                  <button
-                    onClick={() =>
-                      setUnitPopupState((prev) => ({ ...prev, visible: false }))
-                    }
-                    className="hover:bg-red-500 hover:text-white p-0.5 rounded transition-colors"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              </div>
-              <div className="flex-1 overflow-auto p-0">
-                <table className="w-full text-xs text-left border-collapse">
-                  <thead className="sticky top-0 bg-gray-100 z-10 shadow-sm">
-                    <tr>
-                      <th className="p-1.5 border font-semibold text-gray-700 w-16">
-                        Code
-                      </th>
-                      <th className="p-1.5 border font-semibold text-gray-700">
-                        Name
-                      </th>
-                      <th className="p-1.5 border font-semibold text-gray-700 w-16">
-                        UQC
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {stockUnits.length > 0 ? (
-                      stockUnits.map((unit, idx) => (
-                        <tr
-                          key={unit._id || idx}
-                          className="border-b hover:bg-blue-50 cursor-pointer transition-colors"
-                          onClick={() => handleUnitSelect(unit)}
-                        >
-                          <td className="p-1.5 border">{unit.code}</td>
-                          <td className="p-1.5 border">{unit.name}</td>
-                          <td className="p-1.5 border">{unit.uqc}</td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td
-                          colSpan={3}
-                          className="p-4 text-center text-gray-500"
-                        >
-                          Loading units...
                         </td>
                       </tr>
                     )}

@@ -1,6 +1,6 @@
 import React from "react";
-import { COLORS } from "../../../../constants/colors";
-import Attachment from "../../../../components/Attachment";
+import { COLORS } from "../constants/colors";
+import Attachment from "./Attachment";
 
 // --- 1. Define Interfaces for Props ---
 interface FooterData {
@@ -12,7 +12,7 @@ interface InvoiceFooterProps {
   onDataChange: (data: FooterData) => void;
 }
 
-const InvoiceFooter: React.FC<InvoiceFooterProps> = ({
+const AttachmentSection: React.FC<InvoiceFooterProps> = ({
   data,
   onDataChange,
 }) => {
@@ -79,4 +79,4 @@ const InvoiceFooter: React.FC<InvoiceFooterProps> = ({
   );
 };
 
-export default InvoiceFooter;
+export default AttachmentSection;

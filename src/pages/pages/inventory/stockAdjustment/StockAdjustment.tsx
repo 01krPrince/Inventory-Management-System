@@ -4,7 +4,7 @@ import StockAdjustmentForm, {
   StockAdjustmentHeaderData,
 } from "./StockAdjustmentForm";
 import OrderTable from "./OrderTable";
-import StockAdjustmentFooter from "./StockAdjustmentFooter";
+import AttachmentSection from "../../../../components/AttachmentSection";
 import { COLORS } from "../../../../constants/colors";
 
 // --- IMPORT SERVICE ---
@@ -183,7 +183,7 @@ const StockAdjustment: React.FC = () => {
                 setTableData={setTableData}
               />
 
-              <StockAdjustmentFooter
+              <AttachmentSection
                 data={footerData}
                 onDataChange={setFooterData}
               />

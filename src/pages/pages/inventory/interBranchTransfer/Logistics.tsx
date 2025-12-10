@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ChevronDown,
   ChevronUp,
@@ -6,56 +6,84 @@ import {
   FileText,
   Edit2,
 } from "lucide-react";
+
+// Import your custom Dropdown and ColumnDef
+import Dropdown, { ColumnDef } from "../../../../components/Dropdown";
+
+// Import Transporter Modal (Default export only)
 import Transporter from "../../../../components/Transporter";
 
-// --- Reusable UI Components (Local for self-containment) ---
+// Import the Service and Type
+// Note: Ensure this path points to where you saved the 'transporterService.ts' file I gave you earlier.
+// If you saved it in 'services/transporterService.ts', update the path below.
+import TransporterService, {
+  Transporter as TransporterType,
+} from "../../../../components/api/transporter";
+// --- 1. Define Data Interfaces ---
 
-interface LabelProps {
-  children: React.ReactNode;
-  required?: boolean;
+export interface LogisticsData {
+  destination: string;
+  shippingMode: string;
+  shippingCompany: string; // Stores the Name of selected company
+  shippingTrackingNo: string;
+  shippingDate: string;
+  shippingCharges: string;
+  vehicleNo: string;
+  chargeType: string;
+  documentThrough: string;
+  noOfPackets: string;
+  weight: string;
+  distance: string;
+  eWayInvoiceNo: string;
+  eWayInvoiceDate: string;
+  eWayCancelDate: string;
+  irnNo: string;
+  qrCode: string;
+  irnCancelDate: string;
+  irnCancelReason: string;
+  acknowledgementNo: string;
+  acknowledgementDate: string;
 }
 
-const Label: React.FC<LabelProps> = ({ children, required }) => (
+// --- 2. Props ---
+interface LogisticsProps {
+  themeColor?: string;
+  data: LogisticsData;
+  onChange: (data: LogisticsData) => void;
+}
+
+// --- Reusable UI Components (Themed) ---
+const Label: React.FC<{ children: React.ReactNode; required?: boolean }> = ({
+  children,
+  required,
+}) => (
   <label className="text-[13px] text-gray-700 font-medium flex items-center h-[30px] whitespace-nowrap">
     {children} {required && <span className="text-red-500 ml-1">*</span>}
   </label>
 );
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  className?: string;
-}
-
-const Input: React.FC<InputProps> = ({ className = "", ...props }) => (
-  <input
-    className={`w-full h-[30px] bg-white border border-gray-300 rounded-sm px-2 text-[13px] text-gray-700 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 disabled:bg-gray-50 ${className}`}
-    {...props}
-  />
-);
-
-const TextArea: React.FC<React.TextareaHTMLAttributes<HTMLTextAreaElement>> = (
+const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = (
   props
 ) => (
-  <textarea
-    className="w-full bg-white border border-gray-300 rounded-sm px-2 py-1 text-[13px] text-gray-700 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 resize-none"
-    rows={3}
+  <input
+    className={`w-full h-[30px] bg-white border border-gray-300 rounded-sm px-2 text-[13px] text-gray-700 focus:outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)] disabled:bg-gray-50 ${
+      props.className || ""
+    }`}
     {...props}
   />
 );
 
-interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
-  options: string[];
-  placeholder?: string;
-}
-
-const Select: React.FC<SelectProps> = ({
-  options,
-  placeholder,
-  className = "",
-  ...props
-}) => (
+const Select: React.FC<
+  React.SelectHTMLAttributes<HTMLSelectElement> & {
+    options: string[];
+    placeholder?: string;
+  }
+> = ({ options, placeholder, ...props }) => (
   <div className="relative w-full">
     <select
-      className={`w-full h-[30px] bg-white border border-gray-300 rounded-sm px-2 text-[13px] text-gray-700 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 appearance-none ${className}`}
+      className={`w-full h-[30px] bg-white border border-gray-300 rounded-sm px-2 text-[13px] text-gray-700 focus:outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)] appearance-none ${
+        props.className || ""
+      }`}
       {...props}
     >
       {placeholder && (
@@ -69,7 +97,6 @@ const Select: React.FC<SelectProps> = ({
         </option>
       ))}
     </select>
-    {/* Dropdown Icon */}
     <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
       <svg width="8" height="6" fill="currentColor" viewBox="0 0 24 24">
         <path d="M7 10l5 5 5-5z" />
@@ -78,26 +105,34 @@ const Select: React.FC<SelectProps> = ({
   </div>
 );
 
-const DateInput: React.FC<{ value?: string }> = ({ value }) => (
+const DateInput: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = (
+  props
+) => (
   <div className="relative w-full h-[30px]">
     <input
-      type="text"
-      defaultValue={value}
-      className="w-full h-[30px] bg-white border border-gray-300 rounded-sm px-2 text-[13px] text-gray-700 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 pr-8"
+      type="date"
+      className="w-full h-[30px] bg-white border border-gray-300 rounded-sm px-2 text-[13px] text-gray-700 focus:outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)] pr-8"
+      {...props}
     />
-    <button className="absolute right-0 top-0 h-full w-8 flex items-center justify-center bg-gray-100 rounded-r-sm border-l border-gray-300 hover:bg-gray-200 transition-colors text-gray-600">
+    <button
+      type="button"
+      className="absolute right-0 top-0 h-full w-8 flex items-center justify-center bg-gray-100 rounded-r-sm border-l border-gray-300 text-gray-600 pointer-events-none"
+    >
       <Calendar size={14} />
     </button>
   </div>
 );
 
-const ActionBtn: React.FC<{ icon: React.ReactNode; onClick?: () => void }> = ({
-  icon,
-  onClick,
-}) => (
+const ActionBtn: React.FC<{
+  icon: React.ReactNode;
+  onClick?: () => void;
+  title?: string;
+}> = ({ icon, onClick, title }) => (
   <button
+    type="button"
     onClick={onClick}
-    className="h-[30px] w-[30px] bg-[#0f3c63] text-white flex items-center justify-center rounded-sm hover:opacity-90 transition-opacity flex-shrink-0"
+    title={title}
+    className="h-[30px] w-[30px] bg-[var(--theme-primary)] text-white flex items-center justify-center rounded-sm border border-[var(--theme-primary)] hover:opacity-90 transition-opacity flex-shrink-0 shadow-sm"
   >
     {icon}
   </button>
@@ -105,28 +140,112 @@ const ActionBtn: React.FC<{ icon: React.ReactNode; onClick?: () => void }> = ({
 
 // --- Main Component ---
 
-const Logistics: React.FC = () => {
+const Logistics: React.FC<LogisticsProps> = ({
+  data,
+  onChange,
+  themeColor = "#0f3c63",
+}) => {
   const [isOpen, setIsOpen] = useState(true);
 
-  // Mock data for dropdowns
+  // Modal State
+  const [transporterModalOpen, setTransporterModalOpen] = useState(false);
+
+  // FIX: Use TransporterType (from service) instead of TransporterMaster
+  const [editingTransporter, setEditingTransporter] =
+    useState<TransporterType | null>(null);
+
+  // --- API Data State ---
+  const [transporterList, setTransporterList] = useState<TransporterType[]>([]);
+  const [isLoadingList, setIsLoadingList] = useState(false);
+
+  // Define CSS variables
+  const themeStyles = {
+    "--theme-primary": themeColor,
+    "--theme-focus": "#60a5fa",
+  } as React.CSSProperties;
+
   const shippingModes = ["Road", "Air", "Sea", "Rail"];
   const chargeTypes = ["Paid", "To Pay", "Free"];
-  const shippingCompanies = ["DHL", "FedEx", "BlueDart", "Delhivery"];
-  const [transporterCompo, setTransporterCompo] = useState(false);
 
-  const handleTransporterCompo = () => {
-    setTransporterCompo(true);
+  // --- Columns for Dropdown ---
+  const transporterColumns: ColumnDef<TransporterType>[] = [
+    { header: "Code", key: "code", width: "w-20" },
+    { header: "Name", key: "name", width: "flex-1" },
+  ];
+
+  // --- API: Fetch Transporters ---
+  const fetchTransporters = async () => {
+    try {
+      setIsLoadingList(true);
+      const response = await TransporterService.getAllTransporters();
+      if (response.success) {
+        setTransporterList(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching transporters:", error);
+    } finally {
+      setIsLoadingList(false);
+    }
   };
+
+  // Fetch on mount
+  useEffect(() => {
+    fetchTransporters();
+  }, []);
+
+  // --- Handlers ---
+
+  const handleChange = (field: keyof LogisticsData, value: string) => {
+    onChange({ ...data, [field]: value });
+  };
+
+  // Called when User selects from Dropdown
+  const handleTransporterSelect = (item: TransporterType | null) => {
+    handleChange("shippingCompany", item?.name || "");
+  };
+
+  // Called when User clicks the Edit/Add Icon
+  const handleEditOrAddTransporter = () => {
+    if (data.shippingCompany) {
+      // 1. EDIT MODE: Try to find the selected transporter in our list
+      const selected = transporterList.find(
+        (t) => t.name === data.shippingCompany
+      );
+
+      if (selected) {
+        // FIX: No need to cast to TransporterMaster anymore, types match now
+        setEditingTransporter(selected);
+      } else {
+        setEditingTransporter(null);
+      }
+    } else {
+      // 2. CREATE MODE: Nothing selected
+      setEditingTransporter(null);
+    }
+    setTransporterModalOpen(true);
+  };
+
+  // Called when the Transporter Modal successfully creates/updates data
+  const handleTransporterSuccess = () => {
+    setTransporterModalOpen(false);
+    fetchTransporters(); // Refresh the list from API
+  };
+
   return (
-    <div className="w-full bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden mb-4">
+    <div
+      style={themeStyles}
+      className="w-full bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden mb-4"
+    >
       {/* Accordion Header */}
       <div
         className="flex items-center justify-between px-4 py-3 bg-white cursor-pointer select-none"
         onClick={() => setIsOpen(!isOpen)}
       >
         <div className="flex items-center gap-2">
-          <FileText className="text-[#0f3c63]" size={18} />
-          <h3 className="text-[#0f3c63] font-semibold text-sm">Logistics</h3>
+          <FileText className="text-[var(--theme-primary)]" size={18} />
+          <h3 className="text-[var(--theme-primary)] font-semibold text-sm">
+            Logistics
+          </h3>
         </div>
         <div className="text-gray-500">
           {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
@@ -145,7 +264,12 @@ const Logistics: React.FC = () => {
                   <Label>Destination</Label>
                 </div>
                 <div className="col-span-8">
-                  <Input />
+                  <Input
+                    value={data.destination}
+                    onChange={(e) =>
+                      handleChange("destination", e.target.value)
+                    }
+                  />
                 </div>
               </div>
 
@@ -155,30 +279,38 @@ const Logistics: React.FC = () => {
                   <Label>Shipping Mode</Label>
                 </div>
                 <div className="col-span-8">
-                  <Select options={shippingModes} defaultValue="Road" />
+                  <Select
+                    options={shippingModes}
+                    value={data.shippingMode}
+                    onChange={(e) =>
+                      handleChange("shippingMode", e.target.value)
+                    }
+                  />
                 </div>
               </div>
 
-              {/* Shipping Company */}
+              {/* Shipping Company (DROPDOWN + EDIT BUTTON) */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
                   <Label>Shipping Company</Label>
                 </div>
                 <div className="col-span-8 flex gap-1">
-                  <Select options={shippingCompanies} placeholder="Select..." />
-                  <button onClick={handleTransporterCompo}>
-                    <ActionBtn icon={<Edit2 size={14} />} />
-                  </button>
-                </div>
-              </div>
-
-              {/* Shipping Company Address */}
-              <div className="grid grid-cols-12 gap-2">
-                <div className="col-span-4">
-                  <Label>Shipping Company Address/P...</Label>
-                </div>
-                <div className="col-span-8">
-                  <TextArea />
+                  {/* Integrated API Data here */}
+                  <Dropdown
+                    data={transporterList}
+                    columns={transporterColumns}
+                    value={data.shippingCompany} // Shows Name
+                    valueKey="name"
+                    onChange={handleTransporterSelect}
+                    placeholder={
+                      isLoadingList ? "Loading..." : "Select Transporter..."
+                    }
+                  />
+                  <ActionBtn
+                    icon={<Edit2 size={14} />}
+                    onClick={handleEditOrAddTransporter}
+                    title={data.shippingCompany ? "Edit Selected" : "Add New"}
+                  />
                 </div>
               </div>
 
@@ -188,7 +320,12 @@ const Logistics: React.FC = () => {
                   <Label>Shipping Tracking No</Label>
                 </div>
                 <div className="col-span-8">
-                  <Input />
+                  <Input
+                    value={data.shippingTrackingNo}
+                    onChange={(e) =>
+                      handleChange("shippingTrackingNo", e.target.value)
+                    }
+                  />
                 </div>
               </div>
 
@@ -198,7 +335,12 @@ const Logistics: React.FC = () => {
                   <Label>Shipping Date</Label>
                 </div>
                 <div className="col-span-8">
-                  <DateInput value="01/12/2025" />
+                  <DateInput
+                    value={data.shippingDate}
+                    onChange={(e) =>
+                      handleChange("shippingDate", e.target.value)
+                    }
+                  />
                 </div>
               </div>
 
@@ -208,17 +350,26 @@ const Logistics: React.FC = () => {
                   <Label>Shipping Charges</Label>
                 </div>
                 <div className="col-span-8">
-                  <Input defaultValue="0" />
+                  <Input
+                    type="number"
+                    value={data.shippingCharges}
+                    onChange={(e) =>
+                      handleChange("shippingCharges", e.target.value)
+                    }
+                  />
                 </div>
               </div>
 
-              {/* Vehicle/Vessel No */}
+              {/* Vehicle No */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
                   <Label>Vehicle/Vessel No</Label>
                 </div>
                 <div className="col-span-8">
-                  <Input />
+                  <Input
+                    value={data.vehicleNo}
+                    onChange={(e) => handleChange("vehicleNo", e.target.value)}
+                  />
                 </div>
               </div>
 
@@ -228,7 +379,11 @@ const Logistics: React.FC = () => {
                   <Label>Charge Type</Label>
                 </div>
                 <div className="col-span-8">
-                  <Select options={chargeTypes} defaultValue="Paid" />
+                  <Select
+                    options={chargeTypes}
+                    value={data.chargeType}
+                    onChange={(e) => handleChange("chargeType", e.target.value)}
+                  />
                 </div>
               </div>
 
@@ -238,145 +393,192 @@ const Logistics: React.FC = () => {
                   <Label>Document Through</Label>
                 </div>
                 <div className="col-span-8">
-                  <Input />
+                  <Input
+                    value={data.documentThrough}
+                    onChange={(e) =>
+                      handleChange("documentThrough", e.target.value)
+                    }
+                  />
                 </div>
               </div>
             </div>
 
             {/* RIGHT COLUMN */}
             <div className="space-y-1">
-              {/* No of Packts */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
                   <Label>No of Packts</Label>
                 </div>
                 <div className="col-span-8">
-                  <Input defaultValue="0" />
+                  <Input
+                    type="number"
+                    value={data.noOfPackets}
+                    onChange={(e) =>
+                      handleChange("noOfPackets", e.target.value)
+                    }
+                  />
                 </div>
               </div>
 
-              {/* Weight */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
                   <Label>Weight</Label>
                 </div>
                 <div className="col-span-8">
-                  <Input defaultValue="0" />
+                  <Input
+                    type="number"
+                    value={data.weight}
+                    onChange={(e) => handleChange("weight", e.target.value)}
+                  />
                 </div>
               </div>
 
-              {/* Distance */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
                   <Label>Distance</Label>
                 </div>
                 <div className="col-span-8">
-                  <Input defaultValue="0" />
+                  <Input
+                    type="number"
+                    value={data.distance}
+                    onChange={(e) => handleChange("distance", e.target.value)}
+                  />
                 </div>
               </div>
 
-              {/* eWay Invoice No */}
+              {/* eWay Fields */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
                   <Label>eWay Invoice No</Label>
                 </div>
                 <div className="col-span-8">
-                  <Input />
+                  <Input
+                    value={data.eWayInvoiceNo}
+                    onChange={(e) =>
+                      handleChange("eWayInvoiceNo", e.target.value)
+                    }
+                  />
                 </div>
               </div>
-
-              {/* eWay Invoice Date */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
                   <Label>eWay Invoice Date</Label>
                 </div>
                 <div className="col-span-8">
-                  <DateInput value="01/12/2025" />
+                  <DateInput
+                    value={data.eWayInvoiceDate}
+                    onChange={(e) =>
+                      handleChange("eWayInvoiceDate", e.target.value)
+                    }
+                  />
                 </div>
               </div>
-
-              {/* eWay Cancel Date */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
                   <Label>eWay Cancel Date</Label>
                 </div>
                 <div className="col-span-8">
-                  <DateInput />
+                  <DateInput
+                    value={data.eWayCancelDate}
+                    onChange={(e) =>
+                      handleChange("eWayCancelDate", e.target.value)
+                    }
+                  />
                 </div>
               </div>
 
-              {/* IRN No */}
+              {/* IRN Fields */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
                   <Label>IRN No</Label>
                 </div>
                 <div className="col-span-8">
-                  <Input />
+                  <Input
+                    value={data.irnNo}
+                    onChange={(e) => handleChange("irnNo", e.target.value)}
+                  />
                 </div>
               </div>
-
-              {/* QR Code */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
                   <Label>QR Code</Label>
                 </div>
                 <div className="col-span-8">
-                  <Input />
+                  <Input
+                    value={data.qrCode}
+                    onChange={(e) => handleChange("qrCode", e.target.value)}
+                  />
                 </div>
               </div>
-
-              {/* IRN Cancel Date */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
                   <Label>IRN Cancel Date</Label>
                 </div>
                 <div className="col-span-8">
-                  <DateInput />
+                  <DateInput
+                    value={data.irnCancelDate}
+                    onChange={(e) =>
+                      handleChange("irnCancelDate", e.target.value)
+                    }
+                  />
                 </div>
               </div>
-
-              {/* IRN Cancel Reason */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
                   <Label>IRN Cancel Reason</Label>
                 </div>
                 <div className="col-span-8">
-                  <Input />
+                  <Input
+                    value={data.irnCancelReason}
+                    onChange={(e) =>
+                      handleChange("irnCancelReason", e.target.value)
+                    }
+                  />
                 </div>
               </div>
 
-              {/* Acknowledgement No */}
+              {/* Acknowledgement Fields */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
                   <Label>Acknowledgement No</Label>
                 </div>
                 <div className="col-span-8">
-                  <Input />
+                  <Input
+                    value={data.acknowledgementNo}
+                    onChange={(e) =>
+                      handleChange("acknowledgementNo", e.target.value)
+                    }
+                  />
                 </div>
               </div>
-
-              {/* Acknowledgement Date */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
                   <Label>Acknowledgement Date</Label>
                 </div>
                 <div className="col-span-8">
-                  <DateInput />
+                  <DateInput
+                    value={data.acknowledgementDate}
+                    onChange={(e) =>
+                      handleChange("acknowledgementDate", e.target.value)
+                    }
+                  />
                 </div>
               </div>
             </div>
           </div>
         </div>
       )}
-      {transporterCompo && (
-        <div className="fixed inset-0 z-[30] flex items-center justify-center bg-transparent bg-opacity-50 backdrop-blur-sm p-4">
-          <div className=" w-auto h-auto bg-white rounded-lg shadow-2xl overflow-hidden relative">
-            <Transporter
-              isOpen={transporterCompo}
-              onClose={() => setTransporterCompo(false)}
-            />
-          </div>
-        </div>
+
+      {/* Modal for Transporter (Create/Edit) */}
+      {transporterModalOpen && (
+        <Transporter
+          isOpen={transporterModalOpen}
+          onClose={() => setTransporterModalOpen(false)}
+          initialData={editingTransporter}
+          // IMPORTANT: You need to pass a callback here to refresh the list
+          // when a new transporter is created/edited successfully.
+          onSuccess={handleTransporterSuccess}
+        />
       )}
     </div>
   );

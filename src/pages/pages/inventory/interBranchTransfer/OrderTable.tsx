@@ -1,495 +1,1063 @@
-import React, { useState, useRef, MouseEvent } from "react";
+import React, { useState, useRef, MouseEvent, useEffect, useMemo } from "react";
+import ReactDOM from "react-dom";
 import {
   Plus,
   X,
   Search,
   Copy,
-  List,
   FileText,
   BarChart2,
   ScanLine,
-  Settings,
   Table,
-  ExternalLink,
-  FileSpreadsheet,
-  DollarSign,
+  ArrowUp,
+  ArrowDown,
+  ArrowLeft,
+  CalendarIcon,
 } from "lucide-react";
+
 import { COLORS } from "../../../../constants/colors";
+
+import AddNewItem from "../../../../components/addItemMaster/AddNewItem";
+
+// --- API IMPORTS ---
+import { fetchItems } from "../itemMaster/api/itemService";
+import {
+  fetchStockUnits,
+  StockUnitData,
+} from "../../../../components/addItemMaster/api/itemService";
+import {
+  fetchSalesAndPurchaseGL,
+  SalesAndPurchaseGL,
+} from "../../../../components/addItemMaster/api/saleAndPurchaseGL";
+import { ItemApiData } from "../itemMaster/models/ItemModel";
+import AttributePanel from "../../../../components/AttributePanel";
+import PostingGLPopup from "../../../../components/PostingGLPopup";
+
+// --- INTERNAL COMPONENT: DATE INPUT (MODIFIED) ---
+type DateInputProps = {
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+};
+
+const DateInput: React.FC<DateInputProps> = ({ value, onChange }) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleTriggerClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (inputRef.current) {
+      // Use showPicker if available (modern browsers), otherwise focus
+      if ("showPicker" in inputRef.current) {
+        (inputRef.current as any).showPicker();
+      } else {
+        // inputRef.current.focus(); // Property 'focus' does not exist on type 'never'.
+      }
+    }
+  };
+
+  return (
+    <div className="w-full h-full flex items-center justify-center relative group px-1">
+      {/* Hidden Input: Keeps functionality but removes the default UI */}
+      <input
+        ref={inputRef}
+        type="date"
+        value={value || ""}
+        onChange={onChange}
+        className="absolute inset-0 opacity-0 w-0 h-0 pointer-events-none"
+      />
+
+      {value ? (
+        // IF DATE SELECTED: Show the text
+        <span
+          onClick={handleTriggerClick}
+          className="text-xs cursor-pointer hover:text-blue-600 w-full text-center whitespace-nowrap overflow-hidden text-ellipsis"
+          title={value} // Tooltip shows full date
+        >
+          {value}
+        </span>
+      ) : (
+        // IF NO DATE: Show the Icon
+        <button
+          type="button"
+          onClick={handleTriggerClick}
+          className="flex items-center justify-center p-1.5 rounded-sm text-gray-500 hover:text-white hover:bg-[var(--theme-primary)] transition-all"
+          title="Select Date"
+        >
+          <CalendarIcon size={16} />
+        </button>
+      )}
+
+      {/* Optional: Styles to ensure hover effect uses the theme color correctly for the button */}
+      <style>{`
+        .group:hover button {
+             color: ${COLORS.primary};
+        }
+        button:hover {
+             background-color: ${COLORS.primary} !important;
+             color: white !important;
+        }
+      `}</style>
+    </div>
+  );
+};
 
 // --- TYPES ---
 interface Column {
   id: string;
   label: string;
   width: number;
-  fixed?: boolean;
   align: "left" | "center" | "right";
+  sticky?: "left";
+  resizable?: boolean;
 }
 
-const OrderTable: React.FC = () => {
-  // --- 1. COLUMN CONFIGURATION ---
+interface RowData {
+  [key: string]: string | number;
+}
+
+// --- PROPS INTERFACE FOR LIFTED STATE ---
+interface OrderTableProps {
+  rows: string[];
+  setRows: React.Dispatch<React.SetStateAction<string[]>>;
+  tableData: Record<string, RowData>;
+  setTableData: React.Dispatch<React.SetStateAction<Record<string, RowData>>>;
+}
+
+const OrderTable: React.FC<OrderTableProps> = ({
+  rows,
+  setRows,
+  tableData,
+  setTableData,
+}) => {
+  // --- UTILS ---
+  const generateRowId = () =>
+    `row-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+  // --- STATE (Local UI State only) ---
+  const [items, setItems] = useState<ItemApiData[]>([]);
+  const [, setStockUnits] = useState<StockUnitData[]>([]);
+  const [glAccounts, setGlAccounts] = useState<SalesAndPurchaseGL[]>([]);
+
+  const [sortConfig, setSortConfig] = useState<{
+    key: string;
+    direction: "asc" | "desc";
+  } | null>(null);
+
+  // Popups State
+  const [popupState, setPopupState] = useState<{
+    visible: boolean;
+    top: number;
+    left: number;
+    activeRowId: string | null;
+  }>({ visible: false, top: 0, left: 0, activeRowId: null });
+
+  // Posting GL Popup State
+  const [glPopupState, setGlPopupState] = useState<{
+    visible: boolean;
+    top: number;
+    left: number;
+    activeRowId: string | null;
+  }>({ visible: false, top: 0, left: 0, activeRowId: null });
+
+  const [attributePanelState, setAttributePanelState] = useState<{
+    visible: boolean;
+    activeRowId: string | null;
+    tempItemData: ItemApiData | null;
+  }>({ visible: false, activeRowId: null, tempItemData: null });
+
+  const [addNewItemForm, setAddNewItemForm] = useState(false);
+
+  // --- INITIALIZATION ---
+
+  // 1. Row Initialization Effect
+  useEffect(() => {
+    if (rows.length === 0) {
+      const initialRows = Array.from({ length: 15 }, () => generateRowId());
+      setRows(initialRows);
+
+      const initialData: Record<string, RowData> = {};
+      initialRows.forEach((id) => {
+        initialData[id] = {};
+      });
+      setTableData(initialData);
+    }
+  }, [rows.length, setRows, setTableData]);
+
+  // 2. Data Loading Effect
+  useEffect(() => {
+    loadMasterData();
+  }, []);
+
+  const loadMasterData = async () => {
+    try {
+      const itemsData = await fetchItems();
+      if (Array.isArray(itemsData)) setItems(itemsData);
+
+      const unitsData = await fetchStockUnits();
+      if (Array.isArray(unitsData)) setStockUnits(unitsData);
+
+      const glData = await fetchSalesAndPurchaseGL();
+      if (Array.isArray(glData)) setGlAccounts(glData);
+    } catch (error) {
+      console.error("Failed to load table master data", error);
+    }
+  };
+
+  // --- COLUMN CONFIG ---
   const initialColumns: Column[] = [
-    // --- FIXED COLUMNS (First 7) ---
-    { id: "sno", label: "SNo", width: 40, fixed: true, align: "center" },
-    { id: "add", label: "", width: 40, fixed: true, align: "center" },
-    { id: "del", label: "", width: 40, fixed: true, align: "center" },
-    { id: "srch", label: "", width: 40, fixed: true, align: "center" },
-    { id: "copy", label: "", width: 40, fixed: true, align: "center" },
+    {
+      id: "sno",
+      label: "SNo",
+      width: 35,
+      sticky: "left",
+      align: "center",
+      resizable: true,
+    },
+    {
+      id: "add",
+      label: "",
+      width: 35,
+      sticky: "left",
+      align: "center",
+      resizable: true,
+    },
+    {
+      id: "del",
+      label: "",
+      width: 35,
+      sticky: "left",
+      align: "center",
+      resizable: true,
+    },
+    {
+      id: "srch",
+      label: "",
+      width: 35,
+      sticky: "left",
+      align: "center",
+      resizable: true,
+    },
+    {
+      id: "copy",
+      label: "",
+      width: 35,
+      sticky: "left",
+      align: "center",
+      resizable: true,
+    },
     {
       id: "select",
       label: "Select Item",
-      width: 120,
-      fixed: true,
+      width: 110,
+      sticky: "left",
       align: "left",
+      resizable: true,
     },
     {
       id: "desc",
       label: "Description",
-      width: 200,
-      fixed: true,
+      width: 180,
+      sticky: "left",
       align: "left",
+      resizable: true,
     },
-
-    // --- SCROLLABLE COLUMNS ---
-    { id: "attr", label: "Attribute", width: 60, align: "center" },
-    { id: "widg", label: "Widget", width: 60, align: "center" },
-    { id: "sugg", label: "Suggested", width: 100, align: "center" },
-    { id: "batch", label: "Batch", width: 60, align: "center" },
-    { id: "punit", label: "Pack Unit", width: 80, align: "left" },
-    { id: "pqty", label: "Pack Qty", width: 80, align: "right" },
-    { id: "unit", label: "Unit", width: 60, align: "left" },
-    { id: "qty", label: "Quantity", width: 80, align: "right" },
-    { id: "free", label: "Free Qty", width: 80, align: "right" },
-    { id: "rateper", label: "Rate Per", width: 80, align: "left" },
-    { id: "rate", label: "Rate", width: 80, align: "right" },
-    { id: "amount", label: "Amount", width: 90, align: "right" },
-    { id: "minrate", label: "Min Rate", width: 80, align: "right" },
-    { id: "disc", label: "Discount", width: 80, align: "right" },
-    { id: "disc_perc", label: "Discount %", width: 80, align: "right" },
-    { id: "taxcode", label: "Tax Code", width: 80, align: "left" },
-    { id: "taxrate", label: "Tax Rate", width: 70, align: "right" },
-    { id: "taxable", label: "Taxable", width: 90, align: "right" },
-    { id: "taxamt", label: "TaxAmt", width: 80, align: "right" },
-    { id: "mrp", label: "MRP", width: 80, align: "right" },
-    { id: "netrate", label: "Net Rate", width: 90, align: "right" },
-    { id: "remark", label: "Remark", width: 150, align: "left" },
-    { id: "printdesc", label: "Print Desc", width: 150, align: "left" },
-    { id: "service", label: "Service", width: 80, align: "center" },
-    { id: "serviceloc", label: "Service Loc", width: 100, align: "left" },
-    { id: "itembarcode", label: "Item Barcode", width: 120, align: "left" },
-    { id: "postinggl", label: "PostingGL", width: 100, align: "left" },
-    { id: "promoqty", label: "PromoQty", width: 80, align: "right" },
-    { id: "promotion", label: "Promotion", width: 100, align: "left" },
-    { id: "barcodedisc", label: "BarcodeDisc", width: 90, align: "right" },
-    { id: "coupon", label: "Coupon", width: 80, align: "left" },
-    { id: "sovno", label: "SO VNo", width: 80, align: "left" },
-    { id: "sorefno", label: "SO Ref No", width: 100, align: "left" },
-    { id: "sorefdate", label: "SO Ref Date", width: 100, align: "left" },
-    { id: "sovdate", label: "SO VDate", width: 100, align: "left" },
-    { id: "gpvno", label: "GP VNo", width: 80, align: "left" },
-    { id: "gprefno", label: "GP Ref No", width: 100, align: "left" },
-    { id: "gprefdate", label: "GP Ref Date", width: 100, align: "left" },
-    { id: "gpvdate", label: "GP VDate", width: 100, align: "left" },
-    { id: "bdbatchno", label: "BD Batch No", width: 100, align: "left" },
-    { id: "bdexpdate", label: "BD Exp.Date", width: 100, align: "left" },
-    { id: "bdsalerate", label: "BD Sale rate", width: 90, align: "right" },
-    { id: "itembalance", label: "Itembalance", width: 90, align: "right" },
-    { id: "barcode", label: "Barcode", width: 100, align: "left" },
-    { id: "linelevel", label: "Line Level Barcode", width: 130, align: "left" },
-    { id: "igst", label: "IGST", width: 80, align: "right" },
-    { id: "cgst", label: "CGST", width: 80, align: "right" },
-    { id: "sgst", label: "SGST", width: 80, align: "right" },
-    { id: "hsn", label: "HSN Code", width: 80, align: "left" },
-    { id: "brand", label: "Brand", width: 100, align: "left" },
+    {
+      id: "attr",
+      label: "Attribute",
+      width: 35,
+      align: "center",
+      resizable: true,
+    },
+    {
+      id: "widg",
+      label: "Widget",
+      width: 35,
+      align: "center",
+      resizable: true,
+    },
+    {
+      id: "batch",
+      label: "Batch",
+      width: 35,
+      align: "center",
+      resizable: true,
+    },
+    {
+      id: "punit",
+      label: "Pack Unit",
+      width: 50,
+      align: "left",
+      resizable: true,
+    },
+    {
+      id: "pqty",
+      label: "Pack Qty",
+      width: 50,
+      align: "right",
+      resizable: true,
+    },
+    { id: "unit", label: "Unit", width: 70, align: "left", resizable: true },
+    {
+      id: "qty",
+      label: "Quantity",
+      width: 70,
+      align: "right",
+      resizable: true,
+    },
+    {
+      id: "rateper",
+      label: "Rate Per",
+      width: 80,
+      align: "left",
+      resizable: true,
+    },
+    { id: "rate", label: "Rate", width: 70, align: "right", resizable: true },
+    {
+      id: "amount",
+      label: "Amount",
+      width: 80,
+      align: "right",
+      resizable: true,
+    },
+    {
+      id: "minrate",
+      label: "Min Rate",
+      width: 70,
+      align: "right",
+      resizable: true,
+    },
+    { id: "mrp", label: "MRP", width: 70, align: "right", resizable: true },
+    {
+      id: "netrate",
+      label: "Net Rate",
+      width: 80,
+      align: "right",
+      resizable: true,
+    },
+    {
+      id: "remark",
+      label: "Remark",
+      width: 120,
+      align: "left",
+      resizable: true,
+    },
+    {
+      id: "printdesc",
+      label: "Print Desc",
+      width: 120,
+      align: "left",
+      resizable: true,
+    },
+    {
+      id: "servicedate",
+      label: "Service Date",
+      width: 90,
+      align: "center",
+      resizable: true,
+    },
+    {
+      id: "service",
+      label: "Service Location",
+      width: 90,
+      align: "center",
+      resizable: true,
+    },
+    {
+      id: "itembarcode",
+      label: "Item Barcode",
+      width: 100,
+      align: "left",
+      resizable: true,
+    },
+    {
+      id: "postinggl",
+      label: "Posting GL",
+      width: 130,
+      align: "left",
+      resizable: true,
+    },
+    {
+      id: "bdbatchno",
+      label: "BD Batch No",
+      width: 90,
+      align: "left",
+      resizable: false,
+    },
+    {
+      id: "bdexpdate",
+      label: "BD Exp.Date",
+      width: 90,
+      align: "left",
+      resizable: false,
+    },
+    {
+      id: "bdsalerate",
+      label: "BD Sale rate",
+      width: 90,
+      align: "right",
+      resizable: false,
+    },
+    {
+      id: "itembalance",
+      label: "Itembalance",
+      width: 80,
+      align: "right",
+      resizable: false,
+    },
+    {
+      id: "barcode",
+      label: "Barcode",
+      width: 100,
+      align: "left",
+      resizable: false,
+    },
+    {
+      id: "linelevel",
+      label: "Line Level Barcode",
+      width: 110,
+      align: "left",
+      resizable: false,
+    },
+    {
+      id: "hsn",
+      label: "HSN Code",
+      width: 70,
+      align: "left",
+      resizable: false,
+    },
+    { id: "brand", label: "Brand", width: 90, align: "left", resizable: false },
   ];
 
-  // Increase row count to demonstrate scrolling
   const [columns, setColumns] = useState<Column[]>(initialColumns);
-  const [rows] = useState<number[]>(
-    Array.from({ length: 100 }, (_, i) => i + 1)
-  );
 
-  // Define which columns should show totals
-  const totalColumns = [
-    "pqty",
-    "qty",
-    "free",
-    "amount",
-    "disc",
-    "disc_perc",
-    "taxable",
-    "taxamt",
-    "igst",
-    "cgst",
-    "sgst",
-  ];
+  // --- HANDLERS ---
+  const handleCreateItemClick = () => {
+    setPopupState((prev) => ({ ...prev, visible: false }));
+    setAddNewItemForm(true);
+  };
 
-  // --- 2. RESIZING LOGIC ---
+  const handleCloseForm = () => {
+    setAddNewItemForm(false);
+  };
+
+  const handleFormSuccess = async () => {
+    await loadMasterData();
+    setAddNewItemForm(false);
+  };
+
+  const handleInputChange = (
+    rowId: string,
+    columnId: string,
+    value: string
+  ) => {
+    setTableData((prev) => ({
+      ...prev,
+      [rowId]: { ...prev[rowId], [columnId]: value },
+    }));
+  };
+
+  const handleDeleteRow = (rowIdToDelete: string) => {
+    if (rows.length > 15) {
+      setRows((prev) => prev.filter((id) => id !== rowIdToDelete));
+      setTableData((prev) => {
+        const next = { ...prev };
+        delete next[rowIdToDelete];
+        return next;
+      });
+    } else {
+      setTableData((prev) => ({
+        ...prev,
+        [rowIdToDelete]: {},
+      }));
+    }
+  };
+
+  const handleAddRow = (afterRowId: string) => {
+    const newId = generateRowId();
+    const index = rows.indexOf(afterRowId);
+    if (index !== -1) {
+      const newRows = [...rows];
+      newRows.splice(index + 1, 0, newId);
+      setRows(newRows);
+      setTableData((prev) => ({ ...prev, [newId]: {} }));
+    }
+  };
+
+  const handleCopyRow = (sourceRowId: string) => {
+    const sourceData = tableData[sourceRowId];
+    if (!sourceData) return;
+    let targetRowId: string | null = null;
+    const sourceIndex = rows.indexOf(sourceRowId);
+    for (let i = sourceIndex + 1; i < rows.length; i++) {
+      const rId = rows[i];
+      if (!tableData[rId]?.select) {
+        targetRowId = rId;
+        break;
+      }
+    }
+    if (!targetRowId) {
+      targetRowId = generateRowId();
+      setRows((prev) => [...prev, targetRowId!]);
+    }
+    setTableData((prev) => ({ ...prev, [targetRowId!]: { ...sourceData } }));
+  };
+
+  // --- POPUP TRIGGERS ---
+  const handleSelectClick = (
+    e: React.MouseEvent<HTMLDivElement>,
+    rowId: string
+  ) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    setPopupState({
+      visible: true,
+      top: rect.bottom,
+      left: rect.left,
+      activeRowId: rowId,
+    });
+  };
+
+  const closePopup = () => {
+    setPopupState((prev) => ({ ...prev, visible: false, activeRowId: null }));
+  };
+
+  const handlePostingGLClick = (
+    e: React.MouseEvent<HTMLDivElement>,
+    rowId: string
+  ) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    setGlPopupState({
+      visible: true,
+      top: rect.bottom,
+      left: rect.left,
+      activeRowId: rowId,
+    });
+  };
+
+  const closeGlPopup = () => {
+    setGlPopupState((prev) => ({ ...prev, visible: false, activeRowId: null }));
+  };
+
+  const handleAttributeClick = (rowId: string) => {
+    const data = tableData[rowId];
+    if (data && data.select) {
+      const reconstructedItem: any = {
+        code: data.select,
+        name: data.desc,
+        stock_unit: data.unit,
+        gst_classfication: data.hsn,
+        brand: data.brand,
+        sales_rate: data.rate,
+        mrp: data.mrp,
+        barcode: data.barcode,
+      };
+      setAttributePanelState({
+        visible: true,
+        activeRowId: rowId,
+        tempItemData: reconstructedItem,
+      });
+    }
+  };
+
+  // --- SELECTION HANDLERS ---
+  const handleItemSelect = (item: ItemApiData) => {
+    if (popupState.activeRowId) {
+      setAttributePanelState({
+        visible: true,
+        activeRowId: popupState.activeRowId,
+        tempItemData: item,
+      });
+      setPopupState((prev) => ({ ...prev, visible: false, activeRowId: null }));
+    }
+  };
+
+  const handleGLSelect = (gl: SalesAndPurchaseGL) => {
+    if (glPopupState.activeRowId) {
+      setTableData((prev) => ({
+        ...prev,
+        [glPopupState.activeRowId!]: {
+          ...prev[glPopupState.activeRowId!],
+          postinggl: gl.name,
+        },
+      }));
+      setGlPopupState((prev) => ({
+        ...prev,
+        visible: false,
+        activeRowId: null,
+      }));
+    }
+  };
+
+  const handleAttributeSave = (attributeData: any) => {
+    const { activeRowId, tempItemData } = attributePanelState;
+    if (activeRowId && tempItemData) {
+      const baseData: RowData = {
+        select: tempItemData.code || "",
+        desc: tempItemData.name || "",
+        unit: tempItemData.stock_unit || "",
+        hsn: tempItemData.gst_classfication || "",
+        brand: tempItemData.brand || "",
+        qty: "1",
+        amount: "0.00",
+        service: "Main Store",
+        barcode: tempItemData.barcode || "",
+        mrp: tempItemData.mrp || "0",
+        rate: tempItemData.sales_rate || "0",
+        rateper: tempItemData.sales_rate || "0",
+        netrate: tempItemData.sales_rate || "0",
+        printdesc: tempItemData.name || "",
+        itembarcode: tempItemData.barcode || "",
+      };
+      setTableData((prev) => ({
+        ...prev,
+        [activeRowId]: { ...prev[activeRowId], ...baseData, ...attributeData },
+      }));
+    }
+    setAttributePanelState({
+      visible: false,
+      activeRowId: null,
+      tempItemData: null,
+    });
+  };
+
+  // --- RESIZING & SORTING ---
   const resizingRef = useRef<number | null>(null);
   const startXRef = useRef<number>(0);
   const startWidthRef = useRef<number>(0);
 
-  const handleMouseDown = (e: MouseEvent<HTMLDivElement>, index: number) => {
+  const handleHeaderClick = (columnId: string) => {
+    if (
+      ["sno", "add", "del", "srch", "copy", "attr", "widg", "batch"].includes(
+        columnId
+      )
+    )
+      return;
+    setSortConfig((curr) => ({
+      key: columnId,
+      direction:
+        curr?.key === columnId && curr.direction === "asc" ? "desc" : "asc",
+    }));
+  };
+
+  const sortedRowIds = useMemo(() => {
+    let sortable = [...rows];
+    if (sortConfig) {
+      sortable.sort((a, b) => {
+        const rowA = tableData[a],
+          rowB = tableData[b];
+        if (!rowA && !rowB) return 0;
+        if (!rowA) return 1;
+        if (!rowB) return -1;
+        const valA = rowA[sortConfig.key] || "",
+          valB = rowB[sortConfig.key] || "";
+        return typeof valA === "string" && typeof valB === "string"
+          ? sortConfig.direction === "asc"
+            ? valA.localeCompare(valB)
+            : valB.localeCompare(valA)
+          : sortConfig.direction === "asc"
+          ? valA < valB
+            ? -1
+            : 1
+          : valA > valB
+          ? -1
+          : 1;
+      });
+    }
+    return sortable;
+  }, [rows, tableData, sortConfig]);
+
+  const handleMouseDown = (e: MouseEvent, index: number) => {
+    if (!columns[index].resizable) return;
     e.preventDefault();
     e.stopPropagation();
     resizingRef.current = index;
     startXRef.current = e.clientX;
     startWidthRef.current = columns[index].width;
-
     document.addEventListener("mousemove", handleMouseMove as any);
     document.addEventListener("mouseup", handleMouseUp);
   };
-
   const handleMouseMove = (e: MouseEvent | globalThis.MouseEvent) => {
     if (resizingRef.current === null) return;
-    const deltaX = e.clientX - startXRef.current;
-    const newWidth = Math.max(40, startWidthRef.current + deltaX);
-
     setColumns((prev) => {
-      if (resizingRef.current === null) return prev;
-      const newCols = [...prev];
-      newCols[resizingRef.current] = {
-        ...newCols[resizingRef.current],
-        width: newWidth,
+      const next = [...prev];
+      next[resizingRef.current!] = {
+        ...next[resizingRef.current!],
+        width: Math.max(
+          30,
+          startWidthRef.current + (e.clientX - startXRef.current)
+        ),
       };
-      return newCols;
+      return next;
     });
   };
-
   const handleMouseUp = () => {
     resizingRef.current = null;
     document.removeEventListener("mousemove", handleMouseMove as any);
     document.removeEventListener("mouseup", handleMouseUp);
   };
+  const getStickyLeft = (idx: number) =>
+    columns
+      .slice(0, idx)
+      .reduce((acc, col) => (col.sticky === "left" ? acc + col.width : acc), 0);
 
-  // --- 3. STICKY OFFSET CALCULATION ---
-  const getStickyLeft = (index: number): number => {
-    let offset = 0;
-    for (let i = 0; i < index; i++) {
-      if (columns[i].fixed) {
-        offset += columns[i].width;
+  // --- CALCULATION LOGIC ---
+  const totals = useMemo(() => {
+    const sums: Record<string, number> = {
+      pqty: 0,
+      qty: 0,
+      amount: 0,
+      mrp: 0,
+      netrate: 0,
+    };
+    rows.forEach((rowId) => {
+      const row = tableData[rowId];
+      if (row) {
+        const addVal = (field: string) => {
+          const val = parseFloat(String(row[field] || "0"));
+          if (!isNaN(val)) sums[field] += val;
+        };
+        addVal("pqty");
+        addVal("qty");
+        addVal("amount");
+        addVal("mrp");
+        addVal("netrate");
       }
-    }
-    return offset;
-  };
+    });
+    return {
+      pqty: sums.pqty.toFixed(2),
+      qty: sums.qty.toFixed(2),
+      amount: sums.amount.toFixed(2),
+      mrp: sums.mrp.toFixed(2),
+      netrate: sums.netrate.toFixed(2),
+    };
+  }, [rows, tableData]);
 
-  const totalWidth = columns.reduce((acc, col) => acc + col.width, 0);
+  // --- CONDITIONAL RENDER ---
+  if (addNewItemForm) {
+    return (
+      <div className="w-full">
+        <div className="bg-white p-6 rounded-xl shadow-lg dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+          <div className="mb-4">
+            <button
+              onClick={handleCloseForm}
+              className="flex items-center text-sm text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-white transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4 mr-1" />
+              Back to Item Master
+            </button>
+          </div>
+          <AddNewItem
+            onClose={handleCloseForm}
+            onSuccess={handleFormSuccess}
+            initialData={undefined}
+          />
+        </div>
+      </div>
+    );
+  }
 
-  // --- 4. HEIGHT CALCULATION ---
-  // Header (36px/h-9) + Footer (36px/h-9) + 10 Rows (32px/h-8 each) + 14px Scrollbar buffer
-  const tableContainerHeight = 36 + 36 + 10 * 24 + 14;
-
+  // --- MAIN RENDER ---
   return (
     <div
       className="flex flex-col h-auto font-sans text-sm overflow-hidden relative z-0"
       style={{ backgroundColor: COLORS.background }}
     >
-      {/* --- HEADER TOOLBAR --- */}
+      {/* HEADER */}
       <div
-        className="flex-none flex justify-between items-center p-2 border-b z-10 relative"
-        style={{ backgroundColor: COLORS.white, borderColor: COLORS.border }}
+        className="flex-none flex justify-between items-center p-2 border-b z-10 relative bg-white"
+        style={{ borderColor: COLORS.border }}
       >
         <div className="flex items-center gap-4">
           <div
-            className="flex items-center border h-9 w-72 rounded-sm"
-            style={{
-              backgroundColor: COLORS.white,
-              borderColor: COLORS.borderDark,
-            }}
+            className="flex items-center border h-9 w-72 rounded-sm bg-white"
+            style={{ borderColor: COLORS.borderDark }}
           >
-            <div
-              className="px-2 border-r h-full flex items-center justify-center"
-              style={{
-                borderColor: COLORS.borderDark,
-                backgroundColor: COLORS.background,
-              }}
-            >
-              <ScanLine style={{ color: COLORS.warning }} className="w-6 h-6" />
+            <div className="px-2 border-r h-full flex items-center justify-center bg-gray-50">
+              <ScanLine className="w-6 h-6 text-orange-500" />
             </div>
             <input
               type="text"
               placeholder="Scan"
               className="px-2 outline-none text-sm w-full"
-              style={{ color: COLORS.textPrimary }}
             />
-          </div>
-        </div>
-
-        <button
-          className="custom-btn-primary px-6 py-1.5 rounded text-xs font-bold shadow-sm"
-          style={{ color: COLORS.white }}
-        >
-          Pull From Order
-        </button>
-
-        <div className="flex items-center gap-3">
-          <div
-            className="flex rounded text-white h-8 items-center shadow-sm"
-            style={{ backgroundColor: COLORS.primary }}
-          >
-            <button
-              className="px-3 border-r h-full flex items-center custom-btn-primary"
-              style={{ borderColor: COLORS.primaryHover }}
-            >
-              <List size={16} />
-            </button>
-            <button
-              className="px-3 border-r h-full flex items-center custom-btn-primary"
-              style={{ borderColor: COLORS.primaryHover }}
-            >
-              <Settings size={16} />
-            </button>
-            <button className="px-3 h-full flex items-center custom-btn-primary">
-              <ExternalLink size={16} />
-            </button>
-          </div>
-
-          <div className="flex gap-1">
-            <button
-              className="custom-btn-primary h-8 w-8 flex items-center justify-center rounded shadow-sm"
-              style={{ color: COLORS.white }}
-            >
-              <FileSpreadsheet size={16} />
-            </button>
-            {/* Example: Success Button */}
-            <button
-              className="h-8 w-8 flex items-center justify-center rounded shadow-sm text-lg font-bold transition-colors"
-              style={{ backgroundColor: COLORS.success, color: COLORS.white }}
-            >
-              <DollarSign size={16} />
-            </button>
-            <button
-              className="custom-btn-primary h-8 w-8 flex items-center justify-center rounded shadow-sm"
-              style={{ color: COLORS.white }}
-            >
-              <Settings size={16} />
-            </button>
           </div>
         </div>
       </div>
 
-      {/* --- MAIN TABLE AREA --- */}
+      {/* TABLE */}
       <div className="flex-1 p-2 relative flex flex-col z-0">
         <div
-          className="w-full border shadow-sm relative overflow-hidden"
-          style={{
-            borderColor: COLORS.borderDark,
-            backgroundColor: COLORS.white,
-          }}
+          className="w-full border shadow-sm relative overflow-hidden bg-white"
+          style={{ borderColor: COLORS.borderDark }}
         >
-          {/* Scrollable Container */}
           <div
             className="w-full overflow-auto custom-scrollbar"
-            style={{ height: `${tableContainerHeight}px` }}
+            style={{ height: "400px" }}
           >
-            <div style={{ width: `${totalWidth}px` }}>
+            <div style={{ width: columns.reduce((a, c) => a + c.width, 0) }}>
               <table className="border-collapse table-fixed w-full">
-                {/* --- TABLE HEADER --- */}
                 <thead className="sticky top-0 z-20">
                   <tr className="h-6">
-                    {columns.map((col, index) => {
-                      const leftOffset = col.fixed
-                        ? getStickyLeft(index)
-                        : undefined;
-                      return (
-                        <th
-                          key={col.id}
-                          style={{
-                            width: `${col.width}px`,
-                            left: col.fixed ? leftOffset : "auto",
-                            top: 0,
-                            position: "sticky",
-                            zIndex: col.fixed ? 30 : 20,
-                            backgroundColor: COLORS.primary,
-                            color: COLORS.white,
-                            borderColor: COLORS.primaryHover,
-                          }}
-                          className="border-r px-1 text-xs font-normal select-none group"
+                    {columns.map((col, idx) => (
+                      <th
+                        key={col.id}
+                        style={{
+                          width: col.width,
+                          left:
+                            col.sticky === "left"
+                              ? getStickyLeft(idx)
+                              : undefined,
+                          position:
+                            col.sticky === "left" ? "sticky" : "relative",
+                          zIndex: col.sticky === "left" ? 30 : 20,
+                          backgroundColor: COLORS.primary,
+                          color: "white",
+                          borderColor: COLORS.primaryHover,
+                        }}
+                        className="border-r px-1 text-xs font-normal cursor-pointer relative group"
+                        onClick={() => handleHeaderClick(col.id)}
+                      >
+                        <div
+                          className={`flex w-full h-full items-center ${
+                            col.align === "center"
+                              ? "justify-center"
+                              : "justify-between px-1"
+                          }`}
                         >
+                          <span className="truncate">{col.label}</span>
+                          {sortConfig?.key === col.id &&
+                            (sortConfig.direction === "asc" ? (
+                              <ArrowUp size={10} />
+                            ) : (
+                              <ArrowDown size={10} />
+                            ))}
+                        </div>
+                        {col.resizable && (
                           <div
-                            className={`flex w-full h-full items-center ${
-                              col.align === "center"
-                                ? "justify-center"
-                                : "justify-start px-1"
-                            }`}
-                          >
-                            {col.label}
-                          </div>
-                          <div
-                            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 z-40"
-                            onMouseDown={(e) => handleMouseDown(e, index)}
+                            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 opacity-0 group-hover:opacity-100"
+                            onMouseDown={(e) => handleMouseDown(e, idx)}
+                            onClick={(e) => e.stopPropagation()}
                           />
-                        </th>
-                      );
-                    })}
+                        )}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
-
-                {/* --- TABLE BODY --- */}
                 <tbody>
-                  {rows.map((rowNum, rIdx) => (
-                    <tr
-                      key={rIdx}
-                      className="h-6 border-b custom-row-hover"
-                      style={{ borderColor: COLORS.border }}
-                    >
-                      {columns.map((col, cIdx) => {
-                        const leftOffset = col.fixed
-                          ? getStickyLeft(cIdx)
-                          : undefined;
+                  {sortedRowIds.map((rowId, vIdx) => {
+                    const rowData = tableData[rowId] || {};
+                    return (
+                      <tr
+                        key={rowId}
+                        className="h-4 border-b hover:bg-blue-50"
+                        style={{ borderColor: COLORS.border }}
+                      >
+                        {columns.map((col, cIdx) => {
+                          const isLeft = col.sticky === "left";
+                          let content: React.ReactNode = null;
 
-                        let content: React.ReactNode = null;
+                          if (col.id === "sno")
+                            content = (
+                              <span className="text-gray-500">{vIdx + 1}</span>
+                            );
+                          else if (col.id === "add")
+                            content = (
+                              <Plus
+                                size={12}
+                                className="mx-auto text-green-600 cursor-pointer"
+                                onClick={() => handleAddRow(rowId)}
+                              />
+                            );
+                          else if (col.id === "del")
+                            content = (
+                              <X
+                                size={12}
+                                className="mx-auto text-red-500 cursor-pointer"
+                                onClick={() => handleDeleteRow(rowId)}
+                              />
+                            );
+                          else if (col.id === "srch")
+                            content = (
+                              <Search
+                                size={12}
+                                className="mx-auto text-blue-500 cursor-pointer"
+                              />
+                            );
+                          else if (col.id === "copy")
+                            content = (
+                              <Copy
+                                size={12}
+                                className="mx-auto text-orange-400 cursor-pointer"
+                                onClick={() => handleCopyRow(rowId)}
+                              />
+                            );
+                          else if (col.id === "attr")
+                            content = (
+                              <FileText
+                                size={12}
+                                className="mx-auto text-blue-400 cursor-pointer"
+                                onClick={() => handleAttributeClick(rowId)}
+                              />
+                            );
+                          else if (col.id === "widg")
+                            content = (
+                              <BarChart2
+                                size={12}
+                                className="mx-auto text-blue-400"
+                              />
+                            );
+                          else if (col.id === "batch")
+                            content = (
+                              <Table
+                                size={12}
+                                className="mx-auto text-blue-600"
+                              />
+                            );
+                          else if (col.id === "select") {
+                            content = (
+                              <div
+                                className="text-[10px] italic text-gray-400 flex justify-between cursor-pointer hover:bg-gray-100 h-full items-center px-1"
+                                onClick={(e) => handleSelectClick(e, rowId)}
+                              >
+                                {rowData.select || "Select..."} <span>▶</span>
+                              </div>
+                            );
+                          } else if (col.id === "postinggl") {
+                            content = (
+                              <div
+                                className="text-[10px] italic text-gray-400 flex justify-between cursor-pointer hover:bg-gray-100 h-full items-center px-1"
+                                onClick={(e) => handlePostingGLClick(e, rowId)}
+                              >
+                                {rowData.postinggl || "Select GL..."}{" "}
+                                <span>▶</span>
+                              </div>
+                            );
+                          } else if (col.id === "servicedate") {
+                            content = (
+                              <div className="relative w-full h-full">
+                                <DateInput
+                                  value={(rowData.servicedate as string) || ""}
+                                  onChange={(e) =>
+                                    handleInputChange(
+                                      rowId,
+                                      "servicedate",
+                                      e.target.value
+                                    )
+                                  }
+                                />
+                              </div>
+                            );
+                          } else if (
+                            col.id === "unit" ||
+                            col.id === "rateper"
+                          ) {
+                            content = (
+                              <div className="w-full h-full flex justify-between items-center px-1 cursor-pointer hover:bg-gray-100 group min-h-[24px]">
+                                <span>{rowData[col.id] || ""}</span>
+                              </div>
+                            );
+                          } else if (
+                            ["qty", "rate", "amount", "mrp"].includes(col.id)
+                          ) {
+                            content = (
+                              <input
+                                type="text"
+                                className="w-full h-full bg-transparent outline-none px-1 text-right"
+                                value={rowData[col.id] || ""}
+                                onChange={(e) =>
+                                  handleInputChange(
+                                    rowId,
+                                    col.id,
+                                    e.target.value
+                                  )
+                                }
+                              />
+                            );
+                          } else if (
+                            [
+                              "desc",
+                              "hsn",
+                              "barcode",
+                              "brand",
+                              "punit",
+                              "pqty",
+                              "minrate",
+                              "netrate",
+                            ].includes(col.id)
+                          ) {
+                            content = rowData[col.id] || "";
+                          } else {
+                            content = (
+                              <input
+                                type="text"
+                                className="w-full h-full bg-transparent outline-none px-1"
+                                value={rowData[col.id] || ""}
+                                onChange={(e) =>
+                                  handleInputChange(
+                                    rowId,
+                                    col.id,
+                                    e.target.value
+                                  )
+                                }
+                              />
+                            );
+                          }
 
-                        if (col.id === "sno")
-                          content = (
-                            <span style={{ color: COLORS.textSecondary }}>
-                              {rowNum}
-                            </span>
-                          );
-                        else if (col.id === "add")
-                          content = (
-                            <Plus
-                              size={14}
-                              style={{ color: COLORS.success }}
-                              className="mx-auto cursor-pointer"
-                            />
-                          );
-                        else if (col.id === "del")
-                          content = (
-                            <X
-                              size={14}
-                              style={{ color: COLORS.danger }}
-                              className="mx-auto cursor-pointer"
-                            />
-                          );
-                        else if (col.id === "srch")
-                          content = (
-                            <Search
-                              size={14}
-                              style={{ color: COLORS.success }}
-                              className="mx-auto cursor-pointer"
-                            />
-                          );
-                        else if (col.id === "copy")
-                          content = (
-                            <Copy
-                              size={14}
-                              style={{ color: COLORS.dangerLight }}
-                              className="mx-auto cursor-pointer"
-                            />
-                          );
-                        else if (col.id === "select" && rIdx === 6)
-                          content = (
-                            <span
-                              style={{ color: COLORS.textMuted }}
-                              className="text-[10px] italic flex justify-between"
+                          const isReadOnly = !col.resizable && !col.sticky;
+                          return (
+                            <td
+                              key={col.id}
+                              style={{
+                                width: col.width,
+                                left: isLeft ? getStickyLeft(cIdx) : undefined,
+                                position: isLeft ? "sticky" : "static",
+                                zIndex: isLeft ? 10 : "auto",
+                                backgroundColor: isReadOnly
+                                  ? "#FAFAFA"
+                                  : "white",
+                                borderColor: COLORS.border,
+                              }}
+                              className={`border-r px-1 text-xs overflow-hidden whitespace-nowrap ${
+                                col.align === "center"
+                                  ? "text-center"
+                                  : col.align === "right"
+                                  ? "text-right"
+                                  : "text-left"
+                              } ${isReadOnly ? "text-gray-500" : ""}`}
                             >
-                              Select... <span>▶</span>
-                            </span>
+                              {content}
+                            </td>
                           );
-                        else if (col.id === "attr")
-                          content = (
-                            <FileText
-                              size={14}
-                              style={{ color: COLORS.info }}
-                              className="mx-auto"
-                            />
-                          );
-                        else if (col.id === "widg")
-                          content = (
-                            <BarChart2
-                              size={14}
-                              style={{ color: COLORS.info }}
-                              className="mx-auto"
-                            />
-                          );
-                        else if (col.id === "sugg")
-                          content = (
-                            <List
-                              size={14}
-                              style={{ color: COLORS.primary }}
-                              className="mx-auto"
-                            />
-                          );
-                        else if (col.id === "batch")
-                          content = (
-                            <Table
-                              size={14}
-                              style={{ color: COLORS.primary }}
-                              className="mx-auto"
-                            />
-                          );
-                        else if (["igst", "cgst", "sgst"].includes(col.id))
-                          content = "₹0.00";
-                        else if (["bdsalerate", "itembalance"].includes(col.id))
-                          content = "0";
-
-                        return (
-                          <td
-                            key={col.id}
-                            style={{
-                              width: `${col.width}px`,
-                              left: leftOffset,
-                              position: col.fixed ? "sticky" : "static",
-                              zIndex: col.fixed ? 10 : "auto",
-                              backgroundColor: COLORS.white,
-                              borderColor: COLORS.border,
-                            }}
-                            className={`border-r px-1 text-xs overflow-hidden whitespace-nowrap ${
-                              col.align === "center"
-                                ? "text-center"
-                                : col.align === "right"
-                                ? "text-right"
-                                : "text-left"
-                            }`}
-                          >
-                            {content}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
+                        })}
+                      </tr>
+                    );
+                  })}
                 </tbody>
-
-                {/* --- TABLE FOOTER (TOTALS) --- */}
-                <tfoot
-                  className="sticky bottom-0 z-20 shadow-[0_-1px_2px_rgba(0,0,0,0.1)]"
-                  style={{ backgroundColor: COLORS.background }}
-                >
-                  <tr
-                    className="h-9 font-bold"
-                    style={{ color: COLORS.textPrimary }}
-                  >
-                    {columns.map((col, cIdx) => {
-                      const leftOffset = col.fixed
-                        ? getStickyLeft(cIdx)
-                        : undefined;
-                      const isTotalCol = totalColumns.includes(col.id);
+                <tfoot className="sticky bottom-0 z-20 bg-gray-50">
+                  <tr className="h-9 font-bold">
+                    {columns.map((col, idx) => {
+                      let content: React.ReactNode = "";
+                      if (col.id === "desc") content = "TOTAL";
+                      else if (col.id === "pqty") content = totals.pqty;
+                      else if (col.id === "qty") content = totals.qty;
+                      else if (col.id === "amount") content = totals.amount;
 
                       return (
                         <td
                           key={col.id}
                           style={{
-                            width: `${col.width}px`,
-                            left: leftOffset,
-                            position: "sticky",
-                            bottom: 0,
-                            zIndex: col.fixed ? 30 : 20,
+                            left:
+                              col.sticky === "left"
+                                ? getStickyLeft(idx)
+                                : undefined,
+                            position:
+                              col.sticky === "left" ? "sticky" : "static",
+                            zIndex: col.sticky === "left" ? 30 : 20,
                             backgroundColor: COLORS.background,
-                            borderColor: COLORS.borderDark,
                           }}
-                          className={`border-r px-1 text-xs overflow-hidden whitespace-nowrap border-t-2 ${
-                            col.align === "center"
-                              ? "text-center"
-                              : col.align === "right"
-                              ? "text-right"
-                              : "text-left"
-                          }`}
+                          className="border-r border-t-2 px-1 text-xs text-right"
                         >
-                          {col.id === "desc"
-                            ? "TOTAL"
-                            : isTotalCol
-                            ? "0.00"
-                            : ""}
+                          {content}
                         </td>
                       );
                     })}
@@ -501,65 +1069,132 @@ const OrderTable: React.FC = () => {
         </div>
       </div>
 
-      {/* --- BOTTOM TOOLBAR --- */}
-      <div
-        className="flex-none h-12 border-t px-4 flex justify-between items-center shadow-[0_-2px_4px_rgba(0,0,0,0.05)] z-10 relative"
-        style={{ backgroundColor: COLORS.white, borderColor: COLORS.border }}
-      >
-        <div className="flex gap-2">
-          <button
-            className="custom-btn-primary h-8 w-8 rounded flex items-center justify-center shadow-sm"
-            style={{ color: COLORS.white }}
-          >
-            <Plus size={16} />
-          </button>
-          <button
-            className="custom-btn-primary h-8 w-8 rounded flex items-center justify-center shadow-sm"
-            style={{ color: COLORS.white }}
-          >
-            <Search size={16} />
-          </button>
-        </div>
+      <AttributePanel
+        isOpen={attributePanelState.visible}
+        onClose={() =>
+          setAttributePanelState({ ...attributePanelState, visible: false })
+        }
+        onSave={handleAttributeSave}
+        initialData={attributePanelState.tempItemData}
+      />
 
-        <div className="pr-8"></div>
-      </div>
+      {/* --- POSTING GL POPUP --- */}
+      <PostingGLPopup
+        visible={glPopupState.visible}
+        top={glPopupState.top}
+        left={glPopupState.left}
+        data={glAccounts}
+        onClose={closeGlPopup}
+        onSelect={handleGLSelect}
+      />
 
-      {/* --- GLOBAL STYLES --- */}
-      {/* This injects your global colors into standard CSS classes for Pseudo-states (Hover/Scrollbar) */}
+      {/* --- ITEM POPUP (Rendered via Portal) --- */}
+      {popupState.visible &&
+        ReactDOM.createPortal(
+          <>
+            <div
+              className="fixed inset-0 z-[9998] cursor-default bg-transparent"
+              onClick={closePopup}
+            />
+            <div
+              className="fixed z-[9999] bg-white border shadow-xl flex flex-col rounded"
+              style={{
+                top: popupState.top,
+                left: popupState.left,
+                borderColor: COLORS.borderDark,
+                width: "500px",
+                maxHeight: "300px",
+                transform:
+                  popupState.top + 300 > window.innerHeight
+                    ? "translateY(-100%)"
+                    : "none",
+              }}
+            >
+              {/* HEADER WITH + ICON */}
+              <div
+                className="flex justify-between items-center p-2 border-b h-8"
+                style={{
+                  backgroundColor: COLORS.primary,
+                  color: COLORS.white,
+                }}
+              >
+                <span className="font-bold text-xs pl-1">Select Item</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleCreateItemClick}
+                    className="hover:bg-green-600 hover:text-white p-0.5 rounded transition-colors"
+                    title="Create New Item"
+                  >
+                    <Plus size={14} />
+                  </button>
+                  <button
+                    onClick={closePopup}
+                    className="hover:bg-red-500 hover:text-white p-0.5 rounded transition-colors"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-auto p-0">
+                <table className="w-full text-xs text-left border-collapse">
+                  <thead className="sticky top-0 bg-gray-100 z-10 shadow-sm">
+                    <tr>
+                      <th className="p-1.5 border font-semibold text-gray-700 w-24">
+                        Code
+                      </th>
+                      <th className="p-1.5 border font-semibold text-gray-700">
+                        Name
+                      </th>
+                      <th className="p-1.5 border font-semibold text-gray-700 w-20">
+                        HSN
+                      </th>
+                      <th className="p-1.5 border font-semibold text-gray-700 w-24">
+                        Barcode
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.length > 0 ? (
+                      items.map((item, idx) => (
+                        <tr
+                          key={item._id || idx}
+                          className="border-b hover:bg-blue-50 cursor-pointer transition-colors"
+                          onClick={() => handleItemSelect(item)}
+                        >
+                          <td className="p-1.5 border">{item.code}</td>
+                          <td className="p-1.5 border">{item.name}</td>
+                          <td className="p-1.5 border">
+                            {item.gst_classfication}
+                          </td>
+                          <td className="p-1.5 border">{item.barcode}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={4}
+                          className="p-4 text-center text-gray-500"
+                        >
+                          Loading items...
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>,
+          document.body
+        )}
+
       <style>{`
-        .custom-btn-primary {
-          background-color: ${COLORS.primary};
-          transition: background-color 0.2s;
-        }
-        .custom-btn-primary:hover {
-          background-color: ${COLORS.primaryHover};
-        }
-
-        /* Row Hover Effect */
-        .custom-row-hover:hover td {
-          background-color: ${COLORS.primaryLight} !important;
-        }
-
-        /* Scrollbar Styling */
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 14px;
-          height: 14px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: ${COLORS.scrollbarTrack};
-          border: 1px solid ${COLORS.border};
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background-color: ${COLORS.scrollbarThumb};
-          border-radius: 10px;
-          border: 3px solid ${COLORS.scrollbarTrack};
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background-color: ${COLORS.scrollbarThumbHover};
-        }
-        .custom-scrollbar::-webkit-scrollbar-corner {
-           background: ${COLORS.scrollbarTrack};
-        }
+        .custom-btn-primary { background-color: ${COLORS.primary}; transition: background-color 0.2s; }
+        .custom-btn-primary:hover { background-color: ${COLORS.primaryHover}; }
+        .custom-row-hover:hover td { background-color: ${COLORS.primaryLight} !important; }
+        .custom-scrollbar::-webkit-scrollbar { width: 14px; height: 14px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: ${COLORS.scrollbarThumb}; border: 3px solid transparent; background-clip: content-box; border-radius: 99px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: ${COLORS.scrollbarTrack}; }
       `}</style>
     </div>
   );

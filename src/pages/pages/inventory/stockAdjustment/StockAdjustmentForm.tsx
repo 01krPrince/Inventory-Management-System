@@ -21,7 +21,7 @@ import {
   Customer,
 } from "../../sales/customer/api/customerService";
 
-import Dropdown, { ColumnDef } from "./Dropdown";
+import Dropdown, { ColumnDef } from "../../../../components/Dropdown";
 
 // --- DATA INTERFACE ---
 export interface StockAdjustmentHeaderData {
