@@ -1,45 +1,34 @@
 import React, { useState, useEffect } from "react";
-import {
-  ChevronDown,
-  ChevronUp,
-  Calendar,
-  FileText,
-  Edit2,
-} from "lucide-react";
-
-// Import your custom Dropdown and ColumnDef
+import { ChevronDown, ChevronUp, FileText, Edit2 } from "lucide-react";
 import Dropdown, { ColumnDef } from "../../../../components/Dropdown";
-
-// Import Transporter Modal (Default export only)
 import Transporter from "../../../../components/Transporter";
-
-// Import the Service and Type
-// Note: Ensure this path points to where you saved the 'transporterService.ts' file I gave you earlier.
-// If you saved it in 'services/transporterService.ts', update the path below.
+import DateInput from "../../../../components/DateInput";
 import TransporterService, {
   Transporter as TransporterType,
 } from "../../../../components/api/transporter";
-// --- 1. Define Data Interfaces ---
+
+// --- 1. Define Data Interfaces (Matches JSON Payload) ---
 
 export interface LogisticsData {
   destination: string;
   shippingMode: string;
-  shippingCompany: string; // Stores the Name of selected company
+  shippingCompany: string;
+  shippingCompanyAbout: string; // Added field
   shippingTrackingNo: string;
   shippingDate: string;
   shippingCharges: string;
   vehicleNo: string;
-  chargeType: string;
+  chargesType: string; // Renamed from chargeType to match JSON
   documentThrough: string;
   noOfPackets: string;
   weight: string;
   distance: string;
   eWayInvoiceNo: string;
   eWayInvoiceDate: string;
-  eWayCancelDate: string;
+  eWayCancelDate: string | null; // Handle nulls from API
   irnNo: string;
   qrCode: string;
-  irnCancelDate: string;
+  irnCancelDate: string | null; // Handle nulls from API
   irnCancelReason: string;
   acknowledgementNo: string;
   acknowledgementDate: string;
@@ -105,24 +94,6 @@ const Select: React.FC<
   </div>
 );
 
-const DateInput: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = (
-  props
-) => (
-  <div className="relative w-full h-[30px]">
-    <input
-      type="date"
-      className="w-full h-[30px] bg-white border border-gray-300 rounded-sm px-2 text-[13px] text-gray-700 focus:outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)] pr-8"
-      {...props}
-    />
-    <button
-      type="button"
-      className="absolute right-0 top-0 h-full w-8 flex items-center justify-center bg-gray-100 rounded-r-sm border-l border-gray-300 text-gray-600 pointer-events-none"
-    >
-      <Calendar size={14} />
-    </button>
-  </div>
-);
-
 const ActionBtn: React.FC<{
   icon: React.ReactNode;
   onClick?: () => void;
@@ -146,19 +117,13 @@ const Logistics: React.FC<LogisticsProps> = ({
   themeColor = "#0f3c63",
 }) => {
   const [isOpen, setIsOpen] = useState(true);
-
-  // Modal State
   const [transporterModalOpen, setTransporterModalOpen] = useState(false);
-
-  // FIX: Use TransporterType (from service) instead of TransporterMaster
   const [editingTransporter, setEditingTransporter] =
     useState<TransporterType | null>(null);
 
-  // --- API Data State ---
   const [transporterList, setTransporterList] = useState<TransporterType[]>([]);
   const [isLoadingList, setIsLoadingList] = useState(false);
 
-  // Define CSS variables
   const themeStyles = {
     "--theme-primary": themeColor,
     "--theme-focus": "#60a5fa",
@@ -167,13 +132,12 @@ const Logistics: React.FC<LogisticsProps> = ({
   const shippingModes = ["Road", "Air", "Sea", "Rail"];
   const chargeTypes = ["Paid", "To Pay", "Free"];
 
-  // --- Columns for Dropdown ---
+  // Columns for Dropdown
   const transporterColumns: ColumnDef<TransporterType>[] = [
     { header: "Code", key: "code", width: "w-20" },
     { header: "Name", key: "name", width: "flex-1" },
   ];
 
-  // --- API: Fetch Transporters ---
   const fetchTransporters = async () => {
     try {
       setIsLoadingList(true);
@@ -188,47 +152,44 @@ const Logistics: React.FC<LogisticsProps> = ({
     }
   };
 
-  // Fetch on mount
   useEffect(() => {
     fetchTransporters();
   }, []);
 
-  // --- Handlers ---
-
-  const handleChange = (field: keyof LogisticsData, value: string) => {
+  const handleChange = (field: keyof LogisticsData, value: string | null) => {
+    // If value is null, we can keep it null or convert to empty string for inputs
     onChange({ ...data, [field]: value });
   };
 
-  // Called when User selects from Dropdown
+  // Handle Transporter Selection
   const handleTransporterSelect = (item: TransporterType | null) => {
-    handleChange("shippingCompany", item?.name || "");
+    // Automatically fill the "About" field if available in the transporter object
+    // Assuming item.description maps to shippingCompanyAbout
+    const aboutInfo =
+      item && "description" in item ? (item as any).description : "";
+
+    onChange({
+      ...data,
+      shippingCompany: item?.name || "",
+      shippingCompanyAbout: aboutInfo || "",
+    });
   };
 
-  // Called when User clicks the Edit/Add Icon
   const handleEditOrAddTransporter = () => {
     if (data.shippingCompany) {
-      // 1. EDIT MODE: Try to find the selected transporter in our list
       const selected = transporterList.find(
         (t) => t.name === data.shippingCompany
       );
-
-      if (selected) {
-        // FIX: No need to cast to TransporterMaster anymore, types match now
-        setEditingTransporter(selected);
-      } else {
-        setEditingTransporter(null);
-      }
+      setEditingTransporter(selected || null);
     } else {
-      // 2. CREATE MODE: Nothing selected
       setEditingTransporter(null);
     }
     setTransporterModalOpen(true);
   };
 
-  // Called when the Transporter Modal successfully creates/updates data
   const handleTransporterSuccess = () => {
     setTransporterModalOpen(false);
-    fetchTransporters(); // Refresh the list from API
+    fetchTransporters();
   };
 
   return (
@@ -261,7 +222,7 @@ const Logistics: React.FC<LogisticsProps> = ({
               {/* Destination */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
-                  <Label>Destination</Label>
+                  <Label required>Destination</Label>
                 </div>
                 <div className="col-span-8">
                   <Input
@@ -276,7 +237,7 @@ const Logistics: React.FC<LogisticsProps> = ({
               {/* Shipping Mode */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
-                  <Label>Shipping Mode</Label>
+                  <Label required>Shipping Mode</Label>
                 </div>
                 <div className="col-span-8">
                   <Select
@@ -292,14 +253,13 @@ const Logistics: React.FC<LogisticsProps> = ({
               {/* Shipping Company (DROPDOWN + EDIT BUTTON) */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
-                  <Label>Shipping Company</Label>
+                  <Label required>Shipping Company</Label>
                 </div>
                 <div className="col-span-8 flex gap-1">
-                  {/* Integrated API Data here */}
                   <Dropdown
                     data={transporterList}
                     columns={transporterColumns}
-                    value={data.shippingCompany} // Shows Name
+                    value={data.shippingCompany}
                     valueKey="name"
                     onChange={handleTransporterSelect}
                     placeholder={
@@ -314,10 +274,26 @@ const Logistics: React.FC<LogisticsProps> = ({
                 </div>
               </div>
 
+              {/* Shipping Company About (New Field) */}
+              <div className="grid grid-cols-12 gap-2">
+                <div className="col-span-4">
+                  <Label>Transporter Details</Label>
+                </div>
+                <div className="col-span-8">
+                  <Input
+                    placeholder="About Transporter / Address"
+                    value={data.shippingCompanyAbout}
+                    onChange={(e) =>
+                      handleChange("shippingCompanyAbout", e.target.value)
+                    }
+                  />
+                </div>
+              </div>
+
               {/* Shipping Tracking No */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
-                  <Label>Shipping Tracking No</Label>
+                  <Label>Tracking No</Label>
                 </div>
                 <div className="col-span-8">
                   <Input
@@ -332,7 +308,7 @@ const Logistics: React.FC<LogisticsProps> = ({
               {/* Shipping Date */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
-                  <Label>Shipping Date</Label>
+                  <Label required>Shipping Date</Label>
                 </div>
                 <div className="col-span-8">
                   <DateInput
@@ -363,7 +339,7 @@ const Logistics: React.FC<LogisticsProps> = ({
               {/* Vehicle No */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
-                  <Label>Vehicle/Vessel No</Label>
+                  <Label required>Vehicle/Vessel No</Label>
                 </div>
                 <div className="col-span-8">
                   <Input
@@ -373,7 +349,7 @@ const Logistics: React.FC<LogisticsProps> = ({
                 </div>
               </div>
 
-              {/* Charge Type */}
+              {/* Charge Type (Renamed Prop) */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
                   <Label>Charge Type</Label>
@@ -381,8 +357,10 @@ const Logistics: React.FC<LogisticsProps> = ({
                 <div className="col-span-8">
                   <Select
                     options={chargeTypes}
-                    value={data.chargeType}
-                    onChange={(e) => handleChange("chargeType", e.target.value)}
+                    value={data.chargesType}
+                    onChange={(e) =>
+                      handleChange("chargesType", e.target.value)
+                    }
                   />
                 </div>
               </div>
@@ -390,7 +368,7 @@ const Logistics: React.FC<LogisticsProps> = ({
               {/* Document Through */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
-                  <Label>Document Through</Label>
+                  <Label required>Document Through</Label>
                 </div>
                 <div className="col-span-8">
                   <Input
@@ -407,7 +385,7 @@ const Logistics: React.FC<LogisticsProps> = ({
             <div className="space-y-1">
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
-                  <Label>No of Packts</Label>
+                  <Label>No of Packets</Label>
                 </div>
                 <div className="col-span-8">
                   <Input
@@ -426,8 +404,7 @@ const Logistics: React.FC<LogisticsProps> = ({
                 </div>
                 <div className="col-span-8">
                   <Input
-                    type="number"
-                    value={data.weight}
+                    value={data.weight} // Treated as string to allow "35KG"
                     onChange={(e) => handleChange("weight", e.target.value)}
                   />
                 </div>
@@ -435,12 +412,11 @@ const Logistics: React.FC<LogisticsProps> = ({
 
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
-                  <Label>Distance</Label>
+                  <Label required>Distance</Label>
                 </div>
                 <div className="col-span-8">
                   <Input
-                    type="number"
-                    value={data.distance}
+                    value={data.distance} // Treated as string to allow "380KM"
                     onChange={(e) => handleChange("distance", e.target.value)}
                   />
                 </div>
@@ -449,7 +425,7 @@ const Logistics: React.FC<LogisticsProps> = ({
               {/* eWay Fields */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
-                  <Label>eWay Invoice No</Label>
+                  <Label required>eWay Invoice No</Label>
                 </div>
                 <div className="col-span-8">
                   <Input
@@ -462,7 +438,7 @@ const Logistics: React.FC<LogisticsProps> = ({
               </div>
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
-                  <Label>eWay Invoice Date</Label>
+                  <Label required>eWay Invoice Date</Label>
                 </div>
                 <div className="col-span-8">
                   <DateInput
@@ -479,7 +455,7 @@ const Logistics: React.FC<LogisticsProps> = ({
                 </div>
                 <div className="col-span-8">
                   <DateInput
-                    value={data.eWayCancelDate}
+                    value={data.eWayCancelDate || ""}
                     onChange={(e) =>
                       handleChange("eWayCancelDate", e.target.value)
                     }
@@ -516,7 +492,7 @@ const Logistics: React.FC<LogisticsProps> = ({
                 </div>
                 <div className="col-span-8">
                   <DateInput
-                    value={data.irnCancelDate}
+                    value={data.irnCancelDate || ""}
                     onChange={(e) =>
                       handleChange("irnCancelDate", e.target.value)
                     }
@@ -575,8 +551,6 @@ const Logistics: React.FC<LogisticsProps> = ({
           isOpen={transporterModalOpen}
           onClose={() => setTransporterModalOpen(false)}
           initialData={editingTransporter}
-          // IMPORTANT: You need to pass a callback here to refresh the list
-          // when a new transporter is created/edited successfully.
           onSuccess={handleTransporterSuccess}
         />
       )}

@@ -21,10 +21,9 @@ import AddNewItem from "../../../../components/addItemMaster/AddNewItem";
 
 // --- API IMPORTS ---
 import { fetchItems } from "../itemMaster/api/itemService";
-import {
-  fetchStockUnits,
-  StockUnitData,
-} from "../../../../components/addItemMaster/api/itemService";
+import { fetchStockUnits } from "../../../../components/addItemMaster/api/stockunitservice";
+import { StockUnitData } from "../../../../components/addItemMaster/api/types";
+
 import {
   fetchSalesAndPurchaseGL,
   SalesAndPurchaseGL,
@@ -174,13 +173,9 @@ const OrderTable: React.FC<OrderTableProps> = ({
       const initialRows = Array.from({ length: 15 }, () => generateRowId());
       setRows(initialRows);
 
-      const initialData: Record<string, RowData> = {};
-      initialRows.forEach((id) => {
-        initialData[id] = {};
-      });
-      setTableData(initialData);
+      setTableData({});
     }
-  }, [rows.length, setRows, setTableData]);
+  }, [rows.length]);
 
   // 2. Data Loading Effect
   useEffect(() => {
@@ -592,6 +587,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
     const { activeRowId, tempItemData } = attributePanelState;
     if (activeRowId && tempItemData) {
       const baseData: RowData = {
+        itemcode: tempItemData.code || "",
         select: tempItemData.code || "",
         desc: tempItemData.name || "",
         unit: tempItemData.stock_unit || "",

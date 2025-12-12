@@ -20,10 +20,9 @@ import AddNewItem from "../../../../components/addItemMaster/AddNewItem";
 
 // --- API IMPORTS ---
 import { fetchItems } from "../itemMaster/api/itemService";
-import {
-  fetchStockUnits,
-  StockUnitData,
-} from "../../../../components/addItemMaster/api/itemService";
+
+import { StockUnitData } from "../../../../components/addItemMaster/api/types";
+import { fetchStockUnits } from "../../../../components/addItemMaster/api/stockunitservice";
 import { ItemApiData } from "../itemMaster/models/ItemModel";
 import AttributePanel from "../../../../components/AttributePanel";
 

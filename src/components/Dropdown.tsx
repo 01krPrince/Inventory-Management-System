@@ -1,4 +1,10 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useMemo,
+  useLayoutEffect,
+} from "react";
 import { ChevronDown, Search, X } from "lucide-react";
 
 export interface ColumnDef<T> {
@@ -14,6 +20,7 @@ interface TableDropdownProps<T> {
   onChange: (item: T | null) => void;
   placeholder?: string;
   valueKey: keyof T;
+  className?: string;
 }
 
 const Dropdown = <T extends object>({
@@ -23,11 +30,14 @@ const Dropdown = <T extends object>({
   onChange,
   placeholder = "Select...",
   valueKey,
+  className = "w-full",
 }: TableDropdownProps<T>) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [menuPosition, setMenuPosition] = useState<"bottom" | "top">("bottom");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Close when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -40,6 +50,23 @@ const Dropdown = <T extends object>({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Calculate position (Up or Down) whenever it opens
+  useLayoutEffect(() => {
+    if (isOpen && dropdownRef.current) {
+      const rect = dropdownRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+
+      // We assume the dropdown max-height is around 300px + some buffer
+      const REQUIRED_SPACE = 320;
+
+      if (spaceBelow < REQUIRED_SPACE) {
+        setMenuPosition("top");
+      } else {
+        setMenuPosition("bottom");
+      }
+    }
+  }, [isOpen]);
 
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
@@ -81,10 +108,10 @@ const Dropdown = <T extends object>({
   };
 
   return (
-    <div className="relative w-full" ref={dropdownRef}>
+    <div className={`relative ${className}`} ref={dropdownRef}>
       {/* TRIGGER INPUT */}
       <div
-        className="w-full h-[32px] bg-white border border-gray-300 rounded-sm px-3 flex items-center justify-between cursor-pointer hover:border-gray-400 focus-within:ring-1 focus-within:ring-[#60a5fa] focus-within:border-[#60a5fa] transition-all"
+        className="w-full h-[30px] bg-white border border-gray-300 rounded-sm px-2 flex items-center justify-between cursor-pointer hover:border-gray-400 focus-within:ring-1 focus-within:ring-[#60a5fa] focus-within:border-[#60a5fa] transition-all"
         onClick={() => setIsOpen(!isOpen)}
       >
         <span
@@ -110,10 +137,19 @@ const Dropdown = <T extends object>({
 
       {/* DROPDOWN BODY */}
       {isOpen && (
-        <div className="absolute top-full left-0 w-[450px] min-w-full bg-white border border-gray-200 shadow-2xl rounded-md z-50 mt-1 flex flex-col max-h-[300px] overflow-hidden animate-in fade-in zoom-in-95 duration-100">
-          {/* FIX 1: Search Bar 
-             Removed 'sticky'. Added 'shrink-0' so it never collapses.
-          */}
+        <div
+          className={`
+            absolute left-0 bg-white border border-gray-200 shadow-xl rounded-sm z-50 flex flex-col max-h-[300px] overflow-hidden animate-in fade-in zoom-in-95 duration-100
+            ${
+              menuPosition === "top"
+                ? "bottom-full mb-1 origin-bottom"
+                : "top-full mt-1 origin-top"
+            }
+          `}
+          // Ensure min-width but respect parent width logic
+          style={{ width: "100%", minWidth: "300px" }}
+        >
+          {/* Search Bar */}
           <div className="p-2 border-b border-gray-100 bg-gray-50/50 shrink-0 z-20">
             <div className="relative">
               <Search
@@ -123,7 +159,7 @@ const Dropdown = <T extends object>({
               <input
                 type="text"
                 placeholder="Search..."
-                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm"
+                className="w-full pl-9 pr-3 py-1.5 text-xs border border-gray-300 rounded-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 autoFocus
@@ -132,11 +168,8 @@ const Dropdown = <T extends object>({
             </div>
           </div>
 
-          {/* FIX 2: Table Header
-             Removed 'sticky' and top calculation. Added 'shrink-0'.
-             It will now sit naturally below the search bar.
-          */}
-          <div className="flex bg-gray-100 border-b border-gray-200 text-xs font-bold text-gray-600 px-3 py-2 shrink-0 z-10">
+          {/* Table Header */}
+          <div className="flex bg-gray-100 border-b border-gray-200 text-[11px] font-bold text-gray-600 px-3 py-1.5 shrink-0 z-10">
             {columns.map((col) => (
               <div
                 key={col.key as string}
@@ -147,11 +180,7 @@ const Dropdown = <T extends object>({
             ))}
           </div>
 
-          {/* FIX 3: Scrollable List
-             1. flex-1: Takes up all REMAINING height after Search and Header.
-             2. overflow-y-auto: Only this section scrolls.
-             3. min-h-0: Prevents flex child from overflowing parent.
-          */}
+          {/* Scrollable List */}
           <div className="overflow-y-auto flex-1 p-1 min-h-0">
             {filteredData.length > 0 ? (
               filteredData.map((item) => {
@@ -160,7 +189,7 @@ const Dropdown = <T extends object>({
                 return (
                   <div
                     key={String(item[valueKey])}
-                    className={`flex items-center text-[13px] px-3 py-2.5 border-b border-gray-50 cursor-pointer transition-colors rounded-sm
+                    className={`flex items-center text-[12px] px-3 py-2 border-b border-gray-50 cursor-pointer transition-colors rounded-sm
                       ${
                         isSelected
                           ? "bg-blue-50 text-blue-700 font-medium border-blue-100"
@@ -183,7 +212,7 @@ const Dropdown = <T extends object>({
             ) : (
               <div className="p-6 text-center text-xs text-gray-500 flex flex-col items-center gap-2">
                 <Search size={20} className="opacity-30" />
-                <span>No results found for "{searchTerm}"</span>
+                <span>No results found</span>
               </div>
             )}
           </div>

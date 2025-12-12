@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { X, Loader2 } from "lucide-react";
+
 import {
-  createGstClassification,
   CreateGstClassificationPayload,
-} from "./addItemMaster/api/itemService";
+  createGstClassification,
+} from "./addItemMaster/api/gstservice";
 
 // ---------- TYPES ----------
 export interface GstFormData {

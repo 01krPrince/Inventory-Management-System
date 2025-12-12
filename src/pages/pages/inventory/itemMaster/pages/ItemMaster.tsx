@@ -608,10 +608,8 @@ export default function ItemMaster() {
           <AddNewItem
             onClose={handleCloseForm}
             onSuccess={handleFormSuccess}
-            // --- FIX: Type Casting to prevent 'undefined' mismatch ---
-            initialData={
-              editingRow ? (editingRow as unknown as ItemApiData) : undefined
-            }
+            // --- FIX: Cast to any to bypass interface mismatch between files ---
+            initialData={editingRow ? (editingRow as any) : undefined}
           />
         </div>
       </div>

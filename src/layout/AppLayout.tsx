@@ -19,6 +19,7 @@ import StockAdjustment from "../pages/pages/inventory/stockAdjustment/StockAdjus
 import InterBranchTransfer from "../pages/pages/inventory/interBranchTransfer/InterBranchTransfer.tsx";
 import MaterialIssueForJobWork from "../pages/pages/inventory/JobWorkOutward/MaterialIssueForJobWork/MaterialIssueForJobWork.tsx";
 import ParentTableComponent from "../components/ParentTableComponent.tsx";
+import POSOrder from "../pages/pages/pointOfSale/POSOrder/POSOrder.tsx";
 // import { CustomCalculator } from "../components/CustomCalculator";
 
 const useSidebar = () => ({
@@ -43,6 +44,7 @@ const ComponentMap: { [key: string]: React.FC } = {
   "/inter-branch-transfer": InterBranchTransfer,
   "/material-issue-for-job-work": MaterialIssueForJobWork,
   "/job-work-outward-rate": ParentTableComponent,
+  "/pos-order": POSOrder,
 
   //   Type 'FC<ModalProps>' is not assignable to type 'FC<{}>'.
   //   Property 'onClose' is missing in type '{}' but required in type 'ModalProps'.ts(2322)

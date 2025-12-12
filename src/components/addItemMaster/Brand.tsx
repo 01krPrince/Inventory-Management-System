@@ -8,8 +8,7 @@ import {
   ChevronDown,
   Loader2,
 } from "lucide-react";
-import { createItemBrand, CreateBrandPayload } from "./api/itemService";
-
+import { createItemBrand, CreateBrandPayload } from "./api/brandservice";
 interface BrandProps {
   onClose: () => void;
 }

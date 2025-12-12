@@ -8,17 +8,18 @@ import UnderGroup from "./UnderGroup";
 import StockUnit from "./StockUnit";
 
 import {
-  createItem,
-  updateItem,
-  fetchCategories,
-  fetchBrands,
-  fetchStockUnits,
-  fetchGstClassifications,
   CategoryData,
   BrandData,
   StockUnitData,
   GstClassificationData,
-} from "./api/itemService";
+  UnderGroupData,
+} from "./api/types";
+import { fetchCategories } from "./api/categoryservice";
+import { fetchBrands } from "./api/brandservice";
+import { fetchStockUnits } from "./api/stockunitservice";
+import { fetchGstClassifications } from "./api/gstservice";
+import { createItem, updateItem } from "./api/itemService";
+import { fetchUnderGroup } from "./api/underGroupservice";
 
 import {
   fetchSalesAndPurchaseGL,
@@ -28,11 +29,94 @@ import {
 import { ItemFormData, ItemApiData } from "./models/ItemModel";
 import ChartOfAccounts from "../ChartOfAccount";
 import { GstClassificationForm } from "../GstClassificationForm";
+import Dropdown, { ColumnDef } from "../Dropdown";
+
+// --- Static Data for Simple Dropdowns ---
+const ITEM_MODES = [
+  { label: "Inventory", value: "Inventory" },
+  { label: "Non-Inventory", value: "Non-Inventory" },
+  { label: "Service", value: "Service" },
+  { label: "Bundle", value: "Bundle" },
+];
+
+const ITEM_TYPES = [
+  { label: "Pack", value: "Pack" },
+  { label: "FinishProduct", value: "FinishProduct" },
+  { label: "RawMaterial", value: "RawMaterial" },
+];
+
+const UNIT_OPTIONS = [
+  { label: "Packet", value: "Packet" },
+  { label: "StockUnit", value: "StockUnit" },
+  { label: "Other", value: "Other" },
+];
+
+const WORKFLOW_OPTIONS = [
+  { label: "Standard", value: "Standard" },
+  { label: "Regular", value: "Regular" },
+];
+
+const PROCUREMENT_TYPES = [
+  { label: "Purchase", value: "Purchase" },
+  { label: "Manufacture", value: "Manufacture" },
+];
+
+const SET_TEMPLATE_OPTIONS = [
+  { label: "No", value: "No" },
+  { label: "Select", value: "Select" },
+];
+
+const DRUG_TYPES = [
+  { label: "Regular", value: "Regular" },
+  { label: "Schedule H", value: "Schedule H" },
+];
+
+// --- Column Definitions ---
+
+const simpleLabelColumns: ColumnDef<any>[] = [
+  { header: "Option", key: "label", width: "w-full" },
+];
+
+const stockUnitColumns: ColumnDef<StockUnitData>[] = [
+  { header: "Code", key: "code", width: "w-20" },
+  { header: "Name", key: "name", width: "w-full" },
+  { header: "UQC", key: "uqc", width: "w-24" },
+];
+
+const underGroupColumns: ColumnDef<UnderGroupData>[] = [
+  { header: "Item Name", key: "item_name", width: "w-1/3" },
+  { header: "Under Group", key: "under_group", width: "w-1/3" },
+  { header: "Code", key: "code", width: "w-20" },
+];
+
+const gstColumns: ColumnDef<GstClassificationData>[] = [
+  { header: "Type", key: "type", width: "w-24" },
+  { header: "HSN/SAC", key: "hsn_sac_code", width: "w-32" },
+  { header: "Code", key: "code", width: "w-20" },
+];
+
+const categoryColumns: ColumnDef<CategoryData>[] = [
+  { header: "Name", key: "name", width: "w-full" },
+  { header: "Code", key: "code", width: "w-24" },
+];
+
+const brandColumns: ColumnDef<BrandData>[] = [
+  { header: "Name", key: "name", width: "w-full" },
+  { header: "Salesman", key: "salesman", width: "w-32" },
+  { header: "Code", key: "code", width: "w-20" },
+];
+
+const glColumns: ColumnDef<SalesAndPurchaseGL>[] = [
+  { header: "Code", key: "code", width: "w-24" },
+  { header: "Name", key: "name", width: "w-full" },
+];
+
+// --- Interfaces & Constants ---
 
 const INITIAL_DATA: ItemFormData = {
   // Basic Details
   itemMode: "Inventory",
-  itemName: "",
+  item_name: "",
   underGroup: "",
   stockUnit: "",
   gstClassification: "",
@@ -164,32 +248,6 @@ const InputField = ({
   </div>
 );
 
-const SelectField = ({
-  label,
-  name,
-  value,
-  onChange,
-  options,
-  required = false,
-}: any) => (
-  <div className="mb-3">
-    <FormLabel required={required}>{label}</FormLabel>
-    <select
-      name={name}
-      value={value}
-      onChange={onChange}
-      className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm bg-white focus:outline-none focus:border-[#0c5888]"
-    >
-      <option value="">Select...</option>
-      {options.map((opt: string) => (
-        <option key={opt} value={opt}>
-          {opt}
-        </option>
-      ))}
-    </select>
-  </div>
-);
-
 interface AddNewItemProps {
   onClose: () => void;
   initialData?: ItemApiData;
@@ -204,33 +262,35 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
   const [activeStep, setActiveStep] = useState(0);
   const [formData, setFormData] = useState<ItemFormData>(INITIAL_DATA);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // --- MODAL VISIBILITY STATES ---
   const [showItemGroupModal, setShowItemGroupModal] = useState(false);
   const [showStockUnit, setShowStockUnit] = useState(false);
-
-  // States for the new modals
   const [isBrandOpen, setIsBrandOpen] = useState(false);
   const [isItemCategory, setIsItemCategory] = useState(false);
-
-  // --- GST MODAL STATE ---
   const [isGstModalOpen, setIsGstModalOpen] = useState(false);
-  const [gstInitialData, setGstInitialData] = useState<any>(undefined);
-
-  // --- CHART OF ACCOUNTS STATE ---
   const [showChartOfAccounts, setShowChartOfAccounts] = useState(false);
+
+  // --- MODAL INITIAL DATA STATES (For Edit Logic) ---
+  const [gstInitialData, setGstInitialData] = useState<any>(undefined);
   const [coaFormData, setCoaFormData] = useState<SalesAndPurchaseGL | null>(
     null
   );
+  const [underGroupInitialData, setUnderGroupInitialData] = useState<
+    UnderGroupData | undefined
+  >(undefined);
+  const [stockUnitInitialData, setStockUnitInitialData] = useState<
+    StockUnitData | undefined
+  >(undefined);
+
   const [activeGLType, setActiveGLType] = useState<"sales" | "purchase" | null>(
     null
   );
 
-  // --- GL DATA STATE ---
+  // --- DATA LIST STATES ---
   const [glDataFull, setGlDataFull] = useState<SalesAndPurchaseGL[]>([]);
-
-  const [salesGLList, setSalesGLList] = useState<string[]>([]);
-  const [purchaseGLList, setPurchaseGLList] = useState<string[]>([]);
-
   const [categories, setCategories] = useState<CategoryData[]>([]);
+  const [underGroup, setUnderGroup] = useState<UnderGroupData[]>([]);
   const [brands, setBrands] = useState<BrandData[]>([]);
   const [stockUnitList, setStockUnitList] = useState<StockUnitData[]>([]);
   const [gstList, setGstList] = useState<GstClassificationData[]>([]);
@@ -240,7 +300,15 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [cats, brnds, units, gsts, glData] = await Promise.all([
+        const [
+          underGroupData,
+          categoriesData,
+          brandsData,
+          stockUnitsData,
+          gstData,
+          glDataResult,
+        ] = await Promise.all([
+          fetchUnderGroup(),
           fetchCategories(),
           fetchBrands(),
           fetchStockUnits(),
@@ -248,49 +316,41 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
           fetchSalesAndPurchaseGL(),
         ]);
 
-        setCategories(cats || []);
-        setBrands(brnds || []);
-        setStockUnitList(units || []);
-        setGstList(gsts || []);
+        setUnderGroup(underGroupData || []);
+        setCategories(categoriesData || []);
+        setBrands(brandsData || []);
+        setStockUnitList(stockUnitsData || []);
+        setGstList(gstData || []);
 
-        if (glData && Array.isArray(glData)) {
-          setGlDataFull(glData);
-
-          const glNames = glData
-            .filter((item) => item.name && item.name.trim() !== "")
-            .map((item) => item.name);
-
-          setSalesGLList(glNames);
-          setPurchaseGLList(glNames);
+        if (glDataResult && Array.isArray(glDataResult)) {
+          setGlDataFull(glDataResult);
         }
       } catch (error) {
         console.error("Failed to load dropdown data", error);
       }
     };
     loadData();
-  }, []);
+  }, [formData]);
 
   useEffect(() => {
     if (initialData && Object.keys(initialData).length > 0) {
       setFormData((prev) => ({
         ...prev,
         itemMode: initialData.item_mode || prev.itemMode,
-        itemName: initialData.name || prev.itemName,
+        item_name:
+          initialData.item_name || initialData.item_name || prev.item_name,
         underGroup: initialData.under_group || prev.underGroup,
         stockUnit: initialData.stock_unit || prev.stockUnit,
         gstClassification:
           initialData.gst_classfication || prev.gstClassification,
-
         category: initialData.category || prev.category,
         brand: initialData.brand || prev.brand,
         type: initialData.type || prev.type,
         unitOption: initialData.unit_option || prev.unitOption,
         barCode: initialData.barcode || prev.barCode,
         autoBarcodePrefix: initialData.auto_barcode || prev.autoBarcodePrefix,
-
         gstInputNotApplicable: initialData.gst_applicable === false,
         printBarcode: initialData.print_barcode,
-
         salesDescription: initialData.sale_desc || prev.salesDescription,
         salesGL: initialData.sales_gl || prev.salesGL,
         mrp: initialData.mrp || prev.mrp,
@@ -302,7 +362,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
         salesDiscount: initialData.sale_discount || prev.salesDiscount,
         salesDiscountPercent:
           initialData.sale_discount_percent || prev.salesDiscountPercent,
-
         purchaseDescription: initialData.purch_desc || prev.purchaseDescription,
         purchaseGL: initialData.purchase_gl || prev.purchaseGL,
         purchaseRate: initialData.purchase_rate || prev.purchaseRate,
@@ -312,7 +371,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
           initialData.purchase_discount || prev.purchaseDiscount1,
         purchaseDiscount2:
           initialData.purchase_discount_percent || prev.purchaseDiscount2,
-
         itemWorkflow: initialData.item_workflow || prev.itemWorkflow,
         procurementType: initialData.procurement_type || prev.procurementType,
         minLevel: initialData.minimum_level || prev.minLevel,
@@ -322,7 +380,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
         rackBinNo: initialData.rackbin_no || prev.rackBinNo,
         itemSetTemplate:
           initialData.add_in_item_set_template || prev.itemSetTemplate,
-
         batchWiseInventory: initialData.batch_wise_inventory,
         batchWiseRate: initialData.batch_wise_rate,
         drugType: initialData.drug_type || prev.drugType,
@@ -330,7 +387,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
         skipLoyaltyPoints: initialData.skip_item_from_loyalty === "Yes",
         excludeInCvss: initialData.exclude_cvss_applist,
         askUdfInDocument: initialData.ask_udf_in_document === "Y",
-
         profileImage: initialData.attachment || prev.profileImage,
         suggestedItems: prev.suggestedItems,
       }));
@@ -355,6 +411,10 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
       const url = URL.createObjectURL(e.target.files[0]);
       setFormData((prev) => ({ ...prev, profileImage: url }));
     }
+  };
+
+  const handleDropdownChange = (fieldName: string, value: any) => {
+    setFormData((prev) => ({ ...prev, [fieldName]: value }));
   };
 
   const handleNext = async () => {
@@ -393,13 +453,11 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
   const handleGstEditClick = (e: React.MouseEvent) => {
     e.preventDefault();
     const currentSelection = formData.gstClassification;
-    // Find full object from current list based on description match
     const selectedItem = gstList.find(
       (item) => item.hsn_description === currentSelection
     );
 
     if (selectedItem) {
-      // Edit Mode: Pass existing data
       setGstInitialData({
         type: selectedItem.type || "HSN",
         code: selectedItem.code,
@@ -407,28 +465,23 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
         hsnSacDescription: selectedItem.hsn_description,
       });
     } else {
-      // Create Mode: Pass undefined
       setGstInitialData(undefined);
     }
     setIsGstModalOpen(true);
   };
 
   const handleGstSave = (savedData: any) => {
-    // 1. Update the form value with the new/updated description
     setFormData((prev) => ({
       ...prev,
       gstClassification: savedData.hsnSacDescription,
     }));
 
-    // 2. Update the local list so the dropdown reflects the new item immediately
     setGstList((prev) => {
-      // Check if it already exists (Edit scenario)
       const existingIndex = prev.findIndex(
         (item) => item.hsn_description === savedData.hsnSacDescription
       );
-
       const newItem: GstClassificationData = {
-        _id: `temp_${Date.now()}`, // Temporary ID until page refresh
+        _id: `temp_${Date.now()}`,
         type: savedData.type,
         hsn_sac_code: savedData.hsnSacCode,
         hsn_description: savedData.hsnSacDescription,
@@ -450,6 +503,59 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
     setIsGstModalOpen(false);
   };
 
+  // --- UNDER GROUP Logic (Unified) ---
+  const handleUnderGroupEditClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const currentSelection = formData.underGroup;
+    const selectedItem = underGroup.find(
+      (item) => item.item_name === currentSelection
+    );
+    setUnderGroupInitialData(selectedItem || undefined);
+    setShowItemGroupModal(true);
+  };
+
+  // ... inside your AddNewItem component
+  const handleUnderGroupSave = (savedData: UnderGroupData) => {
+    // 1. Update the Form's selected value
+    // Fix: Use logical OR (||) to ensure it's a string, even if undefined
+    setFormData((prev) => ({
+      ...prev,
+      underGroup: savedData.item_name || "",
+    }));
+
+    // 2. Update the Dropdown List Options
+    setUnderGroup((prev: UnderGroupData[]) => {
+      const existingIndex = prev.findIndex(
+        (item) =>
+          (savedData._id && item._id === savedData._id) ||
+          item.item_name === savedData.item_name
+      );
+
+      if (existingIndex >= 0) {
+        const updatedList = [...prev];
+        updatedList[existingIndex] = savedData;
+        return updatedList;
+      } else {
+        return [...prev, savedData];
+      }
+    });
+
+    // 3. Close the modal
+    setShowItemGroupModal(false);
+  };
+
+  // --- STOCK UNIT Logic (Unified) ---
+  const handleStockUnitEditClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const currentSelection = formData.stockUnit;
+    const selectedItem = stockUnitList.find(
+      (item) => item.name === currentSelection
+    );
+    setStockUnitInitialData(selectedItem || undefined);
+    setShowStockUnit(true);
+  };
+
+  // --- COA (Sales/Purchase GL) Logic ---
   const handleOpenCOA = (type: "sales" | "purchase", currentValue: string) => {
     setActiveGLType(type);
 
@@ -485,14 +591,8 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
       });
 
       if (activeGLType === "sales") {
-        setSalesGLList((prev) =>
-          prev.includes(savedName) ? prev : [...prev, savedName]
-        );
         setFormData((prev) => ({ ...prev, salesGL: savedName }));
       } else if (activeGLType === "purchase") {
-        setPurchaseGLList((prev) =>
-          prev.includes(savedName) ? prev : [...prev, savedName]
-        );
         setFormData((prev) => ({ ...prev, purchaseGL: savedName }));
       }
     }
@@ -503,22 +603,22 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
     <div className="bg-white border rounded-lg p-6 shadow-sm mt-4">
       <div className="grid grid-cols-12 gap-6">
         <div className="col-span-12 md:col-span-9 space-y-3">
+          {/* Item Mode */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4 md:col-span-3">
               <FormLabel>Item Mode</FormLabel>
             </div>
             <div className="col-span-8 md:col-span-9">
-              <select
-                name="itemMode"
+              <Dropdown
+                data={ITEM_MODES}
+                columns={simpleLabelColumns}
                 value={formData.itemMode}
-                onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm bg-white outline-none"
-              >
-                <option value="Inventory">Inventory</option>
-                <option value="Non-Inventory">Non-Inventory</option>
-                <option value="Service">Service</option>
-                <option value="Bundle">Bundle</option>
-              </select>
+                valueKey="value"
+                onChange={(item) =>
+                  handleDropdownChange("itemMode", item?.value || "")
+                }
+                placeholder="Select Mode"
+              />
             </div>
           </div>
 
@@ -529,114 +629,95 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
             <div className="col-span-8 md:col-span-9 flex">
               <input
                 type="text"
-                name="itemName"
-                value={formData.itemName}
+                name="item_name"
+                value={formData.item_name}
                 onChange={handleInputChange}
                 className="w-full border border-gray-300 rounded-l px-2 py-1.5 text-sm outline-none"
               />
             </div>
           </div>
 
+          {/* Under Group */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4 md:col-span-3">
               <FormLabel required>Under Group</FormLabel>
             </div>
             <div className="col-span-8 md:col-span-9 flex">
-              <select
-                name="underGroup"
-                value={formData.underGroup}
-                onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded-l px-2 py-1.5 text-sm outline-none"
-              >
-                <option value="">Select...</option>
-                <option value="Grocery">Grocery</option>
-                <option value="Electronics">Electronics</option>
-                {categories
-                  .filter((cat) => cat.name && cat.name.trim() !== "")
-                  .map((cat) => (
-                    <option key={cat._id} value={cat.name}>
-                      {cat.name}
-                    </option>
-                  ))}
-              </select>
+              <div className="flex-1 min-w-0">
+                <Dropdown
+                  data={underGroup}
+                  columns={underGroupColumns}
+                  value={formData.underGroup}
+                  valueKey="item_name"
+                  onChange={(item) =>
+                    handleDropdownChange("underGroup", item?.item_name || "")
+                  }
+                  placeholder="Select..."
+                />
+              </div>
               <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  setShowItemGroupModal(true);
-                }}
-                className="bg-[#0c5888] text-white px-2 rounded-r"
+                type="button" // Added type="button" to prevent form submission
+                onClick={handleUnderGroupEditClick}
+                className="bg-[#0c5888] text-white px-2 rounded-r ml-[1px]"
               >
                 <Edit className="w-4 h-4" />
               </button>
             </div>
           </div>
 
+          {/* Stock Unit */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4 md:col-span-3">
               <FormLabel required>Stock Unit</FormLabel>
             </div>
             <div className="col-span-8 md:col-span-9 flex">
-              <select
-                name="stockUnit"
-                value={formData.stockUnit}
-                onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded-l px-2 py-1.5 text-sm outline-none"
-              >
-                <option value="">Select...</option>
-                {stockUnitList
-                  .filter((unit) => unit.name && unit.name.trim() !== "")
-                  .map((unit) => (
-                    <option key={unit._id} value={unit.name}>
-                      {unit.name}
-                    </option>
-                  ))}
-              </select>
+              <div className="flex-1 min-w-0">
+                <Dropdown
+                  data={stockUnitList}
+                  columns={stockUnitColumns}
+                  value={formData.stockUnit}
+                  valueKey="name"
+                  onChange={(item) =>
+                    handleDropdownChange("stockUnit", item?.name || "")
+                  }
+                  placeholder="Select..."
+                />
+              </div>
               <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  setShowStockUnit(true);
-                }}
-                className="bg-[#0c5888] text-white px-2 rounded-r"
+                type="button" // Added type="button" to prevent form submission
+                onClick={handleStockUnitEditClick}
+                className="bg-[#0c5888] text-white px-2 rounded-r ml-[1px]"
               >
                 <Edit className="w-4 h-4" />
               </button>
             </div>
           </div>
 
-          {/* --- GST CLASSIFICATION SECTION (UPDATED) --- */}
+          {/* GST CLASSIFICATION SECTION */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4 md:col-span-3">
               <FormLabel>GST Classification(HSN/SAC)</FormLabel>
             </div>
             <div className="col-span-8 md:col-span-9 flex">
-              <select
-                name="gstClassification"
-                value={formData.gstClassification}
-                onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded-l px-2 py-1.5 text-sm outline-none"
-              >
-                <option value="">Select...</option>
-                {gstList.length > 0 ? (
-                  gstList
-                    .filter(
-                      (gst) =>
-                        gst.hsn_description && gst.hsn_description.trim() !== ""
+              <div className="flex-1 min-w-0">
+                <Dropdown
+                  data={gstList}
+                  columns={gstColumns}
+                  value={formData.gstClassification}
+                  valueKey="hsn_description"
+                  onChange={(item) =>
+                    handleDropdownChange(
+                      "gstClassification",
+                      item?.hsn_description || ""
                     )
-                    .map((gst) => (
-                      <option key={gst._id} value={gst.hsn_description}>
-                        {gst.hsn_description}
-                      </option>
-                    ))
-                ) : (
-                  <>
-                    <option value="Non-Medical">Non-Medical</option>
-                    <option value="General">General</option>
-                  </>
-                )}
-              </select>
+                  }
+                  placeholder="Select..."
+                />
+              </div>
               <button
+                type="button" // Added type="button" to prevent form submission
                 onClick={handleGstEditClick}
-                className="bg-[#0c5888] text-white px-2 rounded-r"
+                className="bg-[#0c5888] text-white px-2 rounded-r ml-[1px]"
               >
                 <Edit className="w-4 h-4" />
               </button>
@@ -670,88 +751,96 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
   );
 
   const renderAdvanceInfo = () => {
-    const categoryOptions = categories
-      .filter((c) => c.name && c.name.trim() !== "")
-      .map((c) => c.name);
-
-    const brandOptions = brands
-      .filter((b) => b.name && b.name.trim() !== "")
-      .map((b) => b.name);
-
     return (
       <div className="bg-white border rounded-lg p-6 shadow-sm mt-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="col-span-1 md:col-span-2 space-y-4 max-w-4xl">
+            {/* Category */}
             <div className="mb-3">
               <FormLabel>Category</FormLabel>
               <div className="flex w-full">
-                <select
-                  name="category"
-                  value={formData.category}
-                  onChange={handleInputChange}
-                  className="w-full border border-gray-300 rounded-l px-2 py-1.5 text-sm bg-white focus:outline-none focus:border-[#0c5888]"
-                >
-                  <option value="">Select...</option>
-                  {categoryOptions.map((opt) => (
-                    <option key={opt} value={opt}>
-                      {opt}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex-1 min-w-0">
+                  <Dropdown
+                    data={categories}
+                    columns={categoryColumns}
+                    value={formData.category}
+                    valueKey="name"
+                    onChange={(item) =>
+                      handleDropdownChange("category", item?.name || "")
+                    }
+                    placeholder="Select..."
+                  />
+                </div>
                 <button
                   onClick={(e) => {
                     e.preventDefault();
                     setIsItemCategory(true);
                   }}
-                  className="bg-[#0c5888] text-white px-2 rounded-r hover:bg-[#0a4a70] transition-colors"
+                  className="bg-[#0c5888] text-white px-2 rounded-r hover:bg-[#0a4a70] transition-colors ml-[1px]"
                 >
                   <Edit className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
+            {/* Brand */}
             <div className="mb-3">
               <FormLabel>Brand</FormLabel>
               <div className="flex w-full">
-                <select
-                  name="brand"
-                  value={formData.brand}
-                  onChange={handleInputChange}
-                  className="w-full border border-gray-300 rounded-l px-2 py-1.5 text-sm bg-white focus:outline-none focus:border-[#0c5888]"
-                >
-                  <option value="">Select...</option>
-                  {brandOptions.map((opt) => (
-                    <option key={opt} value={opt}>
-                      {opt}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex-1 min-w-0">
+                  <Dropdown
+                    data={brands}
+                    columns={brandColumns}
+                    value={formData.brand}
+                    valueKey="name"
+                    onChange={(item) =>
+                      handleDropdownChange("brand", item?.name || "")
+                    }
+                    placeholder="Select..."
+                  />
+                </div>
                 <button
                   onClick={(e) => {
                     e.preventDefault();
                     setIsBrandOpen(true);
                   }}
-                  className="bg-[#0c5888] text-white px-2 rounded-r hover:bg-[#0a4a70] transition-colors"
+                  className="bg-[#0c5888] text-white px-2 rounded-r hover:bg-[#0a4a70] transition-colors ml-[1px]"
                 >
                   <Edit className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
-            <SelectField
-              label="Type"
-              name="type"
-              value={formData.type}
-              onChange={handleInputChange}
-              options={["Pack", "FinishProduct", "RawMaterial"]}
-            />
-            <SelectField
-              label="Unit Option"
-              name="unitOption"
-              value={formData.unitOption}
-              onChange={handleInputChange}
-              options={["Packet", "StockUnit", "Other"]}
-            />
+            {/* Type */}
+            <div className="mb-3">
+              <FormLabel>Type</FormLabel>
+              <Dropdown
+                data={ITEM_TYPES}
+                columns={simpleLabelColumns}
+                value={formData.type}
+                valueKey="value"
+                onChange={(item) =>
+                  handleDropdownChange("type", item?.value || "")
+                }
+                placeholder="Select..."
+              />
+            </div>
+
+            {/* Unit Option */}
+            <div className="mb-3">
+              <FormLabel>Unit Option</FormLabel>
+              <Dropdown
+                data={UNIT_OPTIONS}
+                columns={simpleLabelColumns}
+                value={formData.unitOption}
+                valueKey="value"
+                onChange={(item) =>
+                  handleDropdownChange("unitOption", item?.value || "")
+                }
+                placeholder="Select..."
+              />
+            </div>
+
             <InputField
               label="BarCode"
               name="barCode"
@@ -812,25 +901,24 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
           <div className="mb-3">
             <FormLabel required>Sales GL</FormLabel>
             <div className="flex w-full">
-              <select
-                name="salesGL"
-                value={formData.salesGL}
-                onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded-l px-2 py-1.5 text-sm bg-white focus:outline-none focus:border-[#0c5888]"
-              >
-                <option value="">Select...</option>
-                {salesGLList.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                  </option>
-                ))}
-              </select>
+              <div className="flex-1 min-w-0">
+                <Dropdown
+                  data={glDataFull}
+                  columns={glColumns}
+                  value={formData.salesGL}
+                  valueKey="name"
+                  onChange={(item) =>
+                    handleDropdownChange("salesGL", item?.name || "")
+                  }
+                  placeholder="Select..."
+                />
+              </div>
               <button
                 onClick={(e) => {
                   e.preventDefault();
                   handleOpenCOA("sales", formData.salesGL);
                 }}
-                className="bg-[#0c5888] text-white px-2 rounded-r hover:bg-[#0a4a70] transition-colors"
+                className="bg-[#0c5888] text-white px-2 rounded-r hover:bg-[#0a4a70] transition-colors ml-[1px]"
               >
                 <Edit className="w-4 h-4" />
               </button>
@@ -914,25 +1002,24 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
             <div className="mb-3">
               <FormLabel required>Purchase GL</FormLabel>
               <div className="flex w-full">
-                <select
-                  name="purchaseGL"
-                  value={formData.purchaseGL}
-                  onChange={handleInputChange}
-                  className="w-full border border-gray-300 rounded-l px-2 py-1.5 text-sm bg-white focus:outline-none focus:border-[#0c5888]"
-                >
-                  <option value="">Select...</option>
-                  {purchaseGLList.map((opt) => (
-                    <option key={opt} value={opt}>
-                      {opt}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex-1 min-w-0">
+                  <Dropdown
+                    data={glDataFull}
+                    columns={glColumns}
+                    value={formData.purchaseGL}
+                    valueKey="name"
+                    onChange={(item) =>
+                      handleDropdownChange("purchaseGL", item?.name || "")
+                    }
+                    placeholder="Select..."
+                  />
+                </div>
                 <button
                   onClick={(e) => {
                     e.preventDefault();
                     handleOpenCOA("purchase", formData.purchaseGL);
                   }}
-                  className="bg-[#0c5888] text-white px-2 rounded-r hover:bg-[#0a4a70] transition-colors"
+                  className="bg-[#0c5888] text-white px-2 rounded-r hover:bg-[#0a4a70] transition-colors ml-[1px]"
                 >
                   <Edit className="w-4 h-4" />
                 </button>
@@ -974,20 +1061,34 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
     <div className="bg-white border rounded-lg p-6 shadow-sm mt-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
         <div className="space-y-4">
-          <SelectField
-            label="Item Workflow"
-            name="itemWorkflow"
-            value={formData.itemWorkflow}
-            onChange={handleInputChange}
-            options={["Standard", "Regular"]}
-          />
-          <SelectField
-            label="Procurement Type"
-            name="procurementType"
-            value={formData.procurementType}
-            onChange={handleInputChange}
-            options={["Purchase", "Manufacture"]}
-          />
+          <div className="mb-3">
+            <FormLabel>Item Workflow</FormLabel>
+            <Dropdown
+              data={WORKFLOW_OPTIONS}
+              columns={simpleLabelColumns}
+              value={formData.itemWorkflow}
+              valueKey="value"
+              onChange={(item) =>
+                handleDropdownChange("itemWorkflow", item?.value || "")
+              }
+              placeholder="Select..."
+            />
+          </div>
+
+          <div className="mb-3">
+            <FormLabel>Procurement Type</FormLabel>
+            <Dropdown
+              data={PROCUREMENT_TYPES}
+              columns={simpleLabelColumns}
+              value={formData.procurementType}
+              valueKey="value"
+              onChange={(item) =>
+                handleDropdownChange("procurementType", item?.value || "")
+              }
+              placeholder="Select..."
+            />
+          </div>
+
           <InputField
             label="Min Level"
             name="minLevel"
@@ -1012,13 +1113,20 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
             value={formData.rackBinNo}
             onChange={handleInputChange}
           />
-          <SelectField
-            label="Add in Set Template"
-            name="itemSetTemplate"
-            value={formData.itemSetTemplate}
-            onChange={handleInputChange}
-            options={["No", "Select"]}
-          />
+
+          <div className="mb-3">
+            <FormLabel>Add in Set Template</FormLabel>
+            <Dropdown
+              data={SET_TEMPLATE_OPTIONS}
+              columns={simpleLabelColumns}
+              value={formData.itemSetTemplate}
+              valueKey="value"
+              onChange={(item) =>
+                handleDropdownChange("itemSetTemplate", item?.value || "")
+              }
+              placeholder="Select..."
+            />
+          </div>
         </div>
         <div className="space-y-5">
           <div className="flex justify-between items-center h-9">
@@ -1037,13 +1145,21 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
               onChange={handleInputChange}
             />
           </div>
-          <SelectField
-            label="Drug Type"
-            name="drugType"
-            value={formData.drugType}
-            onChange={handleInputChange}
-            options={["Regular", "Schedule H"]}
-          />
+
+          <div className="mb-3">
+            <FormLabel>Drug Type</FormLabel>
+            <Dropdown
+              data={DRUG_TYPES}
+              columns={simpleLabelColumns}
+              value={formData.drugType}
+              valueKey="value"
+              onChange={(item) =>
+                handleDropdownChange("drugType", item?.value || "")
+              }
+              placeholder="Select..."
+            />
+          </div>
+
           <InputField
             label="Salt"
             name="salt"
@@ -1184,14 +1300,21 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
       {showItemGroupModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded shadow-lg">
-            <UnderGroup onClose={() => setShowItemGroupModal(false)} />
+            <UnderGroup
+              onClose={() => setShowItemGroupModal(false)}
+              initialData={underGroupInitialData}
+              onSave={handleUnderGroupSave}
+            />
           </div>
         </div>
       )}
       {showStockUnit && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded shadow-lg">
-            <StockUnit onClose={() => setShowStockUnit(false)} />
+            <StockUnit
+              onClose={() => setShowStockUnit(false)}
+              initialData={stockUnitInitialData}
+            />
           </div>
         </div>
       )}

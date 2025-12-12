@@ -64,7 +64,6 @@ const generateTransferNo = () => {
   return result;
 };
 
-// ... (Keep Label, InputGroup, ActionBtn, DateInput, ReadOnlyInputWithGen components same as before) ...
 const Label: React.FC<LabelProps> = ({ children, required }) => (
   <label className="text-[13px] text-gray-700 font-medium flex items-center h-[32px] whitespace-nowrap">
     {children} {required && <span className="text-red-500 ml-1">*</span>}

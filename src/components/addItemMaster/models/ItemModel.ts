@@ -9,7 +9,7 @@ export interface SuggestedItem {
 export interface ItemFormData {
   // Basic Details
   itemMode: string;
-  itemName: string;
+  item_name: string;
   underGroup: string;
   stockUnit: string;
   gstClassification: string;
@@ -71,7 +71,7 @@ export interface ItemFormData {
 export interface ItemApiData {
   _id?: string;
   item_mode: string | null;
-  name: string | null;
+  item_name: string | null;
   under_group: string | null;
   stock_unit: string | null;
   gst_classfication: string | null;

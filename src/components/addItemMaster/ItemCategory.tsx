@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { X, Save, Trash2, Loader2 } from "lucide-react";
-import { createItemCategory } from "./api/itemService";
-
+import { createItemCategory } from "./api/categoryservice";
 interface ItemCategoryProps {
   onClose: () => void;
 }

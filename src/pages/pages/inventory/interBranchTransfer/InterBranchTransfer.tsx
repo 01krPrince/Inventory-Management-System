@@ -11,6 +11,13 @@ import Logistics, { LogisticsData } from "./Logistics";
 import { LocationMaster } from "../../../../components/LocationMaster";
 import { ArrowLeft } from "lucide-react";
 
+// --- 1. Import Service and Types ---
+import {
+  interBranchService,
+  CreateInterBranchPayload,
+  InterBranchItem,
+} from "./api/interBranchTransferService"; // Adjust path as needed
+
 interface ModalProps {
   isOpen?: boolean;
   onClose?: () => void;
@@ -38,27 +45,27 @@ const InterBranchTransfer: React.FC<ModalProps> = ({
     postingGL: "",
   });
 
-  // --- 2. LOGISTICS STATE (New) ---
+  // --- 2. LOGISTICS STATE (FIXED) ---
   const [logisticsData, setLogisticsData] = useState<LogisticsData>({
     destination: "",
     shippingMode: "Road",
     shippingCompany: "",
-    // shippingCompanyAddress: "",
+    shippingCompanyAbout: "", // ADDED: Required by new interface
     shippingTrackingNo: "",
     shippingDate: new Date().toISOString().split("T")[0],
     shippingCharges: "0",
     vehicleNo: "",
-    chargeType: "Paid",
+    chargesType: "Paid", // FIXED: Renamed from 'chargeType' to 'chargesType'
     documentThrough: "",
     noOfPackets: "0",
     weight: "0",
     distance: "0",
     eWayInvoiceNo: "",
     eWayInvoiceDate: "",
-    eWayCancelDate: "",
+    eWayCancelDate: null, // Set to null initially
     irnNo: "",
     qrCode: "",
-    irnCancelDate: "",
+    irnCancelDate: null, // Set to null initially
     irnCancelReason: "",
     acknowledgementNo: "",
     acknowledgementDate: "",
@@ -77,23 +84,97 @@ const InterBranchTransfer: React.FC<ModalProps> = ({
 
   // --- 4. FINAL SUBMIT HANDLER ---
   const handleSave = async () => {
+    // 1. Basic Validation
+    if (!formData.transferNo || !formData.store || !formData.toStore) {
+      alert(
+        "Please fill in all required header fields (Transfer No, From Store, To Store)."
+      );
+      return;
+    }
+
+    if (Object.keys(tableData).length === 0) {
+      alert("Please add at least one item to the transfer.");
+      return;
+    }
+
     setIsSubmitting(true);
 
-    // Combine all data into one payload
-    const finalPayload = {
-      header: formData,
-      items: tableData, // Assuming rows are keys in tableData
-      logistics: logisticsData,
-      attachments: footerData,
-    };
+    try {
+      // 2. Transform Table Data (Record<string, RowData>) -> Array of Items
+      const formattedItems: InterBranchItem[] = Object.values(tableData).map(
+        (row: any) => ({
+          itemcode: row.itemcode || "",
+          description: row.description || "",
+          packUnit: row.packUnit || "",
+          packQuantity: Number(row.packQuantity) || 0,
+          unit: row.unit || "",
+          quantity: Number(row.quantity) || 0,
+          ratePer: Number(row.ratePer) || 1,
+          rate: Number(row.rate) || 0,
+          amount: Number(row.amount) || 0,
+          minRate: Number(row.minRate) || 0,
+          mrp: Number(row.mrp) || 0,
+          netRate: Number(row.netRate) || 0,
+          remark: row.remark || "",
+          printDesc: row.printDesc || row.description || "",
+          serviceLocation: row.serviceLocation || formData.store,
+          itemBarcode: row.itemBarcode || "",
+          bdBatchNo: row.bdBatchNo || "",
+          bdMfgDate: row.bdMfgDate || null,
+          bdExpDate: row.bdExpDate || null,
+          bdSaleRate: Number(row.bdSaleRate) || 0,
+          itemBalance: Number(row.itemBalance) || 0,
+          barcode: row.barcode || "",
+          lineLevelBarcode: row.lineLevelBarcode || "",
+          hsnCode: row.hsnCode || "",
+          brand: row.brand || "",
+        })
+      );
 
-    console.log("FINAL SUBMISSION PAYLOAD:", finalPayload);
+      // 3. Construct the Payload
+      const payload: CreateInterBranchPayload = {
+        category: formData.category,
+        store: formData.store,
+        toStore: formData.toStore,
+        transferNo: formData.transferNo,
+        transferDate: formData.transferDate,
+        postingGl: formData.postingGL,
+        remarks: footerData.remarks,
+        attachment: "",
+        items: formattedItems,
+        logistics: {
+          ...logisticsData,
+          // Explicit conversions if strictly needed, otherwise spread works
+          eWayCancelDate: logisticsData.eWayCancelDate || null,
+          irnCancelDate: logisticsData.irnCancelDate || null,
+        },
+      };
 
-    // Simulate API call
-    setTimeout(() => {
-      alert("Data collected! Check Console for full payload.");
+      console.log("Sending Payload:", payload);
+
+      // 4. Call the Service
+      const response = await interBranchService.createTransfer(payload);
+
+      // 5. Success Handling
+      if (response.success) {
+        alert("Transfer Created Successfully!");
+        if (onClose) onClose();
+      } else {
+        alert("Failed: " + response.message);
+      }
+    } catch (error: any) {
+      console.error("Submission Error:", error);
+
+      if (error.message && error.message.includes("E11000")) {
+        alert(
+          `Error: The Transfer Number "${formData.transferNo}" already exists. Please use a unique number.`
+        );
+      } else {
+        alert("Error saving transfer: " + (error.message || "Unknown error"));
+      }
+    } finally {
       setIsSubmitting(false);
-    }, 1000);
+    }
   };
 
   // --- View 2: Location Master Form ---
