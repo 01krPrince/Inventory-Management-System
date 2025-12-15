@@ -5,10 +5,18 @@ import {
   ArrowRight,
   ArrowLeft,
   Globe,
-  RotateCcw,
-  Edit,
-  Trash2, // Added Trash icon
+  Trash2,
+  Pencil,
+  Plus,
 } from "lucide-react";
+import Dropdown, { ColumnDef } from "./Dropdown";
+import {
+  Customer,
+  getAllCustomers,
+} from "../pages/pages/sales/customer/api/customerService";
+
+// --- Import Customer CRUD Component ---
+import CrudCustomer from "../pages/pages/sales/customer/pages/AddNewCustomer";
 
 // --- Import API Functions & Types ---
 import {
@@ -19,12 +27,18 @@ import {
   LocationMasterInput,
 } from "../pages/pages/inventory/stockAdjustment/api/LocationMaster";
 
+interface ActionBtnProps {
+  icon: React.ReactElement;
+  onClick?: () => void;
+  title?: string;
+}
+
 // --- Initial State ---
 const INITIAL_LOCATION_DATA = {
   name: "",
   code: "",
   party: "",
-  profileImage: "", // UI uses 'profileImage', API uses 'profilePic'
+  profileImage: "",
   gstNo: "",
   defaultParty: "",
   ewayUsername: "",
@@ -85,9 +99,16 @@ const InputField = ({
 interface LocationMasterProps {
   onClose: () => void;
   onSuccess?: (data?: any) => void;
-  onSelect?: (locationName: string) => void; // Optional: if you want to pass data back on click
-  initialData?: LocationMasterType | null; // <--- Added initialData
+  onSelect?: (locationName: string) => void;
+  initialData?: LocationMasterType | null;
 }
+
+const partyColumns: ColumnDef<Customer>[] = [
+  { header: "Code", key: "code", width: "w-16" },
+  { header: "Name", key: "cust_name", width: "flex-1" },
+  { header: "Phone", key: "phone", width: "w-24" },
+  { header: "GST", key: "gst_no", width: "w-28" },
+];
 
 export const LocationMaster: React.FC<LocationMasterProps> = ({
   onClose,
@@ -99,6 +120,32 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
   const [formData, setFormData] = useState<any>(INITIAL_LOCATION_DATA);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Data for Dropdown
+  const [customerList, setCustomerList] = useState<Customer[]>([]);
+
+  // State for Customer Modal (Create/Edit)
+  const [editingRow, setEditingRow] = useState<Customer | null>(null);
+  const [isCustomerFormOpen, setIsCustomerFormOpen] = useState(false);
+
+  // --- FUNCTION: Fetch Customers ---
+  const loadCustomers = async () => {
+    try {
+      const result = await getAllCustomers();
+      if (Array.isArray(result)) {
+        setCustomerList(result);
+      } else if (result && (result as any).data) {
+        setCustomerList((result as any).data);
+      }
+    } catch (error) {
+      console.error("Failed to load customers for Party dropdown", error);
+    }
+  };
+
+  // --- EFFECT: Load Initial Data ---
+  useEffect(() => {
+    loadCustomers();
+  }, []);
+
   // --- EFFECT: Populate Form on Edit ---
   useEffect(() => {
     if (initialData) {
@@ -106,14 +153,13 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
         name: initialData.name || "",
         code: initialData.code || "",
         party: initialData.party || "",
-        profileImage: initialData.profilePic || "", // Map API 'profilePic' to UI 'profileImage'
+        profileImage: initialData.profilePic || "",
         gstNo: initialData.gstNo || "",
-        // Note: 'defaultParty' wasn't in your API Interface, mapping assuming it might exist or default empty
         defaultParty: (initialData as any).defaultParty || "",
         ewayUsername: initialData.ewayUsername || "",
         ewayPassword: initialData.ewayPassword || "",
-        gstnUsername: initialData.gstInUsername || "", // Map API 'gstInUsername'
-        gstnPassword: initialData.gstInPassword || "", // Map API 'gstInPassword'
+        gstnUsername: initialData.gstInUsername || "",
+        gstnPassword: initialData.gstInPassword || "",
         otherLicense1: initialData.othelicense1 || "",
         otherLicense2: initialData.othelicense2 || "",
         bankDetails: initialData.bankDetails || "",
@@ -124,7 +170,6 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
         pinCode: initialData.pinCode || "",
         phone: initialData.phone || "",
         email: initialData.email || "",
-        // Assuming longitude/latitude might be in API but missing from strict interface, or managed separately
         longitude: (initialData as any).longitude || "",
         latitude: (initialData as any).latitude || "",
       });
@@ -132,6 +177,17 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
       setFormData(INITIAL_LOCATION_DATA);
     }
   }, [initialData]);
+
+  const ActionBtn: React.FC<ActionBtnProps> = ({ icon, onClick, title }) => (
+    <button
+      onClick={onClick}
+      type="button"
+      title={title}
+      className="h-[32px] w-[32px] bg-[var(--theme-primary)] text-white flex items-center justify-center rounded-sm border border-[var(--theme-primary)] hover:opacity-90 transition-opacity ml-[-1px] z-10 shadow-sm"
+    >
+      {icon}
+    </button>
+  );
 
   // --- Input Handler ---
   const handleInputChange = (
@@ -142,20 +198,49 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
     setFormData((prev: any) => ({ ...prev, [name]: value }));
   };
 
-  // --- SUBMIT HANDLER (Create / Update) ---
+  // --- HANDLER: Open Customer Form (Stacked Modal) ---
+  const handleCustomerActionClick = () => {
+    if (formData.party) {
+      const selectedCustomer = customerList.find(
+        (cust) => cust.cust_name === formData.party
+      );
+      if (selectedCustomer) {
+        setEditingRow(selectedCustomer);
+      } else {
+        setEditingRow(null);
+      }
+    } else {
+      setEditingRow(null);
+    }
+    setIsCustomerFormOpen(true);
+  };
+
+  // --- HANDLER: Close Customer Form ---
+  const handleCustomerFormClose = () => {
+    setIsCustomerFormOpen(false);
+    setEditingRow(null);
+  };
+
+  // --- HANDLER: Customer Form Success ---
+  const handleCustomerFormSuccess = async () => {
+    await loadCustomers(); // Refresh list to see new customer
+    setIsCustomerFormOpen(false);
+    setEditingRow(null);
+  };
+
+  // --- SUBMIT HANDLER (Location) ---
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      // 1. Prepare Payload (Map UI keys back to API keys)
       const payload: LocationMasterInput = {
         name: formData.name,
         code: formData.code,
         party: formData.party,
-        profilePic: formData.profileImage, // UI 'profileImage' -> API 'profilePic'
+        profilePic: formData.profileImage,
         gstNo: formData.gstNo,
         ewayUsername: formData.ewayUsername,
         ewayPassword: formData.ewayPassword,
-        gstInUsername: formData.gstnUsername, // UI 'gstn' -> API 'gstIn'
+        gstInUsername: formData.gstnUsername,
         gstInPassword: formData.gstnPassword,
         othelicense1: formData.otherLicense1,
         othelicense2: formData.otherLicense2,
@@ -167,27 +252,21 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
         pinCode: formData.pinCode,
         phone: formData.phone,
         email: formData.email,
-        // If your backend accepts extra fields like longitude/latitude/defaultParty, add them here
         // @ts-ignore
         longitude: formData.longitude,
         // @ts-ignore
         latitude: formData.latitude,
       };
 
-      // 2. Determine Action
       if (initialData && initialData._id) {
-        // >>> UPDATE <<<
         await updateLocation(initialData._id, payload);
         alert("Location updated successfully!");
       } else {
-        // >>> CREATE <<<
         await createLocation(payload);
         alert("Location created successfully!");
       }
 
-      // 3. Cleanup
       if (onSuccess) onSuccess(formData);
-      // If used as a selector, pass name back
       if (onSelect) onSelect(formData.name);
 
       onClose();
@@ -199,10 +278,8 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
     }
   };
 
-  // --- DELETE HANDLER ---
   const handleDelete = async () => {
     if (!initialData?._id) return;
-
     if (confirm("Are you sure you want to delete this location?")) {
       setIsSubmitting(true);
       try {
@@ -219,14 +296,12 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
     }
   };
 
-  // --- Step Navigation ---
   const handleNext = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (activeStep < STEPS.length - 1) {
       setActiveStep((prev) => prev + 1);
     } else {
-      // Final Step: Submit
       handleSubmit();
     }
   };
@@ -236,6 +311,7 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
     <div className="bg-white border rounded-lg p-6 shadow-sm mt-4">
       <div className="grid grid-cols-12 gap-6">
         <div className="col-span-12 md:col-span-9 space-y-3">
+          {/* Name */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4 md:col-span-3">
               <FormLabel required>Name</FormLabel>
@@ -249,20 +325,17 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
                 onClick={(e) => e.stopPropagation()}
                 className="w-full border border-gray-300 rounded-l px-2 py-1.5 text-sm focus:outline-none focus:border-[#104a7d]"
               />
-              <button
-                type="button"
-                className="bg-[#104a7d] text-white px-2 rounded-r"
-              >
-                <Globe className="w-4 h-4" />
-              </button>
             </div>
           </div>
+
+          {/* Code */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4 md:col-span-3">
               <FormLabel required>Code</FormLabel>
             </div>
             <div className="col-span-8 md:col-span-9 flex">
               <input
+                disabled
                 type="text"
                 name="code"
                 value={formData.code}
@@ -270,39 +343,44 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
                 onClick={(e) => e.stopPropagation()}
                 className="w-full border border-gray-300 rounded-l px-2 py-1.5 text-sm focus:outline-none focus:border-[#104a7d]"
               />
-              <button
-                type="button"
-                className="bg-[#104a7d] text-white px-2 rounded-r"
-              >
-                <RotateCcw className="w-4 h-4" />
-              </button>
             </div>
           </div>
+
+          {/* Party Dropdown */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4 md:col-span-3">
               <FormLabel>Party</FormLabel>
             </div>
-            <div className="col-span-8 md:col-span-9 flex">
-              <select
-                name="party"
-                value={formData.party}
-                onChange={handleInputChange}
-                onClick={(e) => e.stopPropagation()}
-                className="w-full border border-gray-300 rounded-l px-2 py-1.5 text-sm bg-white focus:outline-none focus:border-[#104a7d]"
-              >
-                <option value="">Select Party...</option>
-                <option value="Party A">Party A</option>
-                <option value="ABC Traders">ABC Traders</option>
-              </select>
-              <button
-                type="button"
-                className="bg-[#104a7d] text-white px-2 rounded-r"
-              >
-                <Edit className="w-4 h-4" />
-              </button>
+            <div className="col-span-8 md:col-span-9 flex gap-1">
+              <div className="flex-1">
+                <Dropdown<Customer>
+                  data={customerList}
+                  columns={partyColumns}
+                  value={formData.party}
+                  valueKey="cust_name"
+                  placeholder="Select Party..."
+                  onChange={(item) =>
+                    setFormData((prev: any) => ({
+                      ...prev,
+                      party: item ? item.cust_name : "",
+                    }))
+                  }
+                />
+              </div>
+              <ActionBtn
+                icon={
+                  formData.party ? <Pencil size={16} /> : <Plus size={16} />
+                }
+                title={
+                  formData.party ? "Edit Selected Party" : "Create New Party"
+                }
+                onClick={handleCustomerActionClick}
+              />
             </div>
           </div>
         </div>
+
+        {/* Profile Image */}
         <div className="col-span-12 md:col-span-3 flex flex-col items-center">
           <div className="w-full max-w-[150px] h-[150px] bg-gray-100 border border-dashed border-gray-400 rounded relative flex flex-col items-center justify-center overflow-hidden mb-2">
             {formData.profileImage ? (
@@ -364,7 +442,6 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
               name="defaultParty"
               value={formData.defaultParty}
               onChange={handleInputChange}
-              onClick={(e) => e.stopPropagation()}
               className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm bg-white focus:outline-none focus:border-[#104a7d]"
             >
               <option value="">Select...</option>
@@ -419,7 +496,6 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
           name="bankDetails"
           value={formData.bankDetails}
           onChange={handleInputChange}
-          onClick={(e) => e.stopPropagation()}
           rows={5}
           className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm resize-none focus:outline-none focus:border-[#104a7d]"
         />
@@ -439,7 +515,6 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
         name="address"
         value={formData.address}
         onChange={handleInputChange}
-        onClick={(e) => e.stopPropagation()}
         rows={3}
         maxLength={200}
         className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm resize-none focus:outline-none focus:border-[#104a7d]"
@@ -509,108 +584,125 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
     </div>
   );
 
+  // --- MAIN RENDER ---
   return (
-    <div className="h-full flex flex-col bg-white">
-      {/* HEADER */}
-      <div className="bg-[#104a7d] px-6 py-4 text-white flex justify-between items-center shrink-0">
-        <h1 className="text-xl font-semibold tracking-wide">
-          {initialData ? "EDIT LOCATION" : "NEW LOCATION"}
-        </h1>
-        <div className="text-sm opacity-80">
-          Step {activeStep + 1} of {STEPS.length}
+    <>
+      {/* 1. Main Location Form */}
+      <div className="h-full flex flex-col bg-white">
+        <div className="bg-[#104a7d] px-6 py-4 text-white flex justify-between items-center shrink-0">
+          <h1 className="text-xl font-semibold tracking-wide">
+            {initialData ? "EDIT LOCATION" : "NEW LOCATION"}
+          </h1>
+          <div className="text-sm opacity-80">
+            Step {activeStep + 1} of {STEPS.length}
+          </div>
         </div>
-      </div>
 
-      {/* STEP NAV */}
-      <div className="bg-gray-100 border-b overflow-x-auto shrink-0">
-        <div className="flex min-w-max px-4">
-          {STEPS.map((step, index) => (
-            <div
-              key={step.id}
-              className={`relative py-3 px-4 text-sm font-medium cursor-pointer flex items-center ${
-                index === activeStep
-                  ? "text-[#104a7d] border-b-2 border-[#104a7d] bg-white"
-                  : "text-gray-400"
-              }`}
+        <div className="bg-gray-100 border-b overflow-x-auto shrink-0">
+          <div className="flex min-w-max px-4">
+            {STEPS.map((step, index) => (
+              <div
+                key={step.id}
+                className={`relative py-3 px-4 text-sm font-medium cursor-pointer flex items-center ${
+                  index === activeStep
+                    ? "text-[#104a7d] border-b-2 border-[#104a7d] bg-white"
+                    : "text-gray-400"
+                }`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setActiveStep(index);
+                }}
+              >
+                <span
+                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs mr-2 border ${
+                    index === activeStep
+                      ? "bg-[#104a7d] text-white border-[#104a7d]"
+                      : "bg-gray-100 border-gray-300"
+                  }`}
+                >
+                  {index + 1}
+                </span>
+                {step.label}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="p-6 overflow-y-auto flex-1">
+          {activeStep === 0 && renderBasicDetails()}
+          {activeStep === 1 && renderCompliance()}
+          {activeStep === 2 && renderAddress()}
+        </div>
+
+        <div className="bg-gray-50 px-6 py-4 border-t flex justify-between shrink-0">
+          <div>
+            {initialData && initialData._id && (
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isSubmitting}
+                className="flex items-center px-4 py-2 rounded border border-red-300 text-red-600 hover:bg-red-50 bg-white transition-colors"
+              >
+                <Trash2 className="w-4 h-4 mr-2" /> Delete
+              </button>
+            )}
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              type="button"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                setActiveStep(index);
+                if (activeStep > 0) setActiveStep((p) => p - 1);
+                else onClose();
               }}
+              className="flex items-center px-4 py-2 rounded border font-medium text-gray-700 border-gray-300 hover:bg-gray-100 bg-white"
             >
-              <span
-                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs mr-2 border ${
-                  index === activeStep
-                    ? "bg-[#104a7d] text-white border-[#104a7d]"
-                    : "bg-gray-100 border-gray-300"
-                }`}
-              >
-                {index + 1}
-              </span>
-              {step.label}
-            </div>
-          ))}
-        </div>
-      </div>
+              <ArrowLeft className="w-4 h-4 mr-2" /> Back
+            </button>
 
-      {/* BODY */}
-      <div className="p-6 overflow-y-auto flex-1">
-        {activeStep === 0 && renderBasicDetails()}
-        {activeStep === 1 && renderCompliance()}
-        {activeStep === 2 && renderAddress()}
-      </div>
-
-      {/* FOOTER */}
-      <div className="bg-gray-50 px-6 py-4 border-t flex justify-between shrink-0">
-        {/* Left Side: Delete or Empty */}
-        <div>
-          {initialData && initialData._id && (
             <button
               type="button"
-              onClick={handleDelete}
+              onClick={handleNext}
               disabled={isSubmitting}
-              className="flex items-center px-4 py-2 rounded border border-red-300 text-red-600 hover:bg-red-50 bg-white transition-colors"
+              className="flex items-center px-6 py-2 bg-[#104a7d] text-white rounded hover:bg-[#0c3b63] font-medium shadow-sm disabled:opacity-50"
             >
-              <Trash2 className="w-4 h-4 mr-2" /> Delete
+              {activeStep === STEPS.length - 1 ? (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  {isSubmitting
+                    ? "Saving..."
+                    : initialData
+                    ? "Update"
+                    : "Submit"}
+                </>
+              ) : (
+                <>
+                  <span className="mr-2">Save & Next</span>{" "}
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </button>
-          )}
-        </div>
-
-        {/* Right Side: Navigation */}
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              if (activeStep > 0) setActiveStep((p) => p - 1);
-              else onClose();
-            }}
-            className="flex items-center px-4 py-2 rounded border font-medium text-gray-700 border-gray-300 hover:bg-gray-100 bg-white"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back
-          </button>
-
-          <button
-            type="button"
-            onClick={handleNext}
-            disabled={isSubmitting}
-            className="flex items-center px-6 py-2 bg-[#104a7d] text-white rounded hover:bg-[#0c3b63] font-medium shadow-sm disabled:opacity-50"
-          >
-            {activeStep === STEPS.length - 1 ? (
-              <>
-                <Save className="w-4 h-4 mr-2" />
-                {isSubmitting ? "Saving..." : initialData ? "Update" : "Submit"}
-              </>
-            ) : (
-              <>
-                <span className="mr-2">Save & Next</span>{" "}
-                <ArrowRight className="w-4 h-4" />
-              </>
-            )}
-          </button>
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* 2. Customer Form Modal (Stacked on top) */}
+      {isCustomerFormOpen && (
+        <div className="fixed mt-[30vh] inset-0 z-[60] flex items-center justify-center bg-transparent backdrop-blur-sm p-4">
+          <div className="overflow-hidden flex flex-col p-4">
+            <div className="flex-1 overflow-hidden relative">
+              <CrudCustomer
+                onClose={handleCustomerFormClose}
+                initialData={editingRow}
+                onSuccess={handleCustomerFormSuccess}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };

@@ -85,7 +85,7 @@ export const updateSalesAndPurchaseGL = async (
 ) => {
   try {
     // Matches your Postman URL: /chartofaccount/updatebyid/:id
-    const response = await api.put(`/salespurchasegl/update_salespurchasegl_by_id/${payload._id}`, payload);
+    const response = await api.put(`/salespurchasegl/update_salespurchasegl_by_id/${id}`, payload);
     return response.data;
   } catch (error: any) {
     console.error("Error updating GL:", error);

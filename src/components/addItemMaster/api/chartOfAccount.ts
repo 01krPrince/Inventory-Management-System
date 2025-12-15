@@ -81,3 +81,30 @@ export const createCoaGroup = async (
     };
   }
 };
+
+// --- PUT: Update Existing COA Group ---
+export const updateCoaGroup = async (
+  id: string,
+  formData: CoaGroupInput
+): Promise<UpdateCoaGroupResponse> => {
+  try {
+    // Using PUT request targeting the specific ID
+    const response = await api.put<UpdateCoaGroupResponse>(
+      `/coagroups/update_by/${id}`,
+      formData
+    );
+    return response.data;
+  } catch (error: any) {
+    // Handle API-specific errors (e.g., validation failed, ID not found)
+    if (error.response && error.response.data) {
+      return error.response.data as UpdateCoaGroupResponse;
+    }
+    
+    // Handle network or unexpected errors
+    console.error(`Error updating COA Group (ID: ${id}):`, error);
+    return { 
+      success: false, 
+      message: "An unexpected error occurred while connecting to the server." 
+    };
+  }
+};

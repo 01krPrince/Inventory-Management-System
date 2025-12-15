@@ -16,6 +16,7 @@ import {
   createUnderGroup,
   updateUnderGroup,
   deleteUnderGroup,
+  ItemGroupApiPayload,
 } from "./api/underGroupservice";
 import { UnderGroupData } from "./api/types";
 import { fetchGstClassifications } from "./api/gstservice";
@@ -415,7 +416,7 @@ export default function UnderGroup({
 
       // 3. Direct Matches (snake_case)
       item_name: formData.name,
-      code: formData.code || "",
+      // code: formData.code || "",
       under_group: formData.underGroup || "ROOT",
       item_type: formData.itemType || "FMCG", // Default if empty
       unit_option: formData.unitOption || "PCS",

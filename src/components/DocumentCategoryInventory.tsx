@@ -1,17 +1,44 @@
 import React, { useState, useEffect } from "react";
-import { X, Save, Trash2, Pencil, ChevronRight, ArrowLeft } from "lucide-react";
+import { X, Save, Trash2, Pencil, ArrowLeft } from "lucide-react";
 import { LocationMaster } from "./LocationMaster";
-
-// --- IMPORTS ---
+import Dropdown, { ColumnDef } from "./Dropdown";
+import { fetchAllLocations } from "../pages/pages/inventory/stockAdjustment/api/LocationMaster";
 import {
   createDocumentCategoryInventory,
   updateDocumentCategoryInventory,
   deleteDocumentCategoryInventory,
   DocumentCategoryInventory,
 } from "../pages/pages/inventory/stockAdjustment/api/DocumentCategoryInventory";
+
 // ==========================================
-// MAIN COMPONENT: DocumentCategoryInventoryModal
+// INTERFACES
 // ==========================================
+
+// UPDATED: Full interface to match LocationMaster requirements
+export interface LocationData {
+  _id: string;
+  name: string;
+  party: string;
+  code: string;
+  // Add all other fields expected by LocationMaster
+  profilePic?: string;
+  gstNo?: string;
+  ewayUsername?: string;
+  ewayPassword?: string;
+  gstInUsername?: string;
+  gstInPassword?: string;
+  othelicense1?: string;
+  othelicense2?: string;
+  bankDetails?: string;
+  address?: string;
+  country?: string;
+  state?: string;
+  city?: string;
+  pinCode?: string;
+  phone?: string;
+  email?: string;
+  __v?: number;
+}
 
 interface ModalProps {
   isOpen: boolean;
@@ -19,6 +46,10 @@ interface ModalProps {
   initialData?: DocumentCategoryInventory | null;
   onSuccess?: () => void;
 }
+
+// ==========================================
+// MAIN COMPONENT: DocumentCategoryInventoryModal
+// ==========================================
 
 const DocumentCategoryInventoryModal: React.FC<ModalProps> = ({
   isOpen,
@@ -33,22 +64,51 @@ const DocumentCategoryInventoryModal: React.FC<ModalProps> = ({
   const [specificToDocument, setSpecificToDocument] = useState("None");
   const [defaultLocation, setDefaultLocation] = useState("");
 
-  // --- STATE: UI & Loading ---
+  // --- STATE: UI & Data ---
   const [showLocationMaster, setShowLocationMaster] = useState(false);
+  const [locationList, setLocationList] = useState<LocationData[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // --- EFFECT: Populate or Reset Form ---
+  // --- COLUMNS for Dropdown ---
+  const locationColumns: ColumnDef<LocationData>[] = [
+    { header: "Name", key: "name", width: "w-[40%]" },
+    { header: "Party", key: "party", width: "w-[40%]" },
+    { header: "Code", key: "code", width: "w-[20%]" },
+  ];
+
+  // --- EFFECT: Fetch Locations for Dropdown ---
+  useEffect(() => {
+    if (isOpen) {
+      const loadLocations = async () => {
+        try {
+          const result = await fetchAllLocations();
+          if (Array.isArray(result)) {
+            setLocationList(result as LocationData[]);
+          } else if (
+            result &&
+            (result as any).data &&
+            Array.isArray((result as any).data)
+          ) {
+            setLocationList((result as any).data as LocationData[]);
+          }
+        } catch (error) {
+          console.error("Failed to load locations for dropdown", error);
+        }
+      };
+      loadLocations();
+    }
+  }, [isOpen]);
+
+  // --- EFFECT: Populate Form ---
   useEffect(() => {
     if (isOpen) {
       if (initialData) {
-        // --- EDIT MODE: Fill fields ---
         setName(initialData.name || "");
         setCode(initialData.code || "");
         setInactive(initialData.inactive || false);
         setSpecificToDocument(initialData.specificToDocument || "None");
         setDefaultLocation(initialData.defaultLocation || "");
       } else {
-        // --- CREATE MODE: Reset fields ---
         setName("");
         setCode("");
         setInactive(false);
@@ -58,7 +118,7 @@ const DocumentCategoryInventoryModal: React.FC<ModalProps> = ({
     }
   }, [isOpen, initialData]);
 
-  // --- HANDLER: Save (Create or Update) ---
+  // --- HANDLER: Save ---
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -72,13 +132,10 @@ const DocumentCategoryInventoryModal: React.FC<ModalProps> = ({
         defaultLocation,
       };
 
-      // CRITICAL FIX: MongoDB uses '_id', not 'id'
       if (initialData && initialData._id) {
-        // >>> UPDATE EXISTING <<<
         await updateDocumentCategoryInventory(initialData._id, payload);
         alert("Updated successfully!");
       } else {
-        // >>> CREATE NEW <<<
         await createDocumentCategoryInventory(payload);
         alert("Created successfully!");
       }
@@ -95,9 +152,7 @@ const DocumentCategoryInventoryModal: React.FC<ModalProps> = ({
 
   // --- HANDLER: Delete ---
   const handleDelete = async () => {
-    // CRITICAL FIX: Check for '_id'
     if (!initialData?._id) return;
-
     if (window.confirm("Are you sure you want to delete this category?")) {
       setLoading(true);
       try {
@@ -113,11 +168,14 @@ const DocumentCategoryInventoryModal: React.FC<ModalProps> = ({
     }
   };
 
-  // --- HANDLER: Location Selection ---
-  // Pass this to your LocationMaster so it can send data back
-  const handleLocationSelect = (selectedLocationName: string) => {
+  // --- HANDLER: Location Selected from Master (The "Pencil" View) ---
+  const handleLocationSelectFromMaster = (selectedLocationName: string) => {
     setDefaultLocation(selectedLocationName);
     setShowLocationMaster(false);
+    fetchAllLocations().then((res: any) => {
+      if (res && res.data) setLocationList(res.data);
+      else if (Array.isArray(res)) setLocationList(res);
+    });
   };
 
   if (!isOpen) return null;
@@ -125,8 +183,11 @@ const DocumentCategoryInventoryModal: React.FC<ModalProps> = ({
   const themeBlue = "bg-[#104a7d]";
   const themeBlueHover = "hover:bg-[#0c3b63]";
 
-  // --- View 2: Location Master Form (Selector) ---
   if (showLocationMaster) {
+    const locationToEdit = locationList.find(
+      (loc) => loc.name === defaultLocation
+    );
+
     return (
       <div
         className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
@@ -145,19 +206,20 @@ const DocumentCategoryInventoryModal: React.FC<ModalProps> = ({
               <ArrowLeft className="w-4 h-4 mr-1" />
               Back to Inventory
             </button>
+            {locationToEdit && (
+              <span className="text-xs text-gray-400 border-l pl-2 ml-1">
+                Editing: {locationToEdit.name}
+              </span>
+            )}
           </div>
 
           {/* Location Master Component */}
           <div className="flex-1 overflow-hidden">
-            {/* NOTE: I added `onSelect` here.
-               You need to update your LocationMaster component to accept this prop
-               and call it when the user clicks a location row.
-            */}
             <LocationMaster
               onClose={() => setShowLocationMaster(false)}
               onSuccess={() => setShowLocationMaster(false)}
-              // @ts-ignore - remove ignore if you add the prop to LocationMaster
-              onSelect={handleLocationSelect}
+              onSelect={handleLocationSelectFromMaster}
+              initialData={locationToEdit as any}
             />
           </div>
         </div>
@@ -214,6 +276,7 @@ const DocumentCategoryInventoryModal: React.FC<ModalProps> = ({
                 Code <span className="text-red-500">*</span>
               </label>
               <input
+                disabled
                 type="text"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
@@ -262,24 +325,27 @@ const DocumentCategoryInventoryModal: React.FC<ModalProps> = ({
                 Default Location
               </label>
               <div className="flex gap-1 w-full">
-                <div className="relative flex-1">
-                  <input
-                    type="text"
-                    placeholder="Select..."
+                <div className="flex-1">
+                  <Dropdown<LocationData>
+                    data={locationList}
+                    columns={locationColumns}
                     value={defaultLocation}
-                    readOnly
-                    onClick={() => setShowLocationMaster(true)}
-                    className="w-full border border-gray-300 pl-2 pr-8 py-1.5 text-sm focus:outline-none focus:border-[#104a7d] rounded-sm shadow-sm cursor-pointer"
-                  />
-                  <ChevronRight
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400"
-                    size={16}
+                    valueKey="name"
+                    placeholder="Select Default Location..."
+                    onChange={(item) =>
+                      setDefaultLocation(item ? item.name : "")
+                    }
                   />
                 </div>
                 <button
                   type="button"
-                  className={`${themeBlue} ${themeBlueHover} text-white px-3 py-1 rounded-sm shadow-sm transition-colors`}
+                  className={`${themeBlue} ${themeBlueHover} text-white px-3 py-1 rounded-sm shadow-sm transition-colors flex items-center justify-center`}
                   onClick={() => setShowLocationMaster(true)}
+                  title={
+                    defaultLocation
+                      ? "Edit Selected Location"
+                      : "Manage Locations"
+                  }
                 >
                   <Pencil size={14} />
                 </button>
