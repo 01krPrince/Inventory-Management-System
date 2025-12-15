@@ -24,7 +24,7 @@ export interface GstClassificationData {
   description: string;
 }
 
-// The main Data Interface matching the Payload sent in handleSave
+// The main Data Interface for your UI Form State
 export interface UnderGroupData {
   _id?: string;
   item_name: string;
@@ -46,9 +46,29 @@ export interface UnderGroupData {
   batch_wise_inventory: boolean;
   batch_wise_rate: boolean;
   exclude_cvss: boolean;
-  // Some legacy data might use this key, supporting both is safer for Types
-  exclude_cvss_applist?: boolean; 
+  exclude_cvss_applist?: boolean;
   image: string | null;
+}
+
+// New Interface: STRICTLY matches the API Payload (The "Needed Body")
+export interface ItemGroupApiPayload {
+  item_group_mode: string;
+  item_name: string;
+  under_group: string;
+  item_desc: string;       // Renamed from 'description'
+  item_type: string;
+  unit_option: string;
+  stock_unit: string;
+  gst_classification: string;
+  sales_gl: string;
+  purchase_gl: string;
+  maximum_level: string;   // API expects string
+  rate_factor: string;     // API expects string
+  drug_type: string;
+  purchase_rate_factor: string; // API expects string
+  batch_wise_inventory: boolean;
+  batch_wise_rate: boolean;
+  exclude_from_cvss: boolean;   // Renamed from 'exclude_cvss'
 }
 
 // --- API Functions ---
@@ -58,7 +78,6 @@ export interface UnderGroupData {
  */
 export const fetchStockUnits = async (): Promise<StockUnitData[]> => {
   try {
-    // Adjust endpoint path as per your actual backend route
     const response = await api.get<ApiResponse<StockUnitData[]>>("/stock-unit/get");
     if (response.data && response.data.success) {
       return response.data.data || [];
@@ -75,7 +94,6 @@ export const fetchStockUnits = async (): Promise<StockUnitData[]> => {
  */
 export const fetchGstClassifications = async (): Promise<GstClassificationData[]> => {
   try {
-    // Adjust endpoint path as per your actual backend route
     const response = await api.get<ApiResponse<GstClassificationData[]>>("/gst-classification/get");
     if (response.data && response.data.success) {
       return response.data.data || [];
@@ -105,10 +123,10 @@ export const fetchUnderGroup = async (): Promise<UnderGroupData[]> => {
 
 /**
  * Creates a new Item Group
- * Payload matches the snake_case object constructed in handleSave
+ * Payload must match ItemGroupApiPayload (The snake_case structure)
  */
 export const createUnderGroup = async (
-  payload: Omit<UnderGroupData, "_id">
+  payload: ItemGroupApiPayload
 ): Promise<ApiResponse> => {
   try {
     const response = await api.post<ApiResponse>("/item/create", payload);
@@ -126,7 +144,7 @@ export const createUnderGroup = async (
  */
 export const updateUnderGroup = async (
   id: string,
-  payload: Omit<UnderGroupData, "_id">
+  payload: ItemGroupApiPayload
 ): Promise<ApiResponse> => {
   try {
     const response = await api.put<ApiResponse>(`/item/update/${id}`, payload);

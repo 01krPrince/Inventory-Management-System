@@ -3,7 +3,6 @@ import {
   X,
   ChevronDown,
   Edit,
-  Search,
   User,
   FileText,
   Save,
@@ -11,7 +10,8 @@ import {
   Loader2,
 } from "lucide-react";
 import StockUnit from "./StockUnit";
-
+import { GstClassificationForm } from "../GstClassificationForm";
+import { GstClassificationData } from "./api/types";
 import {
   createUnderGroup,
   updateUnderGroup,
@@ -21,8 +21,12 @@ import { UnderGroupData } from "./api/types";
 import { fetchGstClassifications } from "./api/gstservice";
 import { StockUnitData } from "./api/types";
 import { fetchStockUnits } from "./api/stockunitservice";
-import { fetchSalesAndPurchaseGL } from "./api/saleAndPurchaseGL";
+import {
+  fetchSalesAndPurchaseGL,
+  SalesAndPurchaseGL,
+} from "./api/saleAndPurchaseGL";
 import Dropdown, { ColumnDef } from "../Dropdown";
+import ChartOfAccounts from "../ChartOfAccount";
 
 // --- Static Data Constants ---
 
@@ -37,6 +41,12 @@ const stockUnitColumns: ColumnDef<StockUnitData>[] = [
   { header: "Code", key: "code", width: "w-20" },
   { header: "Name", key: "name", width: "w-full" },
   { header: "UQC", key: "uqc", width: "w-24" },
+];
+
+const glColumns: ColumnDef<SalesAndPurchaseGL>[] = [
+  { header: "Code", key: "code", width: "w-1/2" },
+  { header: "Name", key: "name", width: "w-1/2" },
+  { header: "Name", key: "name", width: "w-1/2" },
 ];
 
 const PRODUCT_TYPE_OPTIONS = [
@@ -163,18 +173,14 @@ const CustomToggle = ({
   </div>
 );
 
-// --- Dropdown Column Definitions ---
-const nameColumns: ColumnDef<DropdownItem>[] = [
-  { header: "Name", key: "name", width: "w-full" },
-];
-
 const labelColumns: ColumnDef<DropdownItem>[] = [
   { header: "Select Option", key: "label", width: "w-full" },
 ];
 
-const gstColumns: ColumnDef<DropdownItem>[] = [
-  { header: "HSN/SAC", key: "name", width: "w-1/2" },
-  { header: "Description", key: "description", width: "w-1/2" },
+const gstColumns: ColumnDef<GstClassificationData>[] = [
+  { header: "Type", key: "type", width: "w-24" },
+  { header: "HSN/SAC", key: "hsn_sac_code", width: "w-32" },
+  { header: "Code", key: "code", width: "w-20" },
 ];
 
 // --- Main Component ---
@@ -186,11 +192,21 @@ export default function UnderGroup({
   const [showStockUnit, setShowStockUnit] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isGstModalOpen, setIsGstModalOpen] = useState(false);
+  const [gstInitialData, setGstInitialData] = useState<any>(undefined);
+  const [gstList, setGstList] = useState<GstClassificationData[]>([]);
+  const [glDataFull, setGlDataFull] = useState<SalesAndPurchaseGL[]>([]);
+  const [activeGLType, setActiveGLType] = useState<"sales" | "purchase" | null>(
+    null
+  );
+  const [coaFormData, setCoaFormData] = useState<SalesAndPurchaseGL | null>(
+    null
+  );
+  const [showChartOfAccounts, setShowChartOfAccounts] = useState(false);
 
   // Dynamic Options States
   const [stockUnitList, setStockUnitList] = useState<StockUnitData[]>([]);
-  const [gstOptions, setGstOptions] = useState<DropdownItem[]>([]);
-  const [glOptions, setGlOptions] = useState<DropdownItem[]>([]);
+  const [glOptions, setGlOptions] = useState<SalesAndPurchaseGL[]>([]);
 
   // Edit State for Stock Unit
   const [selectedStockUnitForEdit, setSelectedStockUnitForEdit] = useState<
@@ -229,11 +245,22 @@ export default function UnderGroup({
         if (unitsData) setStockUnitList(unitsData);
 
         const gstData = await fetchGstClassifications();
-        if (gstData) setGstOptions(gstData);
+        if (gstData) setGstList(gstData);
 
+        // Inside your useEffect
         const glData = await fetchSalesAndPurchaseGL();
+
         if (Array.isArray(glData)) {
-          setGlOptions(glData);
+          // Map the complex data to your simple DropdownItem format
+          const mappedData: SalesAndPurchaseGL[] = glData.map((item) => ({
+            ...item, // 1. Spread first
+            name: item.name, // 2. Then define specifics (redundant here, but valid)
+            code: item.code,
+            label: item.name,
+            value: item._id,
+          }));
+
+          setGlOptions(mappedData);
         } else {
           setGlOptions([]);
         }
@@ -243,7 +270,40 @@ export default function UnderGroup({
     };
 
     loadData();
-  }, []);
+  }, [showStockUnit, isDeleting, isGstModalOpen, showChartOfAccounts]);
+
+  const handleGstSave = (savedData: any) => {
+    setFormData((prev) => ({
+      ...prev,
+      gstClassification: savedData.hsnSacDescription,
+    }));
+
+    setGstList((prev) => {
+      const existingIndex = prev.findIndex(
+        (item) => item.hsn_description === savedData.hsnSacDescription
+      );
+      const newItem: GstClassificationData = {
+        _id: `temp_${Date.now()}`,
+        type: savedData.type,
+        hsn_sac_code: savedData.hsnSacCode,
+        hsn_description: savedData.hsnSacDescription,
+        code: savedData.code,
+      };
+
+      if (existingIndex >= 0) {
+        const updatedList = [...prev];
+        updatedList[existingIndex] = {
+          ...updatedList[existingIndex],
+          ...newItem,
+        };
+        return updatedList;
+      } else {
+        return [...prev, newItem];
+      }
+    });
+
+    setIsGstModalOpen(false);
+  };
 
   // Populate form when initialData is provided
   useEffect(() => {
@@ -289,6 +349,49 @@ export default function UnderGroup({
     }
   };
 
+  const handleSaveCOA = (savedData: SalesAndPurchaseGL) => {
+    const savedName = savedData?.name;
+
+    if (savedName) {
+      setGlDataFull((prev) => {
+        const exists = prev.find((item) => item.name === savedName);
+        if (exists) {
+          return prev.map((item) =>
+            item.name === savedName ? savedData : item
+          );
+        }
+        return [...prev, savedData];
+      });
+
+      if (activeGLType === "sales") {
+        setFormData((prev) => ({ ...prev, salesGL: savedName }));
+      } else if (activeGLType === "purchase") {
+        setFormData((prev) => ({ ...prev, purchaseGL: savedName }));
+      }
+    }
+    setShowChartOfAccounts(false);
+  };
+
+  // --- GST Handler Logic ---
+  const handleGSTClassificationForm = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const currentSelection = formData.gstClassification;
+    const selectedItem = gstList.find(
+      (item) => item.hsn_description === currentSelection
+    );
+
+    if (selectedItem) {
+      setGstInitialData({
+        type: selectedItem.type || "HSN",
+        code: selectedItem.code,
+        hsnSacCode: selectedItem.hsn_sac_code,
+        hsnSacDescription: selectedItem.hsn_description,
+      });
+    } else {
+      setGstInitialData(undefined);
+    }
+    setIsGstModalOpen(true);
+  };
   const handleSave = async () => {
     // Basic Validation
     if (!formData.name) {
@@ -298,27 +401,31 @@ export default function UnderGroup({
 
     setIsSubmitting(true);
 
-    const payload = {
+    // --- FIX: Map UI state to the API's "Needed Body" structure ---
+    const payload: ItemGroupApiPayload = {
+      // 1. Rename Keys to match API
+      item_group_mode: formData.UnderGroupMode || "Primary", // UI: UnderGroupMode -> API: item_group_mode
+      item_desc: formData.description || "", // UI: description -> API: item_desc
+      exclude_from_cvss: formData.excludeCvss || false, // UI: excludeCvss -> API: exclude_from_cvss
+
+      // 2. Convert Numbers to Strings (API expects "1.0", "500", etc.)
+      rate_factor: String(formData.rateFactor || 0),
+      purchase_rate_factor: String(formData.purchaseRateFactor || 0),
+      maximum_level: String(formData.minimumLevel || 0), // Note: API asks for maximum_level
+
+      // 3. Direct Matches (snake_case)
       item_name: formData.name,
-      code: formData.code,
-      under_group: formData.underGroup,
-      item_mode: formData.UnderGroupMode,
-      description: formData.description,
-      type: formData.type,
-      unit_option: formData.unitOption,
-      stock_unit: formData.stockUnit,
-      gst_classification: formData.gstClassification,
-      sales_gl: formData.salesGL,
-      purchase_gl: formData.purchaseGL,
-      minimum_level: formData.minimumLevel,
-      rate_factor: formData.rateFactor,
-      item_type: formData.itemType,
-      drug_type: formData.drugType,
-      purchase_rate_factor: formData.purchaseRateFactor,
-      batch_wise_inventory: formData.batchWiseInventory,
-      batch_wise_rate: formData.batchWiseRate,
-      exclude_cvss: formData.excludeCvss,
-      image: formData.image,
+      code: formData.code || "",
+      under_group: formData.underGroup || "ROOT",
+      item_type: formData.itemType || "FMCG", // Default if empty
+      unit_option: formData.unitOption || "PCS",
+      stock_unit: formData.stockUnit || "PCS",
+      gst_classification: formData.gstClassification || "",
+      sales_gl: formData.salesGL || "",
+      purchase_gl: formData.purchaseGL || "",
+      drug_type: formData.drugType || "",
+      batch_wise_inventory: formData.batchWiseInventory || false,
+      batch_wise_rate: formData.batchWiseRate || false,
     };
 
     try {
@@ -330,11 +437,12 @@ export default function UnderGroup({
         // Create New
         response = await createUnderGroup(payload);
       }
+
       if (response && response.success) {
         if (onSave) {
           onSave(response.data);
         } else {
-          onClose(); // Default behavior
+          onClose();
         }
       } else {
         alert("Operation failed: " + (response?.message || "Unknown error"));
@@ -381,6 +489,30 @@ export default function UnderGroup({
       setSelectedStockUnitForEdit(undefined);
     }
     setShowStockUnit(true);
+  };
+
+  const handleDropdownChange = (fieldName: string, value: any) => {
+    setFormData((prev) => ({ ...prev, [fieldName]: value }));
+  };
+
+  const handleOpenCOA = (type: "sales" | "purchase", currentValue: string) => {
+    setActiveGLType(type);
+
+    if (currentValue && currentValue.trim() !== "") {
+      const selectedItem = glDataFull.find(
+        (item) => item.name === currentValue
+      );
+
+      if (selectedItem) {
+        setCoaFormData(selectedItem);
+      } else {
+        setCoaFormData({ name: currentValue } as SalesAndPurchaseGL);
+      }
+    } else {
+      setCoaFormData(null);
+    }
+
+    setShowChartOfAccounts(true);
   };
 
   return (
@@ -442,7 +574,7 @@ export default function UnderGroup({
                 </div>
                 <div className="col-span-9">
                   <input
-                    disabled={!!initialData}
+                    disabled
                     type="text"
                     className={`w-full border border-gray-300 rounded-sm px-2 py-1 text-xs focus:outline-none focus:border-[#0c4a75] ${
                       initialData ? "bg-gray-100" : ""
@@ -546,7 +678,6 @@ export default function UnderGroup({
                 </div>
               </div>
 
-              {/* Stock Unit */}
               <div className="grid grid-cols-12 gap-2 items-center">
                 <div className="col-span-4 md:col-span-3">
                   <FormLabel required>Stock Unit</FormLabel>
@@ -582,72 +713,82 @@ export default function UnderGroup({
                   <div className="flex">
                     <div className="flex-1 min-w-0">
                       <Dropdown
-                        data={gstOptions}
+                        data={gstList}
                         columns={gstColumns}
                         value={formData.gstClassification}
-                        valueKey="name"
+                        valueKey="hsn_description"
                         onChange={(item) =>
-                          handleChange("gstClassification", item?.name || "")
+                          handleChange(
+                            "gstClassification",
+                            item?.hsn_description || ""
+                          )
                         }
                         placeholder="Select..."
                       />
                     </div>
-                    <button className="bg-[#0c4a75] text-white px-2 rounded-r-sm hover:bg-[#093859] ml-[1px]">
-                      <Edit className="w-3 h-3" />
-                    </button>
-                  </div>
-                  <div className="flex justify-end">
-                    <button className="bg-[#0c4a75] text-white p-1 rounded-sm hover:bg-[#093859]">
-                      <Search className="w-3 h-3" />
+                    <button
+                      type="button" // Added type="button" to prevent form submission
+                      onClick={handleGSTClassificationForm}
+                      className="bg-[#0c5888] text-white px-2 rounded-r ml-[1px]"
+                    >
+                      <Edit className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
               </div>
 
               {/* SALES GL DROPDOWN */}
-              <div className="grid grid-cols-12 gap-2 items-center mt-2">
-                <div className="col-span-4">
-                  <Label required>Sales GL</Label>
-                </div>
-                <div className="col-span-8 flex">
+              <div className="mb-3">
+                <FormLabel required>Sales GL</FormLabel>
+                <div className="flex w-full">
                   <div className="flex-1 min-w-0">
                     <Dropdown
                       data={glOptions}
-                      columns={nameColumns}
+                      columns={glColumns}
                       value={formData.salesGL}
                       valueKey="name"
                       onChange={(item) =>
-                        handleChange("salesGL", item?.name || "")
+                        handleDropdownChange("salesGL", item?.name || "")
                       }
-                      placeholder="Select Sales Account"
+                      placeholder="Select..."
                     />
                   </div>
-                  <button className="bg-[#0c4a75] text-white px-2 rounded-r-sm hover:bg-[#093859] ml-[1px]">
-                    <Edit className="w-3 h-3" />
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleOpenCOA("sales", formData.salesGL);
+                    }}
+                    className="bg-[#0c5888] text-white px-2 rounded-r hover:bg-[#0a4a70] transition-colors ml-[1px]"
+                  >
+                    <Edit className="w-4 h-4" />
                   </button>
                 </div>
               </div>
 
               {/* PURCHASE GL DROPDOWN */}
-              <div className="grid grid-cols-12 gap-2 items-center">
-                <div className="col-span-4">
-                  <Label required>Purchase GL</Label>
-                </div>
-                <div className="col-span-8 flex">
+              <div className="mb-3">
+                <Label required>Purchase GL</Label>
+                <div className="flex w-full">
                   <div className="flex-1 min-w-0">
                     <Dropdown
                       data={glOptions}
-                      columns={nameColumns}
+                      columns={glColumns}
                       value={formData.purchaseGL}
                       valueKey="name"
                       onChange={(item) =>
-                        handleChange("purchaseGL", item?.name || "")
+                        handleDropdownChange("purchaseGL", item?.name || "")
                       }
-                      placeholder="Select Purchase Account"
+                      placeholder="Select..."
                     />
                   </div>
-                  <button className="bg-[#0c4a75] text-white px-2 rounded-r-sm hover:bg-[#093859] ml-[1px]">
-                    <Edit className="w-3 h-3" />
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleOpenCOA("sales", formData.purchaseGL);
+                    }}
+                    className="bg-[#0c5888] text-white px-2 rounded-r hover:bg-[#0a4a70] transition-colors ml-[1px]"
+                  >
+                    <Edit className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -847,6 +988,33 @@ export default function UnderGroup({
                 setSelectedStockUnitForEdit(undefined);
               }}
               initialData={selectedStockUnitForEdit}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* --- GST MODAL --- */}
+      {isGstModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-auto">
+            {/* This checks if we have initial data (edit mode) or undefined (create mode) */}
+            <GstClassificationForm
+              initialData={gstInitialData}
+              onSubmit={handleGstSave}
+              onCancel={() => setIsGstModalOpen(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {showChartOfAccounts && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded shadow-lg w-full max-w-4xl max-h-[90vh] overflow-auto">
+            <ChartOfAccounts
+              isOpen={showChartOfAccounts}
+              onClose={() => setShowChartOfAccounts(false)}
+              initialData={coaFormData}
+              onSave={handleSaveCOA}
             />
           </div>
         </div>

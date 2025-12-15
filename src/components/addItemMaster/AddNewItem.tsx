@@ -330,7 +330,7 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
       }
     };
     loadData();
-  }, [formData]);
+  }, [formData, showStockUnit, gstList]);
 
   useEffect(() => {
     if (initialData && Object.keys(initialData).length > 0) {
@@ -723,6 +723,7 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
               </button>
             </div>
           </div>
+
           {/* --- END GST CLASSIFICATION SECTION --- */}
         </div>
         <div className="col-span-12 md:col-span-3 flex flex-col items-center">
