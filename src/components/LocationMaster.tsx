@@ -4,7 +4,6 @@ import {
   Save,
   ArrowRight,
   ArrowLeft,
-  Globe,
   Trash2,
   Pencil,
   Plus,
