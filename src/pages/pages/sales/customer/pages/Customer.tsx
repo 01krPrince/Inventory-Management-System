@@ -649,21 +649,6 @@ export default function CustomerDirectory() {
         </div>
 
         <div className="flex items-center space-x-3 w-full md:w-auto justify-end">
-          {/* <button
-            onClick={handleReload}
-            className="p-2 text-gray-600 dark:text-gray-300 border border-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-            title="Reload"
-          >
-            <HiOutlineRefresh className="size-5" />
-          </button> */}
-          <button
-            onClick={() => handlePrint("printable-table", "Customer Directory")}
-            className="p-2 text-gray-600 dark:text-gray-300 border border-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-            title="Print Table"
-          >
-            <PrintIcon className="size-5" />
-          </button>
-
           <button
             onClick={() => handlePrint("printable-table", "Customer Directory")}
             className="p-2 text-gray-600 dark:text-gray-300 border border-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"

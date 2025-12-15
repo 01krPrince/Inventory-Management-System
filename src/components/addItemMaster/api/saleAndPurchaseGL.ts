@@ -78,3 +78,21 @@ export const createSalesAndPurchaseGL = async (
     return null;
   }
 };
+
+export const updateSalesAndPurchaseGL = async (
+  id: string,
+  payload: any // using 'any' to ensure the strict mapping from component passes through
+) => {
+  try {
+    // Matches your Postman URL: /chartofaccount/updatebyid/:id
+    const response = await api.put(`/salespurchasegl/update_salespurchasegl_by_id/${payload._id}`, payload);
+    return response.data;
+  } catch (error: any) {
+    console.error("Error updating GL:", error);
+    return {
+      success: false,
+      message: error.response?.data?.message || "Failed to update GL Account",
+    };
+  }
+};
+

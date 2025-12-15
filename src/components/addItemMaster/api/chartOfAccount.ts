@@ -81,27 +81,3 @@ export const createCoaGroup = async (
     };
   }
 };
-
-// --- PUT: Update Existing COA Group ---
-export const updateCoaGroup = async (
-  id: string,
-  formData: CoaGroupInput
-): Promise<UpdateCoaGroupResponse> => {
-  try {
-    const response = await api.put<UpdateCoaGroupResponse>(
-      `/coagroups/update_by/${id}`,
-      formData
-    );
-    return response.data;
-  } catch (error: any) {
-    if (error.response && error.response.data) {
-      return error.response.data as UpdateCoaGroupResponse;
-    }
-
-    console.error("Error updating COA Group:", error);
-    return { 
-      success: false, 
-      message: "An unexpected error occurred while updating." 
-    };
-  }
-};

@@ -5,7 +5,7 @@ import { X, Save, Trash2, Pencil, ChevronDown, Loader2 } from "lucide-react";
 // Adjust the path to where you saved the api/coaGroupService file
 import {
   createCoaGroup,
-  updateCoaGroup,
+  // updateCoaGroup,
   CoaGroupInput,
   CoaGroup,
 } from "../components/addItemMaster/api/chartOfAccount";

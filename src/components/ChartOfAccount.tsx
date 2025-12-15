@@ -3,9 +3,10 @@ import { X, ChevronDown, ChevronUp, Globe, Edit2, Loader2 } from "lucide-react";
 import {
   createSalesAndPurchaseGL,
   SalesAndPurchaseGLInput,
+  updateSalesAndPurchaseGL, // Imported the update function
 } from "./addItemMaster/api/saleAndPurchaseGL";
 import { fetchCoaGroups, CoaGroup } from "./addItemMaster/api/chartOfAccount";
-import COAGroupsModal, { COAGroupData } from "./COAGroupsModal"; // Import COAGroupData interface
+import COAGroupsModal, { COAGroupData } from "./COAGroupsModal";
 
 // --- Types ---
 export interface AccountFormData {
@@ -138,7 +139,6 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
   // State for Dynamic COA Groups
   const [coaGroupOptions, setCoaGroupOptions] = useState<CoaGroup[]>([]);
   const [isCoaGroupModalOpen, setIsCoaGroupModalOpen] = useState(false);
-  // NEW: State to hold the full object of the selected COA Group for editing
   const [selectedCoaGroup, setSelectedCoaGroup] = useState<COAGroupData | null>(
     null
   );
@@ -167,7 +167,11 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
         ...initialData,
         salesGlUnderGroup:
           initialData.salesGlUnderGroup || initialData.underGroup || "",
-        rtgsIfscCode: initialData.rtgsIfscCode || initialData.rtgsIfsc || "",
+        rtgsIfscCode:
+          initialData.rtgsIfscCode ||
+          initialData.rtgsIfsc ||
+          initialData.ifscRtgs ||
+          "",
         employee:
           initialData.employee === "Yes" ||
           initialData.employee === true ||
@@ -189,13 +193,12 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
         (g) => g.name === formData.salesGlUnderGroup
       );
       if (foundGroup) {
-        // Map CoaGroup to COAGroupData (if they differ, otherwise just cast/pass)
         setSelectedCoaGroup({
           _id: foundGroup._id,
           name: foundGroup.name,
           code: foundGroup.code,
           inactive: foundGroup.inactive,
-          underGroup: foundGroup.underGroup || "", // Handle optional fields
+          underGroup: foundGroup.underGroup || "",
           nature: foundGroup.nature,
         });
       } else {
@@ -225,9 +228,70 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
     setIsSubmitting(true);
 
     try {
-      if (isEditMode) {
-        onSave(formData); // Implement update API logic here if needed
+      if (isEditMode && formData._id) {
+        console.log("Form ID" + formData._id);
+        // =========================================================
+        // UPDATE LOGIC (Using updateSalesAndPurchaseGL)
+        // =========================================================
+
+        // Construct the payload strictly matching the backend's variable names
+        const updatePayload = {
+          _id: formData._id,
+          name: formData.name,
+          identification: formData.identification,
+
+          // MAPPING: UI 'isSubledger' -> Backend 'isSubleder' (Exact backend typo)
+          isSubleder: Boolean(formData.isSubledger),
+
+          // MAPPING: Sending both keys for safety
+          underGroup: formData.salesGlUnderGroup,
+          underLedger: formData.salesGlUnderGroup,
+
+          type: formData.type,
+          accountNo: formData.accountNo,
+
+          // MAPPING: UI 'rtgsIfscCode' -> Backend 'ifscRtgs'
+          ifscRtgs: formData.rtgsIfscCode,
+
+          classification: formData.classification,
+          isLoanAccount: Boolean(formData.isLoanAccount),
+
+          // MAPPING: Ensure interest is a number
+          intrestRate:
+            parseFloat(String(formData.intrestRate).replace("%", "")) || 0,
+
+          // MAPPING: UI 'calculationOn' -> Backend 'calcultaionOn' (Exact backend typo)
+          calcultaionOn: formData.calculationOn,
+
+          tdsApplicable: Boolean(formData.tdsApplicable),
+          tdsSection: formData.tdsSection,
+          address: formData.address,
+          pan: formData.pan,
+
+          employee: Boolean(formData.employee),
+          group: Boolean(formData.group),
+          inactive: Boolean(formData.inactive),
+        };
+
+        // Call the API
+        const response = await updateSalesAndPurchaseGL(
+          formData._id,
+          updatePayload
+        );
+
+        if (response && response.success) {
+          onSave(response.data);
+          // Optional: onClose(); if you want to close modal immediately
+        } else {
+          alert(
+            "Failed to update 2 GL Account: " +
+              (response?.message + "Unknown Error" + formData._id)
+          );
+        }
       } else {
+        // =========================================================
+        // CREATE LOGIC
+        // =========================================================
         const apiPayload: SalesAndPurchaseGLInput = {
           name: formData.name,
           identification: formData.identification,
@@ -603,3 +667,4 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
 };
 
 export default ChartOfAccounts;
+// Failed to update GL Account: Chart of Account not found
