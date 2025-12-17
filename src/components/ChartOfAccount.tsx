@@ -3,7 +3,7 @@ import { X, ChevronDown, ChevronUp, Globe, Edit2, Loader2 } from "lucide-react";
 import {
   createSalesAndPurchaseGL,
   SalesAndPurchaseGLInput,
-  updateSalesAndPurchaseGL, // Imported the update function
+  updateSalesAndPurchaseGL,
 } from "./addItemMaster/api/saleAndPurchaseGL";
 import { fetchCoaGroups, CoaGroup } from "./addItemMaster/api/chartOfAccount";
 import COAGroupsModal, { COAGroupData } from "./COAGroupsModal";
@@ -45,6 +45,7 @@ interface ChartOfAccountsProps {
   onClose: () => void;
   onSave: (data: any) => void;
   onDelete?: (id: string) => void;
+  index?: number; // Added Index Prop
 }
 
 // --- Default State ---
@@ -131,7 +132,12 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
   onClose,
   onSave,
   onDelete,
+  index = 50, // Default Index
 }) => {
+  // 1. Calculate Z-Index Layers
+  const overlayZIndex = index + 10;
+  const nestedModalZIndex = overlayZIndex + 20;
+
   const [formData, setFormData] = useState<AccountFormData>(defaultState);
   const [sections, setSections] = useState({ basic: true, attribute: true });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -229,51 +235,31 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
 
     try {
       if (isEditMode && formData._id) {
-        console.log("Form ID" + formData._id);
-        // =========================================================
-        // UPDATE LOGIC (Using updateSalesAndPurchaseGL)
-        // =========================================================
-
-        // Construct the payload strictly matching the backend's variable names
+        // UPDATE LOGIC
         const updatePayload = {
           _id: formData._id,
           name: formData.name,
           identification: formData.identification,
-
-          // MAPPING: UI 'isSubledger' -> Backend 'isSubleder' (Exact backend typo)
           isSubleder: Boolean(formData.isSubledger),
-
-          // MAPPING: Sending both keys for safety
           underGroup: formData.salesGlUnderGroup,
           underLedger: formData.salesGlUnderGroup,
-
           type: formData.type,
           accountNo: formData.accountNo,
-
-          // MAPPING: UI 'rtgsIfscCode' -> Backend 'ifscRtgs'
           ifscRtgs: formData.rtgsIfscCode,
-
           classification: formData.classification,
           isLoanAccount: Boolean(formData.isLoanAccount),
-
-          // MAPPING: Ensure interest is a number
           intrestRate:
             parseFloat(String(formData.intrestRate).replace("%", "")) || 0,
-
-          // MAPPING: UI 'calculationOn' -> Backend 'calcultaionOn' (Exact backend typo)
           calcultaionOn: formData.calculationOn,
-
           tdsApplicable: Boolean(formData.tdsApplicable),
           tdsSection: formData.tdsSection,
           address: formData.address,
           pan: formData.pan,
-
           employee: Boolean(formData.employee),
           group: Boolean(formData.group),
           inactive: Boolean(formData.inactive),
         };
 
-        // Call the API
         const response = await updateSalesAndPurchaseGL(
           formData._id,
           updatePayload
@@ -281,17 +267,14 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
 
         if (response && response.success) {
           onSave(response.data);
-          // Optional: onClose(); if you want to close modal immediately
         } else {
           alert(
-            "Failed to update 2 GL Account: " +
-              (response?.message + "Unknown Error" + formData._id)
+            "Failed to update GL Account: " +
+              (response?.message || "Unknown Error")
           );
         }
       } else {
-        // =========================================================
         // CREATE LOGIC
-        // =========================================================
         const apiPayload: SalesAndPurchaseGLInput = {
           name: formData.name,
           identification: formData.identification,
@@ -334,16 +317,17 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
     setFormData(defaultState);
   };
 
-  // Handler for COA Group Modal Save (Update/Create)
   const handleCoaGroupSave = (savedGroup: CoaGroup) => {
-    // 1. Refresh list
     loadGroups();
-    // 2. Select the updated/created group in the main form
     handleChange("salesGlUnderGroup", savedGroup.name);
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div
+      className="fixed inset-0 flex items-center justify-center bg-black/50 p-4"
+      // Use Dynamic Z-Index
+      style={{ zIndex: overlayZIndex }}
+    >
       <div className="bg-white w-full max-w-2xl rounded-sm shadow-xl flex flex-col max-h-[90vh]">
         {/* --- Header --- */}
         <div className="bg-[#1e4e79] text-white px-4 py-2 flex justify-between items-center rounded-t-sm">
@@ -417,7 +401,7 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
 
                 {/* --- Under Group (Mapped from API) --- */}
                 <FormRow label="Under Group" required>
-                  <div className="flex relative">
+                  <div className="flex relative w-full">
                     <select
                       className="w-full border border-gray-300 px-2 py-1 text-sm bg-white focus:outline-none focus:border-blue-500 appearance-none"
                       value={formData.salesGlUnderGroup}
@@ -426,7 +410,6 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
                       }
                     >
                       <option value="">Select...</option>
-                      {/* Map dynamic options */}
                       {coaGroupOptions.map((group) => (
                         <option key={group._id} value={group.name}>
                           {group.name}
@@ -436,7 +419,7 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
                     {/* Edit Button for COA Groups */}
                     <button
                       onClick={() => setIsCoaGroupModalOpen(true)}
-                      className="bg-[#1e4e79] text-white p-1 ml-1 rounded-sm absolute right-0 top-0 h-full w-7 flex items-center justify-center"
+                      className="bg-[#1e4e79] text-white p-1 ml-1 rounded-sm flex items-center justify-center w-8"
                     >
                       <Edit2 size={12} />
                     </button>
@@ -653,12 +636,17 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
 
       {/* --- COA GROUPS MODAL INTEGRATION --- */}
       {isCoaGroupModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-transparent backdrop-blur-sm p-4"
+          // Use Dynamic Z-Index for Nested Modal
+          style={{ zIndex: nestedModalZIndex }}
+        >
           <COAGroupsModal
             isOpen={isCoaGroupModalOpen}
             onClose={() => setIsCoaGroupModalOpen(false)}
-            initialData={selectedCoaGroup} // Pass the FULL selected object here!
-            onSave={handleCoaGroupSave} // Updates list after save
+            initialData={selectedCoaGroup}
+            onSave={handleCoaGroupSave}
+            index={nestedModalZIndex}
           />
         </div>
       )}
@@ -667,4 +655,3 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
 };
 
 export default ChartOfAccounts;
-// Failed to update GL Account: Chart of Account not found

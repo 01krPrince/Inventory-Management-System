@@ -11,27 +11,25 @@ import React, {
 // --- REPLACED CUSTOM ICONS WITH LUCIDE-REACT ---
 import {
   Plus,
-  Trash2, // Used as TrashIcon
-  Edit, // Used as EditIcon
-  Search, // Used as SearchIcon
+  Trash2,
+  Edit,
+  Search,
   ChevronDown,
   ChevronUp,
-  ArrowLeft,
   Loader2,
   Package,
-  Printer, // Used as PrintIcon
-  Download, // Used as ExportIcon
+  Printer,
+  Download,
 } from "lucide-react";
 
-// --- FIXED LOCAL IMPORTS ---
-// Assuming these files are in the same directory for this environment
+// --- LOCAL IMPORTS ---
 import AddNewItem from "../../../../../components/addItemMaster/AddNewItem";
 import { ItemApiData } from "../models/ItemModel";
 import { fetchItems, deleteItemApi } from "../api/itemService";
 import { handlePrint } from "../../../../../components/function/functions";
 
+// --- EXPORT FUNCTION ---
 const handleExport = (data: any[], columns: Column[], fileName: string) => {
-  // Simple CSV export implementation
   const headers = columns
     .filter((col) => col.key !== "actions" && col.key !== "checkbox")
     .map((col) => col.label)
@@ -40,7 +38,7 @@ const handleExport = (data: any[], columns: Column[], fileName: string) => {
     .map((row) =>
       columns
         .filter((col) => col.key !== "actions" && col.key !== "checkbox")
-        .map((col) => `"${row[col.key] || ""}"`) // Escape quotes
+        .map((col) => `"${row[col.key] || ""}"`)
         .join(",")
     )
     .join("\n");
@@ -423,10 +421,10 @@ export default function ItemMaster() {
   const [columnWidths, setColumnWidths] = useState<
     Record<string, number | undefined>
   >({
-    checkbox: 30, // Smaller
-    sno: 40, // Smaller
-    widget: 50, // Smaller
-    inactive: 70, // Smaller
+    checkbox: 30,
+    sno: 40,
+    widget: 50,
+    inactive: 70,
     actions: 100,
   });
 
@@ -579,7 +577,6 @@ export default function ItemMaster() {
     setEditingRow(null);
   };
 
-  // --- FIXED: Removed unused parameter ---
   const handleFormSuccess = () => {
     loadItems();
     handleCloseForm();
@@ -590,31 +587,6 @@ export default function ItemMaster() {
     paginatedData.every((row: DataItem) =>
       selectedRows.includes(row._id as string)
     );
-
-  // --- Render Logic ---
-  if (showAddForm) {
-    return (
-      <div className="w-full">
-        <div className="bg-white p-6 rounded-xl shadow-lg dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-          <div className="mb-4">
-            <button
-              onClick={handleCloseForm}
-              className="flex items-center text-sm text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-white transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4 mr-1" />
-              Back to Item Master
-            </button>
-          </div>
-          <AddNewItem
-            onClose={handleCloseForm}
-            onSuccess={handleFormSuccess}
-            // --- FIX: Cast to any to bypass interface mismatch between files ---
-            initialData={editingRow ? (editingRow as any) : undefined}
-          />
-        </div>
-      </div>
-    );
-  }
 
   if (isLoading) {
     return (
@@ -646,9 +618,12 @@ export default function ItemMaster() {
     );
   }
 
-  // --- DEFAULT VIEW: THE TABLE ---
+  // --- STACKING LOGIC: Base Z-Index for the first popup ---
+  const BASE_Z_INDEX = 50;
+
   return (
     <>
+      {/* 1. Main Table View (Always Visible) */}
       <div className="bg-white p-6 rounded-xl shadow-lg dark:bg-gray-800 border border-gray-200 dark:border-gray-700 w-full">
         {/* Control Panel */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 space-y-4 md:space-y-0">
@@ -690,7 +665,6 @@ export default function ItemMaster() {
               }
               className="p-2 text-gray-600 dark:text-gray-300 border border-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
               title="Print Table"
-              aria-label="Print Table"
             >
               <Printer className="size-5" />
             </button>
@@ -701,7 +675,6 @@ export default function ItemMaster() {
               }
               className="p-2 text-gray-600 dark:text-gray-300 border border-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
               title="Export to CSV"
-              aria-label="Export to CSV"
             >
               <Download className="size-5" />
             </button>
@@ -711,7 +684,6 @@ export default function ItemMaster() {
                 type="text"
                 placeholder="Search items..."
                 value={searchTerm}
-                aria-label="Search items"
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   setSearchTerm(e.target.value)
                 }
@@ -749,7 +721,6 @@ export default function ItemMaster() {
                     className="rounded text-blue-600 dark:bg-gray-600 dark:border-gray-500 border-gray-300 focus:ring-blue-500"
                     checked={areAllOnPageSelected}
                     onChange={handleSelectAll}
-                    aria-label="Select all items on page"
                   />
                 </th>
 
@@ -806,7 +777,6 @@ export default function ItemMaster() {
                         className="rounded text-blue-600 dark:bg-gray-600 dark:border-gray-500 border-gray-300 focus:ring-blue-500"
                         checked={isSelected(row)}
                         onChange={() => handleSelectRow(row)}
-                        aria-label={`Select item ${row.name}`}
                       />
                     </td>
 
@@ -838,7 +808,6 @@ export default function ItemMaster() {
                         );
                       }
 
-                      // Logic: If column created but data is not available show null
                       const displayValue =
                         value === null ||
                         value === undefined ||
@@ -871,7 +840,6 @@ export default function ItemMaster() {
                       <button
                         onClick={() => handleOpenEditModal(row)}
                         className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400 transition"
-                        aria-label="Edit"
                         title="Edit"
                       >
                         <Edit className="size-4 inline" />
@@ -880,7 +848,6 @@ export default function ItemMaster() {
                       <button
                         onClick={() => handleDelete(row)}
                         className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-red-600 dark:text-red-400 transition"
-                        aria-label="Delete"
                         title="Delete"
                       >
                         <Trash2 className="size-4 inline" />
@@ -954,6 +921,24 @@ export default function ItemMaster() {
           </div>
         </div>
       </div>
+
+      {/* 2. RECURSIVE MODAL OVERLAY LOGIC */}
+      {showAddForm && (
+        <div
+          className="w-full h-full fixed inset-0 flex items-center justify-center bg-transparent backdrop-blur-sm p-4"
+          style={{ zIndex: BASE_Z_INDEX }}
+        >
+          {/* Ensure dimensions are large enough */}
+          <div className="overflow-auto bg-transparent relative">
+            <AddNewItem
+              onClose={handleCloseForm}
+              onSuccess={handleFormSuccess}
+              initialData={editingRow ? (editingRow as any) : undefined}
+              index={BASE_Z_INDEX}
+            />
+          </div>
+        </div>
+      )}
     </>
   );
 }

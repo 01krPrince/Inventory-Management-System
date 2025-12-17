@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, Save, Trash2, Edit2, Loader2 } from "lucide-react";
+import { X, Save, Trash2, EditIcon, Loader2 } from "lucide-react";
 import Dropdown, { ColumnDef } from "./Dropdown";
 import {
   createSalesExecutive,
@@ -8,6 +8,11 @@ import {
   SalesExecutiveData,
   CreateSalesExecutivePayload,
 } from "./addItemMaster/api/salesExecutiveService";
+import { LocationMaster } from "./LocationMaster";
+import {
+  fetchAllLocations,
+  LocationMaster as LocationMasterType,
+} from "../pages/pages/inventory/stockAdjustment/api/LocationMaster";
 
 // --- Types ---
 
@@ -29,6 +34,7 @@ interface SalesExecutiveMasterProps {
   onClose: () => void;
   initialData?: SalesExecutiveData;
   onSuccess?: () => void;
+  index?: number; // 1. Index Prop
 }
 
 interface DropdownItem {
@@ -39,10 +45,7 @@ interface DropdownItem {
 
 // --- Mock Data ---
 const mockOptions = {
-  employees: [
-    { name: "John Doe", code: "E001" },
-    { name: "Jane Smith", code: "E002" },
-  ],
+  employees: [{ name: "Default", code: "E001" }],
   stores: [
     { name: "Main Store", code: "MAIN" },
     { name: "Branch A", code: "BR_A" },
@@ -58,11 +61,52 @@ const mockOptions = {
   ],
 };
 
+// --- Helper Component DEFINED OUTSIDE ---
+const FormRow = ({
+  label,
+  children,
+  required,
+}: {
+  label: string;
+  children: React.ReactNode;
+  required?: boolean;
+}) => (
+  <div className="grid grid-cols-12 gap-2 items-center mb-2">
+    <div className="col-span-4 text-gray-800 font-medium text-[13px]">
+      {label}
+      {required && <span className="text-red-500 ml-1">★</span>}
+    </div>
+    <div className="col-span-8 flex items-center">{children}</div>
+  </div>
+);
+
+// --- Sub Component ---
+const ActionBtn: React.FC<{
+  icon: React.ReactNode;
+  onClick?: () => void;
+}> = ({ icon, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="h-[30px] w-[30px] bg-[#0f3c63] text-white flex items-center justify-center rounded-r-sm border border-[#0f3c63] hover:opacity-90 transition-opacity z-10 shrink-0"
+  >
+    {icon}
+  </button>
+);
+
 const SalesExecutiveMaster: React.FC<SalesExecutiveMasterProps> = ({
   onClose,
   initialData,
   onSuccess,
+  index = 50, // 2. Default Index
 }) => {
+  // 3. Logic: Modal layer + Dropdown layer
+  const overlayZIndex = index + 10;
+  // This ensures dropdowns are 50 points higher than the modal they live in
+  const dropdownZIndex = overlayZIndex + 50;
+  // This ensures the LocationMaster modal is on top of this current modal
+  const nestedModalZIndex = overlayZIndex + 20;
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -78,17 +122,38 @@ const SalesExecutiveMaster: React.FC<SalesExecutiveMasterProps> = ({
     phone: "",
     inactive: false,
   });
+  const [storeList, setStoreList] = useState<LocationMasterType[]>([]);
+  const [isLocationMasterOpen, setIsLocationMasterOpen] =
+    useState<boolean>(false);
 
-  // Load Initial Data for Edit Mode
+  // --- API: Fetch Stores ---
+  const loadStores = async () => {
+    try {
+      const result = await fetchAllLocations();
+      if (Array.isArray(result)) {
+        setStoreList(result as LocationMasterType[]);
+      } else if (result && (result as any).data) {
+        setStoreList((result as any).data as LocationMasterType[]);
+      }
+    } catch (error) {
+      console.error("Failed to load stores/locations", error);
+    }
+  };
+
+  // --- FIX: Fetch Stores on Mount ---
+  useEffect(() => {
+    loadStores();
+  }, []);
+
   useEffect(() => {
     if (initialData) {
       setFormData({
         _id: initialData._id,
         code: initialData.code || "0001",
         name: initialData.name || "",
-        reportingTo: "", // API doesn't return this yet, keeping default
-        underStore: "", // API doesn't return this yet, keeping default
-        commissionRate: initialData.commisionRate || "0", // Map 'commisionRate' (API) to 'commissionRate' (State)
+        reportingTo: "",
+        underStore: "",
+        commissionRate: initialData.commisionRate || "0",
         rateOn: initialData.rateOn || "Qty",
         amountType: initialData.amountType || "Percentage",
         email: initialData.email || "",
@@ -107,13 +172,10 @@ const SalesExecutiveMaster: React.FC<SalesExecutiveMasterProps> = ({
       alert("Name is required");
       return;
     }
-
     setIsSubmitting(true);
-
-    // Prepare Payload
     const payload: CreateSalesExecutivePayload = {
       name: formData.name,
-      commisionRate: formData.commissionRate, // Send as 'commisionRate' per API
+      commisionRate: formData.commissionRate,
       rateOn: formData.rateOn,
       amountType: formData.amountType,
       email: formData.email,
@@ -122,12 +184,9 @@ const SalesExecutiveMaster: React.FC<SalesExecutiveMasterProps> = ({
 
     try {
       let response;
-
       if (formData._id) {
-        // Use Service for Update
         response = await updateSalesExecutive(formData._id, payload);
       } else {
-        // Use Service for Create
         response = await createSalesExecutive(payload);
       }
 
@@ -152,7 +211,6 @@ const SalesExecutiveMaster: React.FC<SalesExecutiveMasterProps> = ({
 
     setIsDeleting(true);
     try {
-      // Use Service for Delete
       const response = await deleteSalesExecutive(formData._id);
       if (response.success) {
         if (onSuccess) onSuccess();
@@ -168,45 +226,34 @@ const SalesExecutiveMaster: React.FC<SalesExecutiveMasterProps> = ({
     }
   };
 
+  const handleLocationSelect = (locationName: string) => {
+    handleChange("underStore", locationName);
+  };
+
   const themeColor = "#0f3c63";
+
+  // --- Dropdown Config ---
   const defaultColumns: ColumnDef<DropdownItem>[] = [
+    { header: "Code", key: "code", width: "w-1/3" },
     { header: "Name", key: "name", width: "w-full" },
   ];
 
-  // --- Sub Components ---
-  const ActionBtn: React.FC<{
-    icon: React.ReactNode;
-    onClick?: () => void;
-  }> = ({ icon, onClick }) => (
-    <button
-      type="button"
-      onClick={onClick}
-      className="h-[30px] w-[30px] bg-[#0f3c63] text-white flex items-center justify-center rounded-r-sm border border-[#0f3c63] hover:opacity-90 transition-opacity z-10 shrink-0"
-    >
-      {icon}
-    </button>
-  );
+  // --- Helper to get selected Store Object ---
+  const getSelectedStoreData = (): LocationMasterType | null => {
+    if (!formData.underStore) return null;
+    return storeList.find((s) => s.name === formData.underStore) || null;
+  };
 
-  const FormRow = ({
-    label,
-    children,
-    required,
-  }: {
-    label: string;
-    children: React.ReactNode;
-    required?: boolean;
-  }) => (
-    <div className="grid grid-cols-12 gap-2 items-center mb-2">
-      <div className="col-span-4 text-gray-800 font-medium text-[13px]">
-        {label}
-        {required && <span className="text-red-500 ml-1">★</span>}
-      </div>
-      <div className="col-span-8 flex items-center">{children}</div>
-    </div>
-  );
+  const handleLocationSuccess = async () => {
+    await loadStores();
+  };
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <div
+      className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      // 4. Apply Z-Index to the Modal Wrapper
+      style={{ zIndex: overlayZIndex }}
+    >
       <div className="w-full max-w-xl bg-white border border-gray-300 shadow-2xl rounded-sm overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div
@@ -255,27 +302,31 @@ const SalesExecutiveMaster: React.FC<SalesExecutiveMasterProps> = ({
                   handleChange("reportingTo", item?.name || "")
                 }
                 placeholder="Select..."
+                zIndex={dropdownZIndex}
               />
-              <ActionBtn icon={<Edit2 size={14} />} />
+              <ActionBtn icon={<EditIcon size={14} />} />
             </div>
           </FormRow>
 
           <FormRow label="Under Store">
             <div className="w-full flex">
-              <Dropdown
-                data={mockOptions.stores}
+              <Dropdown<LocationMasterType>
+                data={storeList}
                 columns={defaultColumns}
                 value={formData.underStore}
                 valueKey="name"
                 onChange={(item) =>
-                  handleChange("underStore", item?.name || "")
+                  handleChange("underStore", item ? item.name : "")
                 }
-                placeholder="Select..."
+                placeholder="Select Store..."
+                zIndex={dropdownZIndex}
               />
-              <ActionBtn icon={<Edit2 size={14} />} />
+              <ActionBtn
+                icon={<EditIcon size={16} />}
+                onClick={() => setIsLocationMasterOpen(true)}
+              />
             </div>
           </FormRow>
-
           <FormRow label="Commission Rate">
             <input
               type="number"
@@ -293,6 +344,7 @@ const SalesExecutiveMaster: React.FC<SalesExecutiveMasterProps> = ({
               valueKey="name"
               onChange={(item) => handleChange("rateOn", item?.name || "")}
               placeholder="Select..."
+              zIndex={dropdownZIndex}
             />
           </FormRow>
 
@@ -304,6 +356,7 @@ const SalesExecutiveMaster: React.FC<SalesExecutiveMasterProps> = ({
               valueKey="name"
               onChange={(item) => handleChange("amountType", item?.name || "")}
               placeholder="Select..."
+              zIndex={dropdownZIndex}
             />
           </FormRow>
 
@@ -377,6 +430,25 @@ const SalesExecutiveMaster: React.FC<SalesExecutiveMasterProps> = ({
           )}
         </div>
       </div>
+
+      {/* --- Location Master Popup (Stacked ON TOP of Counter Form) --- */}
+      {isLocationMasterOpen && (
+        // Use Dynamic Indexing
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+          style={{ zIndex: nestedModalZIndex }}
+        >
+          <div className="bg-white rounded shadow-lg overflow-hidden relative">
+            <LocationMaster
+              onClose={() => setIsLocationMasterOpen(false)}
+              initialData={getSelectedStoreData()}
+              onSuccess={handleLocationSuccess}
+              onSelect={handleLocationSelect}
+              index={nestedModalZIndex}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

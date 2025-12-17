@@ -3,7 +3,7 @@ import { X, Save, Trash2, EditIcon, Loader2 } from "lucide-react";
 import {
   createItemBrand,
   CreateBrandPayload,
-  updateItemBrand, // Ensure this is exported from your service
+  updateItemBrand,
 } from "./api/brandservice";
 import SalesExecutiveMaster from "../SalesExecutiveMaster";
 import Dropdown, { ColumnDef } from "../Dropdown";
@@ -25,9 +25,13 @@ export interface BrandData {
 interface BrandProps {
   onClose: () => void;
   initialData?: BrandData;
+  index?: number; // Added for dynamic z-indexing
 }
 
-const Brand: React.FC<BrandProps> = ({ onClose, initialData }) => {
+const Brand: React.FC<BrandProps> = ({ onClose, initialData, index = 50 }) => {
+  // Logic: Calculate Z-Index for nested components
+  const overlayZIndex = index + 10;
+
   // --- State Management ---
   const [data, setData] = useState({
     _id: "",
@@ -303,11 +307,16 @@ const Brand: React.FC<BrandProps> = ({ onClose, initialData }) => {
       </div>
 
       {isSaleExecutiveOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+          // Apply Dynamic Z-Index
+          style={{ zIndex: overlayZIndex }}
+        >
           <div className="bg-white rounded shadow-lg">
             <SalesExecutiveMaster
               onClose={() => setIsSaleExecutiveOpen(false)}
               initialData={selectedExecutiveForEdit}
+              index={overlayZIndex}
             />
           </div>
         </div>

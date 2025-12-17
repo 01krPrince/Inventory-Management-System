@@ -100,6 +100,7 @@ interface LocationMasterProps {
   onSuccess?: (data?: any) => void;
   onSelect?: (locationName: string) => void;
   initialData?: LocationMasterType | null;
+  index?: number; // ADDED: Index Prop
 }
 
 const partyColumns: ColumnDef<Customer>[] = [
@@ -114,7 +115,13 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
   onSuccess,
   onSelect,
   initialData,
+  index = 50, // Default Index
 }) => {
+  // Logic: Calculate Z-Index Layers
+  const overlayZIndex = index + 10; // For this modal wrapper
+  const dropdownZIndex = overlayZIndex + 10; // For dropdowns inside this modal
+  const nestedModalZIndex = overlayZIndex + 20; // For the nested Customer modal
+
   const [activeStep, setActiveStep] = useState(0);
   const [formData, setFormData] = useState<any>(INITIAL_LOCATION_DATA);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -182,7 +189,7 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
       onClick={onClick}
       type="button"
       title={title}
-      className="h-[32px] w-[32px] bg-[var(--theme-primary)] text-white flex items-center justify-center rounded-sm border border-[var(--theme-primary)] hover:opacity-90 transition-opacity ml-[-1px] z-10 shadow-sm"
+      className="h-[32px] w-[32px] bg-[#104a7d] text-white flex items-center justify-center rounded-sm border border-[#104a7d] hover:opacity-90 transition-opacity ml-[-1px] z-10 shadow-sm"
     >
       {icon}
     </button>
@@ -364,6 +371,8 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
                       party: item ? item.cust_name : "",
                     }))
                   }
+                  // Pass the Calculated Z-Index
+                  zIndex={dropdownZIndex}
                 />
               </div>
               <ActionBtn
@@ -587,7 +596,8 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
   return (
     <>
       {/* 1. Main Location Form */}
-      <div className="h-full flex flex-col bg-white">
+      {/* KEY FIX: h-full w-full ensures it fills the fixed-size modal wrapper */}
+      <div className="h-full w-full flex flex-col bg-white">
         <div className="bg-[#104a7d] px-6 py-4 text-white flex justify-between items-center shrink-0">
           <h1 className="text-xl font-semibold tracking-wide">
             {initialData ? "EDIT LOCATION" : "NEW LOCATION"}
@@ -628,6 +638,7 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
           </div>
         </div>
 
+        {/* Scrollable Content Area */}
         <div className="p-6 overflow-y-auto flex-1">
           {activeStep === 0 && renderBasicDetails()}
           {activeStep === 1 && renderCompliance()}
@@ -690,13 +701,17 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
 
       {/* 2. Customer Form Modal (Stacked on top) */}
       {isCustomerFormOpen && (
-        <div className="fixed mt-[30vh] inset-0 z-[60] flex items-center justify-center bg-transparent backdrop-blur-sm p-4">
+        <div
+          className="fixed mt-[30vh] inset-0 flex items-center justify-center bg-transparent backdrop-blur-sm p-4"
+          style={{ zIndex: nestedModalZIndex }} // DYNAMIC Z-INDEX HERE
+        >
           <div className="overflow-hidden flex flex-col p-4">
             <div className="flex-1 overflow-hidden relative">
               <CrudCustomer
                 onClose={handleCustomerFormClose}
                 initialData={editingRow}
                 onSuccess={handleCustomerFormSuccess}
+                index={nestedModalZIndex}
               />
             </div>
           </div>

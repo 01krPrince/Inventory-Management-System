@@ -192,7 +192,9 @@ export default function UnderGroup({
   onSave,
   zIndex = 50, // Default to 50 if not provided (Base Layer)
 }: UnderGroupProps) {
+  // Logic: Calculate Z-Index for nested components
   const overlayZIndex = zIndex + 10;
+
   const [showStockUnit, setShowStockUnit] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -521,10 +523,7 @@ export default function UnderGroup({
   };
 
   return (
-    <div
-      className="flex flex-col bg-gray-100 text-sm h-full"
-      style={{ zIndex: overlayZIndex }}
-    >
+    <div className="flex flex-col bg-gray-100 text-sm h-full">
       {/* HEADER */}
       <div className="bg-[#0c4a75] px-3 py-2 flex justify-between items-center text-white shadow-sm shrink-0">
         <h1 className="text-sm font-semibold tracking-wide">
@@ -988,7 +987,11 @@ export default function UnderGroup({
       </div>
 
       {showStockUnit && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-transparent backdrop-blur-sm p-4">
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-transparent backdrop-blur-sm p-4"
+          // Dynamic indexing applied here
+          style={{ zIndex: overlayZIndex }}
+        >
           <div className="w-auto h-auto bg-white rounded-lg shadow-2xl overflow-hidden relative">
             <StockUnit
               onClose={() => {
@@ -996,7 +999,7 @@ export default function UnderGroup({
                 setSelectedStockUnitForEdit(undefined);
               }}
               initialData={selectedStockUnitForEdit}
-              zIndex={0}
+              zIndex={overlayZIndex}
             />
           </div>
         </div>
@@ -1004,9 +1007,12 @@ export default function UnderGroup({
 
       {/* --- GST MODAL --- */}
       {isGstModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-black/50 p-4"
+          // Dynamic indexing applied here
+          style={{ zIndex: overlayZIndex }}
+        >
           <div className="w-auto">
-            {/* This checks if we have initial data (edit mode) or undefined (create mode) */}
             <GstClassificationForm
               initialData={gstInitialData}
               onSubmit={handleGstSave}
@@ -1017,7 +1023,11 @@ export default function UnderGroup({
       )}
 
       {showChartOfAccounts && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-black/50 p-4"
+          // Dynamic indexing applied here
+          style={{ zIndex: overlayZIndex }}
+        >
           <div className="bg-white rounded shadow-lg w-full max-w-4xl max-h-[90vh] overflow-auto">
             <ChartOfAccounts
               isOpen={showChartOfAccounts}

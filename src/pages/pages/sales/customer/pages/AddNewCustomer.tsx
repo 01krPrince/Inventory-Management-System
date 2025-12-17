@@ -29,7 +29,7 @@ import { CustomerPayload } from "../models/AddCustomerPayload";
 import Dropdown, { ColumnDef } from "../../../../../components/Dropdown";
 import {
   SalesAndPurchaseGL,
-  fetchSalesAndPurchaseGL, // Added import
+  fetchSalesAndPurchaseGL,
 } from "../../../../../components/addItemMaster/api/saleAndPurchaseGL";
 import ChartOfAccounts from "../../../../../components/ChartOfAccount";
 
@@ -87,7 +87,7 @@ interface FormData {
   salesExecutive: string;
   transporter: string;
   creditLimit: string;
-  maxCreditLimit: string; // Added missing field to interface
+  maxCreditLimit: string;
   maxCreditDays: string;
   interestRateYearly: string;
   customerOnWatch: boolean;
@@ -114,7 +114,7 @@ const INITIAL_DATA: FormData = {
   code: "",
   underLedger: "",
   isCustomerCommon: false,
-  isSubCustomer: false, // Changed default to false
+  isSubCustomer: false,
   underCustomer: "",
   profileImage: null,
   // Statutory
@@ -322,19 +322,27 @@ const SocialInput = ({
 
 interface AddNewCustomerProps {
   onClose: () => void;
-  initialData?: any; // The raw data from API (usually snake_case)
+  initialData?: any;
   onSuccess?: () => void;
+  index?: number; // ADDED: Index Prop
 }
 
 const underLedger: ColumnDef<SalesAndPurchaseGL>[] = [
   { header: "Code", key: "code", width: "w-24" },
   { header: "Name", key: "name", width: "w-full" },
 ];
+
 const CrudCustomer: React.FC<AddNewCustomerProps> = ({
   onClose,
   initialData,
   onSuccess,
+  index = 50, // Default Index
 }) => {
+  // Logic: Calculate Z-Index Layers
+  const overlayZIndex = index + 10;
+  const dropdownZIndex = overlayZIndex + 20;
+  const nestedModalZIndex = overlayZIndex + 30;
+
   const [activeStep, setActiveStep] = useState(0);
   const [formData, setFormData] = useState<FormData>(INITIAL_DATA);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -375,7 +383,6 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
       const val = (v: any) => (v !== null && v !== undefined ? String(v) : "");
 
       setFormData({
-        // ... (your existing form data mappings) ...
         gstNo: initialData.gst_no || "",
         name: initialData.cust_name || "",
         printName: initialData.print_name || "",
@@ -760,6 +767,8 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
                   handleDropdownChange("underLedger", item?.name || "")
                 }
                 placeholder="Select..."
+                // Pass dynamic Z-Index here
+                zIndex={dropdownZIndex}
               />
             </div>
             <button
@@ -1413,7 +1422,10 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 font-sans text-gray-800">
+    <div
+      className="min-h-screen bg-gray-50 p-4 font-sans text-gray-800"
+      style={{ zIndex: overlayZIndex }} // DYNAMIC Z-INDEX
+    >
       <div className="max-w-6xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
         {/* Header */}
         <div className="bg-[#0c5888] px-6 py-4 text-white flex justify-between items-center">
@@ -1519,13 +1531,18 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
         </div>
       </div>
       {showChartOfAccounts && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-black/50 p-4"
+          // DYNAMIC Z-INDEX HERE
+          style={{ zIndex: nestedModalZIndex }}
+        >
           <div className="bg-white rounded shadow-lg w-full max-w-4xl max-h-[90vh] overflow-auto">
             <ChartOfAccounts
               isOpen={showChartOfAccounts}
               onClose={() => setShowChartOfAccounts(false)}
               initialData={coaFormData}
               onSave={handleSaveCOA}
+              index={nestedModalZIndex}
             />
           </div>
         </div>

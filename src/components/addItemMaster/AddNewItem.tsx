@@ -252,13 +252,18 @@ interface AddNewItemProps {
   onClose: () => void;
   initialData?: ItemApiData;
   onSuccess?: (data?: any) => void;
+  index?: number; // ADDED: For Dynamic Z-Indexing
 }
 
 const AddNewItem: React.FC<AddNewItemProps> = ({
   onClose,
   initialData,
   onSuccess,
+  index = 50, // Default base index
 }) => {
+  // LOGIC: Calculate Z-Index for nested overlays
+  const overlayZIndex = index + 10;
+
   const [activeStep, setActiveStep] = useState(0);
   const [formData, setFormData] = useState<ItemFormData>(INITIAL_DATA);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -1267,7 +1272,7 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 font-sans text-gray-800">
+    <div className="h-auto bg-transparent p-4 font-sans text-gray-800">
       <div className="max-w-6xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
         <div className="bg-[#0c5888] px-6 py-4 text-white flex justify-between items-center">
           <h1 className="text-xl font-semibold tracking-wide">
@@ -1362,24 +1367,31 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
       {/* --- MODALS SECTION --- */}
 
       {showItemGroupModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50 p-4">
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-black/50 p-4"
+          style={{ zIndex: overlayZIndex }}
+        >
           <div className="bg-white rounded shadow-lg">
             <UnderGroup
               onClose={() => setShowItemGroupModal(false)}
               initialData={underGroupInitialData}
               onSave={handleUnderGroupSave}
-              zIndex={500}
+              zIndex={overlayZIndex}
             />
           </div>
         </div>
       )}
 
       {showStockUnit && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-black/50 p-4"
+          style={{ zIndex: overlayZIndex }}
+        >
           <div className="bg-white rounded shadow-lg">
             <StockUnit
               onClose={() => setShowStockUnit(false)}
               initialData={stockUnitInitialData}
+              zIndex={overlayZIndex}
             />
           </div>
         </div>
@@ -1387,21 +1399,29 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
 
       {/* Item Category Modal */}
       {isItemCategory && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-black/50 p-4"
+          style={{ zIndex: overlayZIndex }}
+        >
           <div className="bg-white rounded shadow-lg">
             <ItemCategory
               onClose={() => setIsItemCategory(false)}
               initialData={categoryToEdit} // <--- Pass the selected data here
+              // index={overlayZIndex} // Pass if ItemCategory supports it
             />
           </div>
         </div>
       )}
       {isBrandOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-black/50 p-4"
+          style={{ zIndex: overlayZIndex }}
+        >
           <div className="bg-white rounded shadow-lg">
             <Brand
               onClose={() => setIsBrandOpen(false)}
               initialData={brandToEdit}
+              index={overlayZIndex}
             />
           </div>
         </div>
@@ -1409,26 +1429,34 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
 
       {/* --- GST MODAL --- */}
       {isGstModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-black/50 p-4"
+          style={{ zIndex: overlayZIndex }}
+        >
           <div className="w-auto">
             {/* This checks if we have initial data (edit mode) or undefined (create mode) */}
             <GstClassificationForm
               initialData={gstInitialData}
               onSubmit={handleGstSave}
               onCancel={() => setIsGstModalOpen(false)}
+              // index={overlayZIndex} // Pass if GstClassificationForm supports it
             />
           </div>
         </div>
       )}
 
       {showChartOfAccounts && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-black/50 p-4"
+          style={{ zIndex: overlayZIndex }}
+        >
           <div className="bg-white rounded shadow-lg w-full max-w-4xl max-h-[90vh] overflow-auto">
             <ChartOfAccounts
               isOpen={showChartOfAccounts}
               onClose={() => setShowChartOfAccounts(false)}
               initialData={coaFormData}
               onSave={handleSaveCOA}
+              // index={overlayZIndex} // Pass if ChartOfAccounts supports it
             />
           </div>
         </div>

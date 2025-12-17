@@ -2,10 +2,9 @@ import React, { useState, useEffect } from "react";
 import { X, FileText, EditIcon } from "lucide-react";
 import Dropdown, { ColumnDef } from "./Dropdown";
 
-// 1. Import the Component
 import { LocationMaster } from "./LocationMaster";
 import CrudCustomer from "../pages/pages/sales/customer/pages/AddNewCustomer";
-// 2. Import API functions AND the Type
+
 import {
   fetchAllLocations,
   LocationMaster as LocationMasterType,
@@ -15,8 +14,6 @@ import {
   Customer,
   getAllCustomers,
 } from "../pages/pages/sales/customer/api/customerService";
-
-// --- Types ---
 
 interface CounterFormData {
   counterNo: string;
@@ -38,6 +35,7 @@ interface CounterFormData {
 
 interface CounterMasterProps {
   onClose: () => void;
+  index?: number;
 }
 
 interface DropdownItem {
@@ -85,7 +83,14 @@ const mockOptions = {
   defaultTenders: [{ name: "Cash", code: "CASH" }],
 };
 
-const CounterMaster: React.FC<CounterMasterProps> = ({ onClose }) => {
+const CounterMaster: React.FC<CounterMasterProps> = ({
+  onClose,
+  index = 50,
+}) => {
+  const overlayZIndex = index + 10; // For this modal wrapper
+  const dropdownZIndex = overlayZIndex + 10; // For dropdowns inside this modal
+  const nestedModalZIndex = overlayZIndex + 20; // For nested modals (Location, Customer)
+
   // --- State ---
   const [formData, setFormData] = useState<CounterFormData>({
     counterNo: "",
@@ -263,8 +268,11 @@ const CounterMaster: React.FC<CounterMasterProps> = ({ onClose }) => {
   }, []);
 
   return (
-    // Overlay Wrapper for Popup effect (Z-Index 9999)
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    // Overlay Wrapper for Popup effect (Dynamic Z-Index)
+    <div
+      className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      style={{ zIndex: overlayZIndex }} // Apply Z-Index Here
+    >
       {/* Main Counter Form Container */}
       <div className="w-full max-w-2xl bg-white border border-gray-300 shadow-2xl rounded-sm overflow-hidden flex flex-col max-h-[90vh]">
         {/* --- Header --- */}
@@ -316,6 +324,8 @@ const CounterMaster: React.FC<CounterMasterProps> = ({ onClose }) => {
                   handleChange("store", item ? item.name : "")
                 }
                 placeholder="Select Store..."
+                // Pass Dynamic Z-Index
+                zIndex={dropdownZIndex}
               />
               <ActionBtn
                 icon={<EditIcon size={16} />}
@@ -334,6 +344,7 @@ const CounterMaster: React.FC<CounterMasterProps> = ({ onClose }) => {
                 valueKey="name"
                 onChange={(item) => handleChange("taxStyle", item?.name || "")}
                 placeholder="Select Tax Style..."
+                zIndex={dropdownZIndex}
               />
             </div>
           </FormRow>
@@ -350,6 +361,7 @@ const CounterMaster: React.FC<CounterMasterProps> = ({ onClose }) => {
                   handleChange("exchangeReturn", item?.name || "")
                 }
                 placeholder="Select Exchange Policy..."
+                zIndex={dropdownZIndex}
               />
             </div>
           </FormRow>
@@ -369,6 +381,7 @@ const CounterMaster: React.FC<CounterMasterProps> = ({ onClose }) => {
                     party: item ? item.cust_name : "",
                   }))
                 }
+                zIndex={dropdownZIndex}
               />
               <button onClick={handleCustomerFormClose}>
                 <ActionBtn icon={<EditIcon size={16} />} />
@@ -398,6 +411,7 @@ const CounterMaster: React.FC<CounterMasterProps> = ({ onClose }) => {
                   handleChange("printFormat", item?.name || "")
                 }
                 placeholder="Select Format..."
+                zIndex={dropdownZIndex}
               />
             </div>
           </FormRow>
@@ -418,6 +432,7 @@ const CounterMaster: React.FC<CounterMasterProps> = ({ onClose }) => {
                 valueKey="name"
                 onChange={(item) => handleChange("employee", item?.name || "")}
                 placeholder="Select Employee..."
+                zIndex={dropdownZIndex}
               />
               <ActionBtn icon={<EditIcon size={16} />} />
             </div>
@@ -433,6 +448,7 @@ const CounterMaster: React.FC<CounterMasterProps> = ({ onClose }) => {
                 valueKey="name"
                 onChange={(item) => handleChange("group", item?.name || "")}
                 placeholder="Select Group..."
+                zIndex={dropdownZIndex}
               />
               <ActionBtn icon={<EditIcon size={16} />} />
             </div>
@@ -450,6 +466,7 @@ const CounterMaster: React.FC<CounterMasterProps> = ({ onClose }) => {
                   handleChange("defaultPosCustomer", item?.name || "")
                 }
                 placeholder="Select POS Customer..."
+                zIndex={dropdownZIndex}
               />
               <ActionBtn icon={<EditIcon size={16} />} />
             </div>
@@ -467,6 +484,7 @@ const CounterMaster: React.FC<CounterMasterProps> = ({ onClose }) => {
                   handleChange("allowTenderTypes", item?.name || "")
                 }
                 placeholder="Select Types..."
+                zIndex={dropdownZIndex}
               />
             </div>
           </FormRow>
@@ -483,6 +501,7 @@ const CounterMaster: React.FC<CounterMasterProps> = ({ onClose }) => {
                   handleChange("defaultTender", item?.name || "")
                 }
                 placeholder="Select Default Tender..."
+                zIndex={dropdownZIndex}
               />
               <ActionBtn icon={<EditIcon size={16} />} />
             </div>
@@ -522,27 +541,35 @@ const CounterMaster: React.FC<CounterMasterProps> = ({ onClose }) => {
 
       {/* --- Location Master Popup (Stacked ON TOP of Counter Form) --- */}
       {isLocationMasterOpen && (
-        // Use a HIGHER Z-Index (10000) and fixed overlay to stack on top
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+          // Use Higher Dynamic Z-Index
+          style={{ zIndex: nestedModalZIndex }}
+        >
           <div className="w-full max-w-4xl h-[90vh] bg-white rounded shadow-lg overflow-hidden relative">
             <LocationMaster
               onClose={() => setIsLocationMasterOpen(false)}
               initialData={getSelectedStoreData()}
               onSuccess={handleLocationSuccess}
               onSelect={handleLocationSelect}
+              index={nestedModalZIndex}
             />
           </div>
         </div>
       )}
 
       {isOpenCustomer && (
-        <div className="fixed mt-[30vh] inset-0 z-[60] flex items-center justify-center bg-transparent backdrop-blur-sm p-4">
+        <div
+          className="fixed mt-[30vh] inset-0 flex items-center justify-center bg-transparent backdrop-blur-sm p-4"
+          style={{ zIndex: nestedModalZIndex }} // Use Higher Dynamic Z-Index
+        >
           <div className="overflow-hidden flex flex-col p-4">
             <div className="flex-1 overflow-hidden relative">
               <CrudCustomer
                 onClose={handleCustomerFormClose}
                 initialData={editingRow}
                 onSuccess={handleCustomerFormSuccess}
+                index={overlayZIndex + 10}
               />
             </div>
           </div>

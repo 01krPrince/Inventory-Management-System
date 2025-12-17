@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { X, Save, Trash2, EditIcon, ChevronDown, Loader2 } from "lucide-react";
 
 // --- API Imports ---
-// Adjust the path to where you saved the api/coaGroupService file
 import {
   createCoaGroup,
   updateCoaGroup,
@@ -11,7 +10,6 @@ import {
 } from "../components/addItemMaster/api/chartOfAccount";
 
 // --- Interface ---
-// Aligning UI interface with API response structure
 export interface COAGroupData {
   _id?: string;
   name: string;
@@ -25,8 +23,9 @@ interface COAGroupsModalProps {
   isOpen?: boolean;
   onClose?: () => void;
   initialData?: COAGroupData | null;
-  onSave?: (data: CoaGroup) => void; // Pass the real backend object back
+  onSave?: (data: CoaGroup) => void;
   onDelete?: (id?: string) => void;
+  index?: number;
 }
 
 // Default state
@@ -44,6 +43,7 @@ const COAGroupsModal = ({
   initialData = null,
   onSave = () => {},
   onDelete = () => {},
+  index = 50,
 }: COAGroupsModalProps) => {
   const [formData, setFormData] = useState<COAGroupData>(defaultState);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -57,6 +57,7 @@ const COAGroupsModal = ({
         setFormData(defaultState);
       }
     }
+    index = index;
   }, [isOpen, initialData]);
 
   if (!isOpen) return null;

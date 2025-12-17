@@ -15,7 +15,6 @@ import {
   SearchIcon,
   ChevronDown,
   ChevronUp,
-  ArrowLeft,
   Loader2,
 } from "lucide-react";
 
@@ -557,21 +556,7 @@ export default function CustomerDirectory() {
   // --- Render Logic ---
   if (isFormOpen) {
     return (
-      <div className="w-full bg-white p-6 rounded-xl shadow-lg dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-        <div className="mb-4">
-          <button
-            onClick={handleCloseForm}
-            className="flex items-center text-sm text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4 mr-1" />
-            Back to Directory
-          </button>
-        </div>
-
-        {/* Crucial: We pass 'editingRow' as 'initialData'. 
-           If editingRow is null, the form assumes "Add New".
-           If editingRow has data, the form assumes "Edit".
-        */}
+      <div className="bg-transparent rounded-xl  ">
         <CrudCustomer
           onClose={handleCloseForm}
           initialData={editingRow}
