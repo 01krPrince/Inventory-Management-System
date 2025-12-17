@@ -1,17 +1,6 @@
 import React from "react";
-import { Edit2 } from "lucide-react";
+import { COLORS } from "../../../../constants/colors";
 
-const COLORS = {
-  white: "#ffffff",
-  textPrimary: "#111827", // gray-900
-  textSecondary: "#374151", // gray-700
-  textMuted: "#9CA3AF", // gray-400
-  borderDark: "#D1D5DB", // gray-300
-  background: "#F9FAFB", // gray-50
-  primary: "#2563EB", // blue-600
-  primaryHover: "#1D4ED8", // blue-700
-  info: "#3B82F6",
-};
 import Attachment from "../../../../components/Attachment";
 
 type InvoiceFooterProps = {
@@ -63,58 +52,6 @@ const POSOrderFooter: React.FC<InvoiceFooterProps> = ({ amount = -8500 }) => {
               >
                 0/250
               </span>
-            </div>
-          </div>
-
-          {/* Received Amount */}
-          <div className="flex flex-col sm:flex-row gap-4 items-center">
-            <label className="w-32" style={{ color: COLORS.textPrimary }}>
-              Received Amount
-            </label>
-            <div className="w-40 relative">
-              <span
-                className="absolute left-2 top-1/2 -translate-y-1/2 text-xs"
-                style={{ color: COLORS.textMuted }}
-              >
-                ₹
-              </span>
-              <input
-                type="text"
-                defaultValue="0.00"
-                className="w-full border rounded-sm py-1 pl-6 pr-2 text-right outline-none text-xs custom-input"
-                style={{
-                  borderColor: COLORS.borderDark,
-                  color: COLORS.textPrimary,
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Cash/Bank Ledger */}
-          <div className="flex flex-col sm:flex-row gap-4 items-center">
-            <label className="w-32" style={{ color: COLORS.textPrimary }}>
-              Cash/Bank Ledger
-            </label>
-            <div className="flex-1 flex items-center gap-1">
-              <div className="relative flex-1">
-                <select
-                  className="w-full border rounded-sm py-1 px-2 appearance-none outline-none text-xs custom-input"
-                  style={{
-                    borderColor: COLORS.borderDark,
-                    backgroundColor: COLORS.white,
-                    color: COLORS.textPrimary,
-                  }}
-                >
-                  <option>Cash In Hand</option>
-                  <option>Bank Account</option>
-                </select>
-              </div>
-              <button
-                className="custom-btn-primary text-white p-1.5 rounded-sm flex items-center justify-center"
-                style={{ color: COLORS.white }}
-              >
-                <Edit2 size={12} />
-              </button>
             </div>
           </div>
 

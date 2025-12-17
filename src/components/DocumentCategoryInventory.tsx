@@ -20,7 +20,6 @@ export interface LocationData {
   name: string;
   party: string;
   code: string;
-  // Add all other fields expected by LocationMaster
   profilePic?: string;
   gstNo?: string;
   ewayUsername?: string;

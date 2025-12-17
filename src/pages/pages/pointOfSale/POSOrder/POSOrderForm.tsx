@@ -8,11 +8,10 @@ import Dropdown, { ColumnDef } from "../../../../components/Dropdown";
 import DateInput from "../../../../components/DateInput";
 import { Search, EditIcon } from "lucide-react";
 
-// IMPORT MASTERS
 import CounterMaster from "../../../../components/CounterMaster";
 import SalesExecutiveMaster from "../../../../components/SalesExecutiveMaster";
-import TenderType from "../../../../components/TenderType"; // Import TenderType Component
-
+import TenderType from "../../../../components/TenderType";
+import State from "../../../../components/State";
 // --- 1. Types & Interfaces ---
 
 interface DropdownItem {
@@ -83,18 +82,27 @@ const InputGroup: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div className="flex items-center w-full relative gap-1">{children}</div>
 );
 
-const Input: React.FC<{
+interface InputProps {
   value?: string;
   placeholder?: string;
   readOnly?: boolean;
-}> = ({ value, placeholder, readOnly }) => (
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void; // Added onChange type
+}
+
+const Input: React.FC<InputProps> = ({
+  value,
+  placeholder,
+  readOnly,
+  onChange,
+}) => (
   <input
     type="text"
     readOnly={readOnly}
+    onChange={onChange}
     className={`w-full h-[30px] border border-gray-300 rounded-sm px-2 text-[13px] text-gray-700 focus:outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)] ${
       readOnly ? "bg-gray-100 text-gray-500 cursor-not-allowed" : "bg-white"
     }`}
-    defaultValue={value}
+    value={value} // Changed from defaultValue to value for controlled input
     placeholder={placeholder}
   />
 );
@@ -156,9 +164,11 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
 
   // --- Modal States ---
   const [isCounterMasterOpen, setIsCounterMasterOpen] = useState(false);
+  const [isStateOpen, setIsStateOpen] = useState(false);
+
   const [isSalesExecutiveMasterOpen, setIsSalesExecutiveMasterOpen] =
     useState(false);
-  const [isTenderTypeOpen, setIsTenderTypeOpen] = useState(false); // New State for TenderType Popup
+  const [isTenderTypeOpen, setIsTenderTypeOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     counter: "BillOfSupply",
@@ -167,6 +177,11 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
     advanceTender: "",
     state: "",
     city: "",
+    // --- Added Date Fields ---
+    orderDate: "",
+    deliveryDate: "",
+    refDate: "",
+    refNo: "",
   });
 
   const handleFieldChange = (field: string, value: string) => {
@@ -187,6 +202,10 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
     { header: "Name", key: "name", width: "w-full" },
   ];
 
+  const handleState = () => {
+    setIsStateOpen(true);
+  };
+
   return (
     <div
       style={themeStyles}
@@ -196,6 +215,8 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
       {isCounterMasterOpen && (
         <CounterMaster onClose={() => setIsCounterMasterOpen(false)} />
       )}
+
+      {isStateOpen && <State onClose={() => setIsStateOpen(false)} />}
 
       {/* --- Sales Executive Master Modal --- */}
       {isSalesExecutiveMasterOpen && (
@@ -245,9 +266,9 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
             </div>
             <div className="col-span-8">
               <DateInput
-                value={""}
-                onChange={(e) =>
-                  handleFieldChange("transferDate", e.target.value)
+                value={formData.orderDate} // FIXED: Connected to state
+                onChange={
+                  (e) => handleFieldChange("orderDate", e.target.value) // FIXED: Correct key
                 }
               />
             </div>
@@ -333,9 +354,9 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
             </div>
             <div className="col-span-8">
               <DateInput
-                value={""}
-                onChange={(e) =>
-                  handleFieldChange("transferDate", e.target.value)
+                value={formData.deliveryDate} // FIXED: Connected to state
+                onChange={
+                  (e) => handleFieldChange("deliveryDate", e.target.value) // FIXED: Correct key
                 }
               />
             </div>
@@ -347,7 +368,10 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
               <Label>Ref No</Label>
             </div>
             <div className="col-span-8">
-              <Input />
+              <Input
+                value={formData.refNo} // FIXED: Connected to state
+                onChange={(e) => handleFieldChange("refNo", e.target.value)}
+              />
             </div>
           </div>
 
@@ -358,9 +382,9 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
             </div>
             <div className="col-span-8">
               <DateInput
-                value={""}
-                onChange={(e) =>
-                  handleFieldChange("transferDate", e.target.value)
+                value={formData.refDate} // FIXED: Connected to state
+                onChange={
+                  (e) => handleFieldChange("refDate", e.target.value) // FIXED: Correct key
                 }
               />
             </div>
@@ -513,7 +537,9 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
                     }
                     placeholder="Select State..."
                   />
-                  <ActionBtn icon={<EditIcon size={16} />} />
+                  <button onClick={handleState}>
+                    <ActionBtn icon={<EditIcon size={16} />} />
+                  </button>
                 </InputGroup>
               </div>
             </div>
@@ -522,7 +548,11 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
                 City
               </span>
               <div className="flex-grow w-full min-w-0">
-                <Input value={formData.city} placeholder="Enter City" />
+                <Input
+                  value={formData.city}
+                  onChange={(e) => handleFieldChange("city", e.target.value)}
+                  placeholder="Enter City"
+                />
               </div>
             </div>
           </AccordionSection>

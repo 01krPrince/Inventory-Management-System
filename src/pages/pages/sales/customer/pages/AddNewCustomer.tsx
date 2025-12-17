@@ -26,6 +26,13 @@ import {
 } from "../api/customerService";
 import Attachment from "../../../../../components/Attachment";
 import { CustomerPayload } from "../models/AddCustomerPayload";
+import Dropdown, { ColumnDef } from "../../../../../components/Dropdown";
+import {
+  SalesAndPurchaseGL,
+  fetchSalesAndPurchaseGL, // Added import
+} from "../../../../../components/addItemMaster/api/saleAndPurchaseGL";
+import ChartOfAccounts from "../../../../../components/ChartOfAccount";
+
 // --- Types ---
 
 interface FormData {
@@ -161,7 +168,6 @@ const INITIAL_DATA: FormData = {
   contactPersonName: "",
 };
 
-// Dummy state for contact persons table
 const contacts = [
   {
     id: 1,
@@ -314,14 +320,16 @@ const SocialInput = ({
   </div>
 );
 
-// --- Main Component ---
-
 interface AddNewCustomerProps {
   onClose: () => void;
   initialData?: any; // The raw data from API (usually snake_case)
   onSuccess?: () => void;
 }
 
+const underLedger: ColumnDef<SalesAndPurchaseGL>[] = [
+  { header: "Code", key: "code", width: "w-24" },
+  { header: "Name", key: "name", width: "w-full" },
+];
 const CrudCustomer: React.FC<AddNewCustomerProps> = ({
   onClose,
   initialData,
@@ -330,9 +338,35 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
   const [activeStep, setActiveStep] = useState(0);
   const [formData, setFormData] = useState<FormData>(INITIAL_DATA);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [coaFormData, setCoaFormData] = useState<SalesAndPurchaseGL | null>(
+    null
+  );
+  const [glDataFull, setGlDataFull] = useState<SalesAndPurchaseGL[]>([]);
+
+  const [showChartOfAccounts, setShowChartOfAccounts] = useState(false);
+
+  // --- COA (Sales/Purchase GL) Logic ---
+  const handleOpenCOA = () => {
+    setShowChartOfAccounts(true);
+  };
 
   // Check if we are in Edit Mode
   const isEditMode = !!initialData && !!initialData._id;
+
+  // --- Effect: Load Dropdown Data ---
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const glDataResult = await fetchSalesAndPurchaseGL();
+        if (glDataResult && Array.isArray(glDataResult)) {
+          setGlDataFull(glDataResult);
+        }
+      } catch (error) {
+        console.error("Failed to load dropdown data", error);
+      }
+    };
+    loadData();
+  }, []);
 
   // --- Effect: Populate Form on Edit ---
   useEffect(() => {
@@ -341,7 +375,7 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
       const val = (v: any) => (v !== null && v !== undefined ? String(v) : "");
 
       setFormData({
-        // Basic
+        // ... (your existing form data mappings) ...
         gstNo: initialData.gst_no || "",
         name: initialData.cust_name || "",
         printName: initialData.print_name || "",
@@ -355,8 +389,6 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
             ? initialData.under_customer
             : "",
         profileImage: initialData.profile_photo || null,
-
-        // Statutory
         gstRegDate: initialData.registration_date || "",
         cin: initialData.cin || "",
         pan: initialData.pan || "",
@@ -365,8 +397,6 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
         gstSuspend: initialData.gst_suspend || false,
         distance: val(initialData.distance),
         tdsApplicable: initialData.tds_on_gst_applicable || false,
-
-        // Communication - Billing
         billingAddress: initialData.address || "",
         billingCountry: initialData.country || "India",
         billingState: initialData.state || "",
@@ -374,8 +404,6 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
         billingPin: initialData.pin_code || "",
         billingPhone: initialData.phone || "",
         billingEmail: initialData.email || "",
-
-        // Communication - Shipping
         shippingAddress: initialData.address_ship || "",
         shippingCountry: initialData.country_ship || "India",
         shippingState: initialData.state_ship || "",
@@ -383,15 +411,11 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
         shippingPin: initialData.pin_code_ship || "",
         shippingPhone: initialData.phone_ship || "",
         shippingEmail: initialData.email_ship || "",
-
-        // Social
         website: initialData.website || "",
         facebook: initialData.facebook || "",
         skype: initialData.skype || "",
         twitter: initialData.twitter || "",
         linkedin: initialData.linkedin || "",
-
-        // Defaults
         paymentTerms: initialData.payment_term || "",
         priceCategory: initialData.price_category || "",
         salesExecutive: initialData.sales_executive || "Select...",
@@ -404,16 +428,29 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
         firmStatus: initialData.firm_status || "Active",
         territory: initialData.territory || "Default",
         customerCategory: initialData.customer_category || "General",
-
-        // Bank
         ifscCode: initialData.ifsc_code || "",
         accountNo: initialData.account_number || "",
         bankName: initialData.bank_name || "",
         branch: initialData.branch || "",
         contactPersonName: initialData.contact_person || "",
       });
+
+      // --- LOGIC ADDED: Initialize COA Form Data based on Loaded GL Data ---
+      if (
+        glDataFull &&
+        Array.isArray(glDataFull) &&
+        glDataFull.length > 0 &&
+        initialData.under_ledger
+      ) {
+        const selectedLedger = glDataFull.find(
+          (item) => item.name === initialData.under_ledger
+        );
+        if (selectedLedger) {
+          setCoaFormData(selectedLedger);
+        }
+      }
     }
-  }, [initialData]);
+  }, [initialData, glDataFull]);
 
   const fetchBankDetails = async () => {
     try {
@@ -444,6 +481,16 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+  };
+
+  const handleDropdownChange = (fieldName: string, value: any) => {
+    setFormData((prev) => ({ ...prev, [fieldName]: value }));
+
+    // Logic: If UnderLedger changes, update the Data passed to the Edit Modal
+    if (fieldName === "underLedger") {
+      const selected = glDataFull.find((item) => item.name === value);
+      setCoaFormData(selected || null);
+    }
   };
 
   const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
@@ -595,6 +642,23 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
     }
   };
 
+  const handleSaveCOA = (savedData: SalesAndPurchaseGL) => {
+    const savedName = savedData?.name;
+
+    if (savedName) {
+      setGlDataFull((prev) => {
+        const exists = prev.find((item) => item.name === savedName);
+        if (exists) {
+          return prev.map((item) =>
+            item.name === savedName ? savedData : item
+          );
+        }
+        return [...prev, savedData];
+      });
+    }
+    setShowChartOfAccounts(false);
+  };
+
   // --- Step Renders ---
 
   const renderBasicDetails = () => (
@@ -672,6 +736,7 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
           </div>
           <div className="col-span-9 relative">
             <input
+              disabled
               type="text"
               name="code"
               value={formData.code}
@@ -682,25 +747,30 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
           </div>
         </div>
         {/* Under Ledger */}
-        <div className="grid grid-cols-12 gap-4 items-center">
-          <div className="col-span-3">
-            <FormLabel required>Under Ledger</FormLabel>
-          </div>
-          <div className="col-span-9 relative flex">
-            <select
-              name="underLedger"
-              value={formData.underLedger}
-              onChange={handleInputChange}
-              className="w-full border border-gray-300 rounded-l px-2 py-1 text-sm appearance-none bg-white"
-            >
-              <option value="">Select...</option>
-              <option>Sundry Debtors</option>
-              <option>Sundry Creditors</option>
-            </select>
-            <div className="bg-[#0c5888] text-white px-2 flex items-center justify-center rounded-r cursor-pointer">
-              <Edit className="w-3 h-3" />
+        <div className="mb-3">
+          <FormLabel required>Under Ledger</FormLabel>
+          <div className="flex w-full">
+            <div className="flex-1 min-w-0">
+              <Dropdown
+                data={glDataFull}
+                columns={underLedger}
+                value={formData.underLedger}
+                valueKey="name"
+                onChange={(item) =>
+                  handleDropdownChange("underLedger", item?.name || "")
+                }
+                placeholder="Select..."
+              />
             </div>
-            <ChevronRight className="w-4 h-4 absolute right-10 top-1.5 text-gray-500 pointer-events-none" />
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                handleOpenCOA();
+              }}
+              className="bg-[#0c5888] text-white px-2 rounded-r hover:bg-[#0a4a70] transition-colors ml-[1px]"
+            >
+              <Edit className="w-4 h-4" />
+            </button>
           </div>
         </div>
         {/* Common */}
@@ -1448,6 +1518,18 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
           </button>
         </div>
       </div>
+      {showChartOfAccounts && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded shadow-lg w-full max-w-4xl max-h-[90vh] overflow-auto">
+            <ChartOfAccounts
+              isOpen={showChartOfAccounts}
+              onClose={() => setShowChartOfAccounts(false)}
+              initialData={coaFormData}
+              onSave={handleSaveCOA}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

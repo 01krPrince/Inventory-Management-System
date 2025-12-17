@@ -1,12 +1,18 @@
-import React from "react";
+import React, { useState } from "react";
 import POSOrderHeader from "./POSOrderHeader";
 import POSOrderForm from "./POSOrderForm";
 import OrderTable from "./OrderTable";
 import POSOrderFooter from "./POSOrderFooter";
-import LedgerAttributes from "./LedgerAttributes";
 import { COLORS } from "../../../../constants/colors";
 
+interface RowData {
+  [key: string]: string | number;
+}
+
 const POSOrder: React.FC = () => {
+  const [rows, setRows] = useState<string[]>([]);
+  const [tableData, setTableData] = useState<Record<string, RowData>>({});
+
   return (
     <div
       style={{ backgroundColor: COLORS.background }}
@@ -18,11 +24,14 @@ const POSOrder: React.FC = () => {
         <div className="flex flex-col gap-4">
           <POSOrderForm />
 
-          <OrderTable />
+          <OrderTable
+            rows={rows}
+            setRows={setRows}
+            tableData={tableData}
+            setTableData={setTableData}
+          />
 
           <POSOrderFooter />
-
-          <LedgerAttributes />
         </div>
       </div>
     </div>

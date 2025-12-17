@@ -27,6 +27,7 @@ export default function App() {
   return (
     <AuthProvider>
       <UnsavedChangesProvider>
+        {/* 2. WRAP YOUR ROUTES WITH THE PROVIDER HERE */}
         <AppRoutes />
       </UnsavedChangesProvider>
     </AuthProvider>

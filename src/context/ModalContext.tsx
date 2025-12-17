@@ -1,5 +1,5 @@
 // ModalContext.tsx
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode } from "react";
 
 interface ModalContextType {
   isModalOpen: boolean;
@@ -16,7 +16,9 @@ export const useModal = () => {
   return context;
 };
 
-export const ModalProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const ModalProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (

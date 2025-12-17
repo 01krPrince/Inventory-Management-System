@@ -1,8 +1,23 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { X, FileText, EditIcon } from "lucide-react";
-import Dropdown, { ColumnDef } from "./Dropdown"; // Adjust path if Dropdown is in a different folder
+import Dropdown, { ColumnDef } from "./Dropdown";
+
+// 1. Import the Component
+import { LocationMaster } from "./LocationMaster";
+import CrudCustomer from "../pages/pages/sales/customer/pages/AddNewCustomer";
+// 2. Import API functions AND the Type
+import {
+  fetchAllLocations,
+  LocationMaster as LocationMasterType,
+} from "../pages/pages/inventory/stockAdjustment/api/LocationMaster";
+
+import {
+  Customer,
+  getAllCustomers,
+} from "../pages/pages/sales/customer/api/customerService";
 
 // --- Types ---
+
 interface CounterFormData {
   counterNo: string;
   store: string;
@@ -31,9 +46,15 @@ interface DropdownItem {
   [key: string]: any;
 }
 
-// --- Mock Data for Dropdowns ---
+const partyColumns: ColumnDef<Customer>[] = [
+  { header: "Code", key: "code", width: "w-16" },
+  { header: "Name", key: "cust_name", width: "flex-1" },
+  { header: "Phone", key: "phone", width: "w-24" },
+  { header: "GST", key: "gst_no", width: "w-28" },
+];
+
+// --- Mock Data ---
 const mockOptions = {
-  stores: [{ name: "Main Store", code: "MAIN" }],
   taxStyles: [
     { name: "Exclusive", code: "EXC" },
     { name: "Inclusive", code: "INC" },
@@ -84,6 +105,33 @@ const CounterMaster: React.FC<CounterMasterProps> = ({ onClose }) => {
     hideTaxDiscPanel: false,
   });
 
+  const [isLocationMasterOpen, setIsLocationMasterOpen] =
+    useState<boolean>(false);
+
+  // Store dynamic list
+  const [storeList, setStoreList] = useState<LocationMasterType[]>([]);
+  const [isOpenCustomer, setIsOpenCustomer] = useState(false);
+  const [customerList, setCustomerList] = useState<Customer[]>([]);
+  const [editingRow, setEditingRow] = useState<Customer | null>(null);
+
+  // --- API: Fetch Stores ---
+  const loadStores = async () => {
+    try {
+      const result = await fetchAllLocations();
+      if (Array.isArray(result)) {
+        setStoreList(result as LocationMasterType[]);
+      } else if (result && (result as any).data) {
+        setStoreList((result as any).data as LocationMasterType[]);
+      }
+    } catch (error) {
+      console.error("Failed to load stores/locations", error);
+    }
+  };
+
+  useEffect(() => {
+    loadStores();
+  }, []);
+
   // --- Handlers ---
   const handleChange = (
     field: keyof CounterFormData,
@@ -96,11 +144,26 @@ const CounterMaster: React.FC<CounterMasterProps> = ({ onClose }) => {
 
   // --- Dropdown Config ---
   const defaultColumns: ColumnDef<DropdownItem>[] = [
+    { header: "Code", key: "code", width: "w-1/3" },
     { header: "Name", key: "name", width: "w-full" },
   ];
 
-  // --- Internal Components ---
+  // --- Helper to get selected Store Object ---
+  const getSelectedStoreData = (): LocationMasterType | null => {
+    if (!formData.store) return null;
+    return storeList.find((s) => s.name === formData.store) || null;
+  };
 
+  // --- Location Master Callbacks ---
+  const handleLocationSuccess = async () => {
+    await loadStores();
+  };
+
+  const handleLocationSelect = (locationName: string) => {
+    handleChange("store", locationName);
+  };
+
+  // --- Internal Components ---
   const ActionBtn: React.FC<{
     icon: React.ReactNode;
     onClick?: () => void;
@@ -171,10 +234,38 @@ const CounterMaster: React.FC<CounterMasterProps> = ({ onClose }) => {
     </button>
   );
 
+  const handleCustomerFormSuccess = async () => {
+    await loadCustomers(); // Refresh list to see new customer
+    setIsOpenCustomer(false);
+    setEditingRow(null);
+  };
+
+  const loadCustomers = async () => {
+    try {
+      const result = await getAllCustomers();
+      if (Array.isArray(result)) {
+        setCustomerList(result);
+      } else if (result && (result as any).data) {
+        setCustomerList((result as any).data);
+      }
+    } catch (error) {
+      console.error("Failed to load customers for Party dropdown", error);
+    }
+  };
+
+  const handleCustomerFormClose = () => {
+    setIsOpenCustomer(true);
+    setEditingRow(null);
+  };
+
+  useEffect(() => {
+    loadCustomers();
+  }, []);
+
   return (
-    // Overlay Wrapper for Popup effect
+    // Overlay Wrapper for Popup effect (Z-Index 9999)
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      {/* Main Container */}
+      {/* Main Counter Form Container */}
       <div className="w-full max-w-2xl bg-white border border-gray-300 shadow-2xl rounded-sm overflow-hidden flex flex-col max-h-[90vh]">
         {/* --- Header --- */}
         <div
@@ -213,18 +304,23 @@ const CounterMaster: React.FC<CounterMasterProps> = ({ onClose }) => {
             />
           </FormRow>
 
-          {/* Store */}
+          {/* Store (Dynamic Data) */}
           <FormRow label="Store">
             <div className="w-full flex">
-              <Dropdown
-                data={mockOptions.stores}
+              <Dropdown<LocationMasterType>
+                data={storeList}
                 columns={defaultColumns}
                 value={formData.store}
                 valueKey="name"
-                onChange={(item) => handleChange("store", item?.name || "")}
+                onChange={(item) =>
+                  handleChange("store", item ? item.name : "")
+                }
                 placeholder="Select Store..."
               />
-              <ActionBtn icon={<EditIcon size={16} />} />
+              <ActionBtn
+                icon={<EditIcon size={16} />}
+                onClick={() => setIsLocationMasterOpen(true)}
+              />
             </div>
           </FormRow>
 
@@ -261,15 +357,22 @@ const CounterMaster: React.FC<CounterMasterProps> = ({ onClose }) => {
           {/* Customer */}
           <FormRow label="Customer" required>
             <div className="w-full flex">
-              <Dropdown
-                data={mockOptions.customers}
-                columns={defaultColumns}
+              <Dropdown<Customer>
+                data={customerList}
+                columns={partyColumns}
                 value={formData.customer}
-                valueKey="name"
-                onChange={(item) => handleChange("customer", item?.name || "")}
-                placeholder="Select Customer..."
+                valueKey="cust_name"
+                placeholder="Select Party..."
+                onChange={(item) =>
+                  setFormData((prev: any) => ({
+                    ...prev,
+                    party: item ? item.cust_name : "",
+                  }))
+                }
               />
-              <ActionBtn icon={<EditIcon size={16} />} />
+              <button onClick={handleCustomerFormClose}>
+                <ActionBtn icon={<EditIcon size={16} />} />
+              </button>
             </div>
           </FormRow>
 
@@ -416,6 +519,35 @@ const CounterMaster: React.FC<CounterMasterProps> = ({ onClose }) => {
           <FooterBtn label="Exit" onClick={onClose} />
         </div>
       </div>
+
+      {/* --- Location Master Popup (Stacked ON TOP of Counter Form) --- */}
+      {isLocationMasterOpen && (
+        // Use a HIGHER Z-Index (10000) and fixed overlay to stack on top
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="w-full max-w-4xl h-[90vh] bg-white rounded shadow-lg overflow-hidden relative">
+            <LocationMaster
+              onClose={() => setIsLocationMasterOpen(false)}
+              initialData={getSelectedStoreData()}
+              onSuccess={handleLocationSuccess}
+              onSelect={handleLocationSelect}
+            />
+          </div>
+        </div>
+      )}
+
+      {isOpenCustomer && (
+        <div className="fixed mt-[30vh] inset-0 z-[60] flex items-center justify-center bg-transparent backdrop-blur-sm p-4">
+          <div className="overflow-hidden flex flex-col p-4">
+            <div className="flex-1 overflow-hidden relative">
+              <CrudCustomer
+                onClose={handleCustomerFormClose}
+                initialData={editingRow}
+                onSuccess={handleCustomerFormSuccess}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
