@@ -1,38 +1,124 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { X, Save, Trash2, EditIcon, Loader2 } from "lucide-react";
 import {
-  X,
-  Save,
-  Trash2,
-  Pencil,
-  Download,
-  ChevronDown,
-  Loader2,
-} from "lucide-react";
-import { createItemBrand, CreateBrandPayload } from "./api/brandservice";
-interface BrandProps {
-  onClose: () => void;
+  createItemBrand,
+  CreateBrandPayload,
+  updateItemBrand, // Ensure this is exported from your service
+} from "./api/brandservice";
+import SalesExecutiveMaster from "../SalesExecutiveMaster";
+import Dropdown, { ColumnDef } from "../Dropdown";
+
+import {
+  fetchSalesExecutives,
+  SalesExecutiveData,
+} from "./api/salesExecutiveService";
+
+// --- Interfaces ---
+export interface BrandData {
+  _id: string;
+  name: string;
+  code: string;
+  salesman?: string;
+  image?: string;
 }
 
-const Brand: React.FC<BrandProps> = ({ onClose }) => {
+interface BrandProps {
+  onClose: () => void;
+  initialData?: BrandData;
+}
+
+const Brand: React.FC<BrandProps> = ({ onClose, initialData }) => {
+  // --- State Management ---
   const [data, setData] = useState({
+    _id: "",
     code: "0029",
     name: "",
     salesman: "",
     image: null as string | null,
   });
+
   const [isLoading, setIsLoading] = useState(false);
 
+  // State for Sales Executive Logic
+  const [salesExecutiveList, setSalesExecutiveList] = useState<
+    SalesExecutiveData[]
+  >([]);
+  const [isSaleExecutiveOpen, setIsSaleExecutiveOpen] =
+    useState<boolean>(false);
+  const [selectedExecutiveForEdit, setSelectedExecutiveForEdit] = useState<
+    SalesExecutiveData | undefined
+  >(undefined);
+
+  // --- 1. Initialization Effect (Handle Edit Mode) ---
+  useEffect(() => {
+    if (initialData) {
+      setData({
+        _id: initialData._id,
+        code: initialData.code,
+        name: initialData.name,
+        salesman: initialData.salesman || "",
+        image: initialData.image || null,
+      });
+    } else {
+      setData({
+        _id: "",
+        code: "0029",
+        name: "",
+        salesman: "",
+        image: null,
+      });
+    }
+  }, [initialData]);
+
+  // --- 2. Fetch Sales Executives ---
+  const loadSalesExecutives = async () => {
+    try {
+      const executives = await fetchSalesExecutives();
+      if (executives) {
+        setSalesExecutiveList(executives);
+      }
+    } catch (error) {
+      console.error("Error loading sales executives", error);
+    }
+  };
+
+  useEffect(() => {
+    loadSalesExecutives();
+  }, [isSaleExecutiveOpen]);
+
+  // --- 3. Dropdown Configuration ---
+  const salesExecutiveColumns: ColumnDef<SalesExecutiveData>[] = [
+    { header: "Amount Type", key: "amountType", width: "w-1/4" },
+    { header: "Name", key: "name", width: "w-1/2" },
+    { header: "Email", key: "email", width: "w-1/3" },
+  ];
+
+  // --- 4. Image Handling ---
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = () =>
-        setData({ ...data, image: reader.result as string });
+        setData((prev) => ({ ...prev, image: reader.result as string }));
       reader.readAsDataURL(file);
     }
   };
 
-  const clearImage = () => setData({ ...data, image: null });
+  const clearImage = () => setData((prev) => ({ ...prev, image: null }));
+
+  // --- 5. Handlers ---
+  const handleOpenSalesExecutive = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (data.salesman) {
+      const existing = salesExecutiveList.find(
+        (item) => item.name === data.salesman
+      );
+      setSelectedExecutiveForEdit(existing);
+    } else {
+      setSelectedExecutiveForEdit(undefined);
+    }
+    setIsSaleExecutiveOpen(true);
+  };
 
   const handleSave = async () => {
     if (!data.name.trim()) {
@@ -49,14 +135,26 @@ const Brand: React.FC<BrandProps> = ({ onClose }) => {
         image: data.image || null,
       };
 
-      const response = await createItemBrand(payload);
+      if (data._id) {
+        // --- UPDATE LOGIC (Edit Mode) ---
+        const response = await updateItemBrand(data._id, payload);
 
-      if (response.success) {
-        alert("Brand Created Successfully!");
-        console.log("Saved Brand:", response.data);
-        onClose();
+        if (response.success) {
+          alert("Brand Updated Successfully!");
+          onClose(); // Close the modal
+        } else {
+          alert(`Error updating brand: ${response.message}`);
+        }
       } else {
-        alert(`Error: ${response.message}`);
+        // --- CREATE LOGIC (New Mode) ---
+        const response = await createItemBrand(payload);
+
+        if (response.success) {
+          alert("Brand Created Successfully!");
+          onClose();
+        } else {
+          alert(`Error creating brand: ${response.message}`);
+        }
       }
     } catch (error) {
       console.error("Failed to save brand:", error);
@@ -66,13 +164,17 @@ const Brand: React.FC<BrandProps> = ({ onClose }) => {
     }
   };
 
-  const handleDelete = () =>
+  const handleDelete = () => {
+    // You might want to call a delete API here if data._id exists
     setData({ ...data, name: "", salesman: "", image: null });
+  };
 
   return (
-    <div className="w-[450px] bg-white border border-gray-300 shadow-lg font-sans text-sm">
+    <div className="w-[450px] bg-white border border-gray-300 shadow-lg font-sans text-sm relative">
       <div className="bg-[#104a8e] text-white px-4 py-2 flex justify-between items-center select-none">
-        <h3 className="font-semibold text-base">Brand</h3>
+        <h3 className="font-semibold text-base">
+          {data._id ? "Edit Brand" : "Create Brand"}
+        </h3>
         <button
           onClick={onClose}
           className="hover:text-gray-200 transition-colors"
@@ -90,7 +192,7 @@ const Brand: React.FC<BrandProps> = ({ onClose }) => {
             type="text"
             value={data.code}
             readOnly
-            className="w-full border border-gray-300 px-2 py-1 focus:outline-none focus:border-blue-500 bg-gray-50 text-gray-600"
+            className="w-full border border-gray-300 px-2 py-1 focus:outline-none bg-gray-50 text-gray-600"
           />
         </div>
 
@@ -112,17 +214,26 @@ const Brand: React.FC<BrandProps> = ({ onClose }) => {
             Salesman
           </label>
           <div className="flex w-full">
-            <select
-              value={data.salesman}
-              onChange={(e) => setData({ ...data, salesman: e.target.value })}
-              className="w-full border border-gray-300 px-2 py-1 text-gray-600 focus:outline-none focus:border-blue-500 appearance-none rounded-none border-r-0"
+            <div className="flex-1 min-w-0">
+              <Dropdown
+                data={salesExecutiveList}
+                columns={salesExecutiveColumns}
+                value={data.salesman}
+                valueKey="name"
+                onChange={(item) =>
+                  setData({ ...data, salesman: item?.name || "" })
+                }
+                placeholder="Select Salesman..."
+              />
+            </div>
+            <button
+              onClick={handleOpenSalesExecutive}
+              className="bg-[#104a8e] text-white px-3 flex items-center justify-center hover:bg-blue-800 rounded-r-sm ml-[1px]"
+              title={
+                data.salesman ? "Edit Selected Salesman" : "Create New Salesman"
+              }
             >
-              <option value="">Select...</option>
-              <option value="John Doe">John Doe</option>
-              <option value="Jane Smith">Jane Smith</option>
-            </select>
-            <button className="bg-[#104a8e] text-white px-3 flex items-center justify-center hover:bg-blue-800">
-              <Pencil size={12} />
+              <EditIcon size={12} />
             </button>
           </div>
         </div>
@@ -133,7 +244,7 @@ const Brand: React.FC<BrandProps> = ({ onClose }) => {
           </label>
           <div className="flex flex-col gap-2">
             <div className="relative w-40 h-44 bg-gray-200 border-2 border-dashed border-gray-500 flex items-center justify-center">
-              {data.image && (
+              {data.image ? (
                 <>
                   <img
                     src={data.image}
@@ -147,9 +258,7 @@ const Brand: React.FC<BrandProps> = ({ onClose }) => {
                     <X size={12} />
                   </button>
                 </>
-              )}
-
-              {!data.image && (
+              ) : (
                 <div className="relative w-24 h-24 bg-[#3b82f6] rounded-full overflow-hidden border-4 border-white shadow-sm flex items-end justify-center">
                   <div className="w-16 h-16 bg-white/20 rounded-full mb-[-10px]"></div>
                 </div>
@@ -191,17 +300,18 @@ const Brand: React.FC<BrandProps> = ({ onClose }) => {
             <span>Delete</span>
           </button>
         </div>
-
-        <div className="flex border border-white rounded-[2px] overflow-hidden">
-          <button className="flex items-center gap-2 px-3 py-1.5 text-white hover:bg-white/10 transition-colors border-r border-white/30">
-            <Download size={14} />
-            <span>Import</span>
-          </button>
-          <button className="px-1.5 py-1.5 text-white hover:bg-white/10 transition-colors">
-            <ChevronDown size={14} />
-          </button>
-        </div>
       </div>
+
+      {isSaleExecutiveOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded shadow-lg">
+            <SalesExecutiveMaster
+              onClose={() => setIsSaleExecutiveOpen(false)}
+              initialData={selectedExecutiveForEdit}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

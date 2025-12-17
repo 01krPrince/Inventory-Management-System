@@ -114,7 +114,6 @@ export const customerUpdateApi = async (
   customerId: string,
   payload: CustomerPayload
 ) => {
-  alert(customerId)
   if (!customerId) {
     throw new Error("Customer ID is required");
   }

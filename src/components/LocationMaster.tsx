@@ -5,7 +5,7 @@ import {
   ArrowRight,
   ArrowLeft,
   Trash2,
-  Pencil,
+  EditIcon,
   Plus,
 } from "lucide-react";
 import Dropdown, { ColumnDef } from "./Dropdown";
@@ -368,7 +368,7 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
               </div>
               <ActionBtn
                 icon={
-                  formData.party ? <Pencil size={16} /> : <Plus size={16} />
+                  formData.party ? <EditIcon size={16} /> : <Plus size={16} />
                 }
                 title={
                   formData.party ? "Edit Selected Party" : "Create New Party"

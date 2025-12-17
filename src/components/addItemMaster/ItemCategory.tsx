@@ -1,29 +1,69 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { X, Save, Trash2, Loader2 } from "lucide-react";
-import { createItemCategory } from "./api/categoryservice";
-interface ItemCategoryProps {
-  onClose: () => void;
+import {
+  createItemCategory,
+  updateItemCategory, // Ensure this is exported from your service
+} from "./api/categoryservice";
+
+// --- Interfaces ---
+export interface CategoryData {
+  _id: string;
+  name: string;
+  code: string;
+  image?: string | null;
 }
 
-const ItemCategory: React.FC<ItemCategoryProps> = ({ onClose }) => {
+interface ItemCategoryProps {
+  onClose: () => void;
+  initialData?: CategoryData;
+}
+
+const ItemCategory: React.FC<ItemCategoryProps> = ({
+  onClose,
+  initialData,
+}) => {
   const [loading, setLoading] = useState(false);
+
+  // Initialize state (include _id for tracking edit mode)
   const [formData, setFormData] = useState({
+    _id: "",
     code: "0010",
     name: "",
     image: null as string | null,
   });
+
+  // --- Initialization Effect (Handle Edit Mode) ---
+  useEffect(() => {
+    if (initialData) {
+      // Edit Mode: Populate form
+      setFormData({
+        _id: initialData._id,
+        code: initialData.code,
+        name: initialData.name,
+        image: initialData.image || null,
+      });
+    } else {
+      // Create Mode: Default values
+      setFormData({
+        _id: "",
+        code: "0010",
+        name: "",
+        image: null,
+      });
+    }
+  }, [initialData]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = () =>
-        setFormData({ ...formData, image: reader.result as string });
+        setFormData((prev) => ({ ...prev, image: reader.result as string }));
       reader.readAsDataURL(file);
     }
   };
 
-  const clearImage = () => setFormData({ ...formData, image: null });
+  const clearImage = () => setFormData((prev) => ({ ...prev, image: null }));
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
@@ -39,13 +79,26 @@ const ItemCategory: React.FC<ItemCategoryProps> = ({ onClose }) => {
         image: formData.image,
       };
 
-      const response = await createItemCategory(payload);
+      if (formData._id) {
+        // --- UPDATE LOGIC (Edit Mode) ---
+        const response = await updateItemCategory(formData._id, payload);
 
-      if (response.success) {
-        console.log("Category created successfully:", response);
-        onClose();
+        if (response.success) {
+          alert("Category Updated Successfully!");
+          onClose(); // Close the modal on success
+        } else {
+          alert(response.message || "Failed to update category");
+        }
       } else {
-        alert(response.message || "Failed to create category");
+        // --- CREATE LOGIC (New Mode) ---
+        const response = await createItemCategory(payload);
+
+        if (response.success) {
+          alert("Category Created Successfully!");
+          onClose();
+        } else {
+          alert(response.message || "Failed to create category");
+        }
       }
     } catch (error) {
       console.error("Error saving category:", error);
@@ -56,13 +109,17 @@ const ItemCategory: React.FC<ItemCategoryProps> = ({ onClose }) => {
   };
 
   const handleReset = () => {
-    setFormData({ code: "0010", name: "", image: null });
+    // If we are editing, reset might mean reverting to original data,
+    // or clearing the form. Here we clear to defaults.
+    setFormData({ ...formData, name: "", image: null });
   };
 
   return (
     <div className="w-[450px] bg-white border border-gray-300 shadow-lg font-sans text-sm">
       <div className="bg-[#104a8e] text-white px-4 py-2 flex justify-between items-center select-none">
-        <h3 className="font-semibold text-base">Item Category</h3>
+        <h3 className="font-semibold text-base">
+          {formData._id ? "Edit Item Category" : "Item Category"}
+        </h3>
         <button
           onClick={onClose}
           disabled={loading}
@@ -81,7 +138,7 @@ const ItemCategory: React.FC<ItemCategoryProps> = ({ onClose }) => {
             type="text"
             value={formData.code}
             readOnly
-            className="w-full border border-gray-300 px-2 py-1 focus:outline-none focus:border-blue-500 bg-gray-50 text-gray-600"
+            className="w-full border border-gray-300 px-2 py-1 focus:outline-none bg-gray-50 text-gray-600"
           />
         </div>
 
@@ -95,6 +152,7 @@ const ItemCategory: React.FC<ItemCategoryProps> = ({ onClose }) => {
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             disabled={loading}
             className="w-full border border-gray-300 px-2 py-1 focus:outline-none focus:border-blue-500 disabled:bg-gray-100"
+            placeholder="Enter category name"
           />
         </div>
 

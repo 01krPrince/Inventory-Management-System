@@ -732,7 +732,7 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
         {/* Code */}
         <div className="grid grid-cols-12 gap-4 items-center">
           <div className="col-span-3">
-            <FormLabel required>Code</FormLabel>
+            <FormLabel>Code</FormLabel>
           </div>
           <div className="col-span-9 relative">
             <input

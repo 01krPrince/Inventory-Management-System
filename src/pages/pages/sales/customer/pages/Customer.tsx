@@ -25,7 +25,7 @@ import {
 } from "../../../../../components/function/functions.tsx";
 
 import { PrintIcon, ExportIcon } from "../../../../../components/icons.tsx";
-
+import CrudCustomer from "./AddNewCustomer.tsx";
 // --- SIMULATING THE API SERVICE IMPORT ---
 import {
   getAllCustomers as fetchAllCustomers,
@@ -34,7 +34,7 @@ import {
 
 // --- IMPORT YOUR COMPONENT ---
 // Ensure this path points to your AddNewCustomer.tsx file
-import CrudCustomer from "./AddNewCustomer.tsx";
+("./AddNewCustomer.tsx");
 
 // --- TYPE DEFINITIONS ---
 interface Customer {
@@ -555,8 +555,6 @@ export default function CustomerDirectory() {
     paginatedData.every((row: DataItem) => selectedRows.includes(row._id));
 
   // --- Render Logic ---
-
-  // 1. Show Form (Add or Edit) using CrudCustomer
   if (isFormOpen) {
     return (
       <div className="w-full bg-white p-6 rounded-xl shadow-lg dark:bg-gray-800 border border-gray-200 dark:border-gray-700">

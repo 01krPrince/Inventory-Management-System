@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Save, Trash2, Pencil, ChevronDown, Loader2 } from "lucide-react";
+import { X, Save, Trash2, EditIcon, ChevronDown, Loader2 } from "lucide-react";
 
 // --- API Imports ---
 // Adjust the path to where you saved the api/coaGroupService file
@@ -221,7 +221,7 @@ const COAGroupsModal = ({
                 />
               </div>
               <button className="bg-[#0f4c81] text-white p-1.5 rounded-sm hover:bg-[#0a355c] transition-colors">
-                <Pencil size={14} fill="currentColor" />
+                <EditIcon size={14} fill="currentColor" />
               </button>
             </div>
           </div>

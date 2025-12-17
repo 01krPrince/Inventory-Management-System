@@ -25,6 +25,7 @@ interface StockUnitProps {
   initialData?: StockUnitData | any;
   // onSave now acts as a "Success Callback" to refresh the list in the parent
   onSave?: () => void;
+  zIndex?: number;
 }
 
 interface FormDataState {
@@ -40,7 +41,9 @@ export default function StockUnit({
   onClose,
   initialData,
   onSave,
+  zIndex = 0,
 }: StockUnitProps) {
+  const overlayZIndex = zIndex + 10;
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<FormDataState>({
     code: "0054",
@@ -138,7 +141,10 @@ export default function StockUnit({
     "w-full border border-gray-300 px-2 py-1 text-sm text-gray-800 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all";
 
   return (
-    <div className="w-[450px] bg-white rounded-t-md shadow-xl border border-gray-400 overflow-hidden font-sans">
+    <div
+      className="w-[450px] bg-white rounded-t-md shadow-xl border border-gray-400 overflow-hidden font-sans"
+      style={{ zIndex: overlayZIndex }}
+    >
       <div className="bg-[#104a7b] px-3 py-2 flex justify-between items-center text-white">
         <h2 className="text-sm font-semibold tracking-wide">
           Unit Of Measurement
@@ -163,6 +169,7 @@ export default function StockUnit({
           </div>
           <div className="col-span-8">
             <input
+              disabled
               id="code"
               type="text"
               name="code"

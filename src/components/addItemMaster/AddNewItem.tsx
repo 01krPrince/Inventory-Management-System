@@ -96,14 +96,14 @@ const gstColumns: ColumnDef<GstClassificationData>[] = [
 ];
 
 const categoryColumns: ColumnDef<CategoryData>[] = [
-  { header: "Name", key: "name", width: "w-full" },
   { header: "Code", key: "code", width: "w-24" },
+  { header: "Name", key: "name", width: "w-full" },
 ];
 
 const brandColumns: ColumnDef<BrandData>[] = [
-  { header: "Name", key: "name", width: "w-full" },
-  { header: "Salesman", key: "salesman", width: "w-32" },
-  { header: "Code", key: "code", width: "w-20" },
+  { header: "Code", key: "code", width: "w-1/3" },
+  { header: "Name", key: "name", width: "w-1/3" },
+  { header: "Salesman", key: "salesman", width: "w-1/3" },
 ];
 
 const glColumns: ColumnDef<SalesAndPurchaseGL>[] = [
@@ -296,6 +296,57 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
   const [gstList, setGstList] = useState<GstClassificationData[]>([]);
 
   const isEditMode = !!initialData && !!initialData._id;
+  const [brandToEdit, setBrandToEdit] = useState<BrandData | undefined>(
+    undefined
+  );
+
+  // 2. Create a handler function for the Edit button
+  const handleBrandEditClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+
+    // If a brand is selected in the dropdown (formData.brand has a name)
+    if (formData.brand) {
+      // Find the full object from your 'brands' list
+      const selectedBrand = brands.find((b) => b.name === formData.brand);
+
+      // Set it to state to pass to the modal
+      setBrandToEdit(selectedBrand);
+    } else {
+      // If nothing is selected, we clear it (acts as "Create New")
+      setBrandToEdit(undefined);
+    }
+
+    // Open the modal
+    setIsBrandOpen(true);
+  };
+
+  // 1. State to store the category object we want to edit
+  // Make sure to import CategoryData from your ItemCategory file if you haven't yet
+  const [categoryToEdit, setCategoryToEdit] = useState<
+    CategoryData | undefined
+  >(undefined);
+
+  // 2. Handler for the Category Edit button
+  const handleCategoryEditClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+
+    // If a category is selected in the dropdown
+    if (formData.category) {
+      // Find the full object from your 'categories' list
+      const selectedCategory = categories.find(
+        (c) => c.name === formData.category
+      );
+
+      // Set it to state to pass to the modal
+      setCategoryToEdit(selectedCategory);
+    } else {
+      // If nothing is selected, clear it (Create Mode)
+      setCategoryToEdit(undefined);
+    }
+
+    // Open the modal
+    setIsItemCategory(true);
+  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -330,7 +381,15 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
       }
     };
     loadData();
-  }, [formData, showStockUnit, gstList]);
+  }, [
+    formData,
+    showStockUnit,
+    gstList,
+    isBrandOpen,
+    isGstModalOpen,
+    isEditMode,
+    isItemCategory,
+  ]);
 
   useEffect(() => {
     if (initialData && Object.keys(initialData).length > 0) {
@@ -756,7 +815,7 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
       <div className="bg-white border rounded-lg p-6 shadow-sm mt-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="col-span-1 md:col-span-2 space-y-4 max-w-4xl">
-            {/* Category */}
+            {/* Category Field */}
             <div className="mb-3">
               <FormLabel>Category</FormLabel>
               <div className="flex w-full">
@@ -773,11 +832,14 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
                   />
                 </div>
                 <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setIsItemCategory(true);
-                  }}
+                  // Updated: Use the handler
+                  onClick={handleCategoryEditClick}
                   className="bg-[#0c5888] text-white px-2 rounded-r hover:bg-[#0a4a70] transition-colors ml-[1px]"
+                  title={
+                    formData.category
+                      ? "Edit Selected Category"
+                      : "Create New Category"
+                  }
                 >
                   <Edit className="w-4 h-4" />
                 </button>
@@ -801,11 +863,12 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
                   />
                 </div>
                 <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setIsBrandOpen(true);
-                  }}
+                  // Updated: Use the handler to find data before opening
+                  onClick={handleBrandEditClick}
                   className="bg-[#0c5888] text-white px-2 rounded-r hover:bg-[#0a4a70] transition-colors ml-[1px]"
+                  title={
+                    formData.brand ? "Edit Selected Brand" : "Create New Brand"
+                  }
                 >
                   <Edit className="w-4 h-4" />
                 </button>
@@ -1299,16 +1362,18 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
       {/* --- MODALS SECTION --- */}
 
       {showItemGroupModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded shadow-lg">
             <UnderGroup
               onClose={() => setShowItemGroupModal(false)}
               initialData={underGroupInitialData}
               onSave={handleUnderGroupSave}
+              zIndex={500}
             />
           </div>
         </div>
       )}
+
       {showStockUnit && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded shadow-lg">
@@ -1320,18 +1385,24 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
         </div>
       )}
 
+      {/* Item Category Modal */}
       {isItemCategory && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded shadow-lg">
-            <ItemCategory onClose={() => setIsItemCategory(false)} />
+            <ItemCategory
+              onClose={() => setIsItemCategory(false)}
+              initialData={categoryToEdit} // <--- Pass the selected data here
+            />
           </div>
         </div>
       )}
-
       {isBrandOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded shadow-lg">
-            <Brand onClose={() => setIsBrandOpen(false)} />
+            <Brand
+              onClose={() => setIsBrandOpen(false)}
+              initialData={brandToEdit}
+            />
           </div>
         </div>
       )}

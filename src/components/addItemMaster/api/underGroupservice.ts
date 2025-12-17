@@ -147,7 +147,7 @@ export const updateUnderGroup = async (
   payload: ItemGroupApiPayload
 ): Promise<ApiResponse> => {
   try {
-    const response = await api.put<ApiResponse>(`/item/update/${id}`, payload);
+    const response = await api.put<ApiResponse>(`/item/update_item/${id}`, payload);
     return response.data;
   } catch (error: any) {
     return {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, Save, Trash2, Pencil, ArrowLeft } from "lucide-react";
+import { X, Save, Trash2, EditIcon, ArrowLeft } from "lucide-react";
 import { LocationMaster } from "./LocationMaster";
 import Dropdown, { ColumnDef } from "./Dropdown";
 import { fetchAllLocations } from "../pages/pages/inventory/stockAdjustment/api/LocationMaster";
@@ -167,7 +167,6 @@ const DocumentCategoryInventoryModal: React.FC<ModalProps> = ({
     }
   };
 
-  // --- HANDLER: Location Selected from Master (The "Pencil" View) ---
   const handleLocationSelectFromMaster = (selectedLocationName: string) => {
     setDefaultLocation(selectedLocationName);
     setShowLocationMaster(false);
@@ -346,7 +345,7 @@ const DocumentCategoryInventoryModal: React.FC<ModalProps> = ({
                       : "Manage Locations"
                   }
                 >
-                  <Pencil size={14} />
+                  <EditIcon size={14} />
                 </button>
               </div>
             </div>

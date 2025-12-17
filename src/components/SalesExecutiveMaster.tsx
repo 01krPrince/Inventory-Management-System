@@ -1,14 +1,23 @@
-import React, { useState } from "react";
-import { X, Save, Trash2, Edit2 } from "lucide-react";
-import Dropdown, { ColumnDef } from "./Dropdown"; // Ensure this path is correct
+import React, { useState, useEffect } from "react";
+import { X, Save, Trash2, Edit2, Loader2 } from "lucide-react";
+import Dropdown, { ColumnDef } from "./Dropdown";
+import {
+  createSalesExecutive,
+  updateSalesExecutive,
+  deleteSalesExecutive,
+  SalesExecutiveData,
+  CreateSalesExecutivePayload,
+} from "./addItemMaster/api/salesExecutiveService";
 
 // --- Types ---
+
 interface SalesExecutiveFormData {
+  _id?: string;
   code: string;
   name: string;
   reportingTo: string;
   underStore: string;
-  commissionRate: string;
+  commissionRate: string; // Internal state spelling
   rateOn: string;
   amountType: string;
   email: string;
@@ -18,6 +27,8 @@ interface SalesExecutiveFormData {
 
 interface SalesExecutiveMasterProps {
   onClose: () => void;
+  initialData?: SalesExecutiveData;
+  onSuccess?: () => void;
 }
 
 interface DropdownItem {
@@ -38,43 +49,131 @@ const mockOptions = {
   ],
   rateOnOptions: [
     { name: "Qty", code: "QTY" },
-    { name: "Amount", code: "AMT" },
+    { name: "Invoice Amount", code: "INV" },
   ],
   amountTypes: [
     { name: "Taxable", code: "TAX" },
-    { name: "Net", code: "NET" },
+    { name: "Bill Amount", code: "BILL" },
+    { name: "Percentage", code: "PERC" },
   ],
 };
 
 const SalesExecutiveMaster: React.FC<SalesExecutiveMasterProps> = ({
   onClose,
+  initialData,
+  onSuccess,
 }) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const [formData, setFormData] = useState<SalesExecutiveFormData>({
     code: "0001",
-    name: "Default",
+    name: "",
     reportingTo: "",
     underStore: "",
     commissionRate: "0",
     rateOn: "Qty",
-    amountType: "Taxable",
+    amountType: "Percentage",
     email: "",
     phone: "",
     inactive: false,
   });
 
+  // Load Initial Data for Edit Mode
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        _id: initialData._id,
+        code: initialData.code || "0001",
+        name: initialData.name || "",
+        reportingTo: "", // API doesn't return this yet, keeping default
+        underStore: "", // API doesn't return this yet, keeping default
+        commissionRate: initialData.commisionRate || "0", // Map 'commisionRate' (API) to 'commissionRate' (State)
+        rateOn: initialData.rateOn || "Qty",
+        amountType: initialData.amountType || "Percentage",
+        email: initialData.email || "",
+        phone: initialData.phone || "",
+        inactive: false,
+      });
+    }
+  }, [initialData]);
+
   const handleChange = (field: keyof SalesExecutiveFormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const themeColor = "#0f3c63";
+  const handleSave = async () => {
+    if (!formData.name.trim()) {
+      alert("Name is required");
+      return;
+    }
 
-  // --- Column Definition for Dropdowns ---
+    setIsSubmitting(true);
+
+    // Prepare Payload
+    const payload: CreateSalesExecutivePayload = {
+      name: formData.name,
+      commisionRate: formData.commissionRate, // Send as 'commisionRate' per API
+      rateOn: formData.rateOn,
+      amountType: formData.amountType,
+      email: formData.email,
+      phone: formData.phone,
+    };
+
+    try {
+      let response;
+
+      if (formData._id) {
+        // Use Service for Update
+        response = await updateSalesExecutive(formData._id, payload);
+      } else {
+        // Use Service for Create
+        response = await createSalesExecutive(payload);
+      }
+
+      if (response.success) {
+        if (onSuccess) onSuccess();
+        onClose();
+      } else {
+        alert("Operation failed: " + response.message);
+      }
+    } catch (error) {
+      console.error("Save error:", error);
+      alert("An error occurred while saving.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!formData._id) return;
+    if (!confirm("Are you sure you want to delete this Sales Executive?"))
+      return;
+
+    setIsDeleting(true);
+    try {
+      // Use Service for Delete
+      const response = await deleteSalesExecutive(formData._id);
+      if (response.success) {
+        if (onSuccess) onSuccess();
+        onClose();
+      } else {
+        alert("Delete failed: " + response.message);
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
+      alert("An error occurred while deleting.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const themeColor = "#0f3c63";
   const defaultColumns: ColumnDef<DropdownItem>[] = [
     { header: "Name", key: "name", width: "w-full" },
   ];
 
-  // --- Sub-Components ---
-
+  // --- Sub Components ---
   const ActionBtn: React.FC<{
     icon: React.ReactNode;
     onClick?: () => void;
@@ -106,36 +205,16 @@ const SalesExecutiveMaster: React.FC<SalesExecutiveMasterProps> = ({
     </div>
   );
 
-  const FooterBtn = ({
-    label,
-    icon,
-    onClick,
-  }: {
-    label: string;
-    icon?: React.ReactNode;
-    onClick?: () => void;
-  }) => (
-    <button
-      onClick={onClick}
-      className="flex items-center gap-2 px-4 py-1.5 border border-white text-white text-sm font-semibold rounded-sm hover:bg-white hover:text-[#0f3c63] transition-colors"
-    >
-      {icon}
-      {label}
-    </button>
-  );
-
   return (
-    // Overlay
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      {/* Container */}
       <div className="w-full max-w-xl bg-white border border-gray-300 shadow-2xl rounded-sm overflow-hidden flex flex-col max-h-[90vh]">
-        {/* --- Header --- */}
+        {/* Header */}
         <div
           className="flex justify-between items-center px-4 py-2 text-white"
           style={{ backgroundColor: themeColor }}
         >
           <span className="font-semibold tracking-wide text-sm">
-            Sales Executive
+            {formData._id ? "Edit Sales Executive" : "Create Sales Executive"}
           </span>
           <button
             onClick={onClose}
@@ -145,9 +224,8 @@ const SalesExecutiveMaster: React.FC<SalesExecutiveMasterProps> = ({
           </button>
         </div>
 
-        {/* --- Form Body --- */}
+        {/* Form Body */}
         <div className="p-6 overflow-y-auto">
-          {/* Code */}
           <FormRow label="Code">
             <input
               type="text"
@@ -157,7 +235,6 @@ const SalesExecutiveMaster: React.FC<SalesExecutiveMasterProps> = ({
             />
           </FormRow>
 
-          {/* Name */}
           <FormRow label="Name" required>
             <input
               type="text"
@@ -167,7 +244,6 @@ const SalesExecutiveMaster: React.FC<SalesExecutiveMasterProps> = ({
             />
           </FormRow>
 
-          {/* Reporting To (Dropdown + ActionBtn) */}
           <FormRow label="Reporting To">
             <div className="w-full flex">
               <Dropdown
@@ -184,7 +260,6 @@ const SalesExecutiveMaster: React.FC<SalesExecutiveMasterProps> = ({
             </div>
           </FormRow>
 
-          {/* Under Store (Dropdown + ActionBtn) */}
           <FormRow label="Under Store">
             <div className="w-full flex">
               <Dropdown
@@ -201,49 +276,37 @@ const SalesExecutiveMaster: React.FC<SalesExecutiveMasterProps> = ({
             </div>
           </FormRow>
 
-          {/* Commission Rate */}
           <FormRow label="Commission Rate">
-            <div className="w-full relative">
-              <input
-                type="text"
-                className="w-full h-[30px] border border-gray-300 px-2 outline-none focus:border-[#0f3c63] rounded-sm text-sm text-right"
-                value={formData.commissionRate}
-                onChange={(e) => handleChange("commissionRate", e.target.value)}
-              />
-            </div>
+            <input
+              type="number"
+              className="w-full h-[30px] border border-gray-300 px-2 outline-none focus:border-[#0f3c63] rounded-sm text-sm text-right"
+              value={formData.commissionRate}
+              onChange={(e) => handleChange("commissionRate", e.target.value)}
+            />
           </FormRow>
 
-          {/* Rate On */}
           <FormRow label="Rate On">
-            <div className="w-full">
-              <Dropdown
-                data={mockOptions.rateOnOptions}
-                columns={defaultColumns}
-                value={formData.rateOn}
-                valueKey="name"
-                onChange={(item) => handleChange("rateOn", item?.name || "")}
-                placeholder="Select..."
-              />
-            </div>
+            <Dropdown
+              data={mockOptions.rateOnOptions}
+              columns={defaultColumns}
+              value={formData.rateOn}
+              valueKey="name"
+              onChange={(item) => handleChange("rateOn", item?.name || "")}
+              placeholder="Select..."
+            />
           </FormRow>
 
-          {/* Amount Type */}
           <FormRow label="Amount Type">
-            <div className="w-full">
-              <Dropdown
-                data={mockOptions.amountTypes}
-                columns={defaultColumns}
-                value={formData.amountType}
-                valueKey="name"
-                onChange={(item) =>
-                  handleChange("amountType", item?.name || "")
-                }
-                placeholder="Select..."
-              />
-            </div>
+            <Dropdown
+              data={mockOptions.amountTypes}
+              columns={defaultColumns}
+              value={formData.amountType}
+              valueKey="name"
+              onChange={(item) => handleChange("amountType", item?.name || "")}
+              placeholder="Select..."
+            />
           </FormRow>
 
-          {/* Email */}
           <FormRow label="Email">
             <input
               type="email"
@@ -253,7 +316,6 @@ const SalesExecutiveMaster: React.FC<SalesExecutiveMasterProps> = ({
             />
           </FormRow>
 
-          {/* Phone */}
           <FormRow label="Phone">
             <input
               type="text"
@@ -263,7 +325,6 @@ const SalesExecutiveMaster: React.FC<SalesExecutiveMasterProps> = ({
             />
           </FormRow>
 
-          {/* Inactive Toggle */}
           <FormRow label="Inactive">
             <div className="w-full flex justify-end">
               <label className="relative inline-flex items-center cursor-pointer">
@@ -282,13 +343,38 @@ const SalesExecutiveMaster: React.FC<SalesExecutiveMasterProps> = ({
           </FormRow>
         </div>
 
-        {/* --- Footer --- */}
+        {/* Footer */}
         <div
           className="p-3 flex gap-3 border-t border-gray-300 mt-auto"
           style={{ backgroundColor: themeColor }}
         >
-          <FooterBtn label="Save" icon={<Save size={16} />} />
-          <FooterBtn label="Delete" icon={<Trash2 size={16} />} />
+          <button
+            onClick={handleSave}
+            disabled={isSubmitting}
+            className="flex items-center gap-2 px-4 py-1.5 border border-white text-white text-sm font-semibold rounded-sm hover:bg-white hover:text-[#0f3c63] transition-colors disabled:opacity-50"
+          >
+            {isSubmitting ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Save size={16} />
+            )}
+            {isSubmitting ? "Saving..." : "Save"}
+          </button>
+
+          {formData._id && (
+            <button
+              onClick={handleDelete}
+              disabled={isDeleting || isSubmitting}
+              className="flex items-center gap-2 px-4 py-1.5 border border-transparent bg-red-500/10 text-white text-sm font-semibold rounded-sm hover:bg-red-600 transition-colors disabled:opacity-50"
+            >
+              {isDeleting ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Trash2 size={16} />
+              )}
+              {isDeleting ? "Deleting..." : "Delete"}
+            </button>
+          )}
         </div>
       </div>
     </div>

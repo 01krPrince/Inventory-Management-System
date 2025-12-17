@@ -114,6 +114,7 @@ interface UnderGroupProps {
   onClose: () => void;
   initialData?: UnderGroupData;
   onSave?: (data: any) => void;
+  zIndex?: number;
 }
 
 interface DropdownItem {
@@ -189,7 +190,9 @@ export default function UnderGroup({
   onClose,
   initialData,
   onSave,
+  zIndex = 50, // Default to 50 if not provided (Base Layer)
 }: UnderGroupProps) {
+  const overlayZIndex = zIndex + 10;
   const [showStockUnit, setShowStockUnit] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -393,6 +396,7 @@ export default function UnderGroup({
     }
     setIsGstModalOpen(true);
   };
+
   const handleSave = async () => {
     // Basic Validation
     if (!formData.name) {
@@ -517,7 +521,10 @@ export default function UnderGroup({
   };
 
   return (
-    <div className="flex flex-col bg-gray-100 text-sm h-full">
+    <div
+      className="flex flex-col bg-gray-100 text-sm h-full"
+      style={{ zIndex: overlayZIndex }}
+    >
       {/* HEADER */}
       <div className="bg-[#0c4a75] px-3 py-2 flex justify-between items-center text-white shadow-sm shrink-0">
         <h1 className="text-sm font-semibold tracking-wide">
@@ -989,6 +996,7 @@ export default function UnderGroup({
                 setSelectedStockUnitForEdit(undefined);
               }}
               initialData={selectedStockUnitForEdit}
+              zIndex={0}
             />
           </div>
         </div>

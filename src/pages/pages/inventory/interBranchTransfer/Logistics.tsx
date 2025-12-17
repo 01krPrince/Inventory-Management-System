@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ChevronDown, ChevronUp, FileText, Edit2 } from "lucide-react";
+import { ChevronDown, ChevronUp, FileText, EditIcon } from "lucide-react";
 import Dropdown, { ColumnDef } from "../../../../components/Dropdown";
 import Transporter from "../../../../components/Transporter";
 import DateInput from "../../../../components/DateInput";
@@ -267,7 +267,7 @@ const Logistics: React.FC<LogisticsProps> = ({
                     }
                   />
                   <ActionBtn
-                    icon={<Edit2 size={14} />}
+                    icon={<EditIcon size={14} />}
                     onClick={handleEditOrAddTransporter}
                     title={data.shippingCompany ? "Edit Selected" : "Add New"}
                   />
@@ -277,7 +277,7 @@ const Logistics: React.FC<LogisticsProps> = ({
               {/* Shipping Company About (New Field) */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
-                  <Label>Transporter Details</Label>
+                  <Label required>Transporter Details</Label>
                 </div>
                 <div className="col-span-8">
                   <Input
@@ -293,7 +293,7 @@ const Logistics: React.FC<LogisticsProps> = ({
               {/* Shipping Tracking No */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
-                  <Label>Tracking No</Label>
+                  <Label required>Tracking No</Label>
                 </div>
                 <div className="col-span-8">
                   <Input
