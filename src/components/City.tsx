@@ -1,17 +1,19 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { X, Save, Trash2, Edit2 } from "lucide-react";
-import Dropdown, { ColumnDef } from "./Dropdown"; // Ensure this path is correct
+import Dropdown, { ColumnDef } from "./Dropdown";
 
 // --- Types ---
-interface TenderTypeData {
-  description: string;
+export interface CityData {
+  _id?: string;
   code: string;
-  type: string;
-  postingGL: string;
+  name: string;
+  underState: string;
 }
 
-interface TenderTypeProps {
+interface CityProps {
   onClose: () => void;
+  initialData?: CityData | null;
+  index?: number;
 }
 
 interface DropdownItem {
@@ -22,33 +24,42 @@ interface DropdownItem {
 
 // --- Mock Data ---
 const mockOptions = {
-  types: [
-    { name: "Cash", code: "CASH" },
-    { name: "Credit Card", code: "CC" },
-    { name: "Wallet", code: "WLT" },
-    { name: "Cheque", code: "CHQ" },
-  ],
-  glAccounts: [
-    { name: "Cash in Hand", code: "GL001" },
-    { name: "HDFC Bank", code: "GL002" },
-    { name: "Petty Cash", code: "GL003" },
+  states: [
+    { name: "Bihar", code: "BR" },
+    { name: "Delhi", code: "DL" },
+    { name: "Maharashtra", code: "MH" },
   ],
 };
 
-const TenderType: React.FC<TenderTypeProps> = ({ onClose }) => {
+const City: React.FC<CityProps> = ({ onClose, initialData, index = 50 }) => {
+  // --- Z-Index Logic ---
+  const overlayZIndex = index + 10;
+  const dropdownZIndex = overlayZIndex + 10;
+  const themeColor = "#0f3c63";
+
   // --- State ---
-  const [formData, setFormData] = useState<TenderTypeData>({
-    description: "",
-    code: "0001", // Auto-generated/Fixed
-    type: "",
-    postingGL: "",
+  const [formData, setFormData] = useState<CityData>({
+    code: "0001",
+    name: "",
+    underState: "",
   });
 
-  const handleChange = (field: keyof TenderTypeData, value: any) => {
+  // --- Effect: Handle Initial Data ---
+  useEffect(() => {
+    if (initialData) {
+      setFormData(initialData);
+    } else {
+      setFormData({
+        code: "0001",
+        name: "",
+        underState: "",
+      });
+    }
+  }, [initialData]);
+
+  const handleChange = (field: keyof CityData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
-
-  const themeColor = "#0f3c63";
 
   // --- Column Definition for Dropdowns ---
   const defaultColumns: ColumnDef<DropdownItem>[] = [
@@ -108,7 +119,10 @@ const TenderType: React.FC<TenderTypeProps> = ({ onClose }) => {
 
   return (
     // Overlay
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 h-80vh">
+    <div
+      className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      style={{ zIndex: overlayZIndex }}
+    >
       {/* Container */}
       <div className="w-full max-w-xl bg-white border border-gray-300 shadow-2xl rounded-sm overflow-hidden flex flex-col max-h-[90vh]">
         {/* --- Header --- */}
@@ -117,7 +131,7 @@ const TenderType: React.FC<TenderTypeProps> = ({ onClose }) => {
           style={{ backgroundColor: themeColor }}
         >
           <span className="font-semibold tracking-wide text-sm">
-            Tender Type
+            {initialData ? "Edit City" : "Create City"}
           </span>
           <button
             onClick={onClose}
@@ -129,16 +143,6 @@ const TenderType: React.FC<TenderTypeProps> = ({ onClose }) => {
 
         {/* --- Form Body --- */}
         <div className="p-6 overflow-y-auto">
-          {/* Description */}
-          <FormRow label="Description" required>
-            <input
-              type="text"
-              className="w-full h-[30px] border border-gray-300 px-2 outline-none focus:border-[#0f3c63] rounded-sm text-sm"
-              value={formData.description}
-              onChange={(e) => handleChange("description", e.target.value)}
-            />
-          </FormRow>
-
           {/* Code (Read Only) */}
           <FormRow label="Code">
             <input
@@ -149,30 +153,27 @@ const TenderType: React.FC<TenderTypeProps> = ({ onClose }) => {
             />
           </FormRow>
 
-          {/* Type (Dropdown) */}
-          <FormRow label="Type">
-            <div className="w-full flex">
-              <Dropdown
-                data={mockOptions.types}
-                columns={defaultColumns}
-                value={formData.type}
-                valueKey="name"
-                onChange={(item) => handleChange("type", item?.name || "")}
-                placeholder="Select Type..."
-              />
-            </div>
+          <FormRow label="Name" required>
+            <input
+              type="text"
+              className="w-full h-[30px] border border-gray-300 px-2 outline-none focus:border-[#0f3c63] rounded-sm text-sm"
+              value={formData.name}
+              onChange={(e) => handleChange("name", e.target.value)}
+            />
           </FormRow>
 
-          {/* Posting GL (Dropdown + Edit Button) */}
-          <FormRow label="Posting GL">
+          <FormRow label="Under State">
             <div className="w-full flex">
               <Dropdown
-                data={mockOptions.glAccounts}
+                data={mockOptions.states}
                 columns={defaultColumns}
-                value={formData.postingGL}
+                value={formData.underState}
                 valueKey="name"
-                onChange={(item) => handleChange("postingGL", item?.name || "")}
-                placeholder="Select GL Account..."
+                onChange={(item) =>
+                  handleChange("underState", item?.name || "")
+                }
+                placeholder="Select State..."
+                zIndex={dropdownZIndex}
               />
               <ActionBtn icon={<Edit2 size={14} />} />
             </div>
@@ -185,11 +186,13 @@ const TenderType: React.FC<TenderTypeProps> = ({ onClose }) => {
           style={{ backgroundColor: themeColor }}
         >
           <FooterBtn label="Save" icon={<Save size={16} />} />
-          <FooterBtn label="Delete" icon={<Trash2 size={16} />} />
+          {initialData && (
+            <FooterBtn label="Delete" icon={<Trash2 size={16} />} />
+          )}
         </div>
       </div>
     </div>
   );
 };
 
-export default TenderType;
+export default City;

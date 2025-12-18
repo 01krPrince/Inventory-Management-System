@@ -10,7 +10,7 @@ import { Search, EditIcon } from "lucide-react";
 
 import CounterMaster from "../../../../components/CounterMaster";
 import SalesExecutiveMaster from "../../../../components/SalesExecutiveMaster";
-import TenderType from "../../../../components/TenderType";
+import TenderTypeMaster from "../../../../components/TenderTypeMaster";
 import State from "../../../../components/State";
 // --- 1. Types & Interfaces ---
 
@@ -169,6 +169,8 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
   const [isSalesExecutiveMasterOpen, setIsSalesExecutiveMasterOpen] =
     useState(false);
   const [isTenderTypeOpen, setIsTenderTypeOpen] = useState(false);
+  const overlayZIndex = 10; // For this modal wrapper
+  const nestedModalZIndex = overlayZIndex + 20; // For nested modals (Location, Customer, Ledger, POSCustomer)
 
   const [formData, setFormData] = useState({
     counter: "BillOfSupply",
@@ -227,7 +229,10 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
 
       {/* --- Tender Type Master Modal --- */}
       {isTenderTypeOpen && (
-        <TenderType onClose={() => setIsTenderTypeOpen(false)} />
+        <TenderTypeMaster
+          onClose={() => setIsTenderTypeOpen(false)}
+          index={nestedModalZIndex}
+        />
       )}
 
       <div className="grid grid-cols-12 gap-8">

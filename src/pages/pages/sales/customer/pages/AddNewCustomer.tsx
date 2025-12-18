@@ -320,23 +320,23 @@ const SocialInput = ({
   </div>
 );
 
-interface AddNewCustomerProps {
-  onClose: () => void;
-  initialData?: any;
-  onSuccess?: () => void;
-  index?: number; // ADDED: Index Prop
-}
-
 const underLedger: ColumnDef<SalesAndPurchaseGL>[] = [
   { header: "Code", key: "code", width: "w-24" },
   { header: "Name", key: "name", width: "w-full" },
 ];
 
+interface AddNewCustomerProps {
+  onClose: (isBack?: boolean) => void;
+  initialData?: any;
+  onSuccess?: () => void;
+  index?: number;
+}
+
 const CrudCustomer: React.FC<AddNewCustomerProps> = ({
   onClose,
   initialData,
   onSuccess,
-  index = 50, // Default Index
+  index = 50,
 }) => {
   // Logic: Calculate Z-Index Layers
   const overlayZIndex = index + 10;
@@ -645,7 +645,7 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
     if (activeStep > 0) {
       setActiveStep((prev) => prev - 1);
     } else {
-      onClose();
+      onClose(true);
     }
   };
 
@@ -1423,8 +1423,8 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
 
   return (
     <div
-      className="min-h-screen bg-gray-50 p-4 font-sans text-gray-800"
-      style={{ zIndex: overlayZIndex }} // DYNAMIC Z-INDEX
+      className="fixed inset-0 flex items-center justify-center bg-transparent backdrop-blur-sm p-4 font-sans text-gray-800"
+      style={{ zIndex: overlayZIndex }}
     >
       <div className="max-w-6xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
         {/* Header */}
@@ -1503,7 +1503,8 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
             onClick={handleBack}
             className="flex items-center px-4 py-2 rounded border font-medium transition-colors text-gray-700 border-gray-300 hover:bg-gray-100 bg-white"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back
+            <ArrowLeft className="w-4 h-4 mr-2" />{" "}
+            {activeStep > 0 ? "Back" : "Close"}
           </button>
 
           <button

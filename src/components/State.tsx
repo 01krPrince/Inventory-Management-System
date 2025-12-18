@@ -1,16 +1,19 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { X, Save, Trash2, Edit2 } from "lucide-react";
-import Dropdown, { ColumnDef } from "./Dropdown"; // Ensure this path is correct
+import Dropdown, { ColumnDef } from "./Dropdown";
 
 // --- Types ---
-interface TenderTypeData {
+export interface StateData {
+  _id?: string;
   code: string;
   name: string;
   underCountry: string;
 }
 
-interface TenderTypeProps {
+interface StateProps {
   onClose: () => void;
+  initialData?: StateData | null;
+  index?: number;
 }
 
 interface DropdownItem {
@@ -21,32 +24,42 @@ interface DropdownItem {
 
 // --- Mock Data ---
 const mockOptions = {
-  types: [
-    { name: "Cash", code: "CASH" },
-    { name: "Credit Card", code: "CC" },
-    { name: "Wallet", code: "WLT" },
-    { name: "Cheque", code: "CHQ" },
-  ],
-  glAccounts: [
-    { name: "Cash in Hand", code: "GL001" },
-    { name: "HDFC Bank", code: "GL002" },
-    { name: "Petty Cash", code: "GL003" },
+  countries: [
+    { name: "India", code: "IND" },
+    { name: "USA", code: "USA" },
+    { name: "UAE", code: "UAE" },
   ],
 };
 
-const State: React.FC<TenderTypeProps> = ({ onClose }) => {
+const State: React.FC<StateProps> = ({ onClose, initialData, index = 50 }) => {
+  // --- Z-Index Logic ---
+  const overlayZIndex = index + 10;
+  const dropdownZIndex = overlayZIndex + 10;
+  const themeColor = "#0f3c63";
+
   // --- State ---
-  const [formData, setFormData] = useState<TenderTypeData>({
+  const [formData, setFormData] = useState<StateData>({
     code: "0001",
     name: "",
     underCountry: "",
   });
 
-  const handleChange = (field: keyof TenderTypeData, value: any) => {
+  // --- Effect: Handle Initial Data ---
+  useEffect(() => {
+    if (initialData) {
+      setFormData(initialData);
+    } else {
+      setFormData({
+        code: "0001",
+        name: "",
+        underCountry: "",
+      });
+    }
+  }, [initialData]);
+
+  const handleChange = (field: keyof StateData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
-
-  const themeColor = "#0f3c63";
 
   // --- Column Definition for Dropdowns ---
   const defaultColumns: ColumnDef<DropdownItem>[] = [
@@ -106,7 +119,10 @@ const State: React.FC<TenderTypeProps> = ({ onClose }) => {
 
   return (
     // Overlay
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 h-80vh">
+    <div
+      className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      style={{ zIndex: overlayZIndex }}
+    >
       {/* Container */}
       <div className="w-full max-w-xl bg-white border border-gray-300 shadow-2xl rounded-sm overflow-hidden flex flex-col max-h-[90vh]">
         {/* --- Header --- */}
@@ -114,7 +130,9 @@ const State: React.FC<TenderTypeProps> = ({ onClose }) => {
           className="flex justify-between items-center px-4 py-2 text-white"
           style={{ backgroundColor: themeColor }}
         >
-          <span className="font-semibold tracking-wide text-sm">State</span>
+          <span className="font-semibold tracking-wide text-sm">
+            {initialData ? "Edit State" : "Create State"}
+          </span>
           <button
             onClick={onClose}
             className="hover:bg-white/20 rounded p-0.5 transition-colors"
@@ -147,14 +165,15 @@ const State: React.FC<TenderTypeProps> = ({ onClose }) => {
           <FormRow label="Under Country">
             <div className="w-full flex">
               <Dropdown
-                data={mockOptions.glAccounts}
+                data={mockOptions.countries}
                 columns={defaultColumns}
                 value={formData.underCountry}
                 valueKey="name"
                 onChange={(item) =>
                   handleChange("underCountry", item?.name || "")
                 }
-                placeholder="Select GL Account..."
+                placeholder="Select Country..."
+                zIndex={dropdownZIndex}
               />
               <ActionBtn icon={<Edit2 size={14} />} />
             </div>
@@ -167,7 +186,9 @@ const State: React.FC<TenderTypeProps> = ({ onClose }) => {
           style={{ backgroundColor: themeColor }}
         >
           <FooterBtn label="Save" icon={<Save size={16} />} />
-          <FooterBtn label="Delete" icon={<Trash2 size={16} />} />
+          {initialData && (
+            <FooterBtn label="Delete" icon={<Trash2 size={16} />} />
+          )}
         </div>
       </div>
     </div>

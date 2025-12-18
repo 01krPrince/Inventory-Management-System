@@ -4,6 +4,9 @@ import Dropdown, { ColumnDef } from "./Dropdown";
 
 import { LocationMaster } from "./LocationMaster";
 import CrudCustomer from "../pages/pages/sales/customer/pages/AddNewCustomer";
+import NameAndCodeMaster, { NameAndCodeData } from "./NameAndCodeComponent";
+import POSCustomerMaster from "./POSCustomerMaster";
+import TenderTypeMaster from "./TenderTypeMaster";
 
 import {
   fetchAllLocations,
@@ -14,6 +17,8 @@ import {
   Customer,
   getAllCustomers,
 } from "../pages/pages/sales/customer/api/customerService";
+
+// --- Interfaces ---
 
 interface CounterFormData {
   counterNo: string;
@@ -36,12 +41,6 @@ interface CounterFormData {
 interface CounterMasterProps {
   onClose: () => void;
   index?: number;
-}
-
-interface DropdownItem {
-  name: string;
-  code?: string;
-  [key: string]: any;
 }
 
 const partyColumns: ColumnDef<Customer>[] = [
@@ -89,7 +88,9 @@ const CounterMaster: React.FC<CounterMasterProps> = ({
 }) => {
   const overlayZIndex = index + 10; // For this modal wrapper
   const dropdownZIndex = overlayZIndex + 10; // For dropdowns inside this modal
-  const nestedModalZIndex = overlayZIndex + 20; // For nested modals (Location, Customer)
+  const nestedModalZIndex = overlayZIndex + 20; // For nested modals (Location, Customer, Ledger, POSCustomer)
+
+  const themeColor = "#0f3c63";
 
   // --- State ---
   const [formData, setFormData] = useState<CounterFormData>({
@@ -110,16 +111,28 @@ const CounterMaster: React.FC<CounterMasterProps> = ({
     hideTaxDiscPanel: false,
   });
 
+  // Location Master State
   const [isLocationMasterOpen, setIsLocationMasterOpen] =
     useState<boolean>(false);
-
-  // Store dynamic list
   const [storeList, setStoreList] = useState<LocationMasterType[]>([]);
+
+  // Customer State
   const [isOpenCustomer, setIsOpenCustomer] = useState(false);
   const [customerList, setCustomerList] = useState<Customer[]>([]);
   const [editingRow, setEditingRow] = useState<Customer | null>(null);
 
-  // --- API: Fetch Stores ---
+  // Group / Ledger Attribute State
+  const [isLegderOpen, setIsLedgerOpen] = useState<boolean>(false);
+  const [ledgerEditingRow, setLedgerEditingRow] =
+    useState<NameAndCodeData | null>(null);
+
+  // POS Customer Master State
+  const [isPOSCustomerMasterOpen, setIsPOSCustomerMasterOpen] =
+    useState<boolean>(false);
+
+  const [isTenderTypeOpen, setIsTenderTypeOpen] = useState<boolean>(false);
+
+  // --- API Calls ---
   const loadStores = async () => {
     try {
       const result = await fetchAllLocations();
@@ -129,12 +142,26 @@ const CounterMaster: React.FC<CounterMasterProps> = ({
         setStoreList((result as any).data as LocationMasterType[]);
       }
     } catch (error) {
-      console.error("Failed to load stores/locations", error);
+      console.error("Failed to load stores", error);
+    }
+  };
+
+  const loadCustomers = async () => {
+    try {
+      const result = await getAllCustomers();
+      if (Array.isArray(result)) {
+        setCustomerList(result);
+      } else if (result && (result as any).data) {
+        setCustomerList((result as any).data);
+      }
+    } catch (error) {
+      console.error("Failed to load customers", error);
     }
   };
 
   useEffect(() => {
     loadStores();
+    loadCustomers();
   }, []);
 
   // --- Handlers ---
@@ -145,21 +172,13 @@ const CounterMaster: React.FC<CounterMasterProps> = ({
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const themeColor = "#0f3c63";
-
-  // --- Dropdown Config ---
-  const defaultColumns: ColumnDef<DropdownItem>[] = [
-    { header: "Code", key: "code", width: "w-1/3" },
-    { header: "Name", key: "name", width: "w-full" },
-  ];
-
-  // --- Helper to get selected Store Object ---
+  // Helper to get selected Store
   const getSelectedStoreData = (): LocationMasterType | null => {
     if (!formData.store) return null;
     return storeList.find((s) => s.name === formData.store) || null;
   };
 
-  // --- Location Master Callbacks ---
+  // --- Location Handlers ---
   const handleLocationSuccess = async () => {
     await loadStores();
   };
@@ -168,7 +187,47 @@ const CounterMaster: React.FC<CounterMasterProps> = ({
     handleChange("store", locationName);
   };
 
-  // --- Internal Components ---
+  // --- Customer Handlers ---
+  const handleCustomerFormClose = (isBack?: boolean) => {
+    setIsOpenCustomer(false);
+    setEditingRow(null);
+    isBack;
+  };
+
+  const handleCustomerFormSuccess = async () => {
+    await loadCustomers();
+    setIsOpenCustomer(false);
+    setEditingRow(null);
+  };
+
+  // --- Ledger / Group Handler ---
+  // This uses the Generic NameAndCodeMaster component
+  const handleLedgerForm = () => {
+    if (formData.group) {
+      // Edit Mode
+      const selectedGroup = mockOptions.groups.find(
+        (g) => g.name === formData.group
+      );
+      if (selectedGroup) {
+        setLedgerEditingRow({
+          code: selectedGroup.code || "0000",
+          name: selectedGroup.name,
+          _id: "mock_id",
+        });
+      }
+    } else {
+      // Create Mode
+      setLedgerEditingRow(null);
+    }
+    setIsLedgerOpen(true);
+  };
+
+  const handleLedgerClose = () => {
+    setIsLedgerOpen(false);
+    setLedgerEditingRow(null);
+  };
+
+  // --- Sub-components ---
   const ActionBtn: React.FC<{
     icon: React.ReactNode;
     onClick?: () => void;
@@ -239,39 +298,16 @@ const CounterMaster: React.FC<CounterMasterProps> = ({
     </button>
   );
 
-  const handleCustomerFormSuccess = async () => {
-    await loadCustomers(); // Refresh list to see new customer
-    setIsOpenCustomer(false);
-    setEditingRow(null);
+  const handlePOSCustomerClose = () => {
+    setIsPOSCustomerMasterOpen(false);
+    return false;
   };
-
-  const loadCustomers = async () => {
-    try {
-      const result = await getAllCustomers();
-      if (Array.isArray(result)) {
-        setCustomerList(result);
-      } else if (result && (result as any).data) {
-        setCustomerList((result as any).data);
-      }
-    } catch (error) {
-      console.error("Failed to load customers for Party dropdown", error);
-    }
-  };
-
-  const handleCustomerFormClose = () => {
-    setIsOpenCustomer(true);
-    setEditingRow(null);
-  };
-
-  useEffect(() => {
-    loadCustomers();
-  }, []);
 
   return (
-    // Overlay Wrapper for Popup effect (Dynamic Z-Index)
+    // Main Overlay
     <div
       className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-      style={{ zIndex: overlayZIndex }} // Apply Z-Index Here
+      style={{ zIndex: overlayZIndex }}
     >
       {/* Main Counter Form Container */}
       <div className="w-full max-w-2xl bg-white border border-gray-300 shadow-2xl rounded-sm overflow-hidden flex flex-col max-h-[90vh]">
@@ -312,19 +348,21 @@ const CounterMaster: React.FC<CounterMasterProps> = ({
             />
           </FormRow>
 
-          {/* Store (Dynamic Data) */}
+          {/* Store */}
           <FormRow label="Store">
             <div className="w-full flex">
               <Dropdown<LocationMasterType>
                 data={storeList}
-                columns={defaultColumns}
+                columns={[
+                  { header: "Code", key: "code", width: "w-1/3" },
+                  { header: "Name", key: "name", width: "w-full" },
+                ]}
                 value={formData.store}
                 valueKey="name"
                 onChange={(item) =>
                   handleChange("store", item ? item.name : "")
                 }
                 placeholder="Select Store..."
-                // Pass Dynamic Z-Index
                 zIndex={dropdownZIndex}
               />
               <ActionBtn
@@ -339,7 +377,10 @@ const CounterMaster: React.FC<CounterMasterProps> = ({
             <div className="w-full">
               <Dropdown
                 data={mockOptions.taxStyles}
-                columns={defaultColumns}
+                columns={[
+                  { header: "Code", key: "code", width: "w-1/3" },
+                  { header: "Name", key: "name", width: "w-full" },
+                ]}
                 value={formData.taxStyle}
                 valueKey="name"
                 onChange={(item) => handleChange("taxStyle", item?.name || "")}
@@ -354,7 +395,10 @@ const CounterMaster: React.FC<CounterMasterProps> = ({
             <div className="w-full">
               <Dropdown
                 data={mockOptions.exchangeReturns}
-                columns={defaultColumns}
+                columns={[
+                  { header: "Code", key: "code", width: "w-1/3" },
+                  { header: "Name", key: "name", width: "w-full" },
+                ]}
                 value={formData.exchangeReturn}
                 valueKey="name"
                 onChange={(item) =>
@@ -376,16 +420,14 @@ const CounterMaster: React.FC<CounterMasterProps> = ({
                 valueKey="cust_name"
                 placeholder="Select Party..."
                 onChange={(item) =>
-                  setFormData((prev: any) => ({
-                    ...prev,
-                    party: item ? item.cust_name : "",
-                  }))
+                  handleChange("customer", item ? item.cust_name : "")
                 }
                 zIndex={dropdownZIndex}
               />
-              <button onClick={handleCustomerFormClose}>
-                <ActionBtn icon={<EditIcon size={16} />} />
-              </button>
+              <ActionBtn
+                icon={<EditIcon size={16} />}
+                onClick={() => setIsOpenCustomer(true)}
+              />
             </div>
           </FormRow>
 
@@ -399,12 +441,15 @@ const CounterMaster: React.FC<CounterMasterProps> = ({
             />
           </FormRow>
 
-          {/* Default Invoice Print Format */}
+          {/* Print Format */}
           <FormRow label="Default Invoice Print Format">
             <div className="w-full">
               <Dropdown
                 data={mockOptions.printFormats}
-                columns={defaultColumns}
+                columns={[
+                  { header: "Code", key: "code", width: "w-1/3" },
+                  { header: "Name", key: "name", width: "w-full" },
+                ]}
                 value={formData.printFormat}
                 valueKey="name"
                 onChange={(item) =>
@@ -427,7 +472,10 @@ const CounterMaster: React.FC<CounterMasterProps> = ({
             <div className="w-full flex">
               <Dropdown
                 data={mockOptions.employees}
-                columns={defaultColumns}
+                columns={[
+                  { header: "Code", key: "code", width: "w-1/3" },
+                  { header: "Name", key: "name", width: "w-full" },
+                ]}
                 value={formData.employee}
                 valueKey="name"
                 onChange={(item) => handleChange("employee", item?.name || "")}
@@ -443,14 +491,20 @@ const CounterMaster: React.FC<CounterMasterProps> = ({
             <div className="w-full flex">
               <Dropdown
                 data={mockOptions.groups}
-                columns={defaultColumns}
+                columns={[
+                  { header: "Code", key: "code", width: "w-1/3" },
+                  { header: "Name", key: "name", width: "w-full" },
+                ]}
                 value={formData.group}
                 valueKey="name"
                 onChange={(item) => handleChange("group", item?.name || "")}
                 placeholder="Select Group..."
                 zIndex={dropdownZIndex}
               />
-              <ActionBtn icon={<EditIcon size={16} />} />
+              <ActionBtn
+                icon={<EditIcon size={16} />}
+                onClick={handleLedgerForm}
+              />
             </div>
           </FormRow>
 
@@ -459,7 +513,10 @@ const CounterMaster: React.FC<CounterMasterProps> = ({
             <div className="w-full flex">
               <Dropdown
                 data={mockOptions.posCustomers}
-                columns={defaultColumns}
+                columns={[
+                  { header: "Code", key: "code", width: "w-1/3" },
+                  { header: "Name", key: "name", width: "w-full" },
+                ]}
                 value={formData.defaultPosCustomer}
                 valueKey="name"
                 onChange={(item) =>
@@ -468,7 +525,10 @@ const CounterMaster: React.FC<CounterMasterProps> = ({
                 placeholder="Select POS Customer..."
                 zIndex={dropdownZIndex}
               />
-              <ActionBtn icon={<EditIcon size={16} />} />
+              <ActionBtn
+                icon={<EditIcon size={16} />}
+                onClick={() => setIsPOSCustomerMasterOpen(true)}
+              />
             </div>
           </FormRow>
 
@@ -477,7 +537,10 @@ const CounterMaster: React.FC<CounterMasterProps> = ({
             <div className="w-full">
               <Dropdown
                 data={mockOptions.tenderTypes}
-                columns={defaultColumns}
+                columns={[
+                  { header: "Code", key: "code", width: "w-1/3" },
+                  { header: "Name", key: "name", width: "w-full" },
+                ]}
                 value={formData.allowTenderTypes}
                 valueKey="name"
                 onChange={(item) =>
@@ -494,7 +557,10 @@ const CounterMaster: React.FC<CounterMasterProps> = ({
             <div className="w-full flex">
               <Dropdown
                 data={mockOptions.defaultTenders}
-                columns={defaultColumns}
+                columns={[
+                  { header: "Code", key: "code", width: "w-1/3" },
+                  { header: "Name", key: "name", width: "w-full" },
+                ]}
                 value={formData.defaultTender}
                 valueKey="name"
                 onChange={(item) =>
@@ -503,7 +569,9 @@ const CounterMaster: React.FC<CounterMasterProps> = ({
                 placeholder="Select Default Tender..."
                 zIndex={dropdownZIndex}
               />
-              <ActionBtn icon={<EditIcon size={16} />} />
+              <button onClick={() => setIsTenderTypeOpen(true)}>
+                <ActionBtn icon={<EditIcon size={16} />} />
+              </button>
             </div>
           </FormRow>
 
@@ -539,11 +607,12 @@ const CounterMaster: React.FC<CounterMasterProps> = ({
         </div>
       </div>
 
-      {/* --- Location Master Popup (Stacked ON TOP of Counter Form) --- */}
+      {/* --- NESTED MODALS --- */}
+
+      {/* 1. Location Master Popup */}
       {isLocationMasterOpen && (
         <div
           className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-          // Use Higher Dynamic Z-Index
           style={{ zIndex: nestedModalZIndex }}
         >
           <div className="w-full max-w-4xl h-[90vh] bg-white rounded shadow-lg overflow-hidden relative">
@@ -558,22 +627,40 @@ const CounterMaster: React.FC<CounterMasterProps> = ({
         </div>
       )}
 
+      {/* 2. Customer Form */}
       {isOpenCustomer && (
-        <div
-          className="fixed mt-[30vh] inset-0 flex items-center justify-center bg-transparent backdrop-blur-sm p-4"
-          style={{ zIndex: nestedModalZIndex }} // Use Higher Dynamic Z-Index
-        >
-          <div className="overflow-hidden flex flex-col p-4">
-            <div className="flex-1 overflow-hidden relative">
-              <CrudCustomer
-                onClose={handleCustomerFormClose}
-                initialData={editingRow}
-                onSuccess={handleCustomerFormSuccess}
-                index={overlayZIndex + 10}
-              />
-            </div>
-          </div>
-        </div>
+        <CrudCustomer
+          onClose={handleCustomerFormClose}
+          initialData={editingRow}
+          onSuccess={handleCustomerFormSuccess}
+          index={nestedModalZIndex}
+        />
+      )}
+
+      {/* 3. Ledger Attribute Form (Group) */}
+      {isLegderOpen && (
+        <NameAndCodeMaster
+          title="Ledger Attribute"
+          onClose={handleLedgerClose}
+          initialData={ledgerEditingRow}
+          index={nestedModalZIndex}
+        />
+      )}
+
+      {/* 4. POS Customer Master Form */}
+      {isPOSCustomerMasterOpen && (
+        <POSCustomerMaster
+          onClose={handlePOSCustomerClose}
+          index={nestedModalZIndex}
+        />
+      )}
+
+      {/* 5. Tender Type Master Form */}
+      {isTenderTypeOpen && (
+        <TenderTypeMaster
+          onClose={() => setIsTenderTypeOpen(false)}
+          index={nestedModalZIndex}
+        />
       )}
     </div>
   );

@@ -702,8 +702,8 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
       {/* 2. Customer Form Modal (Stacked on top) */}
       {isCustomerFormOpen && (
         <div
-          className="fixed mt-[30vh] inset-0 flex items-center justify-center bg-transparent backdrop-blur-sm p-4"
-          style={{ zIndex: nestedModalZIndex }} // DYNAMIC Z-INDEX HERE
+          className="fixed inset-0 flex items-center justify-center bg-transparent backdrop-blur-sm p-4"
+          style={{ zIndex: nestedModalZIndex }}
         >
           <div className="overflow-hidden flex flex-col p-4">
             <div className="flex-1 overflow-hidden relative">

@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { X, ChevronDown, ChevronUp, Globe, Edit2, Loader2 } from "lucide-react";
+import {
+  X,
+  ChevronDown,
+  ChevronUp,
+  Globe,
+  EditIcon,
+  Loader2,
+} from "lucide-react";
 import {
   createSalesAndPurchaseGL,
   SalesAndPurchaseGLInput,
@@ -421,7 +428,7 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
                       onClick={() => setIsCoaGroupModalOpen(true)}
                       className="bg-[#1e4e79] text-white p-1 ml-1 rounded-sm flex items-center justify-center w-8"
                     >
-                      <Edit2 size={12} />
+                      <EditIcon size={12} />
                     </button>
                   </div>
                 </FormRow>

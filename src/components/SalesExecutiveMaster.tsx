@@ -34,7 +34,7 @@ interface SalesExecutiveMasterProps {
   onClose: () => void;
   initialData?: SalesExecutiveData;
   onSuccess?: () => void;
-  index?: number; // 1. Index Prop
+  index?: number;
 }
 
 interface DropdownItem {

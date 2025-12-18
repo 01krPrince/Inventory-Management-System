@@ -107,7 +107,7 @@ const NestedFlyoutBox: React.FC<NestedFlyoutBoxProps> = ({
   return (
     <div
       ref={flyoutRef}
-      className="fixed z-50 w-72 p-4 bg-gray-100 dark:bg-gray-700 rounded-xl shadow-2xl border border-gray-300 dark:border-gray-600 overflow-y-auto"
+      className="fixed z-20 w-72 p-4 bg-gray-100 dark:bg-gray-700 rounded-xl shadow-2xl border border-gray-300 dark:border-gray-600 overflow-y-auto"
       style={style}
     >
       <h4 className="text-sm font-bold text-[#0c5888] dark:text-indigo-400 mb-2 border-b border-gray-300 dark:border-gray-600 pb-2">
@@ -242,7 +242,7 @@ const FlyoutBox: React.FC<FlyoutBoxProps> = ({
   return (
     <div
       ref={flyoutRef}
-      className="fixed z-50 w-72 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-y-auto"
+      className="fixed z-20 w-72 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-y-auto"
       style={style}
     >
       <h4 className="text-lg font-bold text-[#0c5888] dark:text-indigo-400 mb-3 border-b border-gray-200 dark:border-gray-700 pb-2">
@@ -510,7 +510,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   return (
     <>
       <aside
-        className={`fixed top-0 left-0 z-40 h-screen py-4 w-[110px] bg-white border-r border-gray-200 dark:bg-gray-800 dark:border-gray-700 overflow-y-auto shadow-lg`}
+        className={`fixed top-0 left-0 z-20 h-screen py-4 w-[110px] bg-white border-r border-gray-200 dark:bg-gray-800 dark:border-gray-700 overflow-y-auto shadow-lg`}
         style={{ scrollbarWidth: "thin", scrollbarColor: "#888 #f1f1f1" }}
       >
         <div className="flex flex-col h-full px-2">
