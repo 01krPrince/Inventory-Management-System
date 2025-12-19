@@ -124,7 +124,7 @@ const PosReceipt: React.FC<PosReceiptProps> = ({ data }) => {
           </div>
 
           <h1 className="text-xl font-black uppercase mt-1 tracking-wide">
-            SPORTS HUB
+            Chandan Khel Ghar
           </h1>
           <p className="text-[11px] font-medium">VIP Road, Laheriasarai</p>
           <p className="text-[11px] font-medium">

@@ -12,9 +12,6 @@ dist
 dist-ssr
 *.local
 
-# Ignore testing folder inside group-input
-src/components/form/group-input/testing/
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
