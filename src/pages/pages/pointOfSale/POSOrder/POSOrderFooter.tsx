@@ -2,6 +2,8 @@ import React from "react";
 import { COLORS } from "../../../../constants/colors";
 
 import Attachment from "../../../../components/Attachment";
+import InvoiceA4 from "../../../../components/invoiceDownload/InvoiceA4";
+import PosReceipt from "../../../../components/invoiceDownload/PosReceipt";
 
 type InvoiceFooterProps = {
   amount?: number; // Made optional with a default value handling
@@ -210,6 +212,16 @@ const POSOrderFooter: React.FC<InvoiceFooterProps> = ({ amount = -8500 }) => {
               Generate EMI
             </button>
           </div>
+        </div>
+      </div>
+
+      <div className="mt-5 border-t-2 border-b-2 border-black flex w-full bg-gray-100 py-20 items-center justify-center">
+        <div className="w-2/3">
+          <InvoiceA4 />
+        </div>
+
+        <div className="w-1/3">
+          <PosReceipt />
         </div>
       </div>
 
