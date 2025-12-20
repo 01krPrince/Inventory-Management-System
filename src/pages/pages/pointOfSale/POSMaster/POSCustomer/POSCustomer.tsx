@@ -21,13 +21,13 @@ import {
 import {
   handlePrint,
   handleExport,
-} from "../../../../components/function/functions.tsx";
+} from "../../../../../components/function/functions.tsx";
 import {
   PrintIcon,
   ExportIcon,
-} from "../../../../components/function/functions.tsx";
+} from "../../../../../components/function/functions.tsx";
 
-import POSCustomerMaster from "../../../../components/POSCustomerMaster.tsx";
+import POSCustomerMaster from "../../../../../components/POSCustomerMaster.tsx";
 
 // --- TYPE DEFINITIONS ---
 interface Customer {

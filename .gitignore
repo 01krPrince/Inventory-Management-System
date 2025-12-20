@@ -1,4 +1,3 @@
-# Logs
 logs
 *.log
 npm-debug.log*
@@ -12,10 +11,10 @@ dist
 dist-ssr
 *.local
 
-# Ignore testing folder inside group-input
-src/components/form/group-input/testing/
+src/components/ecommerce/
+src/components/form/
+src/components/function/
 
-# Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
