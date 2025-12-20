@@ -23,7 +23,7 @@ interface TableDropdownProps<T> {
   valueKey: keyof T;
   className?: string;
   disabled?: boolean;
-  zIndex?: number; // Manual Z-Index control
+  zIndex?: number;
 }
 
 const Dropdown = <T extends object>({
@@ -35,7 +35,7 @@ const Dropdown = <T extends object>({
   valueKey,
   className = "w-full",
   disabled = false,
-  zIndex, // Receive index from parent
+  zIndex,
 }: TableDropdownProps<T>) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -43,14 +43,12 @@ const Dropdown = <T extends object>({
   // Position and Visibility State
   const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
   const [menuPosition, setMenuPosition] = useState<"bottom" | "top">("bottom");
-
-  // This flag prevents the "Blink". We only set it to true after calculating position.
   const [isVisible, setIsVisible] = useState(false);
 
   const triggerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // 1. Measure and Position (Runs synchronously before paint)
+  // 1. Position Calculation
   useLayoutEffect(() => {
     if (isOpen && triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
@@ -66,19 +64,17 @@ const Dropdown = <T extends object>({
         width: rect.width,
       });
 
-      // Now that we have coordinates, make it visible
       setIsVisible(true);
     } else {
       setIsVisible(false);
     }
   }, [isOpen]);
 
-  // 2. Global Click & Scroll Listeners
+  // 2. Event Listeners (FIXED SCROLL LOGIC)
   useEffect(() => {
     const handleGlobalEvents = (event: Event) => {
       if (event.type === "mousedown") {
         const mouseEvent = event as MouseEvent;
-        // If clicking inside the dropdown (portal) or trigger, ignore
         if (
           dropdownRef.current?.contains(mouseEvent.target as Node) ||
           triggerRef.current?.contains(mouseEvent.target as Node)
@@ -87,13 +83,20 @@ const Dropdown = <T extends object>({
         }
         setIsOpen(false);
       } else if (event.type === "scroll") {
-        // Close on scroll to prevent detached menu
-        if (isOpen) setIsOpen(false);
+        // Only close if scrolling something OUTSIDE the dropdown
+        if (
+          isOpen &&
+          dropdownRef.current &&
+          !dropdownRef.current.contains(event.target as Node)
+        ) {
+          setIsOpen(false);
+        }
       }
     };
 
     if (isOpen) {
       document.addEventListener("mousedown", handleGlobalEvents);
+      // Capture: true is necessary to detect scroll on parent containers
       window.addEventListener("scroll", handleGlobalEvents, { capture: true });
     }
 
@@ -138,7 +141,6 @@ const Dropdown = <T extends object>({
     setSearchTerm("");
   };
 
-  // --- PORTAL MENU ---
   const DropdownMenu = (
     <div
       ref={dropdownRef}
@@ -148,15 +150,15 @@ const Dropdown = <T extends object>({
         top: menuPosition === "bottom" ? coords.top : "auto",
         bottom:
           menuPosition === "top" ? window.innerHeight - coords.top : "auto",
-        width: Math.max(coords.width, 300),
+        width: Math.max(coords.width, 400), // Slightly wider for table view
         maxHeight: "300px",
-        // USE THE PROP. If not provided, fallback to 9999
         zIndex: zIndex ?? 9999,
-        // HIDE until calculated
         opacity: isVisible ? 1 : 0,
         pointerEvents: isVisible ? "auto" : "none",
+        overscrollBehavior: "contain", // Prevents background page from scrolling
       }}
     >
+      {/* Search Header */}
       <div className="p-2 border-b border-gray-100 bg-gray-50/50 shrink-0">
         <div className="relative">
           <Search
@@ -173,6 +175,8 @@ const Dropdown = <T extends object>({
           />
         </div>
       </div>
+
+      {/* Table Header */}
       <div className="flex bg-gray-100 border-b border-gray-200 text-[11px] font-bold text-gray-600 px-3 py-1.5 shrink-0">
         {columns.map((col) => (
           <div
@@ -183,6 +187,8 @@ const Dropdown = <T extends object>({
           </div>
         ))}
       </div>
+
+      {/* Scrollable List Area */}
       <div className="overflow-y-auto flex-1 p-1">
         {filteredData.length > 0 ? (
           filteredData.map((item) => {
@@ -244,7 +250,6 @@ const Dropdown = <T extends object>({
           <ChevronDown size={14} className="text-gray-400" />
         </div>
       </div>
-      {/* RENDER PORTAL */}
       {isOpen && createPortal(DropdownMenu, document.body)}
     </div>
   );
