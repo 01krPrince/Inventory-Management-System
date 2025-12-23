@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Save, Trash2, Edit, ChevronDown, Loader2 } from "lucide-react";
+import { X, Save, Trash2, EditIcon, ChevronDown, Loader2 } from "lucide-react";
 
 // --- API Imports ---
 import {
@@ -62,10 +62,7 @@ const COAGroupsModal = ({
 
   if (!isOpen) return null;
 
-  // --- Handlers ---
-
   const handleSave = async () => {
-    // 1. Validation
     if (!formData.name) {
       alert("Name is required");
       return;
@@ -74,9 +71,6 @@ const COAGroupsModal = ({
     setIsSubmitting(true);
 
     try {
-      // 2. Prepare Payload
-      // We map the UI state to the API Input interface
-      // Note: Include 'code' in the payload if your backend accepts it manually
       const payload: CoaGroupInput & { code: string } = {
         name: formData.name,
         code: formData.code,
@@ -87,19 +81,15 @@ const COAGroupsModal = ({
 
       let result;
 
-      // 3. API Call (Create vs Update)
       if (initialData && initialData._id) {
-        // Edit Mode
         result = await updateCoaGroup(initialData._id, payload);
       } else {
-        // Create Mode
         result = await createCoaGroup(payload);
       }
 
-      // 4. Handle Response
       if (result.success && result.data) {
-        onSave(result.data); // Notify parent with new data
-        onClose(); // Close modal
+        onSave(result.data);
+        onClose();
       } else {
         alert(result.message || "Operation failed");
       }
@@ -114,8 +104,6 @@ const COAGroupsModal = ({
   const handleDelete = () => {
     if (formData._id) {
       if (window.confirm("Are you sure you want to delete this group?")) {
-        // Assuming onDelete handles the API call for deletion in the parent,
-        // or you can implement deleteCoaGroup API here similarly.
         onDelete(formData._id);
         onClose();
       }
@@ -182,12 +170,11 @@ const COAGroupsModal = ({
                 }
                 className="relative w-14 h-7 border border-gray-300 rounded-sm bg-white flex items-center cursor-pointer overflow-hidden transition-colors"
               >
-                {/* The Slider Block */}
                 <div
                   className={`absolute top-0 bottom-0 w-8 flex items-center justify-center text-[10px] font-bold text-white transition-all duration-200 ${
                     formData.inactive
-                      ? "left-0 bg-red-600" // ON State style
-                      : "right-0 bg-[#0f4c81]" // OFF State style (Blue)
+                      ? "left-0 bg-[#63717e]"
+                      : "right-0 bg-[#0f4c81]"
                   }`}
                 >
                   {formData.inactive ? "ON" : "OFF"}
@@ -222,7 +209,7 @@ const COAGroupsModal = ({
                 />
               </div>
               <button className="bg-[#0f4c81] text-white p-1.5 rounded-sm hover:bg-[#0a355c] transition-colors">
-                <Edit size={14} fill="currentColor" />
+                <EditIcon size={14} />
               </button>
             </div>
           </div>

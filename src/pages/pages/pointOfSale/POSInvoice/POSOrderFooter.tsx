@@ -1,13 +1,17 @@
-import React from "react";
+import React, { useState } from "react";
 import { COLORS } from "../../../../constants/colors";
 
 import Attachment from "../../../../components/Attachment";
+import PaymentType from "../../../../components/PaymentType";
 
 type InvoiceFooterProps = {
-  amount?: number; // Made optional with a default value handling
+  amount?: number; // Calculated Due/Advance Amount
 };
 
-const POSOrderFooter: React.FC<InvoiceFooterProps> = ({ amount = -8500 }) => {
+const POSInvoiceFooter: React.FC<InvoiceFooterProps> = ({ amount = 8500 }) => {
+  // --- POPUP STATE ---
+  const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+
   // Logic for Payment Status
   const isAdvance = amount > 0;
   const isDue = amount < 0;
@@ -29,6 +33,14 @@ const POSOrderFooter: React.FC<InvoiceFooterProps> = ({ amount = -8500 }) => {
       className="w-full p-4 font-sans text-sm"
       style={{ backgroundColor: COLORS.white }}
     >
+      {/* --- PAYMENT POPUP COMPONENT --- */}
+      <PaymentType
+        isOpen={isPaymentOpen}
+        onClose={() => setIsPaymentOpen(false)}
+        totalAmount={Math.abs(amount)}
+        zIndex={1000} // Dynamic Z-Index
+      />
+
       <div className="flex flex-col lg:flex-row gap-8">
         {/* --- LEFT SECTION (Inputs & Attachments) --- */}
         <div className="flex-1 flex flex-col gap-4">
@@ -55,7 +67,7 @@ const POSOrderFooter: React.FC<InvoiceFooterProps> = ({ amount = -8500 }) => {
             </div>
           </div>
 
-          {/* --- Attachment Section --- */}
+          {/* Attachment Section */}
           <div className="flex flex-col sm:flex-row gap-4 mt-2">
             <label className="w-32 pt-2" style={{ color: COLORS.textPrimary }}>
               Attachment
@@ -77,85 +89,15 @@ const POSOrderFooter: React.FC<InvoiceFooterProps> = ({ amount = -8500 }) => {
           <TotalRow label="Taxable" value="0.00" />
           <TotalRow label="Tax Amount" value="0.00" />
 
-          {/* Special Rows with Dual Inputs (Discount) */}
-          <div className="grid grid-cols-[1fr_60px_120px] gap-2 items-center">
-            <label
-              className="text-xs uppercase"
-              style={{ color: COLORS.textSecondary }}
-            >
-              DISCOUNT
-            </label>
-            <input
-              type="text"
-              defaultValue="0"
-              className="border rounded-sm px-2 py-1 text-right text-xs outline-none custom-input"
-              style={{
-                borderColor: COLORS.borderDark,
-                color: COLORS.textPrimary,
-              }}
-            />
-            <div className="relative">
-              <span
-                className="absolute left-2 top-1/2 -translate-y-1/2 text-xs"
-                style={{ color: COLORS.textMuted }}
-              >
-                ₹
-              </span>
-              <input
-                type="text"
-                defaultValue="0.00"
-                readOnly
-                className="w-full border rounded-sm py-1 pl-5 pr-2 text-right text-xs outline-none"
-                style={{
-                  backgroundColor: COLORS.background,
-                  borderColor: COLORS.borderDark,
-                  color: COLORS.textSecondary,
-                }}
-              />
-            </div>
-          </div>
+          {/* DISCOUNT Dual Input */}
+          <DualInputRow label="DISCOUNT" value="0.00" />
 
-          {/* Special Rows with Dual Inputs (Discount %) */}
-          <div className="grid grid-cols-[1fr_60px_120px] gap-2 items-center">
-            <label
-              className="text-xs uppercase"
-              style={{ color: COLORS.textSecondary }}
-            >
-              DISCOUNT %
-            </label>
-            <input
-              type="text"
-              defaultValue="0"
-              className="border rounded-sm px-2 py-1 text-right text-xs outline-none custom-input"
-              style={{
-                borderColor: COLORS.borderDark,
-                color: COLORS.textPrimary,
-              }}
-            />
-            <div className="relative">
-              <span
-                className="absolute left-2 top-1/2 -translate-y-1/2 text-xs"
-                style={{ color: COLORS.textMuted }}
-              >
-                ₹
-              </span>
-              <input
-                type="text"
-                defaultValue="0.00"
-                readOnly
-                className="w-full border rounded-sm py-1 pl-5 pr-2 text-right text-xs outline-none"
-                style={{
-                  backgroundColor: COLORS.background,
-                  borderColor: COLORS.borderDark,
-                  color: COLORS.textSecondary,
-                }}
-              />
-            </div>
-          </div>
+          {/* DISCOUNT % Dual Input */}
+          <DualInputRow label="DISCOUNT %" value="0.00" />
 
           <TotalRow label="Round Off" value="0.00" />
 
-          {/* Doc Amount (Bold) */}
+          {/* Doc Amount */}
           <div className="grid grid-cols-[1fr_120px] gap-2 items-center mt-1">
             <label
               className="text-xs font-bold"
@@ -164,10 +106,7 @@ const POSOrderFooter: React.FC<InvoiceFooterProps> = ({ amount = -8500 }) => {
               Doc Amount
             </label>
             <div className="relative">
-              <span
-                className="absolute left-2 top-1/2 -translate-y-1/2 text-xs font-bold"
-                style={{ color: COLORS.textPrimary }}
-              >
+              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs font-bold">
                 ₹
               </span>
               <input
@@ -184,12 +123,29 @@ const POSOrderFooter: React.FC<InvoiceFooterProps> = ({ amount = -8500 }) => {
             </div>
           </div>
 
+          {/* Apply Coupon Code */}
+          <div className="grid grid-cols-[1fr_120px] gap-2 items-center mt-1">
+            <label className="text-xs" style={{ color: COLORS.textPrimary }}>
+              Apply Coupon Code
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                className="w-full border rounded-sm py-1 px-2 text-right text-xs font-bold outline-none"
+                style={{
+                  backgroundColor: COLORS.background,
+                  borderColor: COLORS.borderDark,
+                  color: COLORS.textPrimary,
+                }}
+              />
+            </div>
+          </div>
+
           {/* Payment Status Display */}
           <div className="grid grid-cols-[1fr_160px] gap-2 items-center mt-1">
             <label className="text-xs font-bold text-gray-800">
               Payment Status
             </label>
-
             <div
               className={`flex items-center justify-between px-2 py-1 rounded text-xs font-bold ${statusColor}`}
             >
@@ -201,19 +157,19 @@ const POSOrderFooter: React.FC<InvoiceFooterProps> = ({ amount = -8500 }) => {
             </div>
           </div>
 
-          {/* Generate EMI Button */}
+          {/* --- PAYMENT BUTTON (Triggers Popup) --- */}
           <div className="flex justify-end mt-2">
             <button
+              onClick={() => setIsPaymentOpen(true)} // Opens the Popup
               className="custom-btn-primary text-xs font-medium px-4 py-1.5 rounded-sm shadow-sm"
               style={{ color: COLORS.white }}
             >
-              Generate EMI
+              Payment
             </button>
           </div>
         </div>
       </div>
 
-      {/* --- GLOBAL STYLES FOR HOVER & FOCUS --- */}
       <style>{`
         .custom-btn-primary {
           background-color: ${COLORS.primary};
@@ -222,7 +178,6 @@ const POSOrderFooter: React.FC<InvoiceFooterProps> = ({ amount = -8500 }) => {
         .custom-btn-primary:hover {
           background-color: ${COLORS.primaryHover};
         }
-
         .custom-input:focus {
           border-color: ${COLORS.info} !important;
         }
@@ -231,39 +186,75 @@ const POSOrderFooter: React.FC<InvoiceFooterProps> = ({ amount = -8500 }) => {
   );
 };
 
-// --- Sub Component for simple rows ---
-type TotalRowProps = {
-  label: string;
-  value: string;
-};
+// --- Helper Components ---
 
-const TotalRow: React.FC<TotalRowProps> = ({ label, value }) => {
-  return (
-    <div className="grid grid-cols-[1fr_120px] gap-2 items-center">
-      <label className="text-xs" style={{ color: COLORS.textSecondary }}>
-        {label}
-      </label>
-      <div className="relative">
-        <span
-          className="absolute left-2 top-1/2 -translate-y-1/2 text-xs"
-          style={{ color: COLORS.textMuted }}
-        >
-          ₹
-        </span>
-        <input
-          type="text"
-          defaultValue={value}
-          readOnly
-          className="w-full border rounded-sm py-1 pl-5 pr-2 text-right text-xs outline-none custom-input"
-          style={{
-            backgroundColor: COLORS.background,
-            borderColor: COLORS.borderDark,
-            color: COLORS.textPrimary,
-          }}
-        />
-      </div>
+const TotalRow: React.FC<{ label: string; value: string }> = ({
+  label,
+  value,
+}) => (
+  <div className="grid grid-cols-[1fr_120px] gap-2 items-center">
+    <label className="text-xs" style={{ color: COLORS.textSecondary }}>
+      {label}
+    </label>
+    <div className="relative">
+      <span
+        className="absolute left-2 top-1/2 -translate-y-1/2 text-xs"
+        style={{ color: COLORS.textMuted }}
+      >
+        ₹
+      </span>
+      <input
+        type="text"
+        defaultValue={value}
+        readOnly
+        className="w-full border rounded-sm py-1 pl-5 pr-2 text-right text-xs outline-none"
+        style={{
+          backgroundColor: COLORS.background,
+          borderColor: COLORS.borderDark,
+          color: COLORS.textPrimary,
+        }}
+      />
     </div>
-  );
-};
+  </div>
+);
 
-export default POSOrderFooter;
+const DualInputRow: React.FC<{ label: string; value: string }> = ({
+  label,
+  value,
+}) => (
+  <div className="grid grid-cols-[1fr_60px_120px] gap-2 items-center">
+    <label
+      className="text-xs uppercase"
+      style={{ color: COLORS.textSecondary }}
+    >
+      {label}
+    </label>
+    <input
+      type="text"
+      defaultValue="0"
+      className="border rounded-sm px-2 py-1 text-right text-xs outline-none custom-input"
+      style={{ borderColor: COLORS.borderDark, color: COLORS.textPrimary }}
+    />
+    <div className="relative">
+      <span
+        className="absolute left-2 top-1/2 -translate-y-1/2 text-xs"
+        style={{ color: COLORS.textMuted }}
+      >
+        ₹
+      </span>
+      <input
+        type="text"
+        defaultValue={value}
+        readOnly
+        className="w-full border rounded-sm py-1 pl-5 pr-2 text-right text-xs outline-none"
+        style={{
+          backgroundColor: COLORS.background,
+          borderColor: COLORS.borderDark,
+          color: COLORS.textSecondary,
+        }}
+      />
+    </div>
+  </div>
+);
+
+export default POSInvoiceFooter;

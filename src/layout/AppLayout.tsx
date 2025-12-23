@@ -25,6 +25,8 @@ import POSCoupon from "../pages/pages/pointOfSale/POSMaster/POSCoupon/POSCoupon.
 import Counter from "../pages/pages/pointOfSale/POSMaster/Counter/Counter.tsx";
 import TenderType from "../pages/pages/pointOfSale/POSMaster/TenderType/TenderType.tsx";
 import LoyaltyCard from "../pages/pages/pointOfSale/POSMaster/LoyelityCard/LoyelityCard.tsx";
+import Promotions from "../pages/pages/pointOfSale/POSMaster/Promotions/Promotions.tsx";
+import POSInvoice from "../pages/pages/pointOfSale/POSInvoice/POSInvoice.tsx";
 
 const useSidebar = () => ({
   isExpanded: false,
@@ -55,6 +57,8 @@ const ComponentMap: { [key: string]: React.FC } = {
   "/counter": Counter,
   "/tender-type": TenderType,
   "/loyalty-card": LoyaltyCard,
+  "/promotions": Promotions,
+  "/pos-invoice": POSInvoice,
   "/fallback": () => (
     <div className="p-6 mt-6 bg-gray-100 dark:bg-gray-800 rounded-lg shadow text-center">
       <p className="text-gray-600 dark:text-gray-300 font-medium">
@@ -68,7 +72,7 @@ const LayoutContent: React.FC = () => {
   const { isMobileOpen } = useSidebar();
   const { openTabs, activeTabPath, addTab } = useTabs();
 
-  const fixedSidebarWidthClass = "lg:ml-[110px]";
+  const fixedSidebarWidthClass = "lg:ml-[80px]";
 
   return (
     <>
@@ -84,9 +88,7 @@ const LayoutContent: React.FC = () => {
         `}
       </style>
 
-      {/* Main Container: overflow-hidden is key to prevent double scrollbars */}
       <div className="flex h-screen bg-gray-100 dark:bg-gray-900 overflow-hidden">
-        {/* Sidebar Area */}
         <div className="z-40">
           <AppSidebar
             addTab={addTab as (item: any) => void}
@@ -95,27 +97,19 @@ const LayoutContent: React.FC = () => {
           <Backdrop />
         </div>
 
-        {/* Content Wrapper */}
         <div
           className={`flex flex-col flex-1 min-w-0 transition-all duration-300 ease-in-out ${fixedSidebarWidthClass} ${
             isMobileOpen ? "ml-0" : ""
           }`}
         >
-          {/* Header stays at the top */}
           <AppHeader />
-
-          {/* Sticky TabBar: Remains fixed under the header */}
           <div className="sticky top-0 z-30 flex-shrink-0 bg-gray-100 dark:bg-gray-900">
             <TabBar />
           </div>
 
-          {/* Main Scrollable Content: 
-              We use flex-grow and overflow-y-auto so ONLY this section scrolls.
-              We add pb-10 (padding bottom) to ensure the last part of the table 
-              isn't covered by the footer or the screen edge.
-          */}
+          {/* MAIN CONTENT AREA */}
           <main className="flex-grow overflow-y-auto hidden-scrollbar px-5">
-            <div className="pb-10 pt-2">
+            <div className="mx-auto max-w-[1600px] w-full pb-10 pt-2">
               {openTabs.map((tab) => {
                 const TabComponent =
                   ComponentMap[tab.path] || ComponentMap["/fallback"];
@@ -131,9 +125,10 @@ const LayoutContent: React.FC = () => {
             </div>
           </main>
 
-          {/* Footer: Stays fixed at the bottom of the screen */}
           <footer className="flex-shrink-0">
-            <AppFooter />
+            <div className="w-full">
+              <AppFooter />
+            </div>
           </footer>
         </div>
       </div>

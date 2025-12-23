@@ -342,7 +342,7 @@ const CounterMaster: React.FC<CounterMasterProps> = ({
           <FormRow label="Counter No" required>
             <input
               type="text"
-              className="w-full h-[30px] border border-gray-300 px-2 outline-none focus:border-blue-500 rounded-sm text-sm"
+              className="w-full h-[30px] border border-gray-300 px-2 outline-none focus:border-[#194d81] rounded-sm text-sm"
               value={formData.counterNo}
               onChange={(e) => handleChange("counterNo", e.target.value)}
             />

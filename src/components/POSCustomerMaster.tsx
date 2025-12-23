@@ -18,7 +18,7 @@ import {
 // --- Imported Components ---
 import State from "./State";
 import City from "./City";
-import NameAndCodeMaster, { NameAndCodeData } from "./NameAndCodeComponent"; // Used for Territory
+import NameAndCodeMaster, { NameAndCodeData } from "./NameAndCodeComponent";
 import LoyaltyCardMaster, { LoyaltyCardData } from "./LoyaltyCardMaster";
 
 // --- Types ---
@@ -63,7 +63,7 @@ const mockData = {
   ],
   loyaltyCards: [
     {
-      name: "Gold", // Mapping 'name' for dropdown display
+      name: "Gold",
       description: "Gold Tier",
       perAmount: "100",
       calculateOn: "Total",
@@ -272,7 +272,7 @@ const POSCustomerMaster: React.FC<POSCustomerMasterProps> = ({
       className="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
       style={{ zIndex: overlayZIndex }}
     >
-      <div className="w-full max-w-[1000px] bg-white rounded-sm shadow-2xl flex flex-col max-h-[95vh] border border-gray-400">
+      <div className="w-full max-w-[1000px] bg-white rounded-sm shadow-2xl flex flex-col max-h-[95vh] border border-gray-400 h-[90vh]">
         {/* --- Header --- */}
         <div
           className="flex justify-between items-center px-4 py-2 text-white"

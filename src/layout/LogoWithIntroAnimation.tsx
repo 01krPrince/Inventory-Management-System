@@ -6,7 +6,7 @@ import logo from "../assets/logo.jpg";
 const Header: React.FC = () => {
   return (
     <motion.img
-      className="h-16 cursor-pointer"
+      className="h-auto w-auto cursor-pointer"
       src={logo}
       alt="Inventory Management System Logo"
       whileHover={{

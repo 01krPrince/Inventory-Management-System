@@ -72,7 +72,7 @@ const AttributePanel: React.FC<AttributePanelProps> = ({
         {/* --- Header --- */}
         <div className="bg-[#1e5b8f] text-white px-4 py-2 font-semibold flex justify-between items-center">
           <span>Attribute Panel</span>
-          <button onClick={onClose} className="hover:bg-blue-700 p-1 rounded">
+          <button onClick={onClose} className="hover:bg-[#3e6185] p-1 rounded">
             <X size={16} />
           </button>
         </div>
@@ -210,7 +210,7 @@ const AttributePanel: React.FC<AttributePanelProps> = ({
                       setFormData({ ...formData, barcode: e.target.value })
                     }
                   />
-                  <button className="bg-[#1a4b7c] text-white px-4 py-1 text-sm font-medium hover:bg-blue-800 transition-colors">
+                  <button className="bg-[#1a4b7c] text-white px-4 py-1 text-sm font-medium hover:bg-[#3e6185] transition-colors">
                     Auto Generate
                   </button>
                 </div>
@@ -230,13 +230,13 @@ const AttributePanel: React.FC<AttributePanelProps> = ({
         <div className="bg-[#1a4b7c] p-2 flex gap-3 mt-4">
           <button
             onClick={handleSave}
-            className="flex items-center border border-white text-white px-6 py-1 hover:bg-blue-800 text-sm font-bold"
+            className="flex items-center border border-white text-white px-6 py-1 hover:bg-[#3e6185] text-sm font-bold"
           >
             OK
           </button>
           <button
             onClick={onClose}
-            className="flex items-center border border-white text-white px-6 py-1 hover:bg-blue-800 text-sm font-bold"
+            className="flex items-center border border-white text-white px-6 py-1 hover:bg-[#3e6185] text-sm font-bold"
           >
             Exit
           </button>
