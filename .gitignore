@@ -13,7 +13,6 @@ dist-ssr
 
 src/components/ecommerce/
 src/components/form/
-src/components/function/
 
 .vscode/*
 !.vscode/extensions.json
