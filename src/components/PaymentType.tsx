@@ -57,7 +57,6 @@ const PaymentType: React.FC<PaymentTypeProps> = ({
       style={{ zIndex }}
     >
       <div className="bg-white w-full max-w-xl shadow-2xl rounded-lg overflow-hidden animate-in zoom-in-95 duration-200 h-[80vh] flex flex-col">
-        {/* --- HEADER --- */}
         <div
           className="custom-btn-primary p-4 flex justify-between items-center"
           style={{ color: COLORS.white }}
@@ -78,9 +77,7 @@ const PaymentType: React.FC<PaymentTypeProps> = ({
           </button>
         </div>
 
-        {/* --- CONTENT AREA --- */}
         <div className="overflow-y-auto max-h-[70vh]">
-          {/* Table Header */}
           <div className="grid grid-cols-2 bg-gray-100 border-b border-gray-300">
             <div className="p-3 pl-10 font-bold text-gray-700 uppercase text-[10px] tracking-widest">
               Description
@@ -90,7 +87,6 @@ const PaymentType: React.FC<PaymentTypeProps> = ({
             </div>
           </div>
 
-          {/* Table Rows */}
           {rows.map((row) => (
             <div
               key={row.id}
@@ -118,11 +114,9 @@ const PaymentType: React.FC<PaymentTypeProps> = ({
                 </div>
               </div>
 
-              {/* --- EXPANDED DROPDOWN CONTENT --- */}
               {activeRow === row.id && (
                 <div className="px-10 py-6 bg-gray-50 border-t border-gray-200 shadow-inner">
                   <div className="grid grid-cols-1 gap-4">
-                    {/* 1. UPI/CARD Sub-fields */}
                     {row.id === "upi" && (
                       <div className="grid grid-cols-2 gap-4">
                         <InputField label="Pending Amount" />
@@ -136,7 +130,6 @@ const PaymentType: React.FC<PaymentTypeProps> = ({
                       </div>
                     )}
 
-                    {/* 2. PayTM Sub-fields + Action Buttons */}
                     {row.id === "paytm" && (
                       <div className="space-y-5">
                         <div className="grid grid-cols-2 gap-4">
@@ -172,7 +165,6 @@ const PaymentType: React.FC<PaymentTypeProps> = ({
                       </div>
                     )}
 
-                    {/* 3. Loyalty Sub-fields */}
                     {row.id === "loyalty" && (
                       <div className="grid grid-cols-2 gap-4">
                         <InputField label="Redeem Points" placeholder="0" />
@@ -182,7 +174,6 @@ const PaymentType: React.FC<PaymentTypeProps> = ({
                       </div>
                     )}
 
-                    {/* 4. Cash Sub-fields */}
                     {row.id === "cash" && (
                       <div className="grid grid-cols-2 gap-4">
                         <InputField label="Pending Amount" />
@@ -195,7 +186,6 @@ const PaymentType: React.FC<PaymentTypeProps> = ({
                       </div>
                     )}
 
-                    {/* 5. Advance Sub-fields */}
                     {row.id === "advance" && (
                       <div className="grid grid-cols-2 gap-4">
                         <div className="col-span-2">
@@ -215,7 +205,6 @@ const PaymentType: React.FC<PaymentTypeProps> = ({
           ))}
         </div>
 
-        {/* --- FOOTER ACTIONS --- */}
         <div className="p-4 bg-gray-100 border-t flex gap-3">
           <button
             onClick={onClose}
@@ -248,7 +237,6 @@ const PaymentType: React.FC<PaymentTypeProps> = ({
   );
 };
 
-// Reusable Input Sub-component
 const InputField: React.FC<{
   label: string;
   placeholder?: string;

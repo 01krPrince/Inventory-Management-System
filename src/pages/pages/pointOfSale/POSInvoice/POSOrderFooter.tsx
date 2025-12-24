@@ -33,18 +33,15 @@ const POSInvoiceFooter: React.FC<InvoiceFooterProps> = ({ amount = 8500 }) => {
       className="w-full p-4 font-sans text-sm"
       style={{ backgroundColor: COLORS.white }}
     >
-      {/* --- PAYMENT POPUP COMPONENT --- */}
       <PaymentType
         isOpen={isPaymentOpen}
         onClose={() => setIsPaymentOpen(false)}
         totalAmount={Math.abs(amount)}
-        zIndex={1000} // Dynamic Z-Index
+        zIndex={1000}
       />
 
       <div className="flex flex-col lg:flex-row gap-8">
-        {/* --- LEFT SECTION (Inputs & Attachments) --- */}
         <div className="flex-1 flex flex-col gap-4">
-          {/* Remarks */}
           <div className="flex flex-col sm:flex-row gap-4">
             <label className="w-32 mt-1" style={{ color: COLORS.textPrimary }}>
               Remarks
@@ -78,7 +75,6 @@ const POSInvoiceFooter: React.FC<InvoiceFooterProps> = ({ amount = 8500 }) => {
           </div>
         </div>
 
-        {/* --- RIGHT SECTION (Totals) --- */}
         <div className="w-full lg:w-[400px] flex flex-col gap-2">
           <TotalRow label="Item Value" value="0.00" />
           <TotalRow label="Promo Discount" value="0.00" />
@@ -89,15 +85,12 @@ const POSInvoiceFooter: React.FC<InvoiceFooterProps> = ({ amount = 8500 }) => {
           <TotalRow label="Taxable" value="0.00" />
           <TotalRow label="Tax Amount" value="0.00" />
 
-          {/* DISCOUNT Dual Input */}
           <DualInputRow label="DISCOUNT" value="0.00" />
 
-          {/* DISCOUNT % Dual Input */}
           <DualInputRow label="DISCOUNT %" value="0.00" />
 
           <TotalRow label="Round Off" value="0.00" />
 
-          {/* Doc Amount */}
           <div className="grid grid-cols-[1fr_120px] gap-2 items-center mt-1">
             <label
               className="text-xs font-bold"
@@ -123,7 +116,6 @@ const POSInvoiceFooter: React.FC<InvoiceFooterProps> = ({ amount = 8500 }) => {
             </div>
           </div>
 
-          {/* Apply Coupon Code */}
           <div className="grid grid-cols-[1fr_120px] gap-2 items-center mt-1">
             <label className="text-xs" style={{ color: COLORS.textPrimary }}>
               Apply Coupon Code
@@ -141,7 +133,6 @@ const POSInvoiceFooter: React.FC<InvoiceFooterProps> = ({ amount = 8500 }) => {
             </div>
           </div>
 
-          {/* Payment Status Display */}
           <div className="grid grid-cols-[1fr_160px] gap-2 items-center mt-1">
             <label className="text-xs font-bold text-gray-800">
               Payment Status
@@ -157,10 +148,9 @@ const POSInvoiceFooter: React.FC<InvoiceFooterProps> = ({ amount = 8500 }) => {
             </div>
           </div>
 
-          {/* --- PAYMENT BUTTON (Triggers Popup) --- */}
           <div className="flex justify-end mt-2">
             <button
-              onClick={() => setIsPaymentOpen(true)} // Opens the Popup
+              onClick={() => setIsPaymentOpen(true)}
               className="custom-btn-primary text-xs font-medium px-4 py-1.5 rounded-sm shadow-sm"
               style={{ color: COLORS.white }}
             >
@@ -185,8 +175,6 @@ const POSInvoiceFooter: React.FC<InvoiceFooterProps> = ({ amount = 8500 }) => {
     </div>
   );
 };
-
-// --- Helper Components ---
 
 const TotalRow: React.FC<{ label: string; value: string }> = ({
   label,

@@ -13,7 +13,6 @@ import {
   SalesExecutiveData,
 } from "./api/salesExecutiveService";
 
-// --- Interfaces ---
 export interface BrandData {
   _id: string;
   name: string;
@@ -25,14 +24,12 @@ export interface BrandData {
 interface BrandProps {
   onClose: () => void;
   initialData?: BrandData;
-  index?: number; // Added for dynamic z-indexing
+  index?: number;
 }
 
 const Brand: React.FC<BrandProps> = ({ onClose, initialData, index = 50 }) => {
-  // Logic: Calculate Z-Index for nested components
   const overlayZIndex = index + 10;
 
-  // --- State Management ---
   const [data, setData] = useState({
     _id: "",
     code: "0029",
@@ -43,7 +40,6 @@ const Brand: React.FC<BrandProps> = ({ onClose, initialData, index = 50 }) => {
 
   const [isLoading, setIsLoading] = useState(false);
 
-  // State for Sales Executive Logic
   const [salesExecutiveList, setSalesExecutiveList] = useState<
     SalesExecutiveData[]
   >([]);
@@ -53,7 +49,6 @@ const Brand: React.FC<BrandProps> = ({ onClose, initialData, index = 50 }) => {
     SalesExecutiveData | undefined
   >(undefined);
 
-  // --- 1. Initialization Effect (Handle Edit Mode) ---
   useEffect(() => {
     if (initialData) {
       setData({
@@ -74,7 +69,6 @@ const Brand: React.FC<BrandProps> = ({ onClose, initialData, index = 50 }) => {
     }
   }, [initialData]);
 
-  // --- 2. Fetch Sales Executives ---
   const loadSalesExecutives = async () => {
     try {
       const executives = await fetchSalesExecutives();
@@ -90,14 +84,12 @@ const Brand: React.FC<BrandProps> = ({ onClose, initialData, index = 50 }) => {
     loadSalesExecutives();
   }, [isSaleExecutiveOpen]);
 
-  // --- 3. Dropdown Configuration ---
   const salesExecutiveColumns: ColumnDef<SalesExecutiveData>[] = [
     { header: "Amount Type", key: "amountType", width: "w-1/4" },
     { header: "Name", key: "name", width: "w-1/2" },
     { header: "Email", key: "email", width: "w-1/3" },
   ];
 
-  // --- 4. Image Handling ---
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -110,7 +102,6 @@ const Brand: React.FC<BrandProps> = ({ onClose, initialData, index = 50 }) => {
 
   const clearImage = () => setData((prev) => ({ ...prev, image: null }));
 
-  // --- 5. Handlers ---
   const handleOpenSalesExecutive = (e: React.MouseEvent) => {
     e.preventDefault();
     if (data.salesman) {
@@ -140,17 +131,15 @@ const Brand: React.FC<BrandProps> = ({ onClose, initialData, index = 50 }) => {
       };
 
       if (data._id) {
-        // --- UPDATE LOGIC (Edit Mode) ---
         const response = await updateItemBrand(data._id, payload);
 
         if (response.success) {
           alert("Brand Updated Successfully!");
-          onClose(); // Close the modal
+          onClose();
         } else {
           alert(`Error updating brand: ${response.message}`);
         }
       } else {
-        // --- CREATE LOGIC (New Mode) ---
         const response = await createItemBrand(payload);
 
         if (response.success) {
@@ -169,7 +158,6 @@ const Brand: React.FC<BrandProps> = ({ onClose, initialData, index = 50 }) => {
   };
 
   const handleDelete = () => {
-    // You might want to call a delete API here if data._id exists
     setData({ ...data, name: "", salesman: "", image: null });
   };
 
@@ -309,7 +297,6 @@ const Brand: React.FC<BrandProps> = ({ onClose, initialData, index = 50 }) => {
       {isSaleExecutiveOpen && (
         <div
           className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-          // Apply Dynamic Z-Index
           style={{ zIndex: overlayZIndex }}
         >
           <div className="bg-white rounded shadow-lg">

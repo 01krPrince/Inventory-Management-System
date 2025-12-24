@@ -19,7 +19,6 @@ import {
   SalesAndPurchaseGL,
 } from "./addItemMaster/api/saleAndPurchaseGL";
 
-// --- Interfaces ---
 export interface TenderTypeData {
   _id?: string;
   description: string;
@@ -35,7 +34,6 @@ interface TenderTypeMasterProps {
   index?: number;
 }
 
-// --- Static Data for Simple Dropdowns ---
 const mockData = {
   types: [
     "Cash",
@@ -48,7 +46,6 @@ const mockData = {
   ],
 };
 
-// --- Column Definition for GL Dropdown ---
 const glColumns: ColumnDef<SalesAndPurchaseGL>[] = [
   { header: "Code", key: "code", width: "w-24" },
   { header: "Name", key: "name", width: "w-full" },
@@ -60,31 +57,26 @@ const TenderTypeMaster: React.FC<TenderTypeMasterProps> = ({
   initialData,
   index = 50,
 }) => {
-  // --- Z-Index & Theme ---
   const overlayZIndex = index + 10;
   const dropdownZIndex = overlayZIndex + 20;
   const nestedModalZIndex = overlayZIndex + 30;
   const themeColor = "#0f3c63";
 
-  // --- State ---
   const [isBasicInfoOpen, setIsBasicInfoOpen] = useState(true);
   const [formData, setFormData] = useState<TenderTypeData>({
     description: "",
-    code: "0008", // Example default/auto-generated code
+    code: "0008",
     type: "Cash",
     postingGL: "",
   });
 
-  // --- GL / Chart of Accounts State ---
   const [glDataFull, setGlDataFull] = useState<SalesAndPurchaseGL[]>([]);
   const [showChartOfAccounts, setShowChartOfAccounts] = useState(false);
   const [coaFormData, setCoaFormData] = useState<SalesAndPurchaseGL | null>(
     null
   );
 
-  // --- Effect: Load Initial Data & Fetch GLs ---
   useEffect(() => {
-    // 1. Load Initial Form Data
     if (initialData) {
       setFormData(initialData);
     } else {
@@ -96,7 +88,6 @@ const TenderTypeMaster: React.FC<TenderTypeMasterProps> = ({
       });
     }
 
-    // 2. Fetch GL Data
     const loadGLData = async () => {
       try {
         const result = await fetchSalesAndPurchaseGL();
@@ -110,19 +101,16 @@ const TenderTypeMaster: React.FC<TenderTypeMasterProps> = ({
     loadGLData();
   }, [initialData]);
 
-  // --- Handlers ---
   const handleChange = (field: keyof TenderTypeData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSave = () => {
     console.log("Saving Tender Type:", formData);
-    // Add API logic here
     if (onSuccess) onSuccess();
     onClose();
   };
 
-  // --- COA (Chart of Accounts) Handlers ---
   const handleOpenCOA = () => {
     const currentValue = formData.postingGL;
     if (currentValue && currentValue.trim() !== "") {
@@ -132,17 +120,15 @@ const TenderTypeMaster: React.FC<TenderTypeMasterProps> = ({
       if (selectedItem) {
         setCoaFormData(selectedItem);
       } else {
-        // If name exists but not found in list (rare), pass as name
         setCoaFormData({ name: currentValue } as SalesAndPurchaseGL);
       }
     } else {
-      setCoaFormData(null); // Create New Mode
+      setCoaFormData(null);
     }
     setShowChartOfAccounts(true);
   };
 
   const handleSaveCOA = (savedData: SalesAndPurchaseGL) => {
-    // Update local list with new/updated GL
     setGlDataFull((prev) => {
       const exists = prev.find((item) => item.code === savedData.code);
       if (exists) {
@@ -153,12 +139,10 @@ const TenderTypeMaster: React.FC<TenderTypeMasterProps> = ({
       return [...prev, savedData];
     });
 
-    // Auto-select the saved GL
     handleChange("postingGL", savedData.name);
     setShowChartOfAccounts(false);
   };
 
-  // --- Helper Components ---
   const inputClass =
     "w-full h-[30px] border border-gray-300 rounded-sm px-2 text-[13px] focus:outline-none focus:border-[#0f3c63] text-gray-700 placeholder-gray-400";
 
@@ -186,7 +170,6 @@ const TenderTypeMaster: React.FC<TenderTypeMasterProps> = ({
       style={{ zIndex: overlayZIndex }}
     >
       <div className="w-full max-w-[550px] bg-white rounded-sm shadow-2xl flex flex-col max-h-[90vh] border border-gray-400 h-[40vh]">
-        {/* --- Header --- */}
         <div
           className="flex justify-between items-center px-4 py-2 text-white"
           style={{ backgroundColor: themeColor }}
@@ -202,10 +185,8 @@ const TenderTypeMaster: React.FC<TenderTypeMasterProps> = ({
           </button>
         </div>
 
-        {/* --- Content --- */}
         <div className="flex-1 overflow-y-auto bg-[#f8f9fa] p-3">
           <div className="bg-white border border-gray-200 shadow-sm rounded-sm">
-            {/* Section Header */}
             <button
               onClick={() => setIsBasicInfoOpen(!isBasicInfoOpen)}
               className="w-full flex justify-between items-center px-3 py-2 bg-white hover:bg-gray-50 border-b"
@@ -223,10 +204,8 @@ const TenderTypeMaster: React.FC<TenderTypeMasterProps> = ({
               </div>
             </button>
 
-            {/* Form Fields */}
             {isBasicInfoOpen && (
               <div className="p-5">
-                {/* Description */}
                 <FormRow label="Description">
                   <input
                     type="text"
@@ -239,7 +218,6 @@ const TenderTypeMaster: React.FC<TenderTypeMasterProps> = ({
                   />
                 </FormRow>
 
-                {/* Code */}
                 <FormRow label="Code">
                   <input
                     type="text"
@@ -250,7 +228,6 @@ const TenderTypeMaster: React.FC<TenderTypeMasterProps> = ({
                   />
                 </FormRow>
 
-                {/* Type */}
                 <FormRow label="Type">
                   <select
                     className={selectClass}
@@ -265,7 +242,6 @@ const TenderTypeMaster: React.FC<TenderTypeMasterProps> = ({
                   </select>
                 </FormRow>
 
-                {/* Posting GL (Using Dropdown + Edit) */}
                 <FormRow label="Posting GL">
                   <div className="flex w-full">
                     <div className="flex-1 min-w-0">
@@ -294,7 +270,6 @@ const TenderTypeMaster: React.FC<TenderTypeMasterProps> = ({
           </div>
         </div>
 
-        {/* --- Footer --- */}
         <div
           className="p-2 flex gap-2 border-t border-gray-300"
           style={{ backgroundColor: themeColor }}
@@ -322,7 +297,6 @@ const TenderTypeMaster: React.FC<TenderTypeMasterProps> = ({
         </div>
       </div>
 
-      {/* --- Nested COA Modal --- */}
       {showChartOfAccounts && (
         <div
           className="fixed inset-0 flex items-center justify-center bg-black/50 p-4"

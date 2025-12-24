@@ -27,6 +27,8 @@ import TenderType from "../pages/pages/pointOfSale/POSMaster/TenderType/TenderTy
 import LoyaltyCard from "../pages/pages/pointOfSale/POSMaster/LoyelityCard/LoyelityCard.tsx";
 import Promotions from "../pages/pages/pointOfSale/POSMaster/Promotions/Promotions.tsx";
 import POSInvoice from "../pages/pages/pointOfSale/POSInvoice/POSInvoice.tsx";
+import CustomerRecieptPayment from "../pages/pages/pointOfSale/CustomerRecieptPayment/CustomerRecieptPayment.tsx";
+import VendorDirectory from "../pages/pages/purchase/vendor/pages/Vendor.tsx";
 
 const useSidebar = () => ({
   isExpanded: false,
@@ -59,6 +61,8 @@ const ComponentMap: { [key: string]: React.FC } = {
   "/loyalty-card": LoyaltyCard,
   "/promotions": Promotions,
   "/pos-invoice": POSInvoice,
+  "/customer-receipt-payment": CustomerRecieptPayment,
+  "/vendor": VendorDirectory,
   "/fallback": () => (
     <div className="p-6 mt-6 bg-gray-100 dark:bg-gray-800 rounded-lg shadow text-center">
       <p className="text-gray-600 dark:text-gray-300 font-medium">
