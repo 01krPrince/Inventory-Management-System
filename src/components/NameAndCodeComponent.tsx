@@ -12,15 +12,34 @@ export interface NameAndCodeData {
 
 // 2. Props Interface
 interface NameAndCodeMasterProps {
-  title: string; // e.g., "Sales Executive", "Group", "Attribute"
+  title: string;
   onClose: () => void;
   onSuccess?: () => void;
   initialData?: NameAndCodeData | null;
   index?: number;
 }
 
+// --- Helper Component for Layout (MOVED OUTSIDE) ---
+const FormRow = ({
+  label,
+  children,
+  required,
+}: {
+  label: string;
+  children: React.ReactNode;
+  required?: boolean;
+}) => (
+  <div className="grid grid-cols-12 gap-2 items-center mb-4">
+    <div className="col-span-3 text-gray-700 font-medium text-[13px]">
+      {label}
+      {required && <span className="text-red-500 ml-1">*</span>}
+    </div>
+    <div className="col-span-9 flex items-center">{children}</div>
+  </div>
+);
+
 const NameAndCodeMaster: React.FC<NameAndCodeMasterProps> = ({
-  title, // Dynamic Title
+  title,
   onClose,
   onSuccess,
   initialData,
@@ -35,7 +54,7 @@ const NameAndCodeMaster: React.FC<NameAndCodeMasterProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
 
   const [formData, setFormData] = useState<NameAndCodeData>({
-    code: "0001", // Default auto-generated code logic would go here
+    code: "0001",
     name: "",
   });
 
@@ -95,29 +114,9 @@ const NameAndCodeMaster: React.FC<NameAndCodeMasterProps> = ({
     }
   };
 
-  // --- Helper Component for Layout ---
-  const FormRow = ({
-    label,
-    children,
-    required,
-  }: {
-    label: string;
-    children: React.ReactNode;
-    required?: boolean;
-  }) => (
-    <div className="grid grid-cols-12 gap-2 items-center mb-4">
-      <div className="col-span-3 text-gray-700 font-medium text-[13px]">
-        {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
-      </div>
-      <div className="col-span-9 flex items-center">{children}</div>
-    </div>
-  );
-
   return (
     <div
       className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-      // Apply Dynamic Z-Index to the Wrapper
       style={{ zIndex: overlayZIndex }}
     >
       <div className="w-full max-w-md bg-white border border-gray-300 shadow-2xl rounded-sm overflow-hidden flex flex-col max-h-[90vh]">
@@ -127,7 +126,6 @@ const NameAndCodeMaster: React.FC<NameAndCodeMasterProps> = ({
           style={{ backgroundColor: themeColor }}
         >
           <span className="font-semibold tracking-wide text-sm">
-            {/* Dynamic Title Logic */}
             {initialData ? `Edit ${title}` : `Create ${title}`}
           </span>
           <button
@@ -159,6 +157,8 @@ const NameAndCodeMaster: React.FC<NameAndCodeMasterProps> = ({
               value={formData.name}
               onChange={(e) => handleChange("name", e.target.value)}
               placeholder={`Enter ${title} Name`}
+              // Added autoFocus to help UX, though not strictly required for the fix
+              autoFocus={!initialData}
             />
           </FormRow>
         </div>
