@@ -6,17 +6,15 @@ import InterBranchTransferForm, {
 import OrderTable from "./OrderTable";
 import AttachmentSection from "../../../../components/AttachmentSection";
 import { COLORS } from "../../../../constants/colors";
-// Import Logistics and its Type
 import Logistics, { LogisticsData } from "./Logistics";
 import { LocationMaster } from "../../../../components/LocationMaster";
 import { ArrowLeft } from "lucide-react";
 
-// --- 1. Import Service and Types ---
 import {
   interBranchService,
   CreateInterBranchPayload,
   InterBranchItem,
-} from "./api/interBranchTransferService"; // Adjust path as needed
+} from "./api/interBranchTransferService";
 
 interface ModalProps {
   isOpen?: boolean;
@@ -45,33 +43,31 @@ const InterBranchTransfer: React.FC<ModalProps> = ({
     postingGL: "",
   });
 
-  // --- 2. LOGISTICS STATE (FIXED) ---
   const [logisticsData, setLogisticsData] = useState<LogisticsData>({
     destination: "",
     shippingMode: "Road",
     shippingCompany: "",
-    shippingCompanyAbout: "", // ADDED: Required by new interface
+    shippingCompanyAbout: "",
     shippingTrackingNo: "",
     shippingDate: new Date().toISOString().split("T")[0],
     shippingCharges: "0",
     vehicleNo: "",
-    chargesType: "Paid", // FIXED: Renamed from 'chargeType' to 'chargesType'
+    chargesType: "Paid",
     documentThrough: "",
     noOfPackets: "0",
     weight: "0",
     distance: "0",
     eWayInvoiceNo: "",
     eWayInvoiceDate: "",
-    eWayCancelDate: null, // Set to null initially
+    eWayCancelDate: null,
     irnNo: "",
     qrCode: "",
-    irnCancelDate: null, // Set to null initially
+    irnCancelDate: null,
     irnCancelReason: "",
     acknowledgementNo: "",
     acknowledgementDate: "",
   });
 
-  // --- 3. OTHER STATES ---
   const [isOverlayOpen, setIsOverlayOpen] = useState(false);
   const [showLocationMaster, setShowLocationMaster] = useState(false);
   const [rows, setRows] = useState<string[]>([]);
@@ -82,9 +78,7 @@ const InterBranchTransfer: React.FC<ModalProps> = ({
     remarks: "",
   });
 
-  // --- 4. FINAL SUBMIT HANDLER ---
   const handleSave = async () => {
-    // 1. Basic Validation
     if (!formData.transferNo || !formData.store || !formData.toStore) {
       alert(
         "Please fill in all required header fields (Transfer No, From Store, To Store)."
@@ -100,7 +94,6 @@ const InterBranchTransfer: React.FC<ModalProps> = ({
     setIsSubmitting(true);
 
     try {
-      // 2. Transform Table Data (Record<string, RowData>) -> Array of Items
       const formattedItems: InterBranchItem[] = Object.values(tableData).map(
         (row: any) => ({
           itemcode: row.itemcode || "",
@@ -211,7 +204,7 @@ const InterBranchTransfer: React.FC<ModalProps> = ({
   return (
     <div
       style={{ backgroundColor: COLORS.background }}
-      className="flex flex-col h-screen bg-gray-100 overflow-hidden"
+      className="flex flex-col h-auto bg-gray-100 overflow-hidden"
     >
       {/* Header (Fixed at top) */}
       {!isOverlayOpen && (

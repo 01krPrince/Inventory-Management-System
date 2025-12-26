@@ -332,7 +332,6 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
   return (
     <div
       className="fixed inset-0 flex items-center justify-center bg-black/50 p-4"
-      // Use Dynamic Z-Index
       style={{ zIndex: overlayZIndex }}
     >
       <div className="bg-white w-full max-w-2xl rounded-sm shadow-xl flex flex-col max-h-[90vh]">
@@ -641,7 +640,6 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
         </div>
       </div>
 
-      {/* --- COA GROUPS MODAL INTEGRATION --- */}
       {isCoaGroupModalOpen && (
         <div
           className="fixed inset-0 flex items-center justify-center bg-transparent backdrop-blur-sm p-4"

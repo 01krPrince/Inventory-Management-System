@@ -332,7 +332,7 @@ interface AddNewCustomerProps {
   index?: number;
 }
 
-const CrudCustomer: React.FC<AddNewCustomerProps> = ({
+const CrudVendor: React.FC<AddNewCustomerProps> = ({
   onClose,
   initialData,
   onSuccess,
@@ -1552,4 +1552,4 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
   );
 };
 
-export default CrudCustomer;
+export default CrudVendor;

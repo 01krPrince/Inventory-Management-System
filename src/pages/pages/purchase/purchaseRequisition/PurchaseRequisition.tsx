@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import StockAdjustmentFormHeader from "./StockAdjustmentFormHeader";
-import StockAdjustmentForm, {
+import PurchaseRequisitionFormHeader from "./PurchaseRequisitionFormHeader";
+import PurchaseRequisitionForm, {
   StockAdjustmentHeaderData,
-} from "./StockAdjustmentForm";
+} from "./PurchaseRequisitionForm";
 import OrderTable from "./OrderTable";
 import AttachmentSection from "../../../../components/AttachmentSection";
 import { COLORS } from "../../../../constants/colors";
@@ -23,7 +23,7 @@ interface FooterData {
   remarks: string;
 }
 
-const StockAdjustment: React.FC = () => {
+const PurchaseRequisition: React.FC = () => {
   const [isOverlayOpen, setIsOverlayOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -150,7 +150,7 @@ const StockAdjustment: React.FC = () => {
   return (
     <div
       style={{ backgroundColor: COLORS.background }}
-      className="flex flex-col h-auto bg-gray-100 overflow-hidden relative"
+      className="flex flex-col h-screen bg-gray-100 overflow-hidden relative"
     >
       {/* Loading Overlay */}
       {isSubmitting && (
@@ -162,12 +162,12 @@ const StockAdjustment: React.FC = () => {
       )}
 
       {!isOverlayOpen && (
-        <StockAdjustmentFormHeader onCancel={onManualCancel} />
+        <PurchaseRequisitionFormHeader onCancel={onManualCancel} />
       )}
 
       <div className="flex-1 overflow-auto p-4">
         <div className="flex flex-col gap-4">
-          <StockAdjustmentForm
+          <PurchaseRequisitionForm
             themeColor={COLORS.primary}
             onOverlayChange={(isOpen) => setIsOverlayOpen(isOpen)}
             data={formData}
@@ -207,4 +207,4 @@ const StockAdjustment: React.FC = () => {
   );
 };
 
-export default StockAdjustment;
+export default PurchaseRequisition;

@@ -10,9 +10,12 @@ import {
   ChevronUp,
 } from "lucide-react";
 
+// --- Import Custom Dropdown ---
+import Dropdown, { ColumnDef } from "./Dropdown";
+
 // --- Interfaces ---
 export interface LoyaltyCardData {
-  _id?: string; // Added ID for update logic
+  _id?: string;
   description: string;
   perAmount: string;
   calculateOn: string;
@@ -25,8 +28,8 @@ export interface LoyaltyCardData {
 
 interface LoyaltyCardMasterProps {
   onClose: () => void;
-  onSuccess?: () => void; // Callback for refresh after save
-  initialData?: LoyaltyCardData | null; // Allow passing existing data
+  onSuccess?: () => void;
+  initialData?: LoyaltyCardData | null;
   index?: number;
 }
 
@@ -38,6 +41,15 @@ const LoyaltyCardMaster: React.FC<LoyaltyCardMasterProps> = ({
 }) => {
   const overlayZIndex = index + 10;
   const themeColor = "#0f3c63";
+
+  // --- Dropdown Data & Columns ---
+  // 1. Data Options
+  const calculateOnOptions = [{ name: "Taxable" }, { name: "Total Amount" }];
+
+  // 2. Column Definition
+  const simpleColumns: ColumnDef<{ name: string }>[] = [
+    { header: "Name", key: "name" },
+  ];
 
   // --- State ---
   const [formData, setFormData] = useState<LoyaltyCardData>({
@@ -56,10 +68,8 @@ const LoyaltyCardMaster: React.FC<LoyaltyCardMasterProps> = ({
   // --- Effect: Load Initial Data ---
   useEffect(() => {
     if (initialData) {
-      // If editing, populate form with passed data
       setFormData(initialData);
     } else {
-      // If creating new, reset to defaults
       setFormData({
         description: "",
         perAmount: "0.00",
@@ -80,7 +90,6 @@ const LoyaltyCardMaster: React.FC<LoyaltyCardMasterProps> = ({
 
   const handleSave = () => {
     console.log("Saving Loyalty Card Data:", formData);
-    // Add your API update/create logic here
     if (onSuccess) onSuccess();
     onClose();
   };
@@ -137,7 +146,9 @@ const LoyaltyCardMaster: React.FC<LoyaltyCardMasterProps> = ({
               className="w-full flex justify-between items-center px-3 py-2 bg-white hover:bg-gray-50 border-b"
             >
               <div className="flex items-center gap-2 text-[#0f3c63] font-bold text-sm">
-                <FileText size={16} />
+                <div className="w-4">
+                  <FileText size={16} />
+                </div>
                 <span>Basic Information</span>
               </div>
               <div className="bg-gray-700 text-white rounded-full p-0.5">
@@ -183,18 +194,19 @@ const LoyaltyCardMaster: React.FC<LoyaltyCardMasterProps> = ({
                   </div>
                 </FormRow>
 
-                {/* Calculate On */}
+                {/* Calculate On (USING CUSTOM DROPDOWN) */}
                 <FormRow label="Calculate On">
-                  <select
-                    className={inputClass}
+                  <Dropdown
+                    data={calculateOnOptions}
+                    columns={simpleColumns}
                     value={formData.calculateOn}
-                    onChange={(e) =>
-                      handleChange("calculateOn", e.target.value)
+                    valueKey="name"
+                    onChange={(item) =>
+                      handleChange("calculateOn", item?.name || "")
                     }
-                  >
-                    <option>Taxable</option>
-                    <option>Total Amount</option>
-                  </select>
+                    placeholder="Select Calculation Base"
+                    zIndex={overlayZIndex + 50}
+                  />
                 </FormRow>
 
                 {/* No. of Points */}
