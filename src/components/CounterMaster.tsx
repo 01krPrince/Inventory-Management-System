@@ -201,7 +201,6 @@ const CounterMaster: React.FC<CounterMasterProps> = ({
   };
 
   // --- Ledger / Group Handler ---
-  // This uses the Generic NameAndCodeMaster component
   const handleLedgerForm = () => {
     if (formData.group) {
       // Edit Mode

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import POSOrderHeader from "./POSOrderHeader";
 import POSOrderForm from "./POSOrderForm";
-import OrderTable from "./OrderTable";
+import OrderTable from "../../purchase/purchaseOrder/OrderTable";
 import POSOrderFooter from "./POSOrderFooter";
 import { COLORS } from "../../../../constants/colors";
 import InvoiceA4 from "../../../../components/invoiceDownload/InvoiceA4";

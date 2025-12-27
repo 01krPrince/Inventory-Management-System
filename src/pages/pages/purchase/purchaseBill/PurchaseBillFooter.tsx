@@ -75,7 +75,7 @@ const TotalRow: React.FC<{ label: string; value: string }> = ({
 
 // --- Main Component ---
 
-const PurchaseOrderFooter: React.FC<InvoiceFooterProps> = ({
+const PurchaseBillFooter: React.FC<InvoiceFooterProps> = ({
   amount = -8500,
 }) => {
   // Logic for Payment Status
@@ -110,6 +110,45 @@ const PurchaseOrderFooter: React.FC<InvoiceFooterProps> = ({
     { id: "2", name: "Bank Account" },
   ];
 
+  // const priceCategories = [
+  //   {
+  //     id: "pc_001",
+  //     name: "Standard Retail",
+  //     code: "RET",
+  //     description: "Default price for walk-in customers",
+  //   },
+  //   {
+  //     id: "pc_002",
+  //     name: "Wholesale",
+  //     code: "WHL",
+  //     description: "Bulk buyers (Min. 10 units)",
+  //   },
+  //   {
+  //     id: "pc_003",
+  //     name: "Distributor",
+  //     code: "DST",
+  //     description: "Registered regional distributors",
+  //   },
+  //   {
+  //     id: "pc_004",
+  //     name: "VIP / Loyalty",
+  //     code: "VIP",
+  //     description: "Gold membership holders",
+  //   },
+  //   {
+  //     id: "pc_005",
+  //     name: "Staff / Internal",
+  //     code: "INT",
+  //     description: "Employee purchase price",
+  //   },
+  //   {
+  //     id: "pc_006",
+  //     name: "Clearance",
+  //     code: "CLR",
+  //     description: "End of season stock",
+  //   },
+  // ];
+
   return (
     <div
       className="w-full p-4 font-sans text-sm"
@@ -141,6 +180,46 @@ const PurchaseOrderFooter: React.FC<InvoiceFooterProps> = ({
             </div>
           </div>
 
+          <div className="grid grid-cols-[1fr_60px_120px] gap-2 items-center">
+            <label
+              className="text-xs uppercase"
+              style={{ color: COLORS.textSecondary }}
+            >
+              Paid Amount
+            </label>
+            <input
+              type="text"
+              defaultValue="0"
+              className="border rounded-sm px-2 py-1 text-right text-xs outline-none custom-input"
+              style={{
+                borderColor: COLORS.borderDark,
+                color: COLORS.textPrimary,
+              }}
+            />
+          </div>
+
+          {/* Price Category */}
+          <div className="grid grid-cols-12 gap-2 items-center">
+            <div className="col-span-4">
+              <Label>Price Category</Label>
+            </div>
+            <div className="col-span-8">
+              <InputGroup>
+                <Dropdown<LedgerOption>
+                  data={ledgerData}
+                  columns={ledgerColumns}
+                  value={""}
+                  valueKey="name"
+                  placeholder="Select..."
+                  onChange={(val: any) =>
+                    handleFieldChange("priceCategory", val)
+                  }
+                />
+                <ActionBtn icon={<EditIcon size={14} />} />
+              </InputGroup>
+            </div>
+          </div>
+
           {/* --- Attachment Section --- */}
           <div className="flex flex-col sm:flex-row gap-4 mt-2">
             <label className="w-32 pt-2" style={{ color: COLORS.textPrimary }}>
@@ -167,64 +246,6 @@ const PurchaseOrderFooter: React.FC<InvoiceFooterProps> = ({
                 color: COLORS.textPrimary,
               }}
             />
-          </div>
-
-          <div className="grid grid-cols-[1fr_60px_120px] gap-2 items-center">
-            <label
-              className="text-xs uppercase"
-              style={{ color: COLORS.textSecondary }}
-            >
-              Advance Amount (% & ₹)
-            </label>
-            <input
-              type="text"
-              defaultValue="0"
-              className="border rounded-sm px-2 py-1 text-right text-xs outline-none custom-input"
-              style={{
-                borderColor: COLORS.borderDark,
-                color: COLORS.textPrimary,
-              }}
-            />
-            <div className="relative">
-              <span
-                className="absolute left-2 top-1/2 -translate-y-1/2 text-xs"
-                style={{ color: COLORS.textMuted }}
-              >
-                ₹
-              </span>
-              <input
-                type="text"
-                defaultValue="0.00"
-                readOnly
-                className="w-full border rounded-sm py-1 pl-5 pr-2 text-right text-xs outline-none"
-                style={{
-                  backgroundColor: COLORS.background,
-                  borderColor: COLORS.borderDark,
-                  color: COLORS.textSecondary,
-                }}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-12 gap-2 items-center">
-            <div className="col-span-4">
-              <Label>Advance Ledger</Label>
-            </div>
-            <div className="col-span-8">
-              <InputGroup>
-                <Dropdown<LedgerOption>
-                  data={ledgerData}
-                  columns={ledgerColumns}
-                  value={""}
-                  valueKey="name"
-                  placeholder="Select..."
-                  onChange={(val: any) =>
-                    handleFieldChange("priceCategory", val)
-                  }
-                />
-                <ActionBtn icon={<EditIcon size={14} />} />
-              </InputGroup>
-            </div>
           </div>
         </div>
 
@@ -424,4 +445,4 @@ const PurchaseOrderFooter: React.FC<InvoiceFooterProps> = ({
   );
 };
 
-export default PurchaseOrderFooter;
+export default PurchaseBillFooter;

@@ -31,6 +31,7 @@ import CustomerRecieptPayment from "../pages/pages/pointOfSale/CustomerRecieptPa
 import VendorDirectory from "../pages/pages/purchase/vendor/pages/Vendor.tsx";
 import PurchaseRequisition from "../pages/pages/purchase/purchaseRequisition/PurchaseRequisition.tsx";
 import PurchaseOrder from "../pages/pages/purchase/purchaseOrder/PurchaseOrder.tsx";
+import PurchaseBill from "../pages/pages/purchase/purchaseBill/PurchaseBill.tsx";
 
 const useSidebar = () => ({
   isExpanded: false,
@@ -67,6 +68,7 @@ const ComponentMap: { [key: string]: React.FC } = {
   "/vendor": VendorDirectory,
   "/purchase-requisition": PurchaseRequisition,
   "/purchase-order": PurchaseOrder,
+  "/purchase-bill": PurchaseBill,
   "/fallback": () => (
     <div className="p-6 mt-6 bg-gray-100 dark:bg-gray-800 rounded-lg shadow text-center">
       <p className="text-gray-600 dark:text-gray-300 font-medium">

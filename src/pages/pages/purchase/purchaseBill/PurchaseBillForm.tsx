@@ -181,7 +181,7 @@ interface POSOrderFormProps {
   themeColor?: string;
 }
 
-const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
+const PurchaseBillForm: React.FC<POSOrderFormProps> = ({
   themeColor = "#0f3c63",
 }) => {
   // --- UI State ---
@@ -264,7 +264,7 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
   };
 
   const handleLocationSuccess = async () => {
-    await loadLocations(); // Reload the dropdown data
+    await loadLocations();
   };
 
   const handleLocationSelect = (locationName: string) => {
@@ -272,19 +272,15 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
     setIsLocationMasterOpen(false);
   };
 
-  // --- Vendor Handlers (NEW LOGIC) ---
   const handleVendorAction = () => {
     const selectedVendorName = formData.vendor;
 
     if (selectedVendorName) {
-      // 1. EDIT MODE: Find the vendor object from the list based on name
       const vendorData = mockData.vendors.find(
         (v) => v.name === selectedVendorName
       );
-      // Pass the found object, or null if not found (fallback to create)
       setEditingVendor(vendorData || null);
     } else {
-      // 2. CREATE MODE: No vendor selected
       setEditingVendor(null);
     }
 
@@ -326,6 +322,24 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
               <Label>GST Type</Label>
+            </div>
+            <div className="col-span-8">
+              <Dropdown
+                data={mockData.gstTypes}
+                columns={defaultColumns}
+                value={formData.gstType}
+                valueKey="name"
+                onChange={(item) =>
+                  handleFieldChange("gstType", item?.name || "")
+                }
+              />
+            </div>
+          </div>
+
+          {/* Cash/Credit */}
+          <div className="grid grid-cols-12 gap-2 items-center">
+            <div className="col-span-4">
+              <Label>Cash/Credit</Label>
             </div>
             <div className="col-span-8">
               <Dropdown
@@ -404,21 +418,6 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
             </div>
           </div>
 
-          {/* Delivery Date */}
-          <div className="grid grid-cols-12 gap-2 items-center">
-            <div className="col-span-4">
-              <Label required>Delivery Date</Label>
-            </div>
-            <div className="col-span-8">
-              <DateInput
-                value={formData.deliveryDate}
-                onChange={(e) =>
-                  handleFieldChange("deliveryDate", e.target.value)
-                }
-              />
-            </div>
-          </div>
-
           {/* Price Category */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
@@ -449,23 +448,38 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
 
         {/* === MIDDLE COLUMN === */}
         <div className="col-span-4 space-y-2">
-          {/* Order Date */}
+          {/* Date */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
-              <Label required>Order Date</Label>
+              <Label required>Date</Label>
             </div>
             <div className="col-span-8">
               <DateInput
-                value={formData.orderDate}
-                onChange={(e) => handleFieldChange("orderDate", e.target.value)}
+                value={formData.deliveryDate}
+                onChange={(e) =>
+                  handleFieldChange("deliveryDate", e.target.value)
+                }
               />
             </div>
           </div>
 
-          {/* Order No */}
+          {/* Invoice No */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
-              <Label required>Order No</Label>
+              <Label required>Invoice No</Label>
+            </div>
+            <div className="col-span-8">
+              <Input
+                value={formData.orderNo}
+                onChange={(e) => handleFieldChange("orderNo", e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Supplier Inv No */}
+          <div className="grid grid-cols-12 gap-2 items-center">
+            <div className="col-span-4">
+              <Label required>Supplier Inv No</Label>
             </div>
             <div className="col-span-8">
               <Input
@@ -476,7 +490,7 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
           </div>
 
           {/* Ref No */}
-          <div className="grid grid-cols-12 gap-2 items-center">
+          {/* <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
               <Label>Ref No</Label>
             </div>
@@ -486,12 +500,12 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
                 onChange={(e) => handleFieldChange("refNo", e.target.value)}
               />
             </div>
-          </div>
+          </div> */}
 
-          {/* Ref Date */}
+          {/* Supplier Inv Date */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
-              <Label required>Ref.Date</Label>
+              <Label required>Supplier Inv Date</Label>
             </div>
             <div className="col-span-8">
               <DateInput
@@ -592,6 +606,21 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
                   </InputGroup>
                 </div>
               </div>
+
+              {/* eCommerce Inv No */}
+              <div className="flex items-center gap-2 mb-2">
+                <span className="w-24 text-[13px] text-gray-700 shrink-0">
+                  eCommerce Inv No
+                </span>
+                <div className="w-full">
+                  <Input
+                    value={formData.contactPerson}
+                    onChange={(e) =>
+                      handleFieldChange("contactPerson", e.target.value)
+                    }
+                  />
+                </div>
+              </div>
             </AccordionSection>
 
             {/* Delivery At Accordion */}
@@ -660,6 +689,20 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
                 </InputGroup>
               </div>
             </div>
+            {/* Due Date */}
+            <div className="grid grid-cols-12 gap-2 items-center">
+              <div className="col-span-4">
+                <Label required>Due Date</Label>
+              </div>
+              <div className="col-span-8">
+                <DateInput
+                  value={formData.deliveryDate}
+                  onChange={(e) =>
+                    handleFieldChange("deliveryDate", e.target.value)
+                  }
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -712,4 +755,4 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
   );
 };
 
-export default PurchaseOrderForm;
+export default PurchaseBillForm;

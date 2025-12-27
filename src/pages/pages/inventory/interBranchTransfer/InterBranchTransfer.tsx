@@ -3,7 +3,7 @@ import InterBranchTransferHeader from "./InterBranchTransferHeader";
 import InterBranchTransferForm, {
   InterBranchTransferData,
 } from "./InterBranchTransferForm";
-import OrderTable from "./OrderTable";
+import OrderTable from "../stockAdjustment/OrderTable";
 import AttachmentSection from "../../../../components/AttachmentSection";
 import { COLORS } from "../../../../constants/colors";
 import Logistics, { LogisticsData } from "./Logistics";

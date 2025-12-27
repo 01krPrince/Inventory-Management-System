@@ -12,7 +12,6 @@ import CounterMaster from "../../../../components/CounterMaster";
 import SalesExecutiveMaster from "../../../../components/SalesExecutiveMaster";
 import TenderTypeMaster from "../../../../components/TenderTypeMaster";
 import State from "../../../../components/State";
-// --- 1. Types & Interfaces ---
 
 interface DropdownItem {
   name: string;
@@ -67,8 +66,6 @@ const mockData: MockData = {
   shipToOptions: ["Warehouse A", "Warehouse B", "Store Front"],
 };
 
-// --- 2. Helper Components ---
-
 const Label: React.FC<{ children: React.ReactNode; required?: boolean }> = ({
   children,
   required,
@@ -86,7 +83,7 @@ interface InputProps {
   value?: string;
   placeholder?: string;
   readOnly?: boolean;
-  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void; // Added onChange type
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 const Input: React.FC<InputProps> = ({
@@ -102,7 +99,7 @@ const Input: React.FC<InputProps> = ({
     className={`w-full h-[30px] border border-gray-300 rounded-sm px-2 text-[13px] text-gray-700 focus:outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)] ${
       readOnly ? "bg-gray-100 text-gray-500 cursor-not-allowed" : "bg-white"
     }`}
-    value={value} // Changed from defaultValue to value for controlled input
+    value={value}
     placeholder={placeholder}
   />
 );
@@ -149,8 +146,6 @@ const AccordionSection: React.FC<{
   );
 };
 
-// --- 3. Main Form Component ---
-
 interface SalesInvoiceFormProps {
   themeColor?: string;
 }
@@ -162,15 +157,14 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
   const [isShipToOpen, setShipToOpen] = useState<boolean>(false);
   const [isCustomerOpen, setIsCustomerOpen] = useState<boolean>(false);
 
-  // --- Modal States ---
   const [isCounterMasterOpen, setIsCounterMasterOpen] = useState(false);
   const [isStateOpen, setIsStateOpen] = useState(false);
 
   const [isSalesExecutiveMasterOpen, setIsSalesExecutiveMasterOpen] =
     useState(false);
   const [isTenderTypeOpen, setIsTenderTypeOpen] = useState(false);
-  const overlayZIndex = 10; // For this modal wrapper
-  const nestedModalZIndex = overlayZIndex + 20; // For nested modals (Location, Customer, Ledger, POSCustomer)
+  const overlayZIndex = 10;
+  const nestedModalZIndex = overlayZIndex + 20;
 
   const [formData, setFormData] = useState({
     counter: "BillOfSupply",
@@ -179,7 +173,6 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
     advanceTender: "",
     state: "",
     city: "",
-    // --- Added Date Fields ---
     orderDate: "",
     deliveryDate: "",
     refDate: "",
@@ -213,21 +206,18 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
       style={themeStyles}
       className="bg-white rounded border border-gray-200 p-5 relative"
     >
-      {/* --- Counter Master Modal --- */}
       {isCounterMasterOpen && (
         <CounterMaster onClose={() => setIsCounterMasterOpen(false)} />
       )}
 
       {isStateOpen && <State onClose={() => setIsStateOpen(false)} />}
 
-      {/* --- Sales Executive Master Modal --- */}
       {isSalesExecutiveMasterOpen && (
         <SalesExecutiveMaster
           onClose={() => setIsSalesExecutiveMasterOpen(false)}
         />
       )}
 
-      {/* --- Tender Type Master Modal --- */}
       {isTenderTypeOpen && (
         <TenderTypeMaster
           onClose={() => setIsTenderTypeOpen(false)}
@@ -236,9 +226,7 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
       )}
 
       <div className="grid grid-cols-12 gap-8">
-        {/* === LEFT COLUMN (General Info) === */}
         <div className="col-span-4 space-y-1">
-          {/* 1. COUNTER (Uses Dropdown) */}
           <div className="grid grid-cols-12 gap-2">
             <div className="col-span-4">
               <Label>Counter</Label>
@@ -255,7 +243,6 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
                   }
                   placeholder="Select Counter..."
                 />
-                {/* Trigger Counter Master Popup */}
                 <ActionBtn
                   icon={<EditIcon size={16} />}
                   onClick={() => setIsCounterMasterOpen(true)}
@@ -264,22 +251,18 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
             </div>
           </div>
 
-          {/* Order Date */}
           <div className="grid grid-cols-12 gap-2">
             <div className="col-span-4">
               <Label>Order Date</Label>
             </div>
             <div className="col-span-8">
               <DateInput
-                value={formData.orderDate} // FIXED: Connected to state
-                onChange={
-                  (e) => handleFieldChange("orderDate", e.target.value) // FIXED: Correct key
-                }
+                value={formData.orderDate}
+                onChange={(e) => handleFieldChange("orderDate", e.target.value)}
               />
             </div>
           </div>
 
-          {/* Order No */}
           <div className="grid grid-cols-12 gap-2">
             <div className="col-span-4">
               <Label required>Order No</Label>
@@ -289,7 +272,6 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
             </div>
           </div>
 
-          {/* Customer */}
           <div className="grid grid-cols-12 gap-2">
             <div className="col-span-4">
               <Label required>Customer</Label>
@@ -302,7 +284,6 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
             </div>
           </div>
 
-          {/* 2. SALESMAN */}
           <div className="grid grid-cols-12 gap-2">
             <div className="col-span-4">
               <Label>Salesman</Label>
@@ -319,7 +300,6 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
                   }
                   placeholder="Select Salesman..."
                 />
-                {/* Trigger Sales Executive Master Popup */}
                 <ActionBtn
                   icon={<EditIcon size={16} />}
                   onClick={() => setIsSalesExecutiveMasterOpen(true)}
@@ -328,7 +308,6 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
             </div>
           </div>
 
-          {/* 3. PAYMENT MODE */}
           <div className="grid grid-cols-12 gap-2">
             <div className="col-span-4">
               <Label>Payment Mode</Label>
@@ -350,53 +329,46 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
           </div>
         </div>
 
-        {/* === MIDDLE COLUMN (Details) === */}
         <div className="col-span-4 space-y-1">
-          {/* Delivery Date */}
           <div className="grid grid-cols-12 gap-2">
             <div className="col-span-4">
               <Label required>Delivery Date</Label>
             </div>
             <div className="col-span-8">
               <DateInput
-                value={formData.deliveryDate} // FIXED: Connected to state
-                onChange={
-                  (e) => handleFieldChange("deliveryDate", e.target.value) // FIXED: Correct key
+                value={formData.deliveryDate}
+                onChange={(e) =>
+                  handleFieldChange("deliveryDate", e.target.value)
                 }
               />
             </div>
           </div>
 
-          {/* Ref No */}
           <div className="grid grid-cols-12 gap-2">
             <div className="col-span-4">
               <Label>Ref No</Label>
             </div>
             <div className="col-span-8">
               <Input
-                value={formData.refNo} // FIXED: Connected to state
+                value={formData.refNo}
                 onChange={(e) => handleFieldChange("refNo", e.target.value)}
               />
             </div>
           </div>
 
-          {/* Ref Date */}
           <div className="grid grid-cols-12 gap-2">
             <div className="col-span-4">
               <Label>Ref.Date</Label>
             </div>
             <div className="col-span-8">
               <DateInput
-                value={formData.refDate} // FIXED: Connected to state
-                onChange={
-                  (e) => handleFieldChange("refDate", e.target.value) // FIXED: Correct key
-                }
+                value={formData.refDate}
+                onChange={(e) => handleFieldChange("refDate", e.target.value)}
               />
             </div>
           </div>
 
           <div className="mt-auto pt-4 space-y-1">
-            {/* 4. ADVANCE TENDER A/C */}
             <div className="grid grid-cols-12 gap-2 items-center">
               <div className="col-span-4">
                 <Label>Advance Tender A/c</Label>
@@ -413,7 +385,6 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
                     }
                     placeholder="Select Account..."
                   />
-                  {/* Trigger Tender Type Master Popup */}
                   <ActionBtn
                     icon={<EditIcon size={16} />}
                     onClick={() => setIsTenderTypeOpen(true)}
@@ -422,7 +393,6 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
               </div>
             </div>
 
-            {/* Advance amount */}
             <div className="grid grid-cols-12 gap-2 items-center">
               <div className="col-span-4">
                 <Label>Advance amount</Label>
@@ -434,16 +404,13 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
           </div>
         </div>
 
-        {/* === RIGHT COLUMN (Address & Payment) === */}
         <div className="col-span-4 flex flex-col min-h-full">
-          {/* Customer Accordion */}
           <AccordionSection
             title="Customer"
             isOpen={isCustomerOpen}
             onToggle={() => setIsCustomerOpen(!isCustomerOpen)}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-3 text-sm text-gray-700">
-              {/* Row 1 */}
               <div className="flex gap-2">
                 <span className="font-medium">Name:</span>
                 <span>AMIT</span>
@@ -464,7 +431,6 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
                 <span>258</span>
               </div>
 
-              {/* Row 2 */}
               <div className="flex gap-2">
                 <span className="font-medium">Phone:</span>
                 <span>9140712317</span>
@@ -475,7 +441,6 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
                 <span>-</span>
               </div>
 
-              {/* Row 3 */}
               <div className="flex gap-2">
                 <span className="font-medium">DOB:</span>
                 <span>-</span>
@@ -486,7 +451,6 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
                 <span>-</span>
               </div>
 
-              {/* Row 4 */}
               <div className="flex gap-2">
                 <span className="font-medium">Balance Point:</span>
                 <span>0</span>
@@ -499,7 +463,6 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
             </div>
           </AccordionSection>
 
-          {/* Bill To Accordion */}
           <AccordionSection
             title="Bill To"
             isOpen={isBillToOpen}
@@ -511,7 +474,6 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
             />
           </AccordionSection>
 
-          {/* Ship To Accordion */}
           <AccordionSection
             title="Ship To"
             isOpen={isShipToOpen}

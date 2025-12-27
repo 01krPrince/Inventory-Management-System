@@ -218,16 +218,6 @@ const TenderTypeMaster: React.FC<TenderTypeMasterProps> = ({
                   />
                 </FormRow>
 
-                <FormRow label="Code">
-                  <input
-                    type="text"
-                    className={inputClass}
-                    value={formData.code}
-                    readOnly
-                    onChange={(e) => handleChange("code", e.target.value)}
-                  />
-                </FormRow>
-
                 <FormRow label="Type">
                   <select
                     className={selectClass}

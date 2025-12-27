@@ -40,23 +40,18 @@ const Transporter: React.FC<ModalProps> = ({
   initialData,
   onSuccess,
 }) => {
-  // --- Local State for Form ---
-  // We align this state with the Payload required by the API
   const [formData, setFormData] = useState<TransporterPayload>({
     name: "",
     gstNo: "",
-    websiteUrl: "", // Note: API uses 'websiteUrl', not 'website'
+    websiteUrl: "",
   });
 
-  // To display the Code (which is read-only and comes from DB)
-  const [displayCode, setDisplayCode] = useState("Auto-Generated");
+  const [, setDisplayCode] = useState("Auto-Generated");
   const [isSaving, setIsSaving] = useState(false);
 
-  // --- Effect: Load Data on Open ---
   useEffect(() => {
     if (isOpen) {
       if (initialData) {
-        // Edit Mode
         setFormData({
           name: initialData.name,
           gstNo: initialData.gstNo,
@@ -64,7 +59,6 @@ const Transporter: React.FC<ModalProps> = ({
         });
         setDisplayCode(initialData.code);
       } else {
-        // Create Mode: Reset form
         setFormData({
           name: "",
           gstNo: "",
@@ -165,20 +159,6 @@ const Transporter: React.FC<ModalProps> = ({
                 onChange={(e) => handleChange("name", e.target.value)}
                 disabled={isSaving}
                 autoFocus
-              />
-            </div>
-          </div>
-
-          {/* Code */}
-          <div className="grid grid-cols-12 gap-4 items-center">
-            <div className="col-span-4">
-              <Label>Code</Label>
-            </div>
-            <div className="col-span-8">
-              <Input
-                value={displayCode}
-                readOnly
-                className="bg-gray-50 text-gray-500 cursor-not-allowed italic"
               />
             </div>
           </div>

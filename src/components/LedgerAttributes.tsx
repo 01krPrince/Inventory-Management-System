@@ -1,6 +1,6 @@
 import React from "react";
-import { Edit2, ChevronRight } from "lucide-react";
-import { COLORS } from "../../../../constants/colors";
+import { EditIcon, ChevronRight } from "lucide-react";
+import { COLORS } from "../constants/colors";
 
 const LedgerAttributes: React.FC = () => {
   return (
@@ -87,7 +87,7 @@ const AttributeRow: React.FC<AttributeRowProps> = ({ label }) => {
           className="custom-btn-primary p-1.5 rounded-sm transition-colors flex-shrink-0"
           style={{ color: COLORS.white }}
         >
-          <Edit2 size={14} />
+          <EditIcon size={14} />
         </button>
       </div>
     </div>

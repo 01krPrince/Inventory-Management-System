@@ -3,7 +3,7 @@ import SalesInvoiceHeader from "./SalesInvoiceHeader";
 import SalesInvoiceForm from "./SalesInvoiceForm";
 import OrderTable from "./OrderTable";
 import InvoiceFooter from "./InvoiceFooter";
-import LedgerAttributes from "./LedgerAttributes";
+import LedgerAttributes from "../../../../components/LedgerAttributes";
 import { COLORS } from "../../../../constants/colors";
 
 const SalesInvoice: React.FC = () => {

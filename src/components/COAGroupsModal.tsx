@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Save, Trash2, EditIcon, ChevronDown, Loader2 } from "lucide-react";
+import { X, Save, Trash2, ChevronDown, Loader2 } from "lucide-react";
 
 // --- API Imports ---
 import {
@@ -13,7 +13,6 @@ import {
 export interface COAGroupData {
   _id?: string;
   name: string;
-  code: string;
   inactive: boolean;
   underGroup: string;
   nature: string;
@@ -31,7 +30,6 @@ interface COAGroupsModalProps {
 // Default state
 const defaultState: COAGroupData = {
   name: "",
-  code: "",
   inactive: false,
   underGroup: "Turnover (Goods & Services)",
   nature: "Sales",
@@ -71,9 +69,8 @@ const COAGroupsModal = ({
     setIsSubmitting(true);
 
     try {
-      const payload: CoaGroupInput & { code: string } = {
+      const payload: CoaGroupInput = {
         name: formData.name,
-        code: formData.code,
         nature: formData.nature,
         inactive: formData.inactive,
         underGroup: formData.underGroup,
@@ -144,22 +141,6 @@ const COAGroupsModal = ({
             </div>
           </div>
 
-          {/* Code Field */}
-          <div className="grid grid-cols-12 gap-4 items-center">
-            <label className="col-span-3 text-sm text-gray-700">Code</label>
-            <div className="col-span-9">
-              <input
-                disabled
-                type="text"
-                value={formData.code}
-                onChange={(e) =>
-                  setFormData({ ...formData, code: e.target.value })
-                }
-                className="w-full border border-gray-300 rounded-sm px-3 py-1.5 text-sm text-gray-800 focus:outline-none focus:border-[#0f4c81]"
-              />
-            </div>
-          </div>
-
           {/* Inactive Toggle */}
           <div className="grid grid-cols-12 gap-4 items-center">
             <label className="col-span-3 text-sm text-gray-700">Inactive</label>
@@ -184,7 +165,7 @@ const COAGroupsModal = ({
           </div>
 
           {/* Under Group Field */}
-          <div className="grid grid-cols-12 gap-4 items-center">
+          {/* <div className="grid grid-cols-12 gap-4 items-center">
             <label className="col-span-3 text-sm text-gray-700">
               Under Group
             </label>
@@ -212,7 +193,7 @@ const COAGroupsModal = ({
                 <EditIcon size={14} />
               </button>
             </div>
-          </div>
+          </div> */}
 
           {/* Nature Field */}
           <div className="grid grid-cols-12 gap-4 items-center">

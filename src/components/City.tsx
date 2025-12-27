@@ -5,7 +5,6 @@ import Dropdown, { ColumnDef } from "./Dropdown";
 // --- Types ---
 export interface CityData {
   _id?: string;
-  code: string;
   name: string;
   underState: string;
 }
@@ -18,7 +17,6 @@ interface CityProps {
 
 interface DropdownItem {
   name: string;
-  code?: string;
   [key: string]: any;
 }
 
@@ -39,7 +37,6 @@ const City: React.FC<CityProps> = ({ onClose, initialData, index = 50 }) => {
 
   // --- State ---
   const [formData, setFormData] = useState<CityData>({
-    code: "0001",
     name: "",
     underState: "",
   });
@@ -50,7 +47,6 @@ const City: React.FC<CityProps> = ({ onClose, initialData, index = 50 }) => {
       setFormData(initialData);
     } else {
       setFormData({
-        code: "0001",
         name: "",
         underState: "",
       });
@@ -143,16 +139,6 @@ const City: React.FC<CityProps> = ({ onClose, initialData, index = 50 }) => {
 
         {/* --- Form Body --- */}
         <div className="p-6 overflow-y-auto">
-          {/* Code (Read Only) */}
-          <FormRow label="Code">
-            <input
-              type="text"
-              readOnly
-              className="w-full h-[30px] border border-gray-300 bg-gray-50 text-gray-600 px-2 outline-none focus:border-[#0f3c63] rounded-sm text-sm cursor-not-allowed"
-              value={formData.code}
-            />
-          </FormRow>
-
           <FormRow label="Name" required>
             <input
               type="text"

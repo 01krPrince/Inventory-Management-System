@@ -12,7 +12,8 @@ import {
   ChevronDown,
   ArrowUp,
   ArrowDown,
-  ArrowLeft,
+  Settings,
+  Check,
 } from "lucide-react";
 import { COLORS } from "../../../../constants/colors";
 
@@ -34,13 +35,14 @@ interface Column {
   align: "left" | "center" | "right";
   sticky?: "left";
   resizable?: boolean;
+  visible: boolean; // New property to toggle visibility
 }
 
 interface RowData {
   [key: string]: string | number;
 }
 
-// --- PROPS INTERFACE FOR LIFTED STATE ---
+// --- PROPS INTERFACE ---
 interface OrderTableProps {
   rows: string[];
   setRows: React.Dispatch<React.SetStateAction<string[]>>;
@@ -58,14 +60,18 @@ const OrderTable: React.FC<OrderTableProps> = ({
   const generateRowId = () =>
     `row-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-  // --- STATE (Local UI State only) ---
+  // --- STATE ---
   const [items, setItems] = useState<ItemApiData[]>([]);
   const [, setStockUnits] = useState<StockUnitData[]>([]);
-  // tableData and rows are now Props
+
   const [sortConfig, setSortConfig] = useState<{
     key: string;
     direction: "asc" | "desc";
   } | null>(null);
+
+  // Configuration Modal State
+  const [configOpen, setConfigOpen] = useState(false);
+  const [configSearch, setConfigSearch] = useState("");
 
   // Popups State
   const [popupState, setPopupState] = useState<{
@@ -84,23 +90,18 @@ const OrderTable: React.FC<OrderTableProps> = ({
   const [addNewItemForm, setAddNewItemForm] = useState(false);
 
   // --- INITIALIZATION ---
-
-  // 1. Row Initialization Effect: Runs on mount AND when rows are cleared (length becomes 0)
   useEffect(() => {
     if (rows.length === 0) {
       const initialRows = Array.from({ length: 15 }, () => generateRowId());
       setRows(initialRows);
-
       const initialData: Record<string, RowData> = {};
       initialRows.forEach((id) => {
-        initialData[id] = { reciss: "Receipt" };
+        initialData[id] = { reciss: "Receipt", qty: 0, rate: 0, amount: 0 };
       });
       setTableData(initialData);
     }
-    // Dependency on rows.length ensures this runs when parent resets state
   }, [rows.length, setRows, setTableData]);
 
-  // 2. Data Loading Effect: Runs ONLY once on mount
   useEffect(() => {
     loadMasterData();
   }, []);
@@ -109,7 +110,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
     try {
       const itemsData = await fetchItems();
       if (Array.isArray(itemsData)) setItems(itemsData);
-
       const unitsData = await fetchStockUnits();
       if (Array.isArray(unitsData)) setStockUnits(unitsData);
     } catch (error) {
@@ -117,8 +117,9 @@ const OrderTable: React.FC<OrderTableProps> = ({
     }
   };
 
-  // --- COLUMN CONFIG ---
+  // --- COLUMN DEFINITIONS (ALL POSSIBLE COLUMNS) ---
   const initialColumns: Column[] = [
+    // --- ALWAYS VISIBLE / SYSTEM COLUMNS ---
     {
       id: "sno",
       label: "SNo",
@@ -126,6 +127,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
       sticky: "left",
       align: "center",
       resizable: true,
+      visible: true,
     },
     {
       id: "add",
@@ -134,6 +136,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
       sticky: "left",
       align: "center",
       resizable: true,
+      visible: true,
     },
     {
       id: "del",
@@ -142,6 +145,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
       sticky: "left",
       align: "center",
       resizable: true,
+      visible: true,
     },
     {
       id: "srch",
@@ -150,6 +154,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
       sticky: "left",
       align: "center",
       resizable: true,
+      visible: true,
     },
     {
       id: "copy",
@@ -158,6 +163,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
       sticky: "left",
       align: "center",
       resizable: true,
+      visible: true,
     },
     {
       id: "reciss",
@@ -166,6 +172,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
       align: "center",
       sticky: "left",
       resizable: true,
+      visible: true,
     },
     {
       id: "select",
@@ -174,14 +181,16 @@ const OrderTable: React.FC<OrderTableProps> = ({
       sticky: "left",
       align: "left",
       resizable: true,
+      visible: true,
     },
     {
       id: "desc",
-      label: "Description",
+      label: "Item Name",
       width: 180,
       sticky: "left",
       align: "left",
       resizable: true,
+      visible: true,
     },
     {
       id: "attr",
@@ -189,6 +198,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
       width: 40,
       align: "center",
       resizable: true,
+      visible: true,
     },
     {
       id: "widg",
@@ -196,6 +206,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
       width: 40,
       align: "center",
       resizable: true,
+      visible: true,
     },
     {
       id: "batch",
@@ -203,58 +214,49 @@ const OrderTable: React.FC<OrderTableProps> = ({
       width: 45,
       align: "center",
       resizable: true,
+      visible: true,
     },
+
+    // --- DEFAULT REQUESTED COLUMNS (Visible: True) ---
     {
-      id: "punit",
-      label: "Pack Unit",
-      width: 50,
+      id: "unit",
+      label: "Unit",
+      width: 70,
       align: "left",
       resizable: true,
+      visible: true,
     },
-    {
-      id: "pqty",
-      label: "Pack Qty",
-      width: 50,
-      align: "right",
-      resizable: true,
-    },
-    { id: "unit", label: "Unit", width: 70, align: "left", resizable: true },
     {
       id: "qty",
       label: "Quantity",
-      width: 70,
+      width: 80,
       align: "right",
       resizable: true,
+      visible: true,
     },
     {
-      id: "rateper",
-      label: "Rate Per",
+      id: "rate",
+      label: "Rate",
       width: 80,
-      align: "left",
+      align: "right",
       resizable: true,
+      visible: true,
     },
-    { id: "rate", label: "Rate", width: 70, align: "right", resizable: true },
     {
       id: "amount",
       label: "Amount",
+      width: 90,
+      align: "right",
+      resizable: true,
+      visible: true,
+    },
+    {
+      id: "mrp",
+      label: "MRP",
       width: 80,
       align: "right",
       resizable: true,
-    },
-    {
-      id: "minrate",
-      label: "Min Rate",
-      width: 70,
-      align: "right",
-      resizable: true,
-    },
-    { id: "mrp", label: "MRP", width: 70, align: "right", resizable: true },
-    {
-      id: "netrate",
-      label: "Net Rate",
-      width: 80,
-      align: "right",
-      resizable: true,
+      visible: true,
     },
     {
       id: "remark",
@@ -262,20 +264,89 @@ const OrderTable: React.FC<OrderTableProps> = ({
       width: 120,
       align: "left",
       resizable: true,
+      visible: true,
     },
     {
       id: "printdesc",
-      label: "Print Desc",
-      width: 120,
+      label: "Description",
+      width: 150,
       align: "left",
       resizable: true,
+      visible: true,
+    },
+    {
+      id: "barcode",
+      label: "Barcode",
+      width: 100,
+      align: "left",
+      resizable: true,
+      visible: true,
+    },
+    {
+      id: "hsn",
+      label: "HSN Code",
+      width: 80,
+      align: "left",
+      resizable: true,
+      visible: true,
+    },
+    {
+      id: "brand",
+      label: "Brand",
+      width: 100,
+      align: "left",
+      resizable: true,
+      visible: true,
+    },
+
+    // --- OPTIONAL / CONFIGURABLE COLUMNS (Visible: False by default) ---
+    {
+      id: "punit",
+      label: "Pack Unit",
+      width: 70,
+      align: "left",
+      resizable: true,
+      visible: false,
+    },
+    {
+      id: "pqty",
+      label: "Pack Qty",
+      width: 70,
+      align: "right",
+      resizable: true,
+      visible: false,
+    },
+    {
+      id: "rateper",
+      label: "Rate Per",
+      width: 80,
+      align: "left",
+      resizable: true,
+      visible: false,
+    },
+    {
+      id: "minrate",
+      label: "Min Rate",
+      width: 80,
+      align: "right",
+      resizable: true,
+      visible: false,
+    },
+    {
+      id: "netrate",
+      label: "Net Rate",
+      width: 80,
+      align: "right",
+      resizable: true,
+      visible: false,
     },
     {
       id: "service",
-      label: "Service Location",
-      width: 90,
+      label: "Service Loc",
+      width: 100,
       align: "center",
       resizable: true,
+      visible: false,
     },
     {
       id: "itembarcode",
@@ -283,6 +354,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
       width: 100,
       align: "left",
       resizable: true,
+      visible: false,
     },
     {
       id: "bdbatchno",
@@ -290,6 +362,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
       width: 90,
       align: "left",
       resizable: false,
+      visible: false,
     },
     {
       id: "bdexpdate",
@@ -297,46 +370,41 @@ const OrderTable: React.FC<OrderTableProps> = ({
       width: 90,
       align: "left",
       resizable: false,
+      visible: false,
     },
     {
       id: "bdsalerate",
-      label: "BD Sale rate",
+      label: "BD Sale Rate",
       width: 90,
       align: "right",
       resizable: false,
+      visible: false,
     },
     {
       id: "itembalance",
-      label: "Itembalance",
+      label: "Item Balance",
       width: 80,
       align: "right",
       resizable: false,
-    },
-    {
-      id: "barcode",
-      label: "Barcode",
-      width: 100,
-      align: "left",
-      resizable: false,
+      visible: false,
     },
     {
       id: "linelevel",
-      label: "Line Level Barcode",
+      label: "Line Lvl Barcode",
       width: 110,
       align: "left",
       resizable: false,
+      visible: false,
     },
-    {
-      id: "hsn",
-      label: "HSN Code",
-      width: 70,
-      align: "left",
-      resizable: false,
-    },
-    { id: "brand", label: "Brand", width: 90, align: "left", resizable: false },
   ];
 
   const [columns, setColumns] = useState<Column[]>(initialColumns);
+
+  // Derived state for rendering: only show visible columns
+  const visibleColumns = useMemo(
+    () => columns.filter((c) => c.visible),
+    [columns]
+  );
 
   // --- HANDLERS ---
   const handleCreateItemClick = () => {
@@ -358,10 +426,27 @@ const OrderTable: React.FC<OrderTableProps> = ({
     columnId: string,
     value: string
   ) => {
-    setTableData((prev) => ({
-      ...prev,
-      [rowId]: { ...prev[rowId], [columnId]: value },
-    }));
+    setTableData((prev) => {
+      const row = prev[rowId] || {};
+      const newData = { ...row, [columnId]: value };
+
+      // AUTO CALCULATION LOGIC
+      if (columnId === "qty" || columnId === "rate") {
+        const qty = parseFloat(
+          columnId === "qty" ? value : String(row.qty || 0)
+        );
+        const rate = parseFloat(
+          columnId === "rate" ? value : String(row.rate || 0)
+        );
+
+        if (!isNaN(qty) && !isNaN(rate)) {
+          newData.amount = (qty * rate).toFixed(2);
+        } else {
+          newData.amount = "0.00";
+        }
+      }
+      return { ...prev, [rowId]: newData };
+    });
   };
 
   const handleDeleteRow = (rowIdToDelete: string) => {
@@ -375,7 +460,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
     } else {
       setTableData((prev) => ({
         ...prev,
-        [rowIdToDelete]: { reciss: "Receipt" },
+        [rowIdToDelete]: { reciss: "Receipt", qty: 0, rate: 0, amount: 0 },
       }));
     }
   };
@@ -387,7 +472,10 @@ const OrderTable: React.FC<OrderTableProps> = ({
       const newRows = [...rows];
       newRows.splice(index + 1, 0, newId);
       setRows(newRows);
-      setTableData((prev) => ({ ...prev, [newId]: { reciss: "Receipt" } }));
+      setTableData((prev) => ({
+        ...prev,
+        [newId]: { reciss: "Receipt", qty: 0, rate: 0, amount: 0 },
+      }));
     }
   };
 
@@ -410,7 +498,16 @@ const OrderTable: React.FC<OrderTableProps> = ({
     setTableData((prev) => ({ ...prev, [targetRowId!]: { ...sourceData } }));
   };
 
-  // --- POPUP TRIGGERS ---
+  // --- CONFIG HANDLERS ---
+  const toggleColumnVisibility = (colId: string) => {
+    setColumns((prev) =>
+      prev.map((col) =>
+        col.id === colId ? { ...col, visible: !col.visible } : col
+      )
+    );
+  };
+
+  // --- POPUP HANDLERS ---
   const handleSelectClick = (
     e: React.MouseEvent<HTMLDivElement>,
     rowId: string
@@ -450,7 +547,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
     }
   };
 
-  // --- SELECTION HANDLERS ---
   const handleItemSelect = (item: ItemApiData) => {
     if (popupState.activeRowId) {
       setAttributePanelState({
@@ -473,16 +569,16 @@ const OrderTable: React.FC<OrderTableProps> = ({
         hsn: tempItemData.gst_classfication || "",
         brand: tempItemData.brand || "",
         qty: "1",
-        amount: "0.00",
-        service: "Main Store",
-        barcode: tempItemData.barcode || "",
         mrp: tempItemData.mrp || "0",
         rate: tempItemData.sales_rate || "0",
-        rateper: tempItemData.sales_rate || "0",
-        netrate: tempItemData.sales_rate || "0",
+        barcode: tempItemData.barcode || "",
         printdesc: tempItemData.name || "",
-        itembarcode: tempItemData.barcode || "",
       };
+
+      const qty = 1;
+      const rate = parseFloat(String(tempItemData.sales_rate || 0));
+      baseData.amount = (qty * rate).toFixed(2);
+
       setTableData((prev) => ({
         ...prev,
         [activeRowId]: { ...prev[activeRowId], ...baseData, ...attributeData },
@@ -495,7 +591,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
     });
   };
 
-  // --- RESIZING & SORTING (Defined via Hooks - MUST be before early return) ---
+  // --- RESIZING & SORTING ---
   const resizingRef = useRef<number | null>(null);
   const startXRef = useRef<number>(0);
   const startWidthRef = useRef<number>(0);
@@ -550,48 +646,51 @@ const OrderTable: React.FC<OrderTableProps> = ({
   }, [rows, tableData, sortConfig]);
 
   const handleMouseDown = (e: MouseEvent, index: number) => {
-    if (!columns[index].resizable) return;
+    if (!visibleColumns[index].resizable) return;
     e.preventDefault();
     e.stopPropagation();
     resizingRef.current = index;
     startXRef.current = e.clientX;
-    startWidthRef.current = columns[index].width;
+    startWidthRef.current = visibleColumns[index].width;
     document.addEventListener("mousemove", handleMouseMove as any);
     document.addEventListener("mouseup", handleMouseUp);
   };
+
   const handleMouseMove = (e: MouseEvent | globalThis.MouseEvent) => {
     if (resizingRef.current === null) return;
+    // We need to find the actual ID in the master list because we are dragging via visible index
+    const colId = visibleColumns[resizingRef.current!].id;
+
     setColumns((prev) => {
-      const next = [...prev];
-      next[resizingRef.current!] = {
-        ...next[resizingRef.current!],
-        width: Math.max(
-          30,
-          startWidthRef.current + (e.clientX - startXRef.current)
-        ),
-      };
-      return next;
+      return prev.map((col) => {
+        if (col.id === colId) {
+          return {
+            ...col,
+            width: Math.max(
+              30,
+              startWidthRef.current + (e.clientX - startXRef.current)
+            ),
+          };
+        }
+        return col;
+      });
     });
   };
+
   const handleMouseUp = () => {
     resizingRef.current = null;
     document.removeEventListener("mousemove", handleMouseMove as any);
     document.removeEventListener("mouseup", handleMouseUp);
   };
+
+  // Important: Calculate sticky left based on VISIBLE columns only
   const getStickyLeft = (idx: number) =>
-    columns
+    visibleColumns
       .slice(0, idx)
       .reduce((acc, col) => (col.sticky === "left" ? acc + col.width : acc), 0);
 
-  // --- CALCULATION LOGIC (Hook - MUST be before early return) ---
   const totals = useMemo(() => {
-    const sums: Record<string, number> = {
-      pqty: 0,
-      qty: 0,
-      amount: 0,
-      mrp: 0,
-      netrate: 0,
-    };
+    const sums: Record<string, number> = { qty: 0, amount: 0, mrp: 0 };
     rows.forEach((rowId) => {
       const row = tableData[rowId];
       if (row) {
@@ -599,36 +698,23 @@ const OrderTable: React.FC<OrderTableProps> = ({
           const val = parseFloat(String(row[field] || "0"));
           if (!isNaN(val)) sums[field] += val;
         };
-        addVal("pqty");
         addVal("qty");
         addVal("amount");
         addVal("mrp");
-        addVal("netrate");
       }
     });
     return {
-      pqty: sums.pqty.toFixed(2),
       qty: sums.qty.toFixed(2),
       amount: sums.amount.toFixed(2),
       mrp: sums.mrp.toFixed(2),
-      netrate: sums.netrate.toFixed(2),
     };
   }, [rows, tableData]);
 
-  // --- CONDITIONAL RENDER (Moved to BOTTOM to prevent Hook Error) ---
   if (addNewItemForm) {
     return (
       <div className="w-full">
         <div className="bg-white p-6 rounded-xl shadow-lg dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-          <div className="mb-4">
-            <button
-              onClick={handleCloseForm}
-              className="flex items-center text-sm text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-white transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4 mr-1" />
-              Back to Item Master
-            </button>
-          </div>
+          {/* Form Header... */}
           <AddNewItem
             onClose={handleCloseForm}
             onSuccess={handleFormSuccess}
@@ -665,12 +751,24 @@ const OrderTable: React.FC<OrderTableProps> = ({
             />
           </div>
         </div>
-        <button
-          className="px-6 py-1.5 rounded text-xs font-bold text-white shadow-sm"
-          style={{ backgroundColor: COLORS.primary }}
-        >
-          Pull From Order
-        </button>
+
+        <div className="flex items-center gap-2">
+          {/* CONFIGURATION BUTTON */}
+          <button
+            onClick={() => setConfigOpen(true)}
+            className="p-1.5 rounded hover:bg-gray-100 text-gray-600 border border-transparent hover:border-gray-300 transition-all"
+            title="Configure Table Columns"
+          >
+            <Settings size={18} />
+          </button>
+
+          <button
+            className="px-6 py-1.5 rounded text-xs font-bold text-white shadow-sm"
+            style={{ backgroundColor: COLORS.primary }}
+          >
+            Pull From Order
+          </button>
+        </div>
       </div>
 
       {/* TABLE */}
@@ -683,11 +781,13 @@ const OrderTable: React.FC<OrderTableProps> = ({
             className="w-full overflow-auto custom-scrollbar"
             style={{ height: "400px" }}
           >
-            <div style={{ width: columns.reduce((a, c) => a + c.width, 0) }}>
+            <div
+              style={{ width: visibleColumns.reduce((a, c) => a + c.width, 0) }}
+            >
               <table className="border-collapse table-fixed w-full">
                 <thead className="sticky top-0 z-20">
                   <tr className="h-6">
-                    {columns.map((col, idx) => (
+                    {visibleColumns.map((col, idx) => (
                       <th
                         key={col.id}
                         style={{
@@ -741,10 +841,11 @@ const OrderTable: React.FC<OrderTableProps> = ({
                         className="h-6 border-b hover:bg-blue-50"
                         style={{ borderColor: COLORS.border }}
                       >
-                        {columns.map((col, cIdx) => {
+                        {visibleColumns.map((col, cIdx) => {
                           const isLeft = col.sticky === "left";
                           let content: React.ReactNode = null;
 
+                          // --- RENDER LOGIC SWITCH ---
                           if (col.id === "sno")
                             content = (
                               <span className="text-gray-500">{vIdx + 1}</span>
@@ -846,19 +947,24 @@ const OrderTable: React.FC<OrderTableProps> = ({
                                 {rowData.select || "Select..."} <span>▶</span>
                               </div>
                             );
-                          } else if (
-                            col.id === "unit" ||
-                            col.id === "rateper"
-                          ) {
+                          } else if (col.id === "amount") {
                             content = (
-                              <div className="w-full h-full flex justify-between items-center px-1 cursor-pointer hover:bg-gray-100 group min-h-[24px]">
-                                <span>{rowData[col.id] || ""}</span>
+                              <div className="w-full h-full flex items-center justify-end px-1 bg-gray-50 text-gray-700 font-medium">
+                                {rowData[col.id] || "0.00"}
                               </div>
                             );
                           } else if (
-                            ["qty", "rate", "amount", "mrp"].includes(col.id)
+                            [
+                              "qty",
+                              "rate",
+                              "mrp",
+                              "pqty",
+                              "minrate",
+                              "netrate",
+                              "bdsalerate",
+                            ].includes(col.id)
                           ) {
-                            // --- EDITABLE INPUTS ---
+                            // Numeric Inputs
                             content = (
                               <input
                                 type="text"
@@ -873,22 +979,8 @@ const OrderTable: React.FC<OrderTableProps> = ({
                                 }
                               />
                             );
-                          } else if (
-                            [
-                              "desc",
-                              "hsn",
-                              "barcode",
-                              "brand",
-                              "punit",
-                              "pqty",
-                              "minrate",
-                              "netrate",
-                            ].includes(col.id)
-                          ) {
-                            // --- READ ONLY TEXT ---
-                            content = rowData[col.id] || "";
                           } else {
-                            // --- DEFAULT INPUT ---
+                            // Text Inputs
                             content = (
                               <input
                                 type="text"
@@ -937,13 +1029,11 @@ const OrderTable: React.FC<OrderTableProps> = ({
                 </tbody>
                 <tfoot className="sticky bottom-0 z-20 bg-gray-50">
                   <tr className="h-9 font-bold">
-                    {columns.map((col, idx) => {
+                    {visibleColumns.map((col, idx) => {
                       let content: React.ReactNode = "";
                       if (col.id === "desc") content = "TOTAL";
-                      else if (col.id === "pqty") content = totals.pqty;
                       else if (col.id === "qty") content = totals.qty;
                       else if (col.id === "amount") content = totals.amount;
-
                       return (
                         <td
                           key={col.id}
@@ -971,6 +1061,243 @@ const OrderTable: React.FC<OrderTableProps> = ({
         </div>
       </div>
 
+      {/* --- CONFIGURATION POPUP (PORTAL + BRAND COLORS) --- */}
+      {configOpen &&
+        ReactDOM.createPortal(
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+            {/* Click outside to close */}
+            <div
+              className="absolute inset-0"
+              onClick={() => setConfigOpen(false)}
+            />
+
+            <div
+              className="relative rounded-2xl shadow-2xl w-full max-w-sm flex flex-col border overflow-hidden transform transition-all scale-100"
+              style={{
+                backgroundColor: COLORS.white,
+                borderColor: COLORS.border,
+                maxHeight: "80vh",
+              }}
+            >
+              {/* Modal Header */}
+              <div
+                className="flex justify-between items-center px-5 py-4 border-b"
+                style={{
+                  backgroundColor: COLORS.white,
+                  borderColor: COLORS.border,
+                }}
+              >
+                <div>
+                  <h3
+                    className="font-bold text-lg flex items-center gap-2"
+                    style={{ color: COLORS.textPrimary }}
+                  >
+                    <Settings size={18} style={{ color: COLORS.primary }} />
+                    Table Columns
+                  </h3>
+                  <p
+                    className="text-xs mt-0.5"
+                    style={{ color: COLORS.textMuted }}
+                  >
+                    Toggle columns to show or hide
+                  </p>
+                </div>
+                <button
+                  onClick={() => setConfigOpen(false)}
+                  className="p-2 rounded-full transition-colors hover:bg-gray-100"
+                  style={{ color: COLORS.textMuted }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.color = COLORS.danger)
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.color = COLORS.textMuted)
+                  }
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Search Area */}
+              <div
+                className="px-5 py-3 border-b"
+                style={{
+                  backgroundColor: COLORS.background,
+                  borderColor: COLORS.border,
+                }}
+              >
+                <div className="relative group">
+                  <Search
+                    size={16}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 transition-colors"
+                    style={{ color: COLORS.textMuted }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Find a column..."
+                    className="w-full pl-10 pr-4 py-2.5 border rounded-lg text-sm outline-none transition-all shadow-sm focus:ring-1"
+                    style={{
+                      backgroundColor: COLORS.white,
+                      borderColor: COLORS.borderDark,
+                      color: COLORS.textPrimary,
+                    }}
+                    value={configSearch}
+                    onChange={(e) => setConfigSearch(e.target.value)}
+                    // Add simple focus logic via CSS or inline override
+                    onFocus={(e) => {
+                      e.target.style.borderColor = COLORS.primary;
+                      e.target.style.boxShadow = `0 0 0 1px ${COLORS.primary}`;
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = COLORS.borderDark;
+                      e.target.style.boxShadow = "none";
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Column List */}
+              <div
+                className="overflow-y-auto flex-1 p-3 custom-scrollbar"
+                style={{ backgroundColor: COLORS.white }}
+              >
+                <div className="flex flex-col gap-1">
+                  {columns
+                    .filter(
+                      (c) =>
+                        !["sno", "add", "del", "srch", "copy"].includes(c.id)
+                    )
+                    .filter((c) =>
+                      c.label.toLowerCase().includes(configSearch.toLowerCase())
+                    )
+                    .map((col) => (
+                      <div
+                        key={col.id}
+                        onClick={() => toggleColumnVisibility(col.id)}
+                        className="flex items-center justify-between p-3 rounded-lg cursor-pointer border transition-all duration-200 group"
+                        style={{
+                          backgroundColor: col.visible
+                            ? COLORS.primaryLight
+                            : COLORS.white,
+                          borderColor: col.visible
+                            ? "transparent" // or COLORS.primary if you want a border
+                            : "transparent",
+                        }}
+                        // Hover effect override
+                        onMouseEnter={(e) => {
+                          if (!col.visible)
+                            e.currentTarget.style.backgroundColor =
+                              COLORS.background;
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!col.visible)
+                            e.currentTarget.style.backgroundColor =
+                              COLORS.white;
+                        }}
+                      >
+                        <div className="flex items-center gap-3">
+                          {/* Custom Checkbox Design */}
+                          <div
+                            className="w-5 h-5 rounded flex items-center justify-center border transition-all duration-200 shadow-sm"
+                            style={{
+                              backgroundColor: col.visible
+                                ? COLORS.primary
+                                : COLORS.white,
+                              borderColor: col.visible
+                                ? COLORS.primary
+                                : COLORS.borderDark,
+                            }}
+                          >
+                            <Check
+                              size={12}
+                              className={`transition-transform duration-200 ${
+                                col.visible ? "scale-100" : "scale-0"
+                              }`}
+                              style={{ color: COLORS.white }}
+                              strokeWidth={3}
+                            />
+                          </div>
+                          <span
+                            className="text-sm font-medium transition-colors"
+                            style={{
+                              color: col.visible
+                                ? COLORS.primary
+                                : COLORS.textSecondary,
+                            }}
+                          >
+                            {col.label}
+                          </span>
+                        </div>
+
+                        {/* Sticky Indicator */}
+                        {col.sticky && (
+                          <span
+                            className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded"
+                            style={{
+                              backgroundColor: COLORS.white,
+                              color: COLORS.primary,
+                              border: `1px solid ${COLORS.primary}40`, // 40 is opacity
+                            }}
+                          >
+                            Fixed
+                          </span>
+                        )}
+                      </div>
+                    ))}
+
+                  {/* Empty State */}
+                  {columns.filter(
+                    (c) =>
+                      c.label
+                        .toLowerCase()
+                        .includes(configSearch.toLowerCase()) &&
+                      !["sno", "add"].includes(c.id)
+                  ).length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-8 opacity-50">
+                      <Search
+                        size={32}
+                        className="mb-2"
+                        style={{ color: COLORS.textMuted }}
+                      />
+                      <p
+                        className="text-xs"
+                        style={{ color: COLORS.textMuted }}
+                      >
+                        No columns found matching "{configSearch}"
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Footer: Reset Button */}
+              <div
+                className="p-3 border-t flex justify-end"
+                style={{
+                  backgroundColor: COLORS.background,
+                  borderColor: COLORS.border,
+                }}
+              >
+                <button
+                  onClick={() => setColumns(initialColumns)}
+                  className="text-xs font-semibold px-3 py-1.5 rounded transition-colors"
+                  style={{ color: COLORS.textSecondary }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = COLORS.neutralHover;
+                    e.currentTarget.style.color = COLORS.textPrimary;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                    e.currentTarget.style.color = COLORS.textSecondary;
+                  }}
+                >
+                  Reset to Default
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
       <AttributePanel
         isOpen={attributePanelState.visible}
         onClose={() =>
@@ -980,7 +1307,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
         initialData={attributePanelState.tempItemData}
       />
 
-      {/* --- ITEM POPUP (Rendered via Portal) --- */}
+      {/* --- ITEM POPUP --- */}
       {popupState.visible &&
         ReactDOM.createPortal(
           <>

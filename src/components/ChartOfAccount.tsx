@@ -19,7 +19,6 @@ import COAGroupsModal, { COAGroupData } from "./COAGroupsModal";
 export interface AccountFormData {
   _id?: string;
   name: string;
-  code: string;
   identification: string;
   isSubledger: boolean;
   salesGlUnderGroup: string;
@@ -58,7 +57,6 @@ interface ChartOfAccountsProps {
 // --- Default State ---
 const defaultState: AccountFormData = {
   name: "",
-  code: "00000001",
   identification: "",
   isSubledger: false,
   salesGlUnderGroup: "",
@@ -209,7 +207,6 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
         setSelectedCoaGroup({
           _id: foundGroup._id,
           name: foundGroup.name,
-          code: foundGroup.code,
           inactive: foundGroup.inactive,
           underGroup: foundGroup.underGroup || "",
           nature: foundGroup.nature,
@@ -375,16 +372,6 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
                       <Globe size={14} />
                     </button>
                   </div>
-                </FormRow>
-
-                <FormRow label="Code">
-                  <input
-                    type="text"
-                    disabled={true}
-                    className="w-full border border-gray-300 bg-gray-50 px-2 py-1 text-sm text-gray-600"
-                    value={formData.code}
-                    onChange={(e) => handleChange("code", e.target.value)}
-                  />
                 </FormRow>
 
                 <FormRow label="Identification">
