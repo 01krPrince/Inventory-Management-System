@@ -1,10 +1,13 @@
 import React, { useState } from "react";
 import { ChevronDown, ChevronUp, FileText, EditIcon } from "lucide-react";
+// Adjust these paths to match your actual folder structure
 import Dropdown, { ColumnDef } from "../../../../components/Dropdown";
 import Transporter from "../../../../components/Transporter";
 import DateInput from "../../../../components/DateInput";
 
+// --- 1. EXPORT the Interface so parents can use it ---
 export interface LogisticsData {
+  // --- Left Column ---
   destination: string;
   shippingMode: string;
   shippingCompany: string;
@@ -16,13 +19,29 @@ export interface LogisticsData {
   chargeType: string;
   documentThrough: string;
 
+  // --- Middle Column (Union of all fields needed by both pages) ---
   portOfLanding: string;
   portOfDischarge: string;
-  portAddressForEway: string;
-  portStateForEway: string;
+  portAddressForEway?: string;
+  portStateForEway?: string;
   noOfPackets: string;
   weight: string;
 
+  // Fields specific to Purchase Bill
+  distance?: string;
+  ewayInvoiceNo?: string;
+  ewayInvoiceDate?: string;
+  ewayCancelDate?: string;
+  irnNo?: string;
+  qrCode?: string;
+  irnCancelDate?: string;
+  irnCancelReason?: string;
+  ackNo?: string;
+  ackDate?: string;
+  billOfEntryNum?: string;
+  billOfEntryDate?: string;
+
+  // --- Right Column (Overhead Expenses) ---
   customDuty: string;
   chaPayment: string;
   freight: string;
@@ -35,12 +54,14 @@ export interface LogisticsData {
   otherCharges: string;
 }
 
+// --- 2. Props ---
 interface LogisticsProps {
-  themeColor?: string;
   data: LogisticsData;
   onChange: (data: LogisticsData) => void;
+  themeColor?: string;
 }
 
+// --- 3. Static Data ---
 const STATIC_TRANSPORTERS = [
   { code: "T001", name: "FedEx Logistics" },
   { code: "T002", name: "DHL Express" },
@@ -48,12 +69,7 @@ const STATIC_TRANSPORTERS = [
   { code: "T004", name: "DTDC" },
 ];
 
-const STATIC_STATES = [
-  { code: "MH", name: "Maharashtra" },
-  { code: "DL", name: "Delhi" },
-  { code: "KA", name: "Karnataka" },
-  { code: "TN", name: "Tamil Nadu" },
-];
+// --- Reusable UI Components ---
 
 const Label: React.FC<{ children: React.ReactNode; required?: boolean }> = ({
   children,
@@ -155,7 +171,7 @@ const ExpenseRow: React.FC<{
 
 // --- Main Component ---
 
-const PurchaseBillLogistics: React.FC<LogisticsProps> = ({
+const GoodsRecieptNoteLogistics: React.FC<LogisticsProps> = ({
   data,
   onChange,
   themeColor = "#0f3c63",
@@ -172,10 +188,6 @@ const PurchaseBillLogistics: React.FC<LogisticsProps> = ({
   const shippingModes = ["Road", "Air", "Sea", "Rail"];
   const chargeTypes = ["Paid", "To Pay", "Free"];
 
-  // Column Definitions for Dropdowns
-  const nameColumns: ColumnDef<any>[] = [
-    { header: "Name", key: "name", width: "flex-1" },
-  ];
   const transporterColumns: ColumnDef<any>[] = [
     { header: "Code", key: "code", width: "w-20" },
     { header: "Name", key: "name", width: "flex-1" },
@@ -189,13 +201,6 @@ const PurchaseBillLogistics: React.FC<LogisticsProps> = ({
     onChange({
       ...data,
       shippingCompany: item?.name || "",
-    });
-  };
-
-  const handleStateSelect = (item: any) => {
-    onChange({
-      ...data,
-      portStateForEway: item?.name || "",
     });
   };
 
@@ -227,7 +232,6 @@ const PurchaseBillLogistics: React.FC<LogisticsProps> = ({
       {/* Accordion Content */}
       {isOpen && (
         <div className="p-5 border-t border-gray-100">
-          {/* 3 Column Layout to match Screenshot */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* === LEFT COLUMN: Shipping Details === */}
             <div className="space-y-1">
@@ -388,7 +392,7 @@ const PurchaseBillLogistics: React.FC<LogisticsProps> = ({
               </div>
             </div>
 
-            {/* === MIDDLE COLUMN: Port & Packet Details === */}
+            {/* === MIDDLE COLUMN: Updated per Screenshot === */}
             <div className="space-y-1">
               {/* Port of Landing */}
               <div className="grid grid-cols-12 gap-2">
@@ -420,42 +424,8 @@ const PurchaseBillLogistics: React.FC<LogisticsProps> = ({
                 </div>
               </div>
 
-              {/* Port Address For Eway (TextArea) */}
-              <div className="grid grid-cols-12 gap-2">
-                <div className="col-span-4">
-                  <Label>Port Address For Eway</Label>
-                </div>
-                <div className="col-span-8">
-                  <TextArea
-                    rows={4}
-                    value={data.portAddressForEway}
-                    onChange={(e) =>
-                      handleChange("portAddressForEway", e.target.value)
-                    }
-                  />
-                </div>
-              </div>
-
-              {/* Port State For Eway */}
-              <div className="grid grid-cols-12 gap-2">
-                <div className="col-span-4">
-                  <Label>Port State For Eway</Label>
-                </div>
-                <div className="col-span-8 flex gap-1">
-                  <Dropdown
-                    data={STATIC_STATES}
-                    columns={nameColumns}
-                    value={data.portStateForEway}
-                    valueKey="name"
-                    onChange={handleStateSelect}
-                    placeholder="Select..."
-                  />
-                  <ActionBtn icon={<EditIcon size={14} />} />
-                </div>
-              </div>
-
               {/* No of Packets */}
-              <div className="grid grid-cols-12 gap-2 mt-4">
+              <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
                   <Label>No of Packets</Label>
                 </div>
@@ -479,6 +449,176 @@ const PurchaseBillLogistics: React.FC<LogisticsProps> = ({
                   <Input
                     value={data.weight}
                     onChange={(e) => handleChange("weight", e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Distance */}
+              <div className="grid grid-cols-12 gap-2">
+                <div className="col-span-4">
+                  <Label>Distance</Label>
+                </div>
+                <div className="col-span-8">
+                  <Input
+                    value={data.distance || ""}
+                    onChange={(e) => handleChange("distance", e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* eWay Invoice No */}
+              <div className="grid grid-cols-12 gap-2">
+                <div className="col-span-4">
+                  <Label>eWay Invoice No</Label>
+                </div>
+                <div className="col-span-8">
+                  <Input
+                    value={data.ewayInvoiceNo || ""}
+                    onChange={(e) =>
+                      handleChange("ewayInvoiceNo", e.target.value)
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* eWay Invoice Date */}
+              <div className="grid grid-cols-12 gap-2">
+                <div className="col-span-4">
+                  <Label>eWay Invoice Date</Label>
+                </div>
+                <div className="col-span-8">
+                  <DateInput
+                    value={data.ewayInvoiceDate || ""}
+                    onChange={(e) =>
+                      handleChange("ewayInvoiceDate", e.target.value)
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* eWay Cancel Date */}
+              <div className="grid grid-cols-12 gap-2">
+                <div className="col-span-4">
+                  <Label>eWay Cancel Date</Label>
+                </div>
+                <div className="col-span-8">
+                  <DateInput
+                    value={data.ewayCancelDate || ""}
+                    onChange={(e) =>
+                      handleChange("ewayCancelDate", e.target.value)
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* IRN No */}
+              <div className="grid grid-cols-12 gap-2">
+                <div className="col-span-4">
+                  <Label>IRN No</Label>
+                </div>
+                <div className="col-span-8">
+                  <Input
+                    value={data.irnNo || ""}
+                    onChange={(e) => handleChange("irnNo", e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* QR Code */}
+              <div className="grid grid-cols-12 gap-2">
+                <div className="col-span-4">
+                  <Label>QR Code</Label>
+                </div>
+                <div className="col-span-8">
+                  <Input
+                    value={data.qrCode || ""}
+                    onChange={(e) => handleChange("qrCode", e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* IRN Cancel Date */}
+              <div className="grid grid-cols-12 gap-2">
+                <div className="col-span-4">
+                  <Label>IRN Cancel Date</Label>
+                </div>
+                <div className="col-span-8">
+                  <DateInput
+                    value={data.irnCancelDate || ""}
+                    onChange={(e) =>
+                      handleChange("irnCancelDate", e.target.value)
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* IRN Cancel Reason */}
+              <div className="grid grid-cols-12 gap-2">
+                <div className="col-span-4">
+                  <Label>IRN Cancel Reason</Label>
+                </div>
+                <div className="col-span-8">
+                  <Input
+                    value={data.irnCancelReason || ""}
+                    onChange={(e) =>
+                      handleChange("irnCancelReason", e.target.value)
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* Acknowledgement No */}
+              <div className="grid grid-cols-12 gap-2">
+                <div className="col-span-4">
+                  <Label>Acknowledgement No</Label>
+                </div>
+                <div className="col-span-8">
+                  <Input
+                    value={data.ackNo || ""}
+                    onChange={(e) => handleChange("ackNo", e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Acknowledgement Date */}
+              <div className="grid grid-cols-12 gap-2">
+                <div className="col-span-4">
+                  <Label>Acknowledgement Date</Label>
+                </div>
+                <div className="col-span-8">
+                  <DateInput
+                    value={data.ackDate || ""}
+                    onChange={(e) => handleChange("ackDate", e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Bill of entry Num */}
+              <div className="grid grid-cols-12 gap-2">
+                <div className="col-span-4">
+                  <Label>Bill of entry Num</Label>
+                </div>
+                <div className="col-span-8">
+                  <Input
+                    value={data.billOfEntryNum || ""}
+                    onChange={(e) =>
+                      handleChange("billOfEntryNum", e.target.value)
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* Bill of entry Date */}
+              <div className="grid grid-cols-12 gap-2">
+                <div className="col-span-4">
+                  <Label>Bill of entry Date</Label>
+                </div>
+                <div className="col-span-8">
+                  <DateInput
+                    value={data.billOfEntryDate || ""}
+                    onChange={(e) =>
+                      handleChange("billOfEntryDate", e.target.value)
+                    }
                   />
                 </div>
               </div>
@@ -564,4 +704,4 @@ const PurchaseBillLogistics: React.FC<LogisticsProps> = ({
   );
 };
 
-export default PurchaseBillLogistics;
+export default GoodsRecieptNoteLogistics;

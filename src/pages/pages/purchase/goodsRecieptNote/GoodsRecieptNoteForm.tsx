@@ -181,12 +181,12 @@ interface POSOrderFormProps {
   themeColor?: string;
 }
 
-const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
+const GoodsRecieptNoteForm: React.FC<POSOrderFormProps> = ({
   themeColor = "#0f3c63",
 }) => {
   // --- UI State ---
-  const [isBillToOpen, setBillToOpen] = useState<boolean>(false);
-  const [isShipToOpen, setShipToOpen] = useState<boolean>(false);
+  const [isBillToOpen, setBillToOpen] = useState<boolean>(true); // Default open based on screenshot suggestion
+  const [isShipToOpen, setShipToOpen] = useState<boolean>(true); // Default open based on screenshot suggestion
 
   // Modals State
   const [isCounterMasterOpen, setIsCounterMasterOpen] = useState(false);
@@ -210,13 +210,15 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
     store: "SPORTS HUB",
     vendor: "",
     email: "",
-    deliveryDate: "26/12/2025",
     priceCategory: "",
-    orderDate: "26/12/2025",
-    orderNo: "00002",
+
+    // Middle Col Fields
+    grnDate: "29/12/2025",
+    grnNo: "00001",
     refNo: "",
-    refDate: "26/12/2025",
+    refDate: "29/12/2025",
     tax: "Inclusive",
+
     paymentTerms: "",
     // Billing Address Section
     billingAddress: "",
@@ -403,21 +405,6 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
             </div>
           </div>
 
-          {/* Delivery Date */}
-          <div className="grid grid-cols-12 gap-2 items-center">
-            <div className="col-span-4">
-              <Label required>Delivery Date</Label>
-            </div>
-            <div className="col-span-8">
-              <DateInput
-                value={formData.deliveryDate}
-                onChange={(e) =>
-                  handleFieldChange("deliveryDate", e.target.value)
-                }
-              />
-            </div>
-          </div>
-
           {/* Price Category */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
@@ -448,28 +435,28 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
 
         {/* === MIDDLE COLUMN === */}
         <div className="col-span-4 space-y-2">
-          {/* Order Date */}
+          {/* GRN Date */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
-              <Label required>Order Date</Label>
+              <Label required>GRN Date</Label>
             </div>
             <div className="col-span-8">
               <DateInput
-                value={formData.orderDate}
-                onChange={(e) => handleFieldChange("orderDate", e.target.value)}
+                value={formData.grnDate}
+                onChange={(e) => handleFieldChange("grnDate", e.target.value)}
               />
             </div>
           </div>
 
-          {/* Order No */}
+          {/* GRN No */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
-              <Label required>Order No</Label>
+              <Label required>GRN No</Label>
             </div>
             <div className="col-span-8">
               <Input
-                value={formData.orderNo}
-                onChange={(e) => handleFieldChange("orderNo", e.target.value)}
+                value={formData.grnNo}
+                onChange={(e) => handleFieldChange("grnNo", e.target.value)}
               />
             </div>
           </div>
@@ -477,7 +464,7 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
           {/* Ref No */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
-              <Label>Ref No</Label>
+              <Label required>Ref No</Label>
             </div>
             <div className="col-span-8">
               <Input
@@ -487,7 +474,7 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
             </div>
           </div>
 
-          {/* Ref Date */}
+          {/* Ref.Date */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
               <Label required>Ref.Date</Label>
@@ -520,9 +507,9 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
         {/* === RIGHT COLUMN === */}
         <div className="col-span-4 flex flex-col h-full justify-between">
           <div className="space-y-4">
-            {/* Billing Address Accordion */}
+            {/* Billing From Accordion */}
             <AccordionSection
-              title="Billing Address"
+              title="Billing From"
               isOpen={isBillToOpen}
               onToggle={() => setBillToOpen(!isBillToOpen)}
             >
@@ -593,9 +580,9 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
               </div>
             </AccordionSection>
 
-            {/* Delivery At Accordion */}
+            {/* Shipping From Accordion */}
             <AccordionSection
-              title="Delivery At"
+              title="Shipping From"
               isOpen={isShipToOpen}
               onToggle={() => setShipToOpen(!isShipToOpen)}
             >
@@ -635,30 +622,6 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
                 </span>
               </div>
             </AccordionSection>
-          </div>
-
-          {/* Payment Terms (Bottom of Right Column) */}
-          <div className="mt-4 pt-4">
-            <div className="grid grid-cols-12 gap-2 items-center">
-              <div className="col-span-4 flex items-center gap-1">
-                <Label>Payment Terms</Label>
-              </div>
-              <div className="col-span-7">
-                <InputGroup>
-                  <Dropdown
-                    data={mockData.paymentTerms}
-                    columns={defaultColumns}
-                    value={formData.paymentTerms}
-                    valueKey="name"
-                    placeholder="Select..."
-                    onChange={(item) =>
-                      handleFieldChange("paymentTerms", item?.name || "")
-                    }
-                  />
-                  <ActionBtn icon={<EditIcon size={14} />} />
-                </InputGroup>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -711,4 +674,4 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
   );
 };
 
-export default PurchaseOrderForm;
+export default GoodsRecieptNoteForm;

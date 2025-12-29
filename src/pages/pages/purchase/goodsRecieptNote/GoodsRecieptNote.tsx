@@ -1,29 +1,24 @@
 import React, { useState } from "react";
-// Adjust these imports to match your project structure
-import PurchaseBillHeader from "./PurchaseBillHeader";
-import PurchaseBillForm from "./PurchaseBillForm";
-import OrderTable from "../purchaseOrder/OrderTable";
-import PurchaseBillFooter from "./PurchaseBillFooter";
+import GoodsRecieptNoteHeader from "./GoodsRecieptNoteHeader";
+import GoodsRecieptNoteForm from "./GoodsRecieptNoteForm";
+import OrderTable from "./OrderTable";
+import GoodsRecieptNoteFooter from "./GoodsRecieptNoteFooter";
 import { COLORS } from "../../../../constants/colors";
-import LedgerAttributes from "../../../../components/LedgerAttributes";
 
-// IMPORTANT: Import the Interface and the Component from the other file
-// DO NOT define 'interface LogisticsData' inside this file again.
+// FIX: Import the Component AND the Interface from the file we just fixed
 import GoodsRecieptNoteLogistics, {
   LogisticsData,
-} from "../goodsRecieptNote/GoodsRecieptNoteLogistics";
+} from "./GoodsRecieptNoteLogistics";
 
 interface RowData {
   [key: string]: string | number;
 }
 
-const PurchaseBill: React.FC = () => {
+const GoodsRecieptNote: React.FC = () => {
   const [rows, setRows] = useState<string[]>([]);
   const [tableData, setTableData] = useState<Record<string, RowData>>({});
 
-  // --- Initialize Logistics State ---
-  // You MUST initialize ALL fields defined in the imported interface,
-  // even the optional ones, to avoid undefined errors if you use them later.
+  // --- 1. Initialize Logistics State ---
   const [logisticsData, setLogisticsData] = useState<LogisticsData>({
     // Left Column
     destination: "",
@@ -37,28 +32,17 @@ const PurchaseBill: React.FC = () => {
     chargeType: "Paid",
     documentThrough: "",
 
-    // Middle Column (Common)
+    // Middle Column
     portOfLanding: "",
     portOfDischarge: "",
+    portAddressForEway: "", // Keep these, they exist in the interface as optional
+    portStateForEway: "", // Keep these, they exist in the interface as optional
     noOfPackets: "0",
     weight: "0",
 
-    // Middle Column (Specific to Purchase Bill / Optional in interface)
-    // Initialize these to empty strings so they are controlled inputs
-    portAddressForEway: "",
-    portStateForEway: "",
-    distance: "",
-    ewayInvoiceNo: "",
-    ewayInvoiceDate: "",
-    ewayCancelDate: "",
-    irnNo: "",
-    qrCode: "",
-    irnCancelDate: "",
-    irnCancelReason: "",
-    ackNo: "",
-    ackDate: "",
-    billOfEntryNum: "",
-    billOfEntryDate: "",
+    // Note: We DO NOT need to initialize fields like irnNo, ackNo, etc.
+    // because they are marked as optional (?) in the interface and
+    // are not used on this specific page.
 
     // Right Column (Overhead Expenses)
     customDuty: "0.00",
@@ -73,6 +57,7 @@ const PurchaseBill: React.FC = () => {
     otherCharges: "0.00",
   });
 
+  // --- 2. Handler for Logistics Updates ---
   const handleLogisticsChange = (newData: LogisticsData) => {
     setLogisticsData(newData);
   };
@@ -82,11 +67,11 @@ const PurchaseBill: React.FC = () => {
       style={{ backgroundColor: COLORS.background }}
       className="flex flex-col bg-gray-100 overflow-hidden"
     >
-      <PurchaseBillHeader />
+      <GoodsRecieptNoteHeader />
 
       <div className="flex-1 overflow-auto p-4">
         <div className="flex flex-col gap-4">
-          <PurchaseBillForm />
+          <GoodsRecieptNoteForm />
 
           <OrderTable
             rows={rows}
@@ -95,9 +80,7 @@ const PurchaseBill: React.FC = () => {
             setTableData={setTableData}
           />
 
-          <PurchaseBillFooter />
-
-          <LedgerAttributes />
+          <GoodsRecieptNoteFooter />
 
           <GoodsRecieptNoteLogistics
             data={logisticsData}
@@ -109,4 +92,4 @@ const PurchaseBill: React.FC = () => {
   );
 };
 
-export default PurchaseBill;
+export default GoodsRecieptNote;

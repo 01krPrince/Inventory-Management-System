@@ -14,6 +14,9 @@ import {
   ArrowDown,
   Settings,
   Check,
+  ShieldCheck,
+  DollarSign,
+  Clock,
 } from "lucide-react";
 import { COLORS } from "../../../../constants/colors";
 
@@ -21,11 +24,13 @@ import AddNewItem from "../../../../components/addItemMaster/AddNewItem";
 
 // --- API IMPORTS ---
 import { fetchItems } from "../itemMaster/api/itemService";
-
 import { StockUnitData } from "../../../../components/addItemMaster/api/types";
 import { fetchStockUnits } from "../../../../components/addItemMaster/api/stockunitservice";
 import { ItemApiData } from "../itemMaster/models/ItemModel";
 import AttributePanel from "../../../../components/AttributePanel";
+
+// --- IMPORT THE NEW MODAL ---
+import PullFromOrderModal from "../../../../components/PullFromOrderModal";
 
 // --- TYPES ---
 interface Column {
@@ -35,12 +40,37 @@ interface Column {
   align: "left" | "center" | "right";
   sticky?: "left";
   resizable?: boolean;
-  visible: boolean; // New property to toggle visibility
+  visible: boolean;
 }
 
 interface RowData {
   [key: string]: string | number;
 }
+
+interface WarrantyOption {
+  id: string;
+  label: string; // e.g. "1 Year"
+  price: number; // e.g. 500
+}
+
+// --- HELPER: MOCK WARRANTY DATA ---
+// Returns a list of standard warranties based on item text
+const getStandardWarranties = (itemText: string): WarrantyOption[] => {
+  if (!itemText) return [];
+  const text = itemText.toLowerCase();
+
+  if (text.includes("bat") || text.includes("elec")) {
+    return [
+      { id: "w1", label: "6 Months", price: 0 },
+      { id: "w2", label: "1 Year", price: 500 },
+      { id: "w3", label: "2 Years", price: 1200 },
+    ];
+  }
+  if (text.includes("pad") || text.includes("glove")) {
+    return [{ id: "w4", label: "3 Months Repair", price: 0 }];
+  }
+  return [];
+};
 
 // --- PROPS INTERFACE ---
 interface OrderTableProps {
@@ -73,13 +103,30 @@ const OrderTable: React.FC<OrderTableProps> = ({
   const [configOpen, setConfigOpen] = useState(false);
   const [configSearch, setConfigSearch] = useState("");
 
-  // Popups State
+  // Import Modal State
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+
+  // --- POPUP STATES ---
+
+  // 1. Item Select Popup
   const [popupState, setPopupState] = useState<{
     visible: boolean;
     top: number;
     left: number;
     activeRowId: string | null;
   }>({ visible: false, top: 0, left: 0, activeRowId: null });
+
+  // 2. Warranty Popup
+  const [warrantyPopup, setWarrantyPopup] = useState<{
+    visible: boolean;
+    top: number;
+    left: number;
+    activeRowId: string | null;
+    options: WarrantyOption[];
+  }>({ visible: false, top: 0, left: 0, activeRowId: null, options: [] });
+
+  // State for "Add New Warranty" inputs inside the popup
+  const [newWarranty, setNewWarranty] = useState({ duration: "", price: "" });
 
   const [attributePanelState, setAttributePanelState] = useState<{
     visible: boolean;
@@ -96,7 +143,13 @@ const OrderTable: React.FC<OrderTableProps> = ({
       setRows(initialRows);
       const initialData: Record<string, RowData> = {};
       initialRows.forEach((id) => {
-        initialData[id] = { reciss: "Receipt", qty: 0, rate: 0, amount: 0 };
+        initialData[id] = {
+          reciss: "Receipt",
+          qty: 0,
+          rate: 0,
+          amount: 0,
+          warranty: "",
+        };
       });
       setTableData(initialData);
     }
@@ -117,9 +170,8 @@ const OrderTable: React.FC<OrderTableProps> = ({
     }
   };
 
-  // --- COLUMN DEFINITIONS (ALL POSSIBLE COLUMNS) ---
+  // --- COLUMN DEFINITIONS ---
   const initialColumns: Column[] = [
-    // --- ALWAYS VISIBLE / SYSTEM COLUMNS ---
     {
       id: "sno",
       label: "SNo",
@@ -192,6 +244,17 @@ const OrderTable: React.FC<OrderTableProps> = ({
       resizable: true,
       visible: true,
     },
+
+    // --- WARRANTY COLUMN ---
+    {
+      id: "warranty",
+      label: "Warranty",
+      width: 130,
+      align: "left",
+      resizable: true,
+      visible: true,
+    },
+
     {
       id: "attr",
       label: "Attribute",
@@ -216,8 +279,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
       resizable: true,
       visible: true,
     },
-
-    // --- DEFAULT REQUESTED COLUMNS (Visible: True) ---
     {
       id: "unit",
       label: "Unit",
@@ -255,6 +316,38 @@ const OrderTable: React.FC<OrderTableProps> = ({
       label: "MRP",
       width: 80,
       align: "right",
+      resizable: true,
+      visible: true,
+    },
+    {
+      id: "rate",
+      label: "Rate",
+      width: 120,
+      align: "left",
+      resizable: true,
+      visible: true,
+    },
+    {
+      id: "tacCode",
+      label: "Tax Code",
+      width: 120,
+      align: "left",
+      resizable: true,
+      visible: true,
+    },
+    {
+      id: "taxRate",
+      label: "Tax Rate",
+      width: 120,
+      align: "left",
+      resizable: true,
+      visible: true,
+    },
+    {
+      id: "netRate",
+      label: "Net Rate",
+      width: 120,
+      align: "left",
       resizable: true,
       visible: true,
     },
@@ -298,8 +391,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
       resizable: true,
       visible: true,
     },
-
-    // --- OPTIONAL / CONFIGURABLE COLUMNS (Visible: False by default) ---
+    // Optional Columns
     {
       id: "punit",
       label: "Pack Unit",
@@ -400,17 +492,16 @@ const OrderTable: React.FC<OrderTableProps> = ({
 
   const [columns, setColumns] = useState<Column[]>(initialColumns);
 
-  // Derived state for rendering: only show visible columns
   const visibleColumns = useMemo(
     () => columns.filter((c) => c.visible),
     [columns]
   );
 
-  // --- HANDLERS ---
-  const handleCreateItemClick = () => {
-    setPopupState((prev) => ({ ...prev, visible: false }));
-    setAddNewItemForm(true);
-  };
+  // // --- HANDLERS ---
+  // const handleCreateItemClick = () => {
+  //   setPopupState((prev) => ({ ...prev, visible: false }));
+  //   setAddNewItemForm(true);
+  // };
 
   const handleCloseForm = () => {
     setAddNewItemForm(false);
@@ -429,8 +520,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
     setTableData((prev) => {
       const row = prev[rowId] || {};
       const newData = { ...row, [columnId]: value };
-
-      // AUTO CALCULATION LOGIC
       if (columnId === "qty" || columnId === "rate") {
         const qty = parseFloat(
           columnId === "qty" ? value : String(row.qty || 0)
@@ -438,7 +527,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
         const rate = parseFloat(
           columnId === "rate" ? value : String(row.rate || 0)
         );
-
         if (!isNaN(qty) && !isNaN(rate)) {
           newData.amount = (qty * rate).toFixed(2);
         } else {
@@ -460,7 +548,13 @@ const OrderTable: React.FC<OrderTableProps> = ({
     } else {
       setTableData((prev) => ({
         ...prev,
-        [rowIdToDelete]: { reciss: "Receipt", qty: 0, rate: 0, amount: 0 },
+        [rowIdToDelete]: {
+          reciss: "Receipt",
+          qty: 0,
+          rate: 0,
+          amount: 0,
+          warranty: "",
+        },
       }));
     }
   };
@@ -474,7 +568,13 @@ const OrderTable: React.FC<OrderTableProps> = ({
       setRows(newRows);
       setTableData((prev) => ({
         ...prev,
-        [newId]: { reciss: "Receipt", qty: 0, rate: 0, amount: 0 },
+        [newId]: {
+          reciss: "Receipt",
+          qty: 0,
+          rate: 0,
+          amount: 0,
+          warranty: "",
+        },
       }));
     }
   };
@@ -498,7 +598,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
     setTableData((prev) => ({ ...prev, [targetRowId!]: { ...sourceData } }));
   };
 
-  // --- CONFIG HANDLERS ---
   const toggleColumnVisibility = (colId: string) => {
     setColumns((prev) =>
       prev.map((col) =>
@@ -507,7 +606,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
     );
   };
 
-  // --- POPUP HANDLERS ---
+  // --- ITEM SELECT POPUP HANDLERS ---
   const handleSelectClick = (
     e: React.MouseEvent<HTMLDivElement>,
     rowId: string
@@ -526,6 +625,66 @@ const OrderTable: React.FC<OrderTableProps> = ({
     setPopupState((prev) => ({ ...prev, visible: false, activeRowId: null }));
   };
 
+  const handleItemSelect = (item: ItemApiData) => {
+    if (popupState.activeRowId) {
+      setAttributePanelState({
+        visible: true,
+        activeRowId: popupState.activeRowId,
+        tempItemData: item,
+      });
+      setPopupState((prev) => ({ ...prev, visible: false, activeRowId: null }));
+    }
+  };
+
+  // --- WARRANTY POPUP HANDLERS ---
+  const handleWarrantyClick = (
+    e: React.MouseEvent<HTMLDivElement>,
+    rowId: string
+  ) => {
+    e.stopPropagation();
+    const rowData = tableData[rowId];
+    const options = getStandardWarranties(String(rowData?.select || ""));
+
+    // Only open if item is selected or if you want to allow adding anyway
+    const rect = e.currentTarget.getBoundingClientRect();
+    setWarrantyPopup({
+      visible: true,
+      top: rect.bottom,
+      left: rect.left,
+      activeRowId: rowId,
+      options: options,
+    });
+    setNewWarranty({ duration: "", price: "" }); // Reset new form
+  };
+
+  const closeWarrantyPopup = () => {
+    setWarrantyPopup((prev) => ({
+      ...prev,
+      visible: false,
+      activeRowId: null,
+    }));
+  };
+
+  const handleWarrantySelect = (w: WarrantyOption) => {
+    if (warrantyPopup.activeRowId) {
+      const displayString = w.price > 0 ? `${w.label} (+₹${w.price})` : w.label;
+      handleInputChange(warrantyPopup.activeRowId, "warranty", displayString);
+      closeWarrantyPopup();
+    }
+  };
+
+  const handleAddCustomWarranty = () => {
+    if (!newWarranty.duration) return;
+    if (warrantyPopup.activeRowId) {
+      const price = parseFloat(newWarranty.price) || 0;
+      const label = newWarranty.duration;
+      const displayString = price > 0 ? `${label} (+₹${price})` : label;
+      handleInputChange(warrantyPopup.activeRowId, "warranty", displayString);
+      closeWarrantyPopup();
+    }
+  };
+
+  // --- ATTRIBUTE HANDLERS ---
   const handleAttributeClick = (rowId: string) => {
     const data = tableData[rowId];
     if (data && data.select) {
@@ -547,17 +706,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
     }
   };
 
-  const handleItemSelect = (item: ItemApiData) => {
-    if (popupState.activeRowId) {
-      setAttributePanelState({
-        visible: true,
-        activeRowId: popupState.activeRowId,
-        tempItemData: item,
-      });
-      setPopupState((prev) => ({ ...prev, visible: false, activeRowId: null }));
-    }
-  };
-
   const handleAttributeSave = (attributeData: any) => {
     const { activeRowId, tempItemData } = attributePanelState;
     if (activeRowId && tempItemData) {
@@ -574,7 +722,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
         barcode: tempItemData.barcode || "",
         printdesc: tempItemData.name || "",
       };
-
       const qty = 1;
       const rate = parseFloat(String(tempItemData.sales_rate || 0));
       baseData.amount = (qty * rate).toFixed(2);
@@ -608,6 +755,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
         "widg",
         "batch",
         "reciss",
+        "warranty",
       ].includes(columnId)
     )
       return;
@@ -658,9 +806,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
 
   const handleMouseMove = (e: MouseEvent | globalThis.MouseEvent) => {
     if (resizingRef.current === null) return;
-    // We need to find the actual ID in the master list because we are dragging via visible index
     const colId = visibleColumns[resizingRef.current!].id;
-
     setColumns((prev) => {
       return prev.map((col) => {
         if (col.id === colId) {
@@ -683,7 +829,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
     document.removeEventListener("mouseup", handleMouseUp);
   };
 
-  // Important: Calculate sticky left based on VISIBLE columns only
   const getStickyLeft = (idx: number) =>
     visibleColumns
       .slice(0, idx)
@@ -714,7 +859,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
     return (
       <div className="w-full">
         <div className="bg-white p-6 rounded-xl shadow-lg dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-          {/* Form Header... */}
           <AddNewItem
             onClose={handleCloseForm}
             onSuccess={handleFormSuccess}
@@ -753,7 +897,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          {/* CONFIGURATION BUTTON */}
           <button
             onClick={() => setConfigOpen(true)}
             className="p-1.5 rounded hover:bg-gray-100 text-gray-600 border border-transparent hover:border-gray-300 transition-all"
@@ -763,10 +906,12 @@ const OrderTable: React.FC<OrderTableProps> = ({
           </button>
 
           <button
-            className="px-6 py-1.5 rounded text-xs font-bold text-white shadow-sm"
+            className="px-6 py-1.5 rounded text-xs font-bold text-white shadow-sm flex items-center gap-2"
             style={{ backgroundColor: COLORS.primary }}
+            onClick={() => setIsImportModalOpen(true)}
           >
-            Pull From Order
+            <BarChart2 size={14} />
+            Analyze & Import
           </button>
         </div>
       </div>
@@ -947,6 +1092,33 @@ const OrderTable: React.FC<OrderTableProps> = ({
                                 {rowData.select || "Select..."} <span>▶</span>
                               </div>
                             );
+                          }
+                          // --- NEW WARRANTY LOGIC ---
+                          else if (col.id === "warranty") {
+                            // If user already selected a value, show it. If not, show "Select"
+                            const displayValue = rowData.warranty || "Select";
+                            const hasSelection = !!rowData.warranty;
+
+                            content = (
+                              <div
+                                className="w-full h-full px-1 flex items-center justify-between cursor-pointer hover:bg-gray-100 text-[10px] text-gray-700"
+                                onClick={(e) => handleWarrantyClick(e, rowId)}
+                              >
+                                <span
+                                  className={
+                                    hasSelection
+                                      ? "text-blue-700 font-medium"
+                                      : "text-gray-400 italic"
+                                  }
+                                >
+                                  {displayValue}
+                                </span>
+                                <ChevronDown
+                                  size={10}
+                                  className="text-gray-400"
+                                />
+                              </div>
+                            );
                           } else if (col.id === "amount") {
                             content = (
                               <div className="w-full h-full flex items-center justify-end px-1 bg-gray-50 text-gray-700 font-medium">
@@ -964,7 +1136,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
                               "bdsalerate",
                             ].includes(col.id)
                           ) {
-                            // Numeric Inputs
                             content = (
                               <input
                                 type="text"
@@ -980,7 +1151,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
                               />
                             );
                           } else {
-                            // Text Inputs
                             content = (
                               <input
                                 type="text"
@@ -997,7 +1167,10 @@ const OrderTable: React.FC<OrderTableProps> = ({
                             );
                           }
 
-                          const isReadOnly = !col.resizable && !col.sticky;
+                          const isReadOnly =
+                            !col.resizable &&
+                            !col.sticky &&
+                            col.id !== "warranty";
                           return (
                             <td
                               key={col.id}
@@ -1061,237 +1234,92 @@ const OrderTable: React.FC<OrderTableProps> = ({
         </div>
       </div>
 
-      {/* --- CONFIGURATION POPUP (PORTAL + BRAND COLORS) --- */}
+      {/* --- CONFIGURATION POPUP (PORTAL) --- */}
       {configOpen &&
         ReactDOM.createPortal(
           <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            {/* Click outside to close */}
             <div
               className="absolute inset-0"
               onClick={() => setConfigOpen(false)}
             />
-
             <div
-              className="relative rounded-2xl shadow-2xl w-full max-w-sm flex flex-col border overflow-hidden transform transition-all scale-100"
+              className="relative rounded-2xl shadow-2xl w-full max-w-sm flex flex-col border overflow-hidden"
               style={{
                 backgroundColor: COLORS.white,
                 borderColor: COLORS.border,
                 maxHeight: "80vh",
               }}
             >
-              {/* Modal Header */}
-              <div
-                className="flex justify-between items-center px-5 py-4 border-b"
-                style={{
-                  backgroundColor: COLORS.white,
-                  borderColor: COLORS.border,
-                }}
-              >
-                <div>
-                  <h3
-                    className="font-bold text-lg flex items-center gap-2"
-                    style={{ color: COLORS.textPrimary }}
-                  >
-                    <Settings size={18} style={{ color: COLORS.primary }} />
-                    Table Columns
-                  </h3>
-                  <p
-                    className="text-xs mt-0.5"
-                    style={{ color: COLORS.textMuted }}
-                  >
-                    Toggle columns to show or hide
-                  </p>
-                </div>
-                <button
-                  onClick={() => setConfigOpen(false)}
-                  className="p-2 rounded-full transition-colors hover:bg-gray-100"
-                  style={{ color: COLORS.textMuted }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.color = COLORS.danger)
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.color = COLORS.textMuted)
-                  }
+              <div className="flex justify-between items-center px-5 py-4 border-b">
+                <h3
+                  className="font-bold text-lg flex items-center gap-2"
+                  style={{ color: COLORS.textPrimary }}
                 >
+                  <Settings size={18} style={{ color: COLORS.primary }} /> Table
+                  Columns
+                </h3>
+                <button onClick={() => setConfigOpen(false)}>
                   <X size={20} />
                 </button>
               </div>
-
-              {/* Search Area */}
               <div
                 className="px-5 py-3 border-b"
-                style={{
-                  backgroundColor: COLORS.background,
-                  borderColor: COLORS.border,
-                }}
+                style={{ backgroundColor: COLORS.background }}
               >
                 <div className="relative group">
                   <Search
                     size={16}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 transition-colors"
-                    style={{ color: COLORS.textMuted }}
+                    className="absolute left-3 top-1/2 -translate-y-1/2"
                   />
                   <input
                     type="text"
                     placeholder="Find a column..."
-                    className="w-full pl-10 pr-4 py-2.5 border rounded-lg text-sm outline-none transition-all shadow-sm focus:ring-1"
-                    style={{
-                      backgroundColor: COLORS.white,
-                      borderColor: COLORS.borderDark,
-                      color: COLORS.textPrimary,
-                    }}
+                    className="w-full pl-10 pr-4 py-2.5 border rounded-lg text-sm"
                     value={configSearch}
                     onChange={(e) => setConfigSearch(e.target.value)}
-                    // Add simple focus logic via CSS or inline override
-                    onFocus={(e) => {
-                      e.target.style.borderColor = COLORS.primary;
-                      e.target.style.boxShadow = `0 0 0 1px ${COLORS.primary}`;
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = COLORS.borderDark;
-                      e.target.style.boxShadow = "none";
-                    }}
                   />
                 </div>
               </div>
-
-              {/* Column List */}
-              <div
-                className="overflow-y-auto flex-1 p-3 custom-scrollbar"
-                style={{ backgroundColor: COLORS.white }}
-              >
-                <div className="flex flex-col gap-1">
-                  {columns
-                    .filter(
-                      (c) =>
-                        !["sno", "add", "del", "srch", "copy"].includes(c.id)
-                    )
-                    .filter((c) =>
-                      c.label.toLowerCase().includes(configSearch.toLowerCase())
-                    )
-                    .map((col) => (
-                      <div
-                        key={col.id}
-                        onClick={() => toggleColumnVisibility(col.id)}
-                        className="flex items-center justify-between p-3 rounded-lg cursor-pointer border transition-all duration-200 group"
-                        style={{
-                          backgroundColor: col.visible
-                            ? COLORS.primaryLight
-                            : COLORS.white,
-                          borderColor: col.visible
-                            ? "transparent" // or COLORS.primary if you want a border
-                            : "transparent",
-                        }}
-                        // Hover effect override
-                        onMouseEnter={(e) => {
-                          if (!col.visible)
-                            e.currentTarget.style.backgroundColor =
-                              COLORS.background;
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!col.visible)
-                            e.currentTarget.style.backgroundColor =
-                              COLORS.white;
-                        }}
-                      >
-                        <div className="flex items-center gap-3">
-                          {/* Custom Checkbox Design */}
-                          <div
-                            className="w-5 h-5 rounded flex items-center justify-center border transition-all duration-200 shadow-sm"
+              <div className="overflow-y-auto flex-1 p-3 custom-scrollbar">
+                {columns
+                  .filter(
+                    (c) => !["sno", "add", "del", "srch", "copy"].includes(c.id)
+                  )
+                  .filter((c) =>
+                    c.label.toLowerCase().includes(configSearch.toLowerCase())
+                  )
+                  .map((col) => (
+                    <div
+                      key={col.id}
+                      onClick={() => toggleColumnVisibility(col.id)}
+                      className="flex items-center justify-between p-3 rounded-lg cursor-pointer border"
+                      style={{
+                        backgroundColor: col.visible
+                          ? COLORS.primaryLight
+                          : COLORS.white,
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-5 h-5 rounded flex items-center justify-center border"
+                          style={{
+                            backgroundColor: col.visible
+                              ? COLORS.primary
+                              : COLORS.white,
+                          }}
+                        >
+                          <Check
+                            size={12}
                             style={{
-                              backgroundColor: col.visible
-                                ? COLORS.primary
-                                : COLORS.white,
-                              borderColor: col.visible
-                                ? COLORS.primary
-                                : COLORS.borderDark,
+                              color: COLORS.white,
+                              opacity: col.visible ? 1 : 0,
                             }}
-                          >
-                            <Check
-                              size={12}
-                              className={`transition-transform duration-200 ${
-                                col.visible ? "scale-100" : "scale-0"
-                              }`}
-                              style={{ color: COLORS.white }}
-                              strokeWidth={3}
-                            />
-                          </div>
-                          <span
-                            className="text-sm font-medium transition-colors"
-                            style={{
-                              color: col.visible
-                                ? COLORS.primary
-                                : COLORS.textSecondary,
-                            }}
-                          >
-                            {col.label}
-                          </span>
+                          />
                         </div>
-
-                        {/* Sticky Indicator */}
-                        {col.sticky && (
-                          <span
-                            className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded"
-                            style={{
-                              backgroundColor: COLORS.white,
-                              color: COLORS.primary,
-                              border: `1px solid ${COLORS.primary}40`, // 40 is opacity
-                            }}
-                          >
-                            Fixed
-                          </span>
-                        )}
+                        <span>{col.label}</span>
                       </div>
-                    ))}
-
-                  {/* Empty State */}
-                  {columns.filter(
-                    (c) =>
-                      c.label
-                        .toLowerCase()
-                        .includes(configSearch.toLowerCase()) &&
-                      !["sno", "add"].includes(c.id)
-                  ).length === 0 && (
-                    <div className="flex flex-col items-center justify-center py-8 opacity-50">
-                      <Search
-                        size={32}
-                        className="mb-2"
-                        style={{ color: COLORS.textMuted }}
-                      />
-                      <p
-                        className="text-xs"
-                        style={{ color: COLORS.textMuted }}
-                      >
-                        No columns found matching "{configSearch}"
-                      </p>
                     </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Footer: Reset Button */}
-              <div
-                className="p-3 border-t flex justify-end"
-                style={{
-                  backgroundColor: COLORS.background,
-                  borderColor: COLORS.border,
-                }}
-              >
-                <button
-                  onClick={() => setColumns(initialColumns)}
-                  className="text-xs font-semibold px-3 py-1.5 rounded transition-colors"
-                  style={{ color: COLORS.textSecondary }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = COLORS.neutralHover;
-                    e.currentTarget.style.color = COLORS.textPrimary;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = "transparent";
-                    e.currentTarget.style.color = COLORS.textSecondary;
-                  }}
-                >
-                  Reset to Default
-                </button>
+                  ))}
               </div>
             </div>
           </div>,
@@ -1307,7 +1335,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
         initialData={attributePanelState.tempItemData}
       />
 
-      {/* --- ITEM POPUP --- */}
+      {/* --- ITEM SELECT POPUP (PORTAL) --- */}
       {popupState.visible &&
         ReactDOM.createPortal(
           <>
@@ -1329,78 +1357,165 @@ const OrderTable: React.FC<OrderTableProps> = ({
                     : "none",
               }}
             >
-              {/* HEADER WITH + ICON */}
               <div
                 className="flex justify-between items-center p-2 border-b h-8"
                 style={{ backgroundColor: COLORS.primary, color: COLORS.white }}
               >
                 <span className="font-bold text-xs pl-1">Select Item</span>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleCreateItemClick}
-                    className="hover:bg-green-600 hover:text-white p-0.5 rounded transition-colors"
-                    title="Create New Item"
-                  >
-                    <Plus size={14} />
-                  </button>
-                  <button
-                    onClick={closePopup}
-                    className="hover:bg-red-500 hover:text-white p-0.5 rounded transition-colors"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
+                <button onClick={closePopup}>
+                  <X size={14} />
+                </button>
               </div>
-
               <div className="flex-1 overflow-auto p-0">
                 <table className="w-full text-xs text-left border-collapse">
-                  <thead className="sticky top-0 bg-gray-100 z-10 shadow-sm">
+                  <thead>
                     <tr>
-                      <th className="p-1.5 border font-semibold text-gray-700 w-24">
-                        Code
-                      </th>
-                      <th className="p-1.5 border font-semibold text-gray-700">
-                        Name
-                      </th>
-                      <th className="p-1.5 border font-semibold text-gray-700 w-20">
-                        HSN
-                      </th>
-                      <th className="p-1.5 border font-semibold text-gray-700 w-24">
-                        Barcode
-                      </th>
+                      <th className="p-1.5 border">Code</th>
+                      <th className="p-1.5 border">Name</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {items.length > 0 ? (
-                      items.map((item, idx) => (
-                        <tr
-                          key={item._id || idx}
-                          className="border-b hover:bg-blue-50 cursor-pointer transition-colors"
-                          onClick={() => handleItemSelect(item)}
-                        >
-                          <td className="p-1.5 border">{item.code}</td>
-                          <td className="p-1.5 border">{item.name}</td>
-                          <td className="p-1.5 border">
-                            {item.gst_classfication}
-                          </td>
-                          <td className="p-1.5 border">{item.barcode}</td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td
-                          colSpan={4}
-                          className="p-4 text-center text-gray-500"
-                        >
-                          Loading items...
-                        </td>
+                    {items.map((item, idx) => (
+                      <tr
+                        key={item._id || idx}
+                        className="border-b hover:bg-blue-50 cursor-pointer"
+                        onClick={() => handleItemSelect(item)}
+                      >
+                        <td className="p-1.5 border">{item.code}</td>
+                        <td className="p-1.5 border">{item.name}</td>
                       </tr>
-                    )}
+                    ))}
                   </tbody>
                 </table>
               </div>
             </div>
           </>,
+          document.body
+        )}
+
+      {/* --- WARRANTY POPUP (PORTAL) --- */}
+      {warrantyPopup.visible &&
+        ReactDOM.createPortal(
+          <>
+            <div
+              className="fixed inset-0 z-[9998] cursor-default bg-transparent"
+              onClick={closeWarrantyPopup}
+            />
+            <div
+              className="fixed z-[9999] bg-white border shadow-xl flex flex-col rounded overflow-hidden"
+              style={{
+                top: warrantyPopup.top,
+                left: warrantyPopup.left,
+                borderColor: COLORS.borderDark,
+                width: "300px",
+                // Ensure it flips up if not enough space
+                transform:
+                  warrantyPopup.top + 350 > window.innerHeight
+                    ? "translateY(-100%)"
+                    : "none",
+              }}
+            >
+              {/* Header */}
+              <div className="flex justify-between items-center px-3 py-2 border-b bg-gray-50">
+                <span className="font-bold text-xs text-gray-700 flex items-center gap-1">
+                  <ShieldCheck size={14} className="text-blue-600" /> Select
+                  Warranty
+                </span>
+                <button
+                  onClick={closeWarrantyPopup}
+                  className="text-gray-400 hover:text-red-500"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* List of Warranties */}
+              <div className="max-h-[150px] overflow-y-auto">
+                {warrantyPopup.options.length > 0 ? (
+                  warrantyPopup.options.map((opt) => (
+                    <div
+                      key={opt.id}
+                      className="px-3 py-2 border-b text-xs cursor-pointer hover:bg-blue-50 flex justify-between items-center group"
+                      onClick={() => handleWarrantySelect(opt)}
+                    >
+                      <span className="text-gray-700 font-medium">
+                        {opt.label}
+                      </span>
+                      {opt.price > 0 && (
+                        <span className="text-green-600 font-bold bg-green-50 px-1.5 py-0.5 rounded">
+                          +₹{opt.price}
+                        </span>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-3 text-xs text-center text-gray-400 italic">
+                    No standard plans available for this item.
+                  </div>
+                )}
+              </div>
+
+              {/* Add New Section */}
+              <div className="bg-gray-50 border-t p-3">
+                <div className="text-[10px] uppercase font-bold text-gray-500 mb-2">
+                  Add Custom Plan
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center border bg-white rounded overflow-hidden h-8">
+                    <div className="bg-gray-100 px-2 h-full flex items-center border-r">
+                      <Clock size={12} className="text-gray-500" />
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Duration (e.g. 3 Years)"
+                      className="w-full h-full px-2 text-xs outline-none"
+                      value={newWarranty.duration}
+                      onChange={(e) =>
+                        setNewWarranty((prev) => ({
+                          ...prev,
+                          duration: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  <div className="flex items-center border bg-white rounded overflow-hidden h-8">
+                    <div className="bg-gray-100 px-2 h-full flex items-center border-r">
+                      <DollarSign size={12} className="text-gray-500" />
+                    </div>
+                    <input
+                      type="number"
+                      placeholder="Price (Optional)"
+                      className="w-full h-full px-2 text-xs outline-none"
+                      value={newWarranty.price}
+                      onChange={(e) =>
+                        setNewWarranty((prev) => ({
+                          ...prev,
+                          price: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  <button
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 rounded transition-colors disabled:opacity-50"
+                    onClick={handleAddCustomWarranty}
+                    disabled={!newWarranty.duration}
+                  >
+                    Add & Apply
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>,
+          document.body
+        )}
+
+      {/* --- NEW ORDER IMPORT POPUP (PORTAL) --- */}
+      {isImportModalOpen &&
+        ReactDOM.createPortal(
+          <PullFromOrderModal
+            isOpen={isImportModalOpen}
+            onClose={() => setIsImportModalOpen(false)}
+          />,
           document.body
         )}
 
