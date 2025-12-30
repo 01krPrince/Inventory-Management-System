@@ -185,8 +185,8 @@ const GoodsRecieptNoteForm: React.FC<POSOrderFormProps> = ({
   themeColor = "#0f3c63",
 }) => {
   // --- UI State ---
-  const [isBillToOpen, setBillToOpen] = useState<boolean>(true); // Default open based on screenshot suggestion
-  const [isShipToOpen, setShipToOpen] = useState<boolean>(true); // Default open based on screenshot suggestion
+  const [isBillToOpen, setBillToOpen] = useState<boolean>(false); // Default open based on screenshot suggestion
+  const [isShipToOpen, setShipToOpen] = useState<boolean>(false); // Default open based on screenshot suggestion
 
   // Modals State
   const [isCounterMasterOpen, setIsCounterMasterOpen] = useState(false);

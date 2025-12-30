@@ -288,11 +288,14 @@ const AddPartyBrandModal: React.FC<AddModalProps> = ({
                 value={formData[col.key as keyof PartyBrandFormData] || ""}
                 onChange={handleChange}
                 // Applied Theme Focus Ring
-                className={`w-full p-2.5 border rounded-lg focus:ring-2 shadow-sm outline-none transition-all focus:ring-[${COLORS.primary}]`}
-                style={{
-                  borderColor: COLORS.border,
-                  color: COLORS.textPrimary,
-                }}
+                className={`w-full p-2.5 border rounded-lg focus:ring-2 shadow-sm outline-none transition-all`}
+                style={
+                  {
+                    borderColor: COLORS.border,
+                    color: COLORS.textPrimary,
+                    "--tw-ring-color": COLORS.primary,
+                  } as React.CSSProperties
+                }
                 required={col.required}
               />
             </div>
@@ -418,11 +421,14 @@ const EditPartyBrandModal: React.FC<EditModalProps> = ({
                 }
                 onChange={handleChange}
                 // Applied Theme Focus Ring
-                className={`w-full p-2.5 border rounded-lg focus:ring-2 shadow-sm outline-none transition-all focus:ring-[${COLORS.primary}]`}
-                style={{
-                  borderColor: COLORS.border,
-                  color: COLORS.textPrimary,
-                }}
+                className={`w-full p-2.5 border rounded-lg focus:ring-2 shadow-sm outline-none transition-all`}
+                style={
+                  {
+                    borderColor: COLORS.border,
+                    color: COLORS.textPrimary,
+                    "--tw-ring-color": COLORS.primary,
+                  } as React.CSSProperties
+                }
                 required={col.required}
               />
             </div>
@@ -579,11 +585,14 @@ export default function PartyBrandwiseDiscountCharges() {
                 value={pageSize}
                 onChange={(e) => setPageSize(Number(e.target.value))}
                 // Applied Theme Focus Ring
-                className={`mx-2 p-1 border rounded-md focus:ring-2 outline-none appearance-none cursor-pointer focus:ring-[${COLORS.primary}]`}
-                style={{
-                  borderColor: COLORS.border,
-                  color: COLORS.textPrimary,
-                }}
+                className={`mx-2 p-1 border rounded-md focus:ring-2 outline-none appearance-none cursor-pointer`}
+                style={
+                  {
+                    borderColor: COLORS.border,
+                    color: COLORS.textPrimary,
+                    "--tw-ring-color": COLORS.primary,
+                  } as React.CSSProperties
+                }
               >
                 {pageSizeOptions.map((option) => (
                   <option key={option} value={option}>
@@ -646,11 +655,14 @@ export default function PartyBrandwiseDiscountCharges() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 // Applied Theme Focus Ring
-                className={`w-full p-2.5 pl-10 border rounded-lg focus:ring-2 shadow-sm outline-none focus:ring-[${COLORS.primary}]`}
-                style={{
-                  borderColor: COLORS.border,
-                  color: COLORS.textPrimary,
-                }}
+                className={`w-full p-2.5 pl-10 border rounded-lg focus:ring-2 shadow-sm outline-none`}
+                style={
+                  {
+                    borderColor: COLORS.border,
+                    color: COLORS.textPrimary,
+                    "--tw-ring-color": COLORS.primary,
+                  } as React.CSSProperties
+                }
               />
               <SearchIcon
                 className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4"
@@ -695,10 +707,14 @@ export default function PartyBrandwiseDiscountCharges() {
                 >
                   <input
                     type="checkbox"
-                    // Applied Theme Focus Ring
-                    className={`rounded focus:ring-2 focus:ring-[${COLORS.primary}]`}
+                    className={`rounded focus:ring-2`}
                     checked={areAllOnPageSelected}
                     onChange={handleSelectAll}
+                    style={
+                      {
+                        "--tw-ring-color": COLORS.primary,
+                      } as React.CSSProperties
+                    }
                   />
                 </th>
 

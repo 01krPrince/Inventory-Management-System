@@ -14,9 +14,10 @@ import {
   ArrowDown,
   Settings,
   Check,
-  ShieldCheck, // New Icon
-  Clock, // New Icon
-  DollarSign, // New Icon
+  ShieldCheck,
+  Clock,
+  DollarSign,
+  RotateCcw,
 } from "lucide-react";
 import { COLORS } from "../../../../constants/colors";
 
@@ -76,6 +77,324 @@ interface OrderTableProps {
   tableData: Record<string, RowData>;
   setTableData: React.Dispatch<React.SetStateAction<Record<string, RowData>>>;
 }
+
+// --- CONSTANT: DEFAULT COLUMNS (Moved Outside & Fixed Duplicates) ---
+const DEFAULT_COLUMNS: Column[] = [
+  {
+    id: "sno",
+    label: "SNo",
+    width: 40,
+    sticky: "left",
+    align: "center",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "add",
+    label: "",
+    width: 35,
+    sticky: "left",
+    align: "center",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "del",
+    label: "",
+    width: 35,
+    sticky: "left",
+    align: "center",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "srch",
+    label: "",
+    width: 35,
+    sticky: "left",
+    align: "center",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "copy",
+    label: "",
+    width: 35,
+    sticky: "left",
+    align: "center",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "reciss",
+    label: "Rec Iss",
+    width: 80,
+    align: "center",
+    sticky: "left",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "select",
+    label: "Select Item",
+    width: 110,
+    sticky: "left",
+    align: "left",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "desc",
+    label: "Item Name",
+    width: 180,
+    sticky: "left",
+    align: "left",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "warranty",
+    label: "Warranty",
+    width: 110,
+    align: "left",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "attr",
+    label: "Attribute",
+    width: 40,
+    align: "center",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "widg",
+    label: "Widget",
+    width: 40,
+    align: "center",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "batch",
+    label: "Batch",
+    width: 45,
+    align: "center",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "unit",
+    label: "Unit",
+    width: 70,
+    align: "left",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "qty",
+    label: "Quantity",
+    width: 80,
+    align: "right",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "rate",
+    label: "Rate",
+    width: 80,
+    align: "right",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "amount",
+    label: "Amount",
+    width: 90,
+    align: "right",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "mrp",
+    label: "MRP",
+    width: 80,
+    align: "right",
+    resizable: true,
+    visible: true,
+  },
+  // --- FIX: Renamed duplicate "rate" to "manual_rate" ---
+  {
+    id: "manual_rate",
+    label: "Manual Rate",
+    width: 120,
+    align: "left",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "tacCode",
+    label: "Tax Code",
+    width: 120,
+    align: "left",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "taxRate",
+    label: "Tax Rate",
+    width: 120,
+    align: "left",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "netRate",
+    label: "Net Rate",
+    width: 120,
+    align: "left",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "remark",
+    label: "Remark",
+    width: 120,
+    align: "left",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "printdesc",
+    label: "Description",
+    width: 150,
+    align: "left",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "barcode",
+    label: "Barcode",
+    width: 100,
+    align: "left",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "hsn",
+    label: "HSN Code",
+    width: 80,
+    align: "left",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "brand",
+    label: "Brand",
+    width: 100,
+    align: "left",
+    resizable: true,
+    visible: true,
+  },
+  // Optional Columns
+  {
+    id: "punit",
+    label: "Pack Unit",
+    width: 70,
+    align: "left",
+    resizable: true,
+    visible: false,
+  },
+  {
+    id: "pqty",
+    label: "Pack Qty",
+    width: 70,
+    align: "right",
+    resizable: true,
+    visible: false,
+  },
+  {
+    id: "rateper",
+    label: "Rate Per",
+    width: 80,
+    align: "left",
+    resizable: true,
+    visible: false,
+  },
+  {
+    id: "minrate",
+    label: "Min Rate",
+    width: 80,
+    align: "right",
+    resizable: true,
+    visible: false,
+  },
+  {
+    id: "netrate",
+    label: "Net Rate",
+    width: 80,
+    align: "right",
+    resizable: true,
+    visible: false,
+  },
+  {
+    id: "service",
+    label: "Service Loc",
+    width: 100,
+    align: "center",
+    resizable: true,
+    visible: false,
+  },
+  {
+    id: "itembarcode",
+    label: "Item Barcode",
+    width: 100,
+    align: "left",
+    resizable: true,
+    visible: false,
+  },
+  {
+    id: "bdbatchno",
+    label: "BD Batch No",
+    width: 90,
+    align: "left",
+    resizable: false,
+    visible: false,
+  },
+  {
+    id: "bdexpdate",
+    label: "BD Exp.Date",
+    width: 90,
+    align: "left",
+    resizable: false,
+    visible: false,
+  },
+  {
+    id: "bdsalerate",
+    label: "BD Sale Rate",
+    width: 90,
+    align: "right",
+    resizable: false,
+    visible: false,
+  },
+  {
+    id: "itembalance",
+    label: "Item Balance",
+    width: 80,
+    align: "right",
+    resizable: false,
+    visible: false,
+  },
+  {
+    id: "linelevel",
+    label: "Line Lvl Barcode",
+    width: 110,
+    align: "left",
+    resizable: false,
+    visible: false,
+  },
+];
 
 const OrderTable: React.FC<OrderTableProps> = ({
   rows,
@@ -165,339 +484,24 @@ const OrderTable: React.FC<OrderTableProps> = ({
     }
   };
 
-  // --- COLUMN DEFINITIONS ---
-  const initialColumns: Column[] = [
-    {
-      id: "sno",
-      label: "SNo",
-      width: 40,
-      sticky: "left",
-      align: "center",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "add",
-      label: "",
-      width: 35,
-      sticky: "left",
-      align: "center",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "del",
-      label: "",
-      width: 35,
-      sticky: "left",
-      align: "center",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "srch",
-      label: "",
-      width: 35,
-      sticky: "left",
-      align: "center",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "copy",
-      label: "",
-      width: 35,
-      sticky: "left",
-      align: "center",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "reciss",
-      label: "Rec Iss",
-      width: 80,
-      align: "center",
-      sticky: "left",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "select",
-      label: "Select Item",
-      width: 110,
-      sticky: "left",
-      align: "left",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "desc",
-      label: "Item Name",
-      width: 180,
-      sticky: "left",
-      align: "left",
-      resizable: true,
-      visible: true,
-    },
+  // --- STATE WITH DEFAULT COLUMNS (Deep Copy) ---
+  const [columns, setColumns] = useState<Column[]>(
+    JSON.parse(JSON.stringify(DEFAULT_COLUMNS))
+  );
 
-    // --- ADDED WARRANTY COLUMN HERE (Compatible with your existing columns) ---
-    {
-      id: "warranty",
-      label: "Warranty",
-      width: 110,
-      align: "left",
-      resizable: true,
-      visible: true,
-    },
-
-    {
-      id: "attr",
-      label: "Attribute",
-      width: 40,
-      align: "center",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "widg",
-      label: "Widget",
-      width: 40,
-      align: "center",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "batch",
-      label: "Batch",
-      width: 45,
-      align: "center",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "unit",
-      label: "Unit",
-      width: 70,
-      align: "left",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "qty",
-      label: "Quantity",
-      width: 80,
-      align: "right",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "rate",
-      label: "Rate",
-      width: 80,
-      align: "right",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "amount",
-      label: "Amount",
-      width: 90,
-      align: "right",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "mrp",
-      label: "MRP",
-      width: 80,
-      align: "right",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "rate",
-      label: "Rate",
-      width: 120,
-      align: "left",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "tacCode",
-      label: "Tax Code",
-      width: 120,
-      align: "left",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "taxRate",
-      label: "Tax Rate",
-      width: 120,
-      align: "left",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "netRate",
-      label: "Net Rate",
-      width: 120,
-      align: "left",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "remark",
-      label: "Remark",
-      width: 120,
-      align: "left",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "printdesc",
-      label: "Description",
-      width: 150,
-      align: "left",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "barcode",
-      label: "Barcode",
-      width: 100,
-      align: "left",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "hsn",
-      label: "HSN Code",
-      width: 80,
-      align: "left",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "brand",
-      label: "Brand",
-      width: 100,
-      align: "left",
-      resizable: true,
-      visible: true,
-    },
-    // Optional Columns
-    {
-      id: "punit",
-      label: "Pack Unit",
-      width: 70,
-      align: "left",
-      resizable: true,
-      visible: false,
-    },
-    {
-      id: "pqty",
-      label: "Pack Qty",
-      width: 70,
-      align: "right",
-      resizable: true,
-      visible: false,
-    },
-    {
-      id: "rateper",
-      label: "Rate Per",
-      width: 80,
-      align: "left",
-      resizable: true,
-      visible: false,
-    },
-    {
-      id: "minrate",
-      label: "Min Rate",
-      width: 80,
-      align: "right",
-      resizable: true,
-      visible: false,
-    },
-    {
-      id: "netrate",
-      label: "Net Rate",
-      width: 80,
-      align: "right",
-      resizable: true,
-      visible: false,
-    },
-    {
-      id: "service",
-      label: "Service Loc",
-      width: 100,
-      align: "center",
-      resizable: true,
-      visible: false,
-    },
-    {
-      id: "itembarcode",
-      label: "Item Barcode",
-      width: 100,
-      align: "left",
-      resizable: true,
-      visible: false,
-    },
-    {
-      id: "bdbatchno",
-      label: "BD Batch No",
-      width: 90,
-      align: "left",
-      resizable: false,
-      visible: false,
-    },
-    {
-      id: "bdexpdate",
-      label: "BD Exp.Date",
-      width: 90,
-      align: "left",
-      resizable: false,
-      visible: false,
-    },
-    {
-      id: "bdsalerate",
-      label: "BD Sale Rate",
-      width: 90,
-      align: "right",
-      resizable: false,
-      visible: false,
-    },
-    {
-      id: "itembalance",
-      label: "Item Balance",
-      width: 80,
-      align: "right",
-      resizable: false,
-      visible: false,
-    },
-    {
-      id: "linelevel",
-      label: "Line Lvl Barcode",
-      width: 110,
-      align: "left",
-      resizable: false,
-      visible: false,
-    },
-  ];
-
-  const [columns, setColumns] = useState<Column[]>(initialColumns);
-  const [isPullModalOpen, setIsPullModalOpen] = useState<boolean>(false); // Used for Analyze & Import
+  const [isPullModalOpen, setIsPullModalOpen] = useState<boolean>(false);
 
   const visibleColumns = useMemo(
     () => columns.filter((c) => c.visible),
     [columns]
   );
 
-  // --- HANDLERS ---
-  // const handleCreateItemClick = () => {
-  //   setPopupState((prev) => ({ ...prev, visible: false }));
-  //   setAddNewItemForm(true);
-  // };
+  // --- RESET HANDLER ---
+  const handleResetDefault = () => {
+    // This restores widths, visibility, and order exactly as defined in DEFAULT_COLUMNS
+    setColumns(JSON.parse(JSON.stringify(DEFAULT_COLUMNS)));
+    setConfigSearch("");
+  };
 
   const handleCloseForm = () => {
     setAddNewItemForm(false);
@@ -1240,89 +1244,149 @@ const OrderTable: React.FC<OrderTableProps> = ({
       {/* --- CONFIGURATION POPUP (PORTAL) --- */}
       {configOpen &&
         ReactDOM.createPortal(
-          <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
             <div
               className="absolute inset-0"
               onClick={() => setConfigOpen(false)}
             />
             <div
-              className="relative rounded-2xl shadow-2xl w-full max-w-sm flex flex-col border overflow-hidden"
+              className="relative rounded-xl shadow-2xl w-full max-w-3xl flex flex-col border overflow-hidden"
               style={{
                 backgroundColor: COLORS.white,
                 borderColor: COLORS.border,
-                maxHeight: "80vh",
+                maxHeight: "85vh",
               }}
             >
-              <div className="flex justify-between items-center px-5 py-4 border-b">
+              {/* Header */}
+              <div
+                className="flex justify-between items-center px-6 py-4 border-b"
+                style={{ borderColor: COLORS.border }}
+              >
                 <h3
-                  className="font-bold text-lg flex items-center gap-2"
+                  className="font-bold text-xl flex items-center gap-2"
                   style={{ color: COLORS.textPrimary }}
                 >
-                  <Settings size={18} style={{ color: COLORS.primary }} /> Table
+                  <Settings size={20} style={{ color: COLORS.primary }} /> Table
                   Columns
                 </h3>
-                <button onClick={() => setConfigOpen(false)}>
-                  <X size={20} />
+                <button
+                  onClick={() => setConfigOpen(false)}
+                  className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+                >
+                  <X size={22} style={{ color: COLORS.textSecondary }} />
                 </button>
               </div>
+
+              {/* Search Bar */}
               <div
-                className="px-5 py-3 border-b"
-                style={{ backgroundColor: COLORS.background }}
+                className="px-6 py-4 border-b"
+                style={{
+                  backgroundColor: COLORS.background,
+                  borderColor: COLORS.border,
+                }}
               >
                 <div className="relative group">
                   <Search
-                    size={16}
-                    className="absolute left-3 top-1/2 -translate-y-1/2"
+                    size={18}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
                   />
                   <input
                     type="text"
-                    placeholder="Find a column..."
-                    className="w-full pl-10 pr-4 py-2.5 border rounded-lg text-sm"
+                    placeholder="Search columns..."
+                    className="w-full pl-10 pr-4 py-3 border rounded-lg text-sm transition-all focus:ring-2 outline-none"
+                    style={{
+                      borderColor: COLORS.border,
+                    }}
                     value={configSearch}
                     onChange={(e) => setConfigSearch(e.target.value)}
                   />
                 </div>
               </div>
-              <div className="overflow-y-auto flex-1 p-3 custom-scrollbar">
-                {columns
-                  .filter(
-                    (c) => !["sno", "add", "del", "srch", "copy"].includes(c.id)
-                  )
-                  .filter((c) =>
-                    c.label.toLowerCase().includes(configSearch.toLowerCase())
-                  )
-                  .map((col) => (
-                    <div
-                      key={col.id}
-                      onClick={() => toggleColumnVisibility(col.id)}
-                      className="flex items-center justify-between p-3 rounded-lg cursor-pointer border"
-                      style={{
-                        backgroundColor: col.visible
-                          ? COLORS.primaryLight
-                          : COLORS.white,
-                      }}
-                    >
-                      <div className="flex items-center gap-3">
+
+              {/* Grid Content */}
+              <div className="overflow-y-auto flex-1 p-6 custom-scrollbar">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {columns
+                    .filter(
+                      (c) =>
+                        !["sno", "add", "del", "srch", "copy"].includes(c.id)
+                    )
+                    .filter((c) =>
+                      c.label.toLowerCase().includes(configSearch.toLowerCase())
+                    )
+                    .map((col) => (
+                      <div
+                        key={col.id}
+                        onClick={() => toggleColumnVisibility(col.id)}
+                        className="flex items-center gap-3 p-3 rounded-lg cursor-pointer border transition-all hover:shadow-sm select-none"
+                        style={{
+                          backgroundColor: col.visible
+                            ? `${COLORS.primary}10`
+                            : COLORS.white,
+                          borderColor: col.visible
+                            ? COLORS.primary
+                            : COLORS.border,
+                        }}
+                      >
                         <div
-                          className="w-5 h-5 rounded flex items-center justify-center border"
+                          className="w-5 h-5 rounded flex items-center justify-center border transition-colors"
                           style={{
                             backgroundColor: col.visible
                               ? COLORS.primary
                               : COLORS.white,
+                            borderColor: col.visible
+                              ? COLORS.primary
+                              : "#e5e7eb",
                           }}
                         >
                           <Check
-                            size={12}
+                            size={14}
+                            className="transition-opacity"
                             style={{
                               color: COLORS.white,
                               opacity: col.visible ? 1 : 0,
                             }}
                           />
                         </div>
-                        <span>{col.label}</span>
+                        <span
+                          className="text-sm font-medium truncate"
+                          style={{
+                            color: col.visible
+                              ? COLORS.textPrimary
+                              : COLORS.textSecondary,
+                          }}
+                        >
+                          {col.label}
+                        </span>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                </div>
+              </div>
+
+              {/* Footer with Reset Button */}
+              <div
+                className="px-6 py-4 border-t flex justify-between items-center bg-gray-50"
+                style={{ borderColor: COLORS.border }}
+              >
+                <button
+                  onClick={handleResetDefault}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
+                  style={{ color: COLORS.textSecondary }}
+                >
+                  <RotateCcw size={16} /> Reset to Default
+                </button>
+
+                <div className="text-xs text-gray-400">
+                  {columns.filter((c) => c.visible).length} columns visible
+                </div>
+
+                <button
+                  className="px-6 py-1.5 rounded text-xs font-bold text-white shadow-sm flex items-center gap-2"
+                  style={{ backgroundColor: COLORS.primary }}
+                  onClick={() => setConfigOpen(false)}
+                >
+                  Apply
+                </button>
               </div>
             </div>
           </div>,
@@ -1400,28 +1464,23 @@ const OrderTable: React.FC<OrderTableProps> = ({
       {warrantyPopup.visible &&
         ReactDOM.createPortal(
           <>
-            {/* Invisible Backdrop to catch clicks outside */}
             <div
               className="fixed inset-0 z-[9998] cursor-default bg-transparent"
               onClick={closeWarrantyPopup}
             />
-
-            {/* Popup Container */}
             <div
               className="fixed z-[9999] bg-white border border-gray-200 shadow-2xl flex flex-col rounded-md overflow-hidden ring-1 ring-black/5"
               style={{
                 top: warrantyPopup.top,
                 left: warrantyPopup.left,
-                // Using your existing style variable, plus tailwind border fallback
                 borderColor: COLORS.borderDark || "#e5e7eb",
-                width: "320px", // Slightly wider for better spacing
+                width: "320px",
                 transform:
                   warrantyPopup.top + 350 > window.innerHeight
                     ? "translateY(-100%)"
                     : "none",
               }}
             >
-              {/* Header - Styled like a Table Header */}
               <div className="flex justify-between items-center px-4 py-3 border-b border-gray-200 bg-gray-50">
                 <span className="font-semibold text-sm text-gray-700 flex items-center gap-2">
                   <ShieldCheck size={16} className="text-blue-600" />
@@ -1435,7 +1494,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
                 </button>
               </div>
 
-              {/* List of Warranties - Styled like Table Rows */}
               <div className="max-h-[200px] overflow-y-auto custom-scrollbar">
                 {warrantyPopup.options.length > 0 ? (
                   warrantyPopup.options.map((opt) => (
@@ -1461,13 +1519,11 @@ const OrderTable: React.FC<OrderTableProps> = ({
                 )}
               </div>
 
-              {/* Add New Section - Styled like Table Footer/Toolbar */}
               <div className="bg-gray-50 border-t border-gray-200 p-3">
                 <div className="text-[11px] uppercase tracking-wider font-bold text-gray-500 mb-2 pl-1">
                   Add Custom Plan
                 </div>
                 <div className="space-y-2">
-                  {/* Duration Input */}
                   <div className="flex items-center border border-gray-300 bg-white rounded hover:border-blue-400 transition-colors h-9 overflow-hidden">
                     <div className="bg-gray-100 px-3 h-full flex items-center border-r border-gray-300 text-gray-500">
                       <Clock size={14} />
@@ -1485,8 +1541,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
                       }
                     />
                   </div>
-
-                  {/* Price Input */}
                   <div className="flex items-center border border-gray-300 bg-white rounded hover:border-blue-400 transition-colors h-9 overflow-hidden">
                     <div className="bg-gray-100 px-3 h-full flex items-center border-r border-gray-300 text-gray-500">
                       <DollarSign size={14} />
@@ -1504,131 +1558,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
                       }
                     />
                   </div>
-
-                  {/* Action Button */}
-                  <button
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2 rounded shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
-                    onClick={handleAddCustomWarranty}
-                    disabled={!newWarranty.duration}
-                  >
-                    Add & Apply
-                  </button>
-                </div>
-              </div>
-            </div>
-          </>,
-          document.body
-        )}
-      {/* --- WARRANTY POPUP (PORTAL) --- */}
-      {warrantyPopup.visible &&
-        ReactDOM.createPortal(
-          <>
-            {/* Invisible Backdrop to catch clicks outside */}
-            <div
-              className="fixed inset-0 z-[9998] cursor-default bg-transparent"
-              onClick={closeWarrantyPopup}
-            />
-
-            {/* Popup Container */}
-            <div
-              className="fixed z-[9999] bg-white border border-gray-200 shadow-2xl flex flex-col rounded-md overflow-hidden ring-1 ring-black/5"
-              style={{
-                top: warrantyPopup.top,
-                left: warrantyPopup.left,
-                // Using your existing style variable, plus tailwind border fallback
-                borderColor: COLORS.borderDark || "#e5e7eb",
-                width: "320px", // Slightly wider for better spacing
-                transform:
-                  warrantyPopup.top + 350 > window.innerHeight
-                    ? "translateY(-100%)"
-                    : "none",
-              }}
-            >
-              {/* Header - Styled like a Table Header */}
-              <div className="flex justify-between items-center px-4 py-3 border-b border-gray-200 bg-gray-50">
-                <span className="font-semibold text-sm text-gray-700 flex items-center gap-2">
-                  <ShieldCheck size={16} className="text-blue-600" />
-                  Select Warranty
-                </span>
-                <button
-                  onClick={closeWarrantyPopup}
-                  className="text-gray-400 hover:text-red-500 transition-colors"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              {/* List of Warranties - Styled like Table Rows */}
-              <div className="max-h-[200px] overflow-y-auto custom-scrollbar">
-                {warrantyPopup.options.length > 0 ? (
-                  warrantyPopup.options.map((opt) => (
-                    <div
-                      key={opt.id}
-                      className="px-4 py-2.5 border-b border-gray-100 text-sm cursor-pointer hover:bg-blue-50/50 flex justify-between items-center group transition-colors last:border-0"
-                      onClick={() => handleWarrantySelect(opt)}
-                    >
-                      <span className="text-gray-700 font-medium group-hover:text-blue-700">
-                        {opt.label}
-                      </span>
-                      {opt.price > 0 && (
-                        <span className="text-emerald-700 font-bold bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded text-xs">
-                          +₹{opt.price}
-                        </span>
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  <div className="p-4 text-sm text-center text-gray-400 italic bg-white">
-                    No standard plans available for this item.
-                  </div>
-                )}
-              </div>
-
-              {/* Add New Section - Styled like Table Footer/Toolbar */}
-              <div className="bg-gray-50 border-t border-gray-200 p-3">
-                <div className="text-[11px] uppercase tracking-wider font-bold text-gray-500 mb-2 pl-1">
-                  Add Custom Plan
-                </div>
-                <div className="space-y-2">
-                  {/* Duration Input */}
-                  <div className="flex items-center border border-gray-300 bg-white rounded hover:border-blue-400 transition-colors h-9 overflow-hidden">
-                    <div className="bg-gray-100 px-3 h-full flex items-center border-r border-gray-300 text-gray-500">
-                      <Clock size={14} />
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="Duration (e.g. 3 Years)"
-                      className="w-full h-full px-3 text-sm outline-none text-gray-700 placeholder:text-gray-400"
-                      value={newWarranty.duration}
-                      onChange={(e) =>
-                        setNewWarranty((prev) => ({
-                          ...prev,
-                          duration: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-
-                  {/* Price Input */}
-                  <div className="flex items-center border border-gray-300 bg-white rounded hover:border-blue-400 transition-colors h-9 overflow-hidden">
-                    <div className="bg-gray-100 px-3 h-full flex items-center border-r border-gray-300 text-gray-500">
-                      <DollarSign size={14} />
-                    </div>
-                    <input
-                      type="number"
-                      placeholder="Price (Optional)"
-                      className="w-full h-full px-3 text-sm outline-none text-gray-700 placeholder:text-gray-400"
-                      value={newWarranty.price}
-                      onChange={(e) =>
-                        setNewWarranty((prev) => ({
-                          ...prev,
-                          price: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-
-                  {/* Action Button */}
                   <button
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2 rounded shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
                     onClick={handleAddCustomWarranty}

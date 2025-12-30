@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import GoodsRecieptNoteHeader from "./GoodsRecieptNoteHeader";
 import GoodsRecieptNoteForm from "./GoodsRecieptNoteForm";
-import OrderTable from "./OrderTable";
+import OrderTable from "../purchaseOrder/OrderTable";
 import GoodsRecieptNoteFooter from "./GoodsRecieptNoteFooter";
 import { COLORS } from "../../../../constants/colors";
 

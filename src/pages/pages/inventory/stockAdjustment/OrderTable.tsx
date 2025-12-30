@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   DollarSign,
   Clock,
+  RotateCcw,
 } from "lucide-react";
 import { COLORS } from "../../../../constants/colors";
 
@@ -79,6 +80,327 @@ interface OrderTableProps {
   tableData: Record<string, RowData>;
   setTableData: React.Dispatch<React.SetStateAction<Record<string, RowData>>>;
 }
+
+// --- FIXED: MOVED COLUMNS DEFINITION OUTSIDE THE COMPONENT ---
+// This ensures these values are never modified by the component state
+const DEFAULT_COLUMNS: Column[] = [
+  {
+    id: "sno",
+    label: "SNo",
+    width: 40,
+    sticky: "left",
+    align: "center",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "add",
+    label: "",
+    width: 35,
+    sticky: "left",
+    align: "center",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "del",
+    label: "",
+    width: 35,
+    sticky: "left",
+    align: "center",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "srch",
+    label: "",
+    width: 35,
+    sticky: "left",
+    align: "center",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "copy",
+    label: "",
+    width: 35,
+    sticky: "left",
+    align: "center",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "reciss",
+    label: "Rec Iss",
+    width: 80,
+    align: "center",
+    sticky: "left",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "select",
+    label: "Select Item",
+    width: 110,
+    sticky: "left",
+    align: "left",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "desc",
+    label: "Item Name",
+    width: 180,
+    sticky: "left",
+    align: "left",
+    resizable: true,
+    visible: true,
+  },
+
+  // --- WARRANTY COLUMN ---
+  {
+    id: "warranty",
+    label: "Warranty",
+    width: 130,
+    align: "left",
+    resizable: true,
+    visible: true,
+  },
+
+  {
+    id: "attr",
+    label: "Attribute",
+    width: 40,
+    align: "center",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "widg",
+    label: "Widget",
+    width: 40,
+    align: "center",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "batch",
+    label: "Batch",
+    width: 45,
+    align: "center",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "unit",
+    label: "Unit",
+    width: 70,
+    align: "left",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "qty",
+    label: "Quantity",
+    width: 80,
+    align: "right",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "rate",
+    label: "Rate",
+    width: 80,
+    align: "right",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "amount",
+    label: "Amount",
+    width: 90,
+    align: "right",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "mrp",
+    label: "MRP",
+    width: 80,
+    align: "right",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "rate",
+    label: "Rate",
+    width: 120,
+    align: "left",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "tacCode",
+    label: "Tax Code",
+    width: 120,
+    align: "left",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "taxRate",
+    label: "Tax Rate",
+    width: 120,
+    align: "left",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "netRate",
+    label: "Net Rate",
+    width: 120,
+    align: "left",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "remark",
+    label: "Remark",
+    width: 120,
+    align: "left",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "printdesc",
+    label: "Description",
+    width: 150,
+    align: "left",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "barcode",
+    label: "Barcode",
+    width: 100,
+    align: "left",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "hsn",
+    label: "HSN Code",
+    width: 80,
+    align: "left",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "brand",
+    label: "Brand",
+    width: 100,
+    align: "left",
+    resizable: true,
+    visible: true,
+  },
+  // Optional Columns
+  {
+    id: "punit",
+    label: "Pack Unit",
+    width: 70,
+    align: "left",
+    resizable: true,
+    visible: false,
+  },
+  {
+    id: "pqty",
+    label: "Pack Qty",
+    width: 70,
+    align: "right",
+    resizable: true,
+    visible: false,
+  },
+  {
+    id: "rateper",
+    label: "Rate Per",
+    width: 80,
+    align: "left",
+    resizable: true,
+    visible: false,
+  },
+  {
+    id: "minrate",
+    label: "Min Rate",
+    width: 80,
+    align: "right",
+    resizable: true,
+    visible: false,
+  },
+  {
+    id: "netrate",
+    label: "Net Rate",
+    width: 80,
+    align: "right",
+    resizable: true,
+    visible: false,
+  },
+  {
+    id: "service",
+    label: "Service Loc",
+    width: 100,
+    align: "center",
+    resizable: true,
+    visible: false,
+  },
+  {
+    id: "itembarcode",
+    label: "Item Barcode",
+    width: 100,
+    align: "left",
+    resizable: true,
+    visible: false,
+  },
+  {
+    id: "bdbatchno",
+    label: "BD Batch No",
+    width: 90,
+    align: "left",
+    resizable: false,
+    visible: false,
+  },
+  {
+    id: "bdexpdate",
+    label: "BD Exp.Date",
+    width: 90,
+    align: "left",
+    resizable: false,
+    visible: false,
+  },
+  {
+    id: "bdsalerate",
+    label: "BD Sale Rate",
+    width: 90,
+    align: "right",
+    resizable: false,
+    visible: false,
+  },
+  {
+    id: "itembalance",
+    label: "Item Balance",
+    width: 80,
+    align: "right",
+    resizable: false,
+    visible: false,
+  },
+  {
+    id: "linelevel",
+    label: "Line Lvl Barcode",
+    width: 110,
+    align: "left",
+    resizable: false,
+    visible: false,
+  },
+];
 
 const OrderTable: React.FC<OrderTableProps> = ({
   rows,
@@ -170,338 +492,24 @@ const OrderTable: React.FC<OrderTableProps> = ({
     }
   };
 
-  // --- COLUMN DEFINITIONS ---
-  const initialColumns: Column[] = [
-    {
-      id: "sno",
-      label: "SNo",
-      width: 40,
-      sticky: "left",
-      align: "center",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "add",
-      label: "",
-      width: 35,
-      sticky: "left",
-      align: "center",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "del",
-      label: "",
-      width: 35,
-      sticky: "left",
-      align: "center",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "srch",
-      label: "",
-      width: 35,
-      sticky: "left",
-      align: "center",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "copy",
-      label: "",
-      width: 35,
-      sticky: "left",
-      align: "center",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "reciss",
-      label: "Rec Iss",
-      width: 80,
-      align: "center",
-      sticky: "left",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "select",
-      label: "Select Item",
-      width: 110,
-      sticky: "left",
-      align: "left",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "desc",
-      label: "Item Name",
-      width: 180,
-      sticky: "left",
-      align: "left",
-      resizable: true,
-      visible: true,
-    },
-
-    // --- WARRANTY COLUMN ---
-    {
-      id: "warranty",
-      label: "Warranty",
-      width: 130,
-      align: "left",
-      resizable: true,
-      visible: true,
-    },
-
-    {
-      id: "attr",
-      label: "Attribute",
-      width: 40,
-      align: "center",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "widg",
-      label: "Widget",
-      width: 40,
-      align: "center",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "batch",
-      label: "Batch",
-      width: 45,
-      align: "center",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "unit",
-      label: "Unit",
-      width: 70,
-      align: "left",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "qty",
-      label: "Quantity",
-      width: 80,
-      align: "right",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "rate",
-      label: "Rate",
-      width: 80,
-      align: "right",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "amount",
-      label: "Amount",
-      width: 90,
-      align: "right",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "mrp",
-      label: "MRP",
-      width: 80,
-      align: "right",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "rate",
-      label: "Rate",
-      width: 120,
-      align: "left",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "tacCode",
-      label: "Tax Code",
-      width: 120,
-      align: "left",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "taxRate",
-      label: "Tax Rate",
-      width: 120,
-      align: "left",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "netRate",
-      label: "Net Rate",
-      width: 120,
-      align: "left",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "remark",
-      label: "Remark",
-      width: 120,
-      align: "left",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "printdesc",
-      label: "Description",
-      width: 150,
-      align: "left",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "barcode",
-      label: "Barcode",
-      width: 100,
-      align: "left",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "hsn",
-      label: "HSN Code",
-      width: 80,
-      align: "left",
-      resizable: true,
-      visible: true,
-    },
-    {
-      id: "brand",
-      label: "Brand",
-      width: 100,
-      align: "left",
-      resizable: true,
-      visible: true,
-    },
-    // Optional Columns
-    {
-      id: "punit",
-      label: "Pack Unit",
-      width: 70,
-      align: "left",
-      resizable: true,
-      visible: false,
-    },
-    {
-      id: "pqty",
-      label: "Pack Qty",
-      width: 70,
-      align: "right",
-      resizable: true,
-      visible: false,
-    },
-    {
-      id: "rateper",
-      label: "Rate Per",
-      width: 80,
-      align: "left",
-      resizable: true,
-      visible: false,
-    },
-    {
-      id: "minrate",
-      label: "Min Rate",
-      width: 80,
-      align: "right",
-      resizable: true,
-      visible: false,
-    },
-    {
-      id: "netrate",
-      label: "Net Rate",
-      width: 80,
-      align: "right",
-      resizable: true,
-      visible: false,
-    },
-    {
-      id: "service",
-      label: "Service Loc",
-      width: 100,
-      align: "center",
-      resizable: true,
-      visible: false,
-    },
-    {
-      id: "itembarcode",
-      label: "Item Barcode",
-      width: 100,
-      align: "left",
-      resizable: true,
-      visible: false,
-    },
-    {
-      id: "bdbatchno",
-      label: "BD Batch No",
-      width: 90,
-      align: "left",
-      resizable: false,
-      visible: false,
-    },
-    {
-      id: "bdexpdate",
-      label: "BD Exp.Date",
-      width: 90,
-      align: "left",
-      resizable: false,
-      visible: false,
-    },
-    {
-      id: "bdsalerate",
-      label: "BD Sale Rate",
-      width: 90,
-      align: "right",
-      resizable: false,
-      visible: false,
-    },
-    {
-      id: "itembalance",
-      label: "Item Balance",
-      width: 80,
-      align: "right",
-      resizable: false,
-      visible: false,
-    },
-    {
-      id: "linelevel",
-      label: "Line Lvl Barcode",
-      width: 110,
-      align: "left",
-      resizable: false,
-      visible: false,
-    },
-  ];
-
-  const [columns, setColumns] = useState<Column[]>(initialColumns);
+  // --- FIXED: INITIALIZE STATE USING DEEP COPY OF DEFAULT_COLUMNS ---
+  const [columns, setColumns] = useState<Column[]>(
+    JSON.parse(JSON.stringify(DEFAULT_COLUMNS))
+  );
 
   const visibleColumns = useMemo(
     () => columns.filter((c) => c.visible),
     [columns]
   );
 
-  // // --- HANDLERS ---
-  // const handleCreateItemClick = () => {
-  //   setPopupState((prev) => ({ ...prev, visible: false }));
-  //   setAddNewItemForm(true);
-  // };
+  // --- FIXED: RESET HANDLER ---
+  const handleResetDefault = () => {
+    // This restores widths, visibility, and order exactly as defined in DEFAULT_COLUMNS
+    setColumns(JSON.parse(JSON.stringify(DEFAULT_COLUMNS)));
+
+    // Optional: Clear the search filter in the modal
+    setConfigSearch("");
+  };
 
   const handleCloseForm = () => {
     setAddNewItemForm(false);
@@ -908,7 +916,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
           <button
             className="px-6 py-1.5 rounded text-xs font-bold text-white shadow-sm flex items-center gap-2"
             style={{ backgroundColor: COLORS.primary }}
-            // onClick={() => setIsImportModalOpen(true)}
+            onClick={() => setIsImportModalOpen(true)}
           >
             <BarChart2 size={14} />
             Analyze & Import
@@ -1237,89 +1245,154 @@ const OrderTable: React.FC<OrderTableProps> = ({
       {/* --- CONFIGURATION POPUP (PORTAL) --- */}
       {configOpen &&
         ReactDOM.createPortal(
-          <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+            {/* Backdrop */}
             <div
               className="absolute inset-0"
               onClick={() => setConfigOpen(false)}
             />
+
+            {/* Modal Content */}
             <div
-              className="relative rounded-2xl shadow-2xl w-full max-w-sm flex flex-col border overflow-hidden"
+              className="relative rounded-xl shadow-2xl w-full max-w-3xl flex flex-col border overflow-hidden"
               style={{
                 backgroundColor: COLORS.white,
                 borderColor: COLORS.border,
-                maxHeight: "80vh",
+                maxHeight: "85vh",
               }}
             >
-              <div className="flex justify-between items-center px-5 py-4 border-b">
+              {/* Header */}
+              <div
+                className="flex justify-between items-center px-6 py-4 border-b"
+                style={{ borderColor: COLORS.border }}
+              >
                 <h3
-                  className="font-bold text-lg flex items-center gap-2"
+                  className="font-bold text-xl flex items-center gap-2"
                   style={{ color: COLORS.textPrimary }}
                 >
-                  <Settings size={18} style={{ color: COLORS.primary }} /> Table
-                  Columns
+                  <Settings size={20} style={{ color: COLORS.primary }} />
+                  Table Configuration
                 </h3>
-                <button onClick={() => setConfigOpen(false)}>
-                  <X size={20} />
+                <button
+                  onClick={() => setConfigOpen(false)}
+                  className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+                >
+                  <X size={22} style={{ color: COLORS.textSecondary }} />
                 </button>
               </div>
+
+              {/* Search Bar Area */}
               <div
-                className="px-5 py-3 border-b"
-                style={{ backgroundColor: COLORS.background }}
+                className="px-6 py-4 border-b"
+                style={{
+                  backgroundColor: COLORS.background,
+                  borderColor: COLORS.border,
+                }}
               >
                 <div className="relative group">
                   <Search
-                    size={16}
-                    className="absolute left-3 top-1/2 -translate-y-1/2"
+                    size={18}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
                   />
                   <input
                     type="text"
-                    placeholder="Find a column..."
-                    className="w-full pl-10 pr-4 py-2.5 border rounded-lg text-sm"
+                    placeholder="Search columns to show/hide..."
+                    className="w-full pl-10 pr-4 py-3 border rounded-lg text-sm transition-all focus:ring-2 outline-none"
+                    style={{
+                      borderColor: COLORS.border,
+                      // focusRing: COLORS.primary,
+                    }}
                     value={configSearch}
                     onChange={(e) => setConfigSearch(e.target.value)}
                   />
                 </div>
               </div>
-              <div className="overflow-y-auto flex-1 p-3 custom-scrollbar">
-                {columns
-                  .filter(
-                    (c) => !["sno", "add", "del", "srch", "copy"].includes(c.id)
-                  )
-                  .filter((c) =>
-                    c.label.toLowerCase().includes(configSearch.toLowerCase())
-                  )
-                  .map((col) => (
-                    <div
-                      key={col.id}
-                      onClick={() => toggleColumnVisibility(col.id)}
-                      className="flex items-center justify-between p-3 rounded-lg cursor-pointer border"
-                      style={{
-                        backgroundColor: col.visible
-                          ? COLORS.primaryLight
-                          : COLORS.white,
-                      }}
-                    >
-                      <div className="flex items-center gap-3">
+
+              {/* Grid Content Area (Multiple Columns) */}
+              <div className="overflow-y-auto flex-1 p-6 custom-scrollbar">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {columns
+                    .filter(
+                      (c) =>
+                        !["sno", "add", "del", "srch", "copy"].includes(c.id)
+                    )
+                    .filter((c) =>
+                      c.label.toLowerCase().includes(configSearch.toLowerCase())
+                    )
+                    .map((col) => (
+                      <div
+                        key={col.id}
+                        onClick={() => toggleColumnVisibility(col.id)}
+                        className="flex items-center gap-3 p-3 rounded-lg cursor-pointer border transition-all hover:shadow-sm select-none"
+                        style={{
+                          backgroundColor: col.visible
+                            ? `${COLORS.primary}10`
+                            : COLORS.white,
+                          borderColor: col.visible
+                            ? COLORS.primary
+                            : COLORS.border,
+                        }}
+                      >
+                        {/* Checkbox Visual */}
                         <div
-                          className="w-5 h-5 rounded flex items-center justify-center border"
+                          className="w-5 h-5 rounded flex items-center justify-center border transition-colors"
                           style={{
                             backgroundColor: col.visible
                               ? COLORS.primary
                               : COLORS.white,
+                            borderColor: col.visible
+                              ? COLORS.primary
+                              : "#e5e7eb",
                           }}
                         >
                           <Check
-                            size={12}
+                            size={14}
+                            className="transition-opacity"
                             style={{
                               color: COLORS.white,
                               opacity: col.visible ? 1 : 0,
                             }}
                           />
                         </div>
-                        <span>{col.label}</span>
+                        <span
+                          className="text-sm font-medium truncate"
+                          style={{
+                            color: col.visible
+                              ? COLORS.textPrimary
+                              : COLORS.textSecondary,
+                          }}
+                        >
+                          {col.label}
+                        </span>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                </div>
+              </div>
+
+              {/* Footer with Reset Button */}
+              <div
+                className="px-6 py-4 border-t flex justify-between items-center bg-gray-50"
+                style={{ borderColor: COLORS.border }}
+              >
+                <button
+                  onClick={handleResetDefault}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
+                  style={{ color: COLORS.textSecondary }}
+                >
+                  <RotateCcw size={16} /> Reset to Default
+                </button>
+
+                <div className="text-xs text-gray-400">
+                  {columns.filter((c) => c.visible).length} columns visible
+                </div>
+
+                <button
+                  className="px-6 py-1.5 rounded text-xs font-bold text-white shadow-sm flex items-center gap-2"
+                  style={{ backgroundColor: COLORS.primary }}
+                  onClick={() => setConfigOpen(false)}
+                >
+                  Apply
+                </button>
               </div>
             </div>
           </div>,
