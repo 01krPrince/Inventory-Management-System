@@ -1221,7 +1221,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
               onClick={() => setConfigOpen(false)}
             />
             <div
-              className="relative rounded-xl shadow-2xl w-full max-w-3xl flex flex-col border overflow-hidden"
+              className="relative rounded-xl shadow-2xl w-full max-w-3xl flex flex-col border overflow-hidden h-[90vh]"
               style={{
                 backgroundColor: COLORS.white,
                 borderColor: COLORS.border,

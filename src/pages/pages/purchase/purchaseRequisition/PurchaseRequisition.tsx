@@ -7,14 +7,12 @@ import OrderTable from "./OrderTable";
 import AttachmentSection from "../../../../components/AttachmentSection";
 import { COLORS } from "../../../../constants/colors";
 
-// --- IMPORT SERVICE ---
 import {
   createStockAdjustment,
   StockAdjustmentItem,
   StockAdjustment as StockAdjustmentPayload,
 } from "./api/StockAdjustmentService";
 
-// --- TYPES ---
 interface RowData {
   [key: string]: string | number;
 }
@@ -27,7 +25,6 @@ const PurchaseRequisition: React.FC = () => {
   const [isOverlayOpen, setIsOverlayOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // --- STATE MANAGEMENT ---
   const [formData, setFormData] = useState<StockAdjustmentHeaderData>({
     voucherDate: new Date().toISOString().split("T")[0],
     voucherNo: "SA-3005",
@@ -43,8 +40,6 @@ const PurchaseRequisition: React.FC = () => {
     remarks: "",
   });
 
-  // --- HANDLERS ---
-
   const handleCancel = () => {
     setRows([]);
     setTableData({});
@@ -59,7 +54,6 @@ const PurchaseRequisition: React.FC = () => {
   };
 
   const handleSave = async () => {
-    // 1. Basic Validation
     if (rows.length === 0) {
       alert("Please add at least one item to the table.");
       return;
@@ -71,7 +65,6 @@ const PurchaseRequisition: React.FC = () => {
 
     setIsSubmitting(true);
 
-    // 2. Data Mapping
     const formattedItems: StockAdjustmentItem[] = rows
       .map((rowId) => tableData[rowId])
       .filter((row) => row && row.select && row.select !== "")
@@ -109,8 +102,6 @@ const PurchaseRequisition: React.FC = () => {
       return;
     }
 
-    // 3. Construct Payload
-    // FIX: Use the aliased type 'StockAdjustmentPayload' here
     const payload: StockAdjustmentPayload = {
       category: formData.category,
       store: formData.store,
@@ -123,13 +114,12 @@ const PurchaseRequisition: React.FC = () => {
 
     console.log("Submitting Payload:", payload);
 
-    // 4. API Call
     try {
       const result = await createStockAdjustment(payload);
 
       if (result.success) {
         alert("Success! " + result.message);
-        handleCancel(); // Reset Form
+        handleCancel();
       } else {
         alert(`Error: ${result.message}`);
       }
@@ -152,7 +142,6 @@ const PurchaseRequisition: React.FC = () => {
       style={{ backgroundColor: COLORS.background }}
       className="flex flex-col h-screen bg-gray-100 overflow-hidden relative"
     >
-      {/* Loading Overlay */}
       {isSubmitting && (
         <div className="absolute inset-0 z-50 bg-black/20 flex items-center justify-center backdrop-blur-[1px]">
           <div className="bg-white p-4 rounded shadow-lg font-semibold text-gray-700">
