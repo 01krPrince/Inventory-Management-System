@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { X, Calculator, CheckCircle, AlertCircle, Save } from "lucide-react";
 
-// --- Types ---
 interface OrderItem {
   id: string;
   itemName: string;
@@ -12,6 +11,7 @@ interface OrderItem {
   taxRate: number;
   existingDiscount: number;
   extraDiscount: number;
+  extraDiscountType: "flat" | "percent";
 }
 
 interface CustomerInfo {
@@ -26,20 +26,18 @@ interface PullFromOrderModalProps {
   isOpen: boolean;
   onClose: () => void;
   onImport?: (items: OrderItem[]) => void;
-  index?: number; // CHANGED: Matches NameAndCodeMaster logic
+  index?: number;
 }
 
 const PullFromOrderModal: React.FC<PullFromOrderModalProps> = ({
   isOpen,
   onClose,
   onImport = () => {},
-  index = 50, // Default index per your reference
+  index = 50,
 }) => {
-  // --- Theme & Index Logic ---
   const overlayZIndex = index + 10;
   const themeColor = "#0f3c63";
 
-  // --- State ---
   const [customer] = useState<CustomerInfo>({
     name: "SPORTS HUB ENTERPRISES",
     code: "VEND-0024",
@@ -59,6 +57,7 @@ const PullFromOrderModal: React.FC<PullFromOrderModalProps> = ({
       taxRate: 12,
       existingDiscount: 100,
       extraDiscount: 0,
+      extraDiscountType: "flat",
     },
     {
       id: "2",
@@ -69,7 +68,8 @@ const PullFromOrderModal: React.FC<PullFromOrderModalProps> = ({
       taxCode: "GST 12%",
       taxRate: 12,
       existingDiscount: 0,
-      extraDiscount: 0,
+      extraDiscount: 5,
+      extraDiscountType: "percent",
     },
     {
       id: "3",
@@ -81,10 +81,10 @@ const PullFromOrderModal: React.FC<PullFromOrderModalProps> = ({
       taxRate: 18,
       existingDiscount: 50,
       extraDiscount: 0,
+      extraDiscountType: "flat",
     },
   ]);
 
-  // --- Handlers ---
   const handleExtraDiscountChange = (id: string, value: string) => {
     const numValue = parseFloat(value) || 0;
     setItems((prevItems) =>
@@ -94,14 +94,44 @@ const PullFromOrderModal: React.FC<PullFromOrderModalProps> = ({
     );
   };
 
+  const toggleDiscountType = (id: string) => {
+    setItems((prevItems) =>
+      prevItems.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              extraDiscountType:
+                item.extraDiscountType === "flat" ? "percent" : "flat",
+            }
+          : item
+      )
+    );
+  };
+
   const calculateRow = (item: OrderItem) => {
     const baseAmount = item.rate * item.quantity;
-    const totalDiscount = item.existingDiscount + item.extraDiscount;
+
+    let extraDiscountAmount = 0;
+
+    if (item.extraDiscountType === "percent") {
+      extraDiscountAmount = (baseAmount * item.extraDiscount) / 100;
+    } else {
+      extraDiscountAmount = item.extraDiscount;
+    }
+
+    const totalDiscount = item.existingDiscount + extraDiscountAmount;
+
     const taxableValue = Math.max(0, baseAmount - totalDiscount);
     const taxAmount = taxableValue * (item.taxRate / 100);
     const netAmount = taxableValue + taxAmount;
 
-    return { baseAmount, taxableValue, taxAmount, netAmount };
+    return {
+      baseAmount,
+      taxableValue,
+      taxAmount,
+      netAmount,
+      extraDiscountAmount,
+    };
   };
 
   const grandTotal = items.reduce(
@@ -123,7 +153,6 @@ const PullFromOrderModal: React.FC<PullFromOrderModalProps> = ({
       style={{ zIndex: overlayZIndex }}
     >
       <div className="w-full max-w-5xl bg-white border border-gray-300 shadow-2xl rounded-sm overflow-hidden flex flex-col max-h-[90vh]">
-        {/* --- Header (Themed) --- */}
         <div
           className="flex justify-between items-center px-4 py-3 text-white"
           style={{ backgroundColor: themeColor }}
@@ -146,7 +175,6 @@ const PullFromOrderModal: React.FC<PullFromOrderModalProps> = ({
           </button>
         </div>
 
-        {/* --- Info Section --- */}
         <div className="p-4 grid grid-cols-1 md:grid-cols-4 gap-4 bg-gray-50 border-b border-gray-200">
           <div>
             <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
@@ -201,20 +229,19 @@ const PullFromOrderModal: React.FC<PullFromOrderModalProps> = ({
           </div>
         </div>
 
-        {/* --- Table Body --- */}
         <div className="flex-1 overflow-auto p-0">
           <table className="w-full text-sm text-left border-collapse">
-            <thead className="text-[11px] text-gray-600 uppercase bg-gray-100 sticky top-0 border-b border-gray-200">
+            <thead className="text-[11px] text-gray-600 uppercase bg-gray-100 sticky top-0 border-b border-gray-200 z-10">
               <tr>
                 <th className="px-4 py-2 font-semibold">Item Details</th>
                 <th className="px-4 py-2 text-right font-semibold">Qty</th>
                 <th className="px-4 py-2 text-right font-semibold">Rate</th>
                 <th className="px-4 py-2 text-right font-semibold">Base Amt</th>
                 <th className="px-4 py-2 text-right font-semibold">Tax (%)</th>
-                <th className="px-4 py-2 text-right font-semibold text-gray-400">
-                  Old Disc
+                <th className="px-4 py-2 text-right font-semibold">
+                  Applied Disc
                 </th>
-                <th className="px-4 py-2 w-28 text-center font-semibold text-[#0f3c63]">
+                <th className="px-4 py-2 w-36 text-center font-semibold text-[#0f3c63]">
                   Extra Disc.
                 </th>
                 <th className="px-4 py-2 text-right font-semibold text-gray-800">
@@ -255,21 +282,46 @@ const PullFromOrderModal: React.FC<PullFromOrderModalProps> = ({
                         {calculations.taxAmount.toFixed(2)}
                       </div>
                     </td>
-                    <td className="px-4 py-2.5 text-right text-gray-400 text-[12px] line-through decoration-red-300">
-                      {item.existingDiscount > 0 ? item.existingDiscount : "-"}
+                    <td className="px-4 py-2.5 text-right text-[12px] text-gray-700">
+                      {item.existingDiscount > 0
+                        ? item.existingDiscount.toFixed(2)
+                        : "-"}
                     </td>
+
                     <td className="px-4 py-2.5">
-                      <input
-                        type="number"
-                        min="0"
-                        className="w-full h-[26px] px-2 text-right text-[#0f3c63] border border-gray-300 rounded-sm focus:border-[#0f3c63] focus:outline-none bg-white text-[13px]"
-                        value={item.extraDiscount || ""}
-                        placeholder="0"
-                        onChange={(e) =>
-                          handleExtraDiscountChange(item.id, e.target.value)
-                        }
-                      />
+                      <div className="flex items-center border border-gray-300 rounded-sm bg-white h-[28px] overflow-hidden focus-within:border-[#0f3c63] focus-within:ring-1 focus-within:ring-[#0f3c63]/20">
+                        <input
+                          type="number"
+                          min="0"
+                          className="w-full h-full px-2 text-right text-[#0f3c63] border-none focus:outline-none bg-transparent text-[13px]"
+                          value={item.extraDiscount || ""}
+                          placeholder="0"
+                          onChange={(e) =>
+                            handleExtraDiscountChange(item.id, e.target.value)
+                          }
+                        />
+                        <button
+                          type="button"
+                          onClick={() => toggleDiscountType(item.id)}
+                          className={`h-full px-2 text-[10px] font-bold border-l flex items-center justify-center transition-colors w-9
+                             ${
+                               item.extraDiscountType === "percent"
+                                 ? "bg-blue-100 text-[#0f3c63] border-blue-200"
+                                 : "bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200"
+                             }`}
+                          title="Click to toggle between % and ₹"
+                        >
+                          {item.extraDiscountType === "percent" ? "%" : "₹"}
+                        </button>
+                      </div>
+                      {item.extraDiscountType === "percent" &&
+                        item.extraDiscount > 0 && (
+                          <div className="text-[9px] text-gray-400 text-right mt-0.5">
+                            - {calculations.extraDiscountAmount.toFixed(2)}
+                          </div>
+                        )}
                     </td>
+
                     <td className="px-4 py-2.5 text-right font-bold text-gray-800 text-[13px]">
                       {calculations.netAmount.toFixed(2)}
                     </td>
@@ -280,7 +332,6 @@ const PullFromOrderModal: React.FC<PullFromOrderModalProps> = ({
           </table>
         </div>
 
-        {/* --- Footer (Themed) --- */}
         <div
           className="p-3 flex items-center justify-between border-t border-gray-300 mt-auto"
           style={{ backgroundColor: themeColor }}

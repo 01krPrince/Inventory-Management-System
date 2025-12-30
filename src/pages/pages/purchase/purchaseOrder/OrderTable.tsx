@@ -23,7 +23,6 @@ import { COLORS } from "../../../../constants/colors";
 
 import AddNewItem from "../../../../components/addItemMaster/AddNewItem";
 
-// --- API IMPORTS ---
 import { fetchItems } from "../../inventory/itemMaster/api/itemService";
 import { StockUnitData } from "../../../../components/addItemMaster/api/types";
 import { fetchStockUnits } from "../../../../components/addItemMaster/api/stockunitservice";
@@ -31,7 +30,6 @@ import { ItemApiData } from "../../inventory/itemMaster/models/ItemModel";
 import AttributePanel from "../../../../components/AttributePanel";
 import PullFromOrderModal from "../../../../components/PullFromOrderModal";
 
-// --- TYPES ---
 interface Column {
   id: string;
   label: string;
@@ -52,7 +50,6 @@ interface WarrantyOption {
   price: number;
 }
 
-// --- HELPER: MOCK WARRANTY DATA ---
 const getStandardWarranties = (itemText: string): WarrantyOption[] => {
   if (!itemText) return [];
   const text = String(itemText).toLowerCase();
@@ -70,7 +67,6 @@ const getStandardWarranties = (itemText: string): WarrantyOption[] => {
   return [];
 };
 
-// --- PROPS INTERFACE ---
 interface OrderTableProps {
   rows: string[];
   setRows: React.Dispatch<React.SetStateAction<string[]>>;
@@ -78,7 +74,6 @@ interface OrderTableProps {
   setTableData: React.Dispatch<React.SetStateAction<Record<string, RowData>>>;
 }
 
-// --- CONSTANT: DEFAULT COLUMNS (Moved Outside & Fixed Duplicates) ---
 const DEFAULT_COLUMNS: Column[] = [
   {
     id: "sno",
@@ -224,7 +219,6 @@ const DEFAULT_COLUMNS: Column[] = [
     resizable: true,
     visible: true,
   },
-  // --- FIX: Renamed duplicate "rate" to "manual_rate" ---
   {
     id: "manual_rate",
     label: "Manual Rate",
@@ -297,7 +291,6 @@ const DEFAULT_COLUMNS: Column[] = [
     resizable: true,
     visible: true,
   },
-  // Optional Columns
   {
     id: "punit",
     label: "Pack Unit",
@@ -402,11 +395,9 @@ const OrderTable: React.FC<OrderTableProps> = ({
   tableData,
   setTableData,
 }) => {
-  // --- UTILS ---
   const generateRowId = () =>
     `row-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-  // --- STATE ---
   const [items, setItems] = useState<ItemApiData[]>([]);
   const [, setStockUnits] = useState<StockUnitData[]>([]);
 
@@ -415,14 +406,9 @@ const OrderTable: React.FC<OrderTableProps> = ({
     direction: "asc" | "desc";
   } | null>(null);
 
-  // Configuration Modal State
   const [configOpen, setConfigOpen] = useState(false);
   const [configSearch, setConfigSearch] = useState("");
 
-  // Import Modal State
-  // const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-
-  // 1. Item Selection Popup State
   const [popupState, setPopupState] = useState<{
     visible: boolean;
     top: number;
@@ -430,7 +416,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
     activeRowId: string | null;
   }>({ visible: false, top: 0, left: 0, activeRowId: null });
 
-  // 2. Warranty Popup State
   const [warrantyPopup, setWarrantyPopup] = useState<{
     visible: boolean;
     top: number;
@@ -439,7 +424,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
     options: WarrantyOption[];
   }>({ visible: false, top: 0, left: 0, activeRowId: null, options: [] });
 
-  // State for Custom Warranty Inputs inside the popup
   const [newWarranty, setNewWarranty] = useState({ duration: "", price: "" });
 
   const [attributePanelState, setAttributePanelState] = useState<{
@@ -450,7 +434,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
 
   const [addNewItemForm, setAddNewItemForm] = useState(false);
 
-  // --- INITIALIZATION ---
   useEffect(() => {
     if (rows.length === 0) {
       const initialRows = Array.from({ length: 15 }, () => generateRowId());
@@ -484,7 +467,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
     }
   };
 
-  // --- STATE WITH DEFAULT COLUMNS (Deep Copy) ---
   const [columns, setColumns] = useState<Column[]>(
     JSON.parse(JSON.stringify(DEFAULT_COLUMNS))
   );
@@ -496,9 +478,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
     [columns]
   );
 
-  // --- RESET HANDLER ---
   const handleResetDefault = () => {
-    // This restores widths, visibility, and order exactly as defined in DEFAULT_COLUMNS
     setColumns(JSON.parse(JSON.stringify(DEFAULT_COLUMNS)));
     setConfigSearch("");
   };
@@ -645,7 +625,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
       activeRowId: rowId,
       options: options,
     });
-    setNewWarranty({ duration: "", price: "" }); // Reset Input
+    setNewWarranty({ duration: "", price: "" });
   };
 
   const closeWarrantyPopup = () => {
@@ -867,13 +847,11 @@ const OrderTable: React.FC<OrderTableProps> = ({
     );
   }
 
-  // --- MAIN RENDER ---
   return (
     <div
       className="flex flex-col h-auto font-sans text-sm overflow-hidden relative z-0"
       style={{ backgroundColor: COLORS.background }}
     >
-      {/* HEADER */}
       <div
         className="flex-none flex justify-between items-center p-2 border-b z-10 relative bg-white"
         style={{ borderColor: COLORS.border }}
@@ -895,7 +873,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          {/* CONFIGURATION BUTTON */}
           <button
             onClick={() => setConfigOpen(true)}
             className="p-1.5 rounded hover:bg-gray-100 text-gray-600 border border-transparent hover:border-gray-300 transition-all"
@@ -904,11 +881,10 @@ const OrderTable: React.FC<OrderTableProps> = ({
             <Settings size={18} />
           </button>
 
-          {/* ANALYZE & IMPORT BUTTON */}
           <button
             className="px-6 py-1.5 rounded text-xs font-bold text-white shadow-sm flex items-center gap-2"
             style={{ backgroundColor: COLORS.primary }}
-            // onClick={() => setIsPullModalOpen(true)}
+            onClick={() => setIsPullModalOpen(true)}
           >
             <BarChart2 size={14} />
             Analyze & Import
@@ -925,7 +901,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
         </div>
       </div>
 
-      {/* TABLE */}
       <div className="flex-1 p-2 relative flex flex-col z-0">
         <div
           className="w-full border shadow-sm relative overflow-hidden bg-white"
@@ -999,7 +974,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
                           const isLeft = col.sticky === "left";
                           let content: React.ReactNode = null;
 
-                          // --- RENDER LOGIC SWITCH ---
                           if (col.id === "sno")
                             content = (
                               <span className="text-gray-500">{vIdx + 1}</span>
@@ -1101,9 +1075,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
                                 {rowData.select || "Select..."} <span>▶</span>
                               </div>
                             );
-                          }
-                          // --- NEW WARRANTY LOGIC (CLICK OPENS POPUP) ---
-                          else if (col.id === "warranty") {
+                          } else if (col.id === "warranty") {
                             const displayValue = rowData.warranty || "Select";
                             const hasSelection = !!rowData.warranty;
                             content = (
@@ -1241,7 +1213,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
         </div>
       </div>
 
-      {/* --- CONFIGURATION POPUP (PORTAL) --- */}
       {configOpen &&
         ReactDOM.createPortal(
           <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
@@ -1257,7 +1228,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
                 maxHeight: "85vh",
               }}
             >
-              {/* Header */}
               <div
                 className="flex justify-between items-center px-6 py-4 border-b"
                 style={{ borderColor: COLORS.border }}
@@ -1277,7 +1247,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
                 </button>
               </div>
 
-              {/* Search Bar */}
               <div
                 className="px-6 py-4 border-b"
                 style={{
@@ -1303,7 +1272,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
                 </div>
               </div>
 
-              {/* Grid Content */}
               <div className="overflow-y-auto flex-1 p-6 custom-scrollbar">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                   {columns
@@ -1363,7 +1331,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
                 </div>
               </div>
 
-              {/* Footer with Reset Button */}
               <div
                 className="px-6 py-4 border-t flex justify-between items-center bg-gray-50"
                 style={{ borderColor: COLORS.border }}
@@ -1402,7 +1369,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
         initialData={attributePanelState.tempItemData}
       />
 
-      {/* --- ITEM SELECT POPUP (PORTAL) --- */}
       {popupState.visible &&
         ReactDOM.createPortal(
           <>
@@ -1460,7 +1426,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
           document.body
         )}
 
-      {/* --- WARRANTY POPUP (PORTAL) --- */}
       {warrantyPopup.visible &&
         ReactDOM.createPortal(
           <>
