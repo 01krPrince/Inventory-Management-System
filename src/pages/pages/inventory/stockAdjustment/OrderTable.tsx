@@ -908,7 +908,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
           <button
             className="px-6 py-1.5 rounded text-xs font-bold text-white shadow-sm flex items-center gap-2"
             style={{ backgroundColor: COLORS.primary }}
-            onClick={() => setIsImportModalOpen(true)}
+            // onClick={() => setIsImportModalOpen(true)}
           >
             <BarChart2 size={14} />
             Analyze & Import
