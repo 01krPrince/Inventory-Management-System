@@ -107,42 +107,44 @@ export const navItems = [
     subItems: [
       { name: "Vendor", path: "/vendor", pro: false },
       {
-        name: "Purchase Price List",
-        path: "/purchase-price-list",
-        pro: false,
-        nestedItems: [
-          { name: "Purchase Price List", path: "/purchase-price-list" },
-          {
-            name: "Party-Purchase Discount Rate",
-            path: "/party-purchase-discount-rate",
-          },
-          {
-            name: "Brandwise Purchase Charges",
-            path: "/brandwise-purchase-charges",
-          },
-          {
-            name: "Price-Brandwise Purchase Charges",
-            path: "/price-brandwise-purchase-charges",
-          },
-        ],
-      },
-      {
         name: "Purchase Requisition",
         path: "/purchase-requisition",
         pro: false,
       },
-      {
-        name: "Process Purchase Requisition",
-        path: "/process-purchase-requisition",
-        pro: false,
-      },
+
+      // {
+      //   name: "Purchase Price List",
+      //   path: "/purchase-price-list",
+      //   pro: false,
+      //   nestedItems: [
+      //     { name: "Purchase Price List", path: "/purchase-price-list" },
+      //     {
+      //       name: "Party-Purchase Discount Rate",
+      //       path: "/party-purchase-discount-rate",
+      //     },
+      //     {
+      //       name: "Brandwise Purchase Charges",
+      //       path: "/brandwise-purchase-charges",
+      //     },
+      //     {
+      //       name: "Price-Brandwise Purchase Charges",
+      //       path: "/price-brandwise-purchase-charges",
+      //     },
+      //   ],
+      // },
+
+      // {
+      //   name: "Process Purchase Requisition",
+      //   path: "/process-purchase-requisition",
+      //   pro: false,
+      // },
       { name: "Purchase Order", path: "/purchase-order", pro: false },
       { name: "Goods Receipt Note", path: "/goods-receipt-note", pro: false },
-      {
-        name: "Purchase Return Challan",
-        path: "/purchase-return-challan",
-        pro: false,
-      },
+      // {
+      //   name: "Purchase Return Challan",
+      //   path: "/purchase-return-challan",
+      //   pro: false,
+      // },
       { name: "Purchase Bill", path: "/purchase-bill", pro: false },
       {
         name: "Purchase Credit Note",
@@ -150,37 +152,37 @@ export const navItems = [
         pro: false,
       },
       { name: "Purchase Debit Note", path: "/purchase-debit-note", pro: false },
-      { name: "Purchase Return", path: "/purchase-return", pro: false },
-      {
-        name: "Bulk GRN/Purchase",
-        path: "/bulk-grn-purchase",
-        pro: false,
-        nestedItems: [
-          {
-            name: "Bulk Purchase Invoice From Order",
-            path: "/bulk-purchase-invoice-from-order",
-            pro: false,
-          },
-          {
-            name: "Bulk GRN From Order",
-            path: "/bulk-grn-from-order",
-            pro: false,
-          },
-          {
-            name: "Bulk Purchase Invoice From GRN",
-            path: "/bulk-purchase-invoice-from-grn",
-            pro: false,
-          },
-          {
-            name: "Pull SI From Other Company as PI",
-            path: "/pull-si-from-other-company-as-pi",
-            pro: false,
-          },
-        ],
-      },
+      // { name: "Purchase Return", path: "/purchase-return", pro: false },
+      // {
+      //   name: "Bulk GRN/Purchase",
+      //   path: "/bulk-grn-purchase",
+      //   pro: false,
+      //   nestedItems: [
+      //     {
+      //       name: "Bulk Purchase Invoice From Order",
+      //       path: "/bulk-purchase-invoice-from-order",
+      //       pro: false,
+      //     },
+      //     {
+      //       name: "Bulk GRN From Order",
+      //       path: "/bulk-grn-from-order",
+      //       pro: false,
+      //     },
+      //     {
+      //       name: "Bulk Purchase Invoice From GRN",
+      //       path: "/bulk-purchase-invoice-from-grn",
+      //       pro: false,
+      //     },
+      //     {
+      //       name: "Pull SI From Other Company as PI",
+      //       path: "/pull-si-from-other-company-as-pi",
+      //       pro: false,
+      //     },
+      //   ],
+      // },
       { name: "Bill Payment", path: "/bill-payment", pro: false },
-      { name: "Payment Duned", path: "/payment-duned", pro: false },
-      { name: "Online Payment", path: "/online-payment", pro: false },
+      // { name: "Payment Duned", path: "/payment-duned", pro: false },
+      // { name: "Online Payment", path: "/online-payment", pro: false },
     ],
   },
   {
@@ -368,29 +370,29 @@ export const navItems = [
             path: "/promotions",
             pro: false,
           },
-          {
-            name: "Item Set Template",
-            path: "/item-set-template",
-            pro: false,
-          },
+          // {
+          //   name: "Item Set Template",
+          //   path: "/item-set-template",
+          //   pro: false,
+          // },
         ],
       },
       { name: "POS Order", path: "/pos-order", pro: false },
-      { name: "Process POS Orders", path: "/process-pos-orders", pro: false },
-      { name: "Alteration Order", path: "/alteration-order", pro: false },
-      { name: "Item Weighment", path: "/item-weighment", pro: false },
+      // { name: "Process POS Orders", path: "/process-pos-orders", pro: false },
+      // { name: "Alteration Order", path: "/alteration-order", pro: false },
+      // { name: "Item Weighment", path: "/item-weighment", pro: false },
       { name: "POS Invoice", path: "/pos-invoice", pro: false },
-      { name: "Touch POS", path: "/touch-pos", pro: false },
+      // { name: "Touch POS", path: "/touch-pos", pro: false },
       {
         name: "Customer Receipt Payment",
         path: "/customer-receipt-payment",
         pro: false,
       },
-      {
-        name: "Process Shop in Shop invoice",
-        path: "/process-shop-in-shop-invoice",
-        pro: false,
-      },
+      // {
+      //   name: "Process Shop in Shop invoice",
+      //   path: "/process-shop-in-shop-invoice",
+      //   pro: false,
+      // },
     ],
   },
   {
