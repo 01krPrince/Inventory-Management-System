@@ -36,6 +36,8 @@ import GoodsRecieptNote from "../pages/pages/purchase/goodsRecieptNote/GoodsReci
 import PurchaseCreditNote from "../pages/pages/purchase/purchaseCreditNote/PurchaseCreditNote.tsx";
 import PurchaseDebitNote from "../pages/pages/purchase/purchaseDebitNote/PurchaseDebitNote.tsx";
 import BillPayment from "../pages/pages/purchase/billPayment/BillPayment.tsx";
+import PurchaseReturn from "../pages/pages/purchase/purchaseReturn/PurchaseReturn.tsx";
+import PurchaseReturnChallan from "../pages/pages/purchase/purchaseReturnChallan/PurchaseReturnChallan.tsx";
 
 const useSidebar = () => ({
   isExpanded: false,
@@ -77,6 +79,8 @@ const ComponentMap: { [key: string]: React.FC } = {
   "/purchase-credit-note": PurchaseCreditNote,
   "/purchase-debit-note": PurchaseDebitNote,
   "/bill-payment": BillPayment,
+  "/purchase-return": PurchaseReturn,
+  "/purchase-return-challan": PurchaseReturnChallan,
   "/fallback": () => (
     <div className="p-6 mt-6 bg-gray-100 dark:bg-gray-800 rounded-lg shadow text-center">
       <p className="text-gray-600 dark:text-gray-300 font-medium">

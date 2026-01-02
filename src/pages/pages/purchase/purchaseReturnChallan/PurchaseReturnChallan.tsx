@@ -1,21 +1,15 @@
 import React, { useState } from "react";
-import PurchaseOrderHeader from "./PurchaseOrderHeader";
-import PurchaseOrderForm from "./PurchaseOrderForm";
+import PurchaseReturnChallanHeader from "./PurchaseReturnChallanHeader";
+import PurchaseReturnChallanForm from "./PurchaseReturnChallanForm";
 import OrderTable from "./OrderTable";
-import PurchaseOrderFooter from "./PurchaseOrderFooter";
+import PurchaseRetuenChallanFooter from "./PurchaseReturnChallanFooter";
 import { COLORS } from "../../../../constants/colors";
-import PurchaseOrderLogistics, {
+
+import PurchaseReturnChallanLogistics, {
   LogisticsData,
-} from "./PurchaseOrderLogistics";
+} from "./PurchaseReturnChallanLogistic";
 
-interface RowData {
-  [key: string]: string | number;
-}
-
-const PurchaseOrder: React.FC = () => {
-  const [rows, setRows] = useState<string[]>([]);
-  const [tableData, setTableData] = useState<Record<string, RowData>>({});
-
+const PurchaseReturnChallan: React.FC = () => {
   const [logisticsData, setLogisticsData] = useState<LogisticsData>({
     // Left Column
     destination: "",
@@ -32,12 +26,20 @@ const PurchaseOrder: React.FC = () => {
     // Middle Column
     portOfLanding: "",
     portOfDischarge: "",
-    portAddressForEway: "",
-    portStateForEway: "",
     noOfPackets: "0",
     weight: "0",
+    distance: "0",
+    eWayInvoiceNo: "",
+    eWayInvoiceDate: new Date().toISOString().split("T")[0],
+    eWayCancelDate: "",
+    irnNo: "",
+    qrCode: "",
+    irnCancelDate: "",
+    irnCancelReason: "",
+    acknowledgementNo: "",
+    acknowledgementDate: "",
 
-    // Right Column
+    // Right Column (Overhead Expenses)
     customDuty: "0.00",
     chaPayment: "0.00",
     freight: "0.00",
@@ -58,24 +60,19 @@ const PurchaseOrder: React.FC = () => {
   return (
     <div
       style={{ backgroundColor: COLORS.background }}
-      className="flex flex-col bg-gray-100 overflow-hidden"
+      className="flex flex-col bg-gray-100 overflow-hidden h-full"
     >
-      <PurchaseOrderHeader />
+      <PurchaseReturnChallanHeader />
 
-      <div className="flex-1 overflow-auto p-4">
+      <div className="flex-1 overflow-auto p-4 custom-scrollbar">
         <div className="flex flex-col gap-4">
-          <PurchaseOrderForm />
+          <PurchaseReturnChallanForm />
 
-          <OrderTable
-            rows={rows}
-            setRows={setRows}
-            tableData={tableData}
-            setTableData={setTableData}
-          />
+          <OrderTable />
 
-          <PurchaseOrderFooter />
+          <PurchaseRetuenChallanFooter />
 
-          <PurchaseOrderLogistics
+          <PurchaseReturnChallanLogistics
             data={logisticsData}
             onChange={handleLogisticsChange}
           />
@@ -85,4 +82,4 @@ const PurchaseOrder: React.FC = () => {
   );
 };
 
-export default PurchaseOrder;
+export default PurchaseReturnChallan;

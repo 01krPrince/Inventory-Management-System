@@ -5,50 +5,41 @@ import {
   Droppable,
   Draggable,
   DropResult,
-} from "@hello-pangea/dnd"; // 👈 Import DND components
+} from "@hello-pangea/dnd";
 
 export const TabBar: React.FC = React.memo(() => {
-  // Destructure the new reorderTabs function
   const { openTabs, activeTabPath, setActiveTab, closeTab, reorderTabs } =
     useTabs();
 
-  // 1. Handle the drag end event
   const onDragEnd = useCallback(
     (result: DropResult) => {
       const { destination, source } = result;
 
-      // Dropped outside a droppable area, or dropped back in the same spot
       if (!destination || destination.index === source.index) {
         return;
       }
 
-      // Call the context function to update the order
       reorderTabs(source.index, destination.index);
     },
     [reorderTabs]
-  ); // Dependency on reorderTabs
+  );
 
   return (
-    // 2. Wrap the entire component with DragDropContext
     <DragDropContext onDragEnd={onDragEnd}>
-      {/* 3. The area where tabs can be dropped (the tab bar itself) */}
       <Droppable droppableId="tab-bar-droppable" direction="horizontal">
         {(droppableProvided) => (
           <div
-            // Apply the droppable properties
             ref={droppableProvided.innerRef}
             {...droppableProvided.droppableProps}
             className="flex flex-wrap items-center space-x-1 border-b border-gray-200 dark:border-gray-800 px-4 whitespace-normal"
           >
             {openTabs.map((tab, index) => (
-              // 4. Each tab must be a Draggable component
               <Draggable key={tab.path} draggableId={tab.path} index={index}>
                 {(draggableProvided) => (
                   <div
-                    // Apply the draggable properties
                     ref={draggableProvided.innerRef}
                     {...draggableProvided.draggableProps}
-                    {...draggableProvided.dragHandleProps} // Makes the entire tab the drag handle
+                    {...draggableProvided.dragHandleProps}
                     className={`flex items-center px-4 py-1 text-sm rounded-t-lg transition-colors duration-150 cursor-pointer ${
                       tab.path === activeTabPath
                         ? "bg-white text-[#0c5888] font-bold border-b-2 border-[#0c5888]"
@@ -56,7 +47,6 @@ export const TabBar: React.FC = React.memo(() => {
                     }`}
                     onClick={() => setActiveTab(tab.path)}
                   >
-                    {/* ... (rest of the tab content remains the same) */}
                     <span className="truncate max-w-40">{tab.name}</span>
                     {tab.path !== "/welcome" && (
                       <button
@@ -86,13 +76,11 @@ export const TabBar: React.FC = React.memo(() => {
                 )}
               </Draggable>
             ))}
-            {/* 5. Important: Add the Droppable placeholder */}
             {droppableProvided.placeholder}
           </div>
         )}
       </Droppable>
 
-      {/* ... (The style block and active tab content remains the same) */}
       <style>
         {`
           .hidden-scrollbar::-webkit-scrollbar {

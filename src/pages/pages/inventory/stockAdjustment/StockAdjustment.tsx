@@ -43,8 +43,6 @@ const StockAdjustment: React.FC = () => {
     remarks: "",
   });
 
-  // --- HANDLERS ---
-
   const handleCancel = () => {
     setRows([]);
     setTableData({});

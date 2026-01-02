@@ -1,24 +1,49 @@
 import React from "react";
-import { EditIcon } from "lucide-react";
-
-const COLORS = {
-  white: "#ffffff",
-  textPrimary: "#111827", // gray-900
-  textSecondary: "#374151", // gray-700
-  textMuted: "#9CA3AF", // gray-400
-  borderDark: "#D1D5DB", // gray-300
-  background: "#F9FAFB", // gray-50
-  primary: "#2563EB", // blue-600
-  primaryHover: "#1D4ED8", // blue-700
-  info: "#3B82F6",
-};
+import { COLORS } from "../../../../constants/colors";
 import Attachment from "../../../../components/Attachment";
 
+// --- Types ---
 type InvoiceFooterProps = {
-  amount?: number; // Made optional with a default value handling
+  amount?: number;
 };
 
-const InvoiceFooter: React.FC<InvoiceFooterProps> = ({ amount = -8500 }) => {
+const TotalRow: React.FC<{ label: string; value: string }> = ({
+  label,
+  value,
+}) => {
+  return (
+    <div className="grid grid-cols-[1fr_120px] gap-2 items-center">
+      <label className="text-xs" style={{ color: COLORS.textSecondary }}>
+        {label}
+      </label>
+      <div className="relative">
+        <span
+          className="absolute left-2 top-1/2 -translate-y-1/2 text-xs"
+          style={{ color: COLORS.textMuted }}
+        >
+          ₹
+        </span>
+        <input
+          type="text"
+          defaultValue={value}
+          readOnly
+          className="w-full border rounded-sm py-1 pl-5 pr-2 text-right text-xs outline-none custom-input"
+          style={{
+            backgroundColor: COLORS.background,
+            borderColor: COLORS.borderDark,
+            color: COLORS.textPrimary,
+          }}
+        />
+      </div>
+    </div>
+  );
+};
+
+// --- Main Component ---
+
+const PurchaseReturnFooter: React.FC<InvoiceFooterProps> = ({
+  amount = -8500,
+}) => {
   // Logic for Payment Status
   const isAdvance = amount > 0;
   const isDue = amount < 0;
@@ -66,58 +91,6 @@ const InvoiceFooter: React.FC<InvoiceFooterProps> = ({ amount = -8500 }) => {
             </div>
           </div>
 
-          {/* Received Amount */}
-          <div className="flex flex-col sm:flex-row gap-4 items-center">
-            <label className="w-32" style={{ color: COLORS.textPrimary }}>
-              Received Amount
-            </label>
-            <div className="w-40 relative">
-              <span
-                className="absolute left-2 top-1/2 -translate-y-1/2 text-xs"
-                style={{ color: COLORS.textMuted }}
-              >
-                ₹
-              </span>
-              <input
-                type="text"
-                defaultValue="0.00"
-                className="w-full border rounded-sm py-1 pl-6 pr-2 text-right outline-none text-xs custom-input"
-                style={{
-                  borderColor: COLORS.borderDark,
-                  color: COLORS.textPrimary,
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Cash/Bank Ledger */}
-          <div className="flex flex-col sm:flex-row gap-4 items-center">
-            <label className="w-32" style={{ color: COLORS.textPrimary }}>
-              Cash/Bank Ledger
-            </label>
-            <div className="flex-1 flex items-center gap-1">
-              <div className="relative flex-1">
-                <select
-                  className="w-full border rounded-sm py-1 px-2 appearance-none outline-none text-xs custom-input"
-                  style={{
-                    borderColor: COLORS.borderDark,
-                    backgroundColor: COLORS.white,
-                    color: COLORS.textPrimary,
-                  }}
-                >
-                  <option>Cash In Hand</option>
-                  <option>Bank Account</option>
-                </select>
-              </div>
-              <button
-                className="custom-btn-primary text-white p-1.5 rounded-sm flex items-center justify-center"
-                style={{ color: COLORS.white }}
-              >
-                <EditIcon size={12} />
-              </button>
-            </div>
-          </div>
-
           {/* --- Attachment Section --- */}
           <div className="flex flex-col sm:flex-row gap-4 mt-2">
             <label className="w-32 pt-2" style={{ color: COLORS.textPrimary }}>
@@ -127,20 +100,70 @@ const InvoiceFooter: React.FC<InvoiceFooterProps> = ({ amount = -8500 }) => {
               <Attachment />
             </div>
           </div>
+
+          <div className="grid grid-cols-[1fr_60px_120px] gap-2 items-center">
+            <label
+              className="text-xs uppercase"
+              style={{ color: COLORS.textSecondary }}
+            >
+              Transport
+            </label>
+            <input
+              type="text"
+              defaultValue=""
+              className="border rounded-sm px-2 py-1 text-right text-xs outline-none custom-input"
+              style={{
+                borderColor: COLORS.borderDark,
+                color: COLORS.textPrimary,
+              }}
+            />
+          </div>
         </div>
 
         {/* --- RIGHT SECTION (Totals) --- */}
         <div className="w-full lg:w-[400px] flex flex-col gap-2">
           <TotalRow label="Item Value" value="0.00" />
-          <TotalRow label="Promo Discount" value="0.00" />
-          <TotalRow label="Promo Discount 2" value="0.00" />
-          <TotalRow label="Coupon Discount" value="0.00" />
           <TotalRow label="Discount" value="0.00" />
-          <TotalRow label="Discount %" value="0.00" />
+          <TotalRow label="Promo Discount" value="0.00" />
           <TotalRow label="Taxable" value="0.00" />
           <TotalRow label="Tax Amount" value="0.00" />
 
-          {/* Special Rows with Dual Inputs (Discount) */}
+          <div className="grid grid-cols-[1fr_60px_120px] gap-2 items-center">
+            <label
+              className="text-xs uppercase"
+              style={{ color: COLORS.textSecondary }}
+            >
+              Transport
+            </label>
+            <input
+              type="text"
+              defaultValue="0"
+              className="border rounded-sm px-2 py-1 text-right text-xs outline-none custom-input"
+              style={{
+                borderColor: COLORS.borderDark,
+                color: COLORS.textPrimary,
+              }}
+            />
+            <div className="relative">
+              <span
+                className="absolute left-2 top-1/2 -translate-y-1/2 text-xs"
+                style={{ color: COLORS.textMuted }}
+              >
+                ₹
+              </span>
+              <input
+                type="text"
+                defaultValue="0.00"
+                readOnly
+                className="w-full border rounded-sm py-1 pl-5 pr-2 text-right text-xs outline-none"
+                style={{
+                  backgroundColor: COLORS.background,
+                  borderColor: COLORS.borderDark,
+                  color: COLORS.textSecondary,
+                }}
+              />
+            </div>
+          </div>
           <div className="grid grid-cols-[1fr_60px_120px] gap-2 items-center">
             <label
               className="text-xs uppercase"
@@ -178,13 +201,12 @@ const InvoiceFooter: React.FC<InvoiceFooterProps> = ({ amount = -8500 }) => {
             </div>
           </div>
 
-          {/* Special Rows with Dual Inputs (Discount %) */}
           <div className="grid grid-cols-[1fr_60px_120px] gap-2 items-center">
             <label
               className="text-xs uppercase"
               style={{ color: COLORS.textSecondary }}
             >
-              DISCOUNT %
+              Adjustment
             </label>
             <input
               type="text"
@@ -263,16 +285,6 @@ const InvoiceFooter: React.FC<InvoiceFooterProps> = ({ amount = -8500 }) => {
               </span>
             </div>
           </div>
-
-          {/* Generate EMI Button */}
-          <div className="flex justify-end mt-2">
-            <button
-              className="custom-btn-primary text-xs font-medium px-4 py-1.5 rounded-sm shadow-sm"
-              style={{ color: COLORS.white }}
-            >
-              Generate EMI
-            </button>
-          </div>
         </div>
       </div>
 
@@ -294,39 +306,4 @@ const InvoiceFooter: React.FC<InvoiceFooterProps> = ({ amount = -8500 }) => {
   );
 };
 
-// --- Sub Component for simple rows ---
-type TotalRowProps = {
-  label: string;
-  value: string;
-};
-
-const TotalRow: React.FC<TotalRowProps> = ({ label, value }) => {
-  return (
-    <div className="grid grid-cols-[1fr_120px] gap-2 items-center">
-      <label className="text-xs" style={{ color: COLORS.textSecondary }}>
-        {label}
-      </label>
-      <div className="relative">
-        <span
-          className="absolute left-2 top-1/2 -translate-y-1/2 text-xs"
-          style={{ color: COLORS.textMuted }}
-        >
-          ₹
-        </span>
-        <input
-          type="text"
-          defaultValue={value}
-          readOnly
-          className="w-full border rounded-sm py-1 pl-5 pr-2 text-right text-xs outline-none custom-input"
-          style={{
-            backgroundColor: COLORS.background,
-            borderColor: COLORS.borderDark,
-            color: COLORS.textPrimary,
-          }}
-        />
-      </div>
-    </div>
-  );
-};
-
-export default InvoiceFooter;
+export default PurchaseReturnFooter;

@@ -11,11 +11,15 @@ import {
 } from "../../../../components/icons";
 import { COLORS } from "../../../../constants/colors";
 
+// --- Interfaces ---
+
 interface HeaderButtonProps {
   label: string;
   icon: React.ReactNode;
   onClick?: () => void;
 }
+
+// --- Components ---
 
 const HeaderButton: React.FC<HeaderButtonProps> = ({
   label,
@@ -25,6 +29,8 @@ const HeaderButton: React.FC<HeaderButtonProps> = ({
   return (
     <button
       onClick={onClick}
+      // Replaced hardcoded blue border with border-white/30
+      // This ensures it looks good on the COLORS.primary background
       className="flex items-center gap-2 px-3 py-1 border border-white/30 rounded-[3px] text-white text-xs font-medium hover:bg-white/10 hover:border-white/50 transition-colors active:bg-white/20"
     >
       <span className="w-4 h-4 flex items-center justify-center">{icon}</span>
@@ -33,14 +39,18 @@ const HeaderButton: React.FC<HeaderButtonProps> = ({
   );
 };
 
-export default function PurchaseOrderHeader() {
+export default function PurchaseReturnHeader() {
   return (
-    <div className="w-full border-t" style={{ borderColor: COLORS.borderDark }}>
+    <div
+      className="w-full border-t"
+      style={{ borderColor: COLORS.borderDark }} // Used COLORS.borderDark
+    >
       <header
         className="flex flex-wrap items-center justify-between w-full px-4 py-1 shadow-md transition-colors duration-300"
-        style={{ backgroundColor: COLORS.primary }}
+        style={{ backgroundColor: COLORS.primary }} // Used COLORS.primary
       >
         <div className="flex items-center gap-2">
+          {/* Spacer for responsive alignment */}
           <div className="w-0 md:w-12 lg:w-24"></div>
 
           <HeaderButton

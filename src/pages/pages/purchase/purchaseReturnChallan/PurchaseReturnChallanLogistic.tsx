@@ -9,10 +9,10 @@ import DateInput from "../../../../components/DateInput";
 
 export interface LogisticsData {
   // Left Column
-  destination: string;
+  destination: string; // Renamed to match screenshot (was dispatchFrom in some contexts)
   shippingMode: string;
   shippingCompany: string;
-  shippingCompanyAddress: string;
+  shippingCompanyAddress: string; // Textarea
   shippingTrackingNo: string;
   shippingDate: string;
   shippingCharges: string;
@@ -23,10 +23,18 @@ export interface LogisticsData {
   // Middle Column
   portOfLanding: string;
   portOfDischarge: string;
-  portAddressForEway: string;
-  portStateForEway: string;
   noOfPackets: string;
   weight: string;
+  distance: string;
+  eWayInvoiceNo: string;
+  eWayInvoiceDate: string;
+  eWayCancelDate: string;
+  irnNo: string;
+  qrCode: string;
+  irnCancelDate: string;
+  irnCancelReason: string;
+  acknowledgementNo: string;
+  acknowledgementDate: string;
 
   // Right Column (OverHead Expenses)
   customDuty: string;
@@ -48,19 +56,12 @@ interface LogisticsProps {
   onChange: (data: LogisticsData) => void;
 }
 
-// --- 3. Static Data ---
+// --- 3. Static Data (Replaces Service) ---
 const STATIC_TRANSPORTERS = [
   { code: "T001", name: "FedEx Logistics" },
   { code: "T002", name: "DHL Express" },
   { code: "T003", name: "Blue Dart" },
   { code: "T004", name: "DTDC" },
-];
-
-const STATIC_STATES = [
-  { code: "MH", name: "Maharashtra" },
-  { code: "DL", name: "Delhi" },
-  { code: "KA", name: "Karnataka" },
-  { code: "TN", name: "Tamil Nadu" },
 ];
 
 // --- Reusable UI Components ---
@@ -143,6 +144,7 @@ const ActionBtn: React.FC<{
   </button>
 );
 
+// --- Helper for Expense Rows ---
 const ExpenseRow: React.FC<{
   label: string;
   value: string;
@@ -162,7 +164,9 @@ const ExpenseRow: React.FC<{
   </div>
 );
 
-const PurchaseOrderLogistics: React.FC<LogisticsProps> = ({
+// --- Main Component ---
+
+const PurchaseReturnChallanLogistic: React.FC<LogisticsProps> = ({
   data,
   onChange,
   themeColor = "#0f3c63",
@@ -170,6 +174,7 @@ const PurchaseOrderLogistics: React.FC<LogisticsProps> = ({
   const [isOpen, setIsOpen] = useState(true);
   const [transporterModalOpen, setTransporterModalOpen] = useState(false);
 
+  // Theme styles
   const themeStyles = {
     "--theme-primary": themeColor,
     "--theme-focus": "#60a5fa",
@@ -178,9 +183,7 @@ const PurchaseOrderLogistics: React.FC<LogisticsProps> = ({
   const shippingModes = ["Road", "Air", "Sea", "Rail"];
   const chargeTypes = ["Paid", "To Pay", "Free"];
 
-  const nameColumns: ColumnDef<any>[] = [
-    { header: "Name", key: "name", width: "flex-1" },
-  ];
+  // Column Definitions for Dropdowns
   const transporterColumns: ColumnDef<any>[] = [
     { header: "Code", key: "code", width: "w-20" },
     { header: "Name", key: "name", width: "flex-1" },
@@ -197,13 +200,6 @@ const PurchaseOrderLogistics: React.FC<LogisticsProps> = ({
     });
   };
 
-  const handleStateSelect = (item: any) => {
-    onChange({
-      ...data,
-      portStateForEway: item?.name || "",
-    });
-  };
-
   const handleEditTransporter = () => {
     setTransporterModalOpen(true);
   };
@@ -213,6 +209,7 @@ const PurchaseOrderLogistics: React.FC<LogisticsProps> = ({
       style={themeStyles}
       className="w-full bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden mb-4"
     >
+      {/* Accordion Header */}
       <div
         className="flex items-center justify-between px-4 py-3 bg-white cursor-pointer select-none"
         onClick={() => setIsOpen(!isOpen)}
@@ -228,10 +225,14 @@ const PurchaseOrderLogistics: React.FC<LogisticsProps> = ({
         </div>
       </div>
 
+      {/* Accordion Content */}
       {isOpen && (
         <div className="p-5 border-t border-gray-100">
+          {/* 3 Column Layout to match Screenshot */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* === LEFT COLUMN: Shipping Details === */}
             <div className="space-y-1">
+              {/* Destination */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
                   <Label>Destination</Label>
@@ -246,6 +247,7 @@ const PurchaseOrderLogistics: React.FC<LogisticsProps> = ({
                 </div>
               </div>
 
+              {/* Shipping Mode */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
                   <Label>Shipping Mode</Label>
@@ -261,6 +263,7 @@ const PurchaseOrderLogistics: React.FC<LogisticsProps> = ({
                 </div>
               </div>
 
+              {/* Shipping Company */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
                   <Label>Shipping Company</Label>
@@ -281,6 +284,7 @@ const PurchaseOrderLogistics: React.FC<LogisticsProps> = ({
                 </div>
               </div>
 
+              {/* Shipping Company Address (TextArea) */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
                   <Label>Shipping Company Address/Ph...</Label>
@@ -296,6 +300,7 @@ const PurchaseOrderLogistics: React.FC<LogisticsProps> = ({
                 </div>
               </div>
 
+              {/* Shipping Tracking No */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
                   <Label>Shipping Tracking No</Label>
@@ -310,6 +315,7 @@ const PurchaseOrderLogistics: React.FC<LogisticsProps> = ({
                 </div>
               </div>
 
+              {/* Shipping Date */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
                   <Label>Shipping Date</Label>
@@ -324,6 +330,7 @@ const PurchaseOrderLogistics: React.FC<LogisticsProps> = ({
                 </div>
               </div>
 
+              {/* Shipping Charges */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
                   <Label>Shipping Charges</Label>
@@ -339,6 +346,7 @@ const PurchaseOrderLogistics: React.FC<LogisticsProps> = ({
                 </div>
               </div>
 
+              {/* Vehicle/Vessel No */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
                   <Label>Vehicle/Vessel No</Label>
@@ -351,6 +359,7 @@ const PurchaseOrderLogistics: React.FC<LogisticsProps> = ({
                 </div>
               </div>
 
+              {/* Charge Type */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
                   <Label>Charge Type</Label>
@@ -364,6 +373,7 @@ const PurchaseOrderLogistics: React.FC<LogisticsProps> = ({
                 </div>
               </div>
 
+              {/* Document Through */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
                   <Label>Document Through</Label>
@@ -379,7 +389,9 @@ const PurchaseOrderLogistics: React.FC<LogisticsProps> = ({
               </div>
             </div>
 
+            {/* === MIDDLE COLUMN: Port & Packet Details === */}
             <div className="space-y-1">
+              {/* Port of Landing */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
                   <Label>Port of Landing</Label>
@@ -394,6 +406,7 @@ const PurchaseOrderLogistics: React.FC<LogisticsProps> = ({
                 </div>
               </div>
 
+              {/* Port of Discharge */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
                   <Label>Port of Discharge</Label>
@@ -408,39 +421,8 @@ const PurchaseOrderLogistics: React.FC<LogisticsProps> = ({
                 </div>
               </div>
 
+              {/* No of Packets */}
               <div className="grid grid-cols-12 gap-2">
-                <div className="col-span-4">
-                  <Label>Port Address For Eway</Label>
-                </div>
-                <div className="col-span-8">
-                  <TextArea
-                    rows={4}
-                    value={data.portAddressForEway}
-                    onChange={(e) =>
-                      handleChange("portAddressForEway", e.target.value)
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-12 gap-2">
-                <div className="col-span-4">
-                  <Label>Port State For Eway</Label>
-                </div>
-                <div className="col-span-8 flex gap-1">
-                  <Dropdown
-                    data={STATIC_STATES}
-                    columns={nameColumns}
-                    value={data.portStateForEway}
-                    valueKey="name"
-                    onChange={handleStateSelect}
-                    placeholder="Select..."
-                  />
-                  <ActionBtn icon={<EditIcon size={14} />} />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-12 gap-2 mt-4">
                 <div className="col-span-4">
                   <Label>No of Packets</Label>
                 </div>
@@ -455,6 +437,7 @@ const PurchaseOrderLogistics: React.FC<LogisticsProps> = ({
                 </div>
               </div>
 
+              {/* Weight */}
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
                   <Label>Weight</Label>
@@ -466,14 +449,161 @@ const PurchaseOrderLogistics: React.FC<LogisticsProps> = ({
                   />
                 </div>
               </div>
+
+              {/* Distance */}
+              <div className="grid grid-cols-12 gap-2">
+                <div className="col-span-4">
+                  <Label>Distance</Label>
+                </div>
+                <div className="col-span-8">
+                  <Input
+                    value={data.distance}
+                    onChange={(e) => handleChange("distance", e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* eWay Invoice No */}
+              <div className="grid grid-cols-12 gap-2 mt-2">
+                <div className="col-span-4">
+                  <Label>eWay Invoice No</Label>
+                </div>
+                <div className="col-span-8">
+                  <Input
+                    value={data.eWayInvoiceNo}
+                    onChange={(e) =>
+                      handleChange("eWayInvoiceNo", e.target.value)
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* eWay Invoice Date */}
+              <div className="grid grid-cols-12 gap-2">
+                <div className="col-span-4">
+                  <Label>eWay Invoice Date</Label>
+                </div>
+                <div className="col-span-8">
+                  <DateInput
+                    value={data.eWayInvoiceDate}
+                    onChange={(e) =>
+                      handleChange("eWayInvoiceDate", e.target.value)
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* eWay Cancel Date */}
+              <div className="grid grid-cols-12 gap-2">
+                <div className="col-span-4">
+                  <Label>eWay Cancel Date</Label>
+                </div>
+                <div className="col-span-8">
+                  <DateInput
+                    value={data.eWayCancelDate}
+                    onChange={(e) =>
+                      handleChange("eWayCancelDate", e.target.value)
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* IRN No */}
+              <div className="grid grid-cols-12 gap-2">
+                <div className="col-span-4">
+                  <Label>IRN No</Label>
+                </div>
+                <div className="col-span-8">
+                  <Input
+                    value={data.irnNo}
+                    onChange={(e) => handleChange("irnNo", e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* QR Code */}
+              <div className="grid grid-cols-12 gap-2">
+                <div className="col-span-4">
+                  <Label>QR Code</Label>
+                </div>
+                <div className="col-span-8">
+                  <Input
+                    value={data.qrCode}
+                    onChange={(e) => handleChange("qrCode", e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* IRN Cancel Date */}
+              <div className="grid grid-cols-12 gap-2">
+                <div className="col-span-4">
+                  <Label>IRN Cancel Date</Label>
+                </div>
+                <div className="col-span-8">
+                  <DateInput
+                    value={data.irnCancelDate}
+                    onChange={(e) =>
+                      handleChange("irnCancelDate", e.target.value)
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* IRN Cancel Reason */}
+              <div className="grid grid-cols-12 gap-2">
+                <div className="col-span-4">
+                  <Label>IRN Cancel Reason</Label>
+                </div>
+                <div className="col-span-8">
+                  <Input
+                    value={data.irnCancelReason}
+                    onChange={(e) =>
+                      handleChange("irnCancelReason", e.target.value)
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* Acknowledgement No */}
+              <div className="grid grid-cols-12 gap-2">
+                <div className="col-span-4">
+                  <Label>Acknowledgement No</Label>
+                </div>
+                <div className="col-span-8">
+                  <Input
+                    value={data.acknowledgementNo}
+                    onChange={(e) =>
+                      handleChange("acknowledgementNo", e.target.value)
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* Acknowledgement Date */}
+              <div className="grid grid-cols-12 gap-2">
+                <div className="col-span-4">
+                  <Label>Acknowledgement Date</Label>
+                </div>
+                <div className="col-span-8">
+                  <DateInput
+                    value={data.acknowledgementDate}
+                    onChange={(e) =>
+                      handleChange("acknowledgementDate", e.target.value)
+                    }
+                  />
+                </div>
+              </div>
             </div>
 
+            {/* === RIGHT COLUMN: Overhead Expense Table === */}
             <div className="space-y-0">
-              <div className="border border-gray-300 rounded-sm overflow-hidden">
+              <div className="border border-gray-300 rounded-sm overflow-hidden mt-8">
+                {/* Table Header */}
                 <div className="bg-slate-400/80 text-white text-xs font-semibold px-3 py-2 text-center uppercase tracking-wide">
                   OverHead Expense
                 </div>
 
+                {/* Expense Rows */}
                 <div className="bg-white">
                   <ExpenseRow
                     label="Custom Duty"
@@ -532,6 +662,7 @@ const PurchaseOrderLogistics: React.FC<LogisticsProps> = ({
         </div>
       )}
 
+      {/* Modal for Transporter (Static Dummy) */}
       {transporterModalOpen && (
         <Transporter
           isOpen={transporterModalOpen}
@@ -544,4 +675,4 @@ const PurchaseOrderLogistics: React.FC<LogisticsProps> = ({
   );
 };
 
-export default PurchaseOrderLogistics;
+export default PurchaseReturnChallanLogistic;

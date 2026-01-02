@@ -4,7 +4,6 @@ import Attachment from "../../../../components/Attachment";
 import { EditIcon } from "lucide-react";
 import Dropdown, { ColumnDef } from "../../../../components/Dropdown";
 
-// --- Types ---
 type InvoiceFooterProps = {
   amount?: number;
 };
@@ -73,12 +72,9 @@ const TotalRow: React.FC<{ label: string; value: string }> = ({
   );
 };
 
-// --- Main Component ---
-
 const PurchaseOrderFooter: React.FC<InvoiceFooterProps> = ({
   amount = -8500,
 }) => {
-  // Logic for Payment Status
   const isAdvance = amount > 0;
   const isDue = amount < 0;
 
@@ -94,17 +90,14 @@ const PurchaseOrderFooter: React.FC<InvoiceFooterProps> = ({
     ? "text-red-600 bg-red-100"
     : "text-gray-600 bg-gray-100";
 
-  // Handler to prevent crash
   const handleFieldChange = (field: string, value: any) => {
     console.log(`Field changed: ${field}, Value:`, value);
   };
 
-  // Define Columns for the Dropdown based on your Interface
   const ledgerColumns: ColumnDef<LedgerOption>[] = [
     { header: "Ledger Name", key: "name", width: "100%" },
   ];
 
-  // Dummy data for the dropdown (Replace with actual data source)
   const ledgerData: LedgerOption[] = [
     { id: "1", name: "Cash Account" },
     { id: "2", name: "Bank Account" },
@@ -116,9 +109,7 @@ const PurchaseOrderFooter: React.FC<InvoiceFooterProps> = ({
       style={{ backgroundColor: COLORS.white }}
     >
       <div className="flex flex-col lg:flex-row gap-8">
-        {/* --- LEFT SECTION (Inputs & Attachments) --- */}
         <div className="flex-1 flex flex-col gap-4">
-          {/* Remarks */}
           <div className="flex flex-col sm:flex-row gap-4">
             <label className="w-32 mt-1" style={{ color: COLORS.textPrimary }}>
               Remarks
@@ -141,7 +132,6 @@ const PurchaseOrderFooter: React.FC<InvoiceFooterProps> = ({
             </div>
           </div>
 
-          {/* --- Attachment Section --- */}
           <div className="flex flex-col sm:flex-row gap-4 mt-2">
             <label className="w-32 pt-2" style={{ color: COLORS.textPrimary }}>
               Attachment
@@ -228,7 +218,6 @@ const PurchaseOrderFooter: React.FC<InvoiceFooterProps> = ({
           </div>
         </div>
 
-        {/* --- RIGHT SECTION (Totals) --- */}
         <div className="w-full lg:w-[400px] flex flex-col gap-2">
           <TotalRow label="Item Value" value="0.00" />
           <TotalRow label="Discount" value="0.00" />
@@ -348,7 +337,6 @@ const PurchaseOrderFooter: React.FC<InvoiceFooterProps> = ({
 
           <TotalRow label="Round Off" value="0.00" />
 
-          {/* Doc Amount (Bold) */}
           <div className="grid grid-cols-[1fr_120px] gap-2 items-center mt-1">
             <label
               className="text-xs font-bold"
@@ -377,7 +365,6 @@ const PurchaseOrderFooter: React.FC<InvoiceFooterProps> = ({
             </div>
           </div>
 
-          {/* Payment Status Display */}
           <div className="grid grid-cols-[1fr_160px] gap-2 items-center mt-1">
             <label className="text-xs font-bold text-gray-800">
               Payment Status
@@ -394,7 +381,6 @@ const PurchaseOrderFooter: React.FC<InvoiceFooterProps> = ({
             </div>
           </div>
 
-          {/* Generate EMI Button */}
           <div className="flex justify-end mt-2">
             <button
               className="custom-btn-primary text-xs font-medium px-4 py-1.5 rounded-sm shadow-sm"
@@ -406,7 +392,6 @@ const PurchaseOrderFooter: React.FC<InvoiceFooterProps> = ({
         </div>
       </div>
 
-      {/* --- GLOBAL STYLES FOR HOVER & FOCUS --- */}
       <style>{`
         .custom-btn-primary {
           background-color: ${COLORS.primary};

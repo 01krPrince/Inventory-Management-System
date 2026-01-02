@@ -16,38 +16,38 @@ export const navItems = [
     name: "Sale",
     subItems: [
       { name: "Customer", path: "/customer", pro: false },
-      {
-        name: "Sale Price List",
-        path: "/sale-price-list-parent",
-        pro: false,
-        nestedItems: [
-          { name: "Price List", path: "/price-list" },
-          {
-            name: "Party-Sale Discount Rate",
-            path: "/party-sale-discount-rate",
-          },
-          {
-            name: "Brandwise Discount/Charges",
-            path: "/brandwise-discount-charges",
-          },
-          {
-            name: "Party-Brandwise Discount/Charges",
-            path: "/party-brandwise-discount-charges",
-          },
-          {
-            name: "Update Price For Single Item",
-            path: "/update-price-for-single-item",
-          },
-          {
-            name: "Update Barcode Rate",
-            path: "/update-barcode-rate",
-          },
-          {
-            name: "Update Barcode Discount",
-            path: "/update-barcode-discount",
-          },
-        ],
-      },
+      // {
+      //   name: "Sale Price List",
+      //   path: "/sale-price-list-parent",
+      //   pro: false,
+      //   nestedItems: [
+      //     { name: "Price List", path: "/price-list" },
+      //     {
+      //       name: "Party-Sale Discount Rate",
+      //       path: "/party-sale-discount-rate",
+      //     },
+      //     {
+      //       name: "Brandwise Discount/Charges",
+      //       path: "/brandwise-discount-charges",
+      //     },
+      //     {
+      //       name: "Party-Brandwise Discount/Charges",
+      //       path: "/party-brandwise-discount-charges",
+      //     },
+      //     {
+      //       name: "Update Price For Single Item",
+      //       path: "/update-price-for-single-item",
+      //     },
+      //     {
+      //       name: "Update Barcode Rate",
+      //       path: "/update-barcode-rate",
+      //     },
+      //     {
+      //       name: "Update Barcode Discount",
+      //       path: "/update-barcode-discount",
+      //     },
+      //   ],
+      // },
       { name: "Estimate", path: "/estimate", pro: false },
       { name: "Sales Order", path: "/sales-order", pro: false },
       { name: "Dispatch", path: "/dispatch", pro: false },
@@ -61,44 +61,44 @@ export const navItems = [
       { name: "Sales Debit Note", path: "/sales-debit-note", pro: false },
       { name: "Sales Return", path: "/sales-return", pro: false },
       { name: "Payment Receipt", path: "/payment-receipt", pro: false },
-      { name: "Cheque Return", path: "/cheque-return", pro: false },
-      { name: "Update Logistic", path: "/update-logistic", pro: false },
-      {
-        name: "Bulk Dispatch/Invoice",
-        path: "/bulk-dispatch-invoice",
-        pro: false,
-        nestedItems: [
-          {
-            name: "Bulk Dispatch From Order",
-            path: "/bulk-dispatch-from-order",
-          },
-          {
-            name: "Bulk Sales Invoice From Order",
-            path: "/bulk-sales-invoice-from-order",
-          },
-          {
-            name: "Bulk Sales Invoice From Dispatch",
-            path: "/bulk-sales-invoice-from-dispatch",
-          },
-          {
-            name: "Timesheet Based Billing",
-            path: "/timesheet-based-billing",
-          },
-          {
-            name: "Pull PO from Other Company as SO",
-            path: "/pull-po-from-other-company-as-so",
-          },
-        ],
-      },
-      {
-        name: "E-Commerce",
-        path: "/e-commerce",
-        pro: false,
-        nestedItems: [
-          { name: "Shopify Order", path: "/shopify-order" },
-          { name: "Market Place Payment", path: "/market-place-payment" },
-        ],
-      },
+      // { name: "Cheque Return", path: "/cheque-return", pro: false },
+      // { name: "Update Logistic", path: "/update-logistic", pro: false },
+      // {
+      //   name: "Bulk Dispatch/Invoice",
+      //   path: "/bulk-dispatch-invoice",
+      //   pro: false,
+      //   nestedItems: [
+      //     {
+      //       name: "Bulk Dispatch From Order",
+      //       path: "/bulk-dispatch-from-order",
+      //     },
+      //     {
+      //       name: "Bulk Sales Invoice From Order",
+      //       path: "/bulk-sales-invoice-from-order",
+      //     },
+      //     {
+      //       name: "Bulk Sales Invoice From Dispatch",
+      //       path: "/bulk-sales-invoice-from-dispatch",
+      //     },
+      //     {
+      //       name: "Timesheet Based Billing",
+      //       path: "/timesheet-based-billing",
+      //     },
+      //     {
+      //       name: "Pull PO from Other Company as SO",
+      //       path: "/pull-po-from-other-company-as-so",
+      //     },
+      //   ],
+      // },
+      // {
+      //   name: "E-Commerce",
+      //   path: "/e-commerce",
+      //   pro: false,
+      //   nestedItems: [
+      //     { name: "Shopify Order", path: "/shopify-order" },
+      //     { name: "Market Place Payment", path: "/market-place-payment" },
+      //   ],
+      // },
     ],
   },
   {
@@ -140,11 +140,11 @@ export const navItems = [
       // },
       { name: "Purchase Order", path: "/purchase-order", pro: false },
       { name: "Goods Receipt Note", path: "/goods-receipt-note", pro: false },
-      // {
-      //   name: "Purchase Return Challan",
-      //   path: "/purchase-return-challan",
-      //   pro: false,
-      // },
+      {
+        name: "Purchase Return Challan",
+        path: "/purchase-return-challan",
+        pro: false,
+      },
       { name: "Purchase Bill", path: "/purchase-bill", pro: false },
       {
         name: "Purchase Credit Note",
@@ -152,7 +152,7 @@ export const navItems = [
         pro: false,
       },
       { name: "Purchase Debit Note", path: "/purchase-debit-note", pro: false },
-      // { name: "Purchase Return", path: "/purchase-return", pro: false },
+      { name: "Purchase Return", path: "/purchase-return", pro: false },
       // {
       //   name: "Bulk GRN/Purchase",
       //   path: "/bulk-grn-purchase",

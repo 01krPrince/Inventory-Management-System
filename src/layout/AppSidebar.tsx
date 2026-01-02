@@ -9,7 +9,6 @@ import { allItems } from "./navigation";
 import { ChevronRightIcon } from "../components/icons";
 import LogoWithIntroAnimation from "./LogoWithIntroAnimation";
 
-// --- TYPES ---
 interface NavItem {
   name: string;
   path?: string;
@@ -18,7 +17,6 @@ interface NavItem {
   nestedItems?: NavItem[];
 }
 
-// --- HELPER HOOK FOR DYNAMIC POSITIONING ---
 const useSmartPosition = (
   parentBounds: DOMRect | null,
   menuWidth: number = 208 // matching w-52 (52 * 4px = 208px)
@@ -57,7 +55,6 @@ const useSmartPosition = (
   return coords;
 };
 
-// --- HELPERS ---
 const findActiveItemPath = (items: any[] = [], activePath: string): boolean => {
   for (const item of items) {
     if (item.path === activePath) return true;
@@ -74,8 +71,6 @@ const baseLinkClasses =
 const primaryColorClass = "bg-[#0c5888] text-white shadow-md";
 const inactiveLinkClasses =
   "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700";
-
-// --- COMPONENTS ---
 
 const NestedLink = React.memo(
   ({ item, addTab, activeTabPath, onClose }: any) => {

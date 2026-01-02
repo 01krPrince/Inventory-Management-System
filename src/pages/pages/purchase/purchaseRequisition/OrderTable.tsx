@@ -18,7 +18,6 @@ import { COLORS } from "../../../../constants/colors";
 
 import AddNewItem from "../../../../components/addItemMaster/AddNewItem";
 
-// --- API IMPORTS ---
 import { fetchItems } from "../../inventory/itemMaster/api/itemService";
 
 import { StockUnitData } from "../../../../components/addItemMaster/api/types";
@@ -26,7 +25,6 @@ import { fetchStockUnits } from "../../../../components/addItemMaster/api/stocku
 import { ItemApiData } from "../../inventory/itemMaster/models/ItemModel";
 import AttributePanel from "../../../../components/AttributePanel";
 
-// --- TYPES ---
 interface Column {
   id: string;
   label: string;
@@ -40,7 +38,6 @@ interface RowData {
   [key: string]: string | number;
 }
 
-// --- PROPS INTERFACE FOR LIFTED STATE ---
 interface OrderTableProps {
   rows: string[];
   setRows: React.Dispatch<React.SetStateAction<string[]>>;
@@ -54,20 +51,16 @@ const OrderTable: React.FC<OrderTableProps> = ({
   tableData,
   setTableData,
 }) => {
-  // --- UTILS ---
   const generateRowId = () =>
     `row-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-  // --- STATE (Local UI State only) ---
   const [items, setItems] = useState<ItemApiData[]>([]);
   const [, setStockUnits] = useState<StockUnitData[]>([]);
-  // tableData and rows are now Props
   const [sortConfig, setSortConfig] = useState<{
     key: string;
     direction: "asc" | "desc";
   } | null>(null);
 
-  // Popups State
   const [popupState, setPopupState] = useState<{
     visible: boolean;
     top: number;
@@ -83,9 +76,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
 
   const [addNewItemForm, setAddNewItemForm] = useState(false);
 
-  // --- INITIALIZATION ---
-
-  // 1. Row Initialization Effect: Runs on mount AND when rows are cleared (length becomes 0)
   useEffect(() => {
     if (rows.length === 0) {
       const initialRows = Array.from({ length: 15 }, () => generateRowId());
@@ -97,10 +87,8 @@ const OrderTable: React.FC<OrderTableProps> = ({
       });
       setTableData(initialData);
     }
-    // Dependency on rows.length ensures this runs when parent resets state
   }, [rows.length, setRows, setTableData]);
 
-  // 2. Data Loading Effect: Runs ONLY once on mount
   useEffect(() => {
     loadMasterData();
   }, []);
@@ -117,7 +105,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
     }
   };
 
-  // --- COLUMN CONFIG ---
   const initialColumns: Column[] = [
     {
       id: "sno",
@@ -338,7 +325,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
 
   const [columns, setColumns] = useState<Column[]>(initialColumns);
 
-  // --- HANDLERS ---
   const handleCreateItemClick = () => {
     setPopupState((prev) => ({ ...prev, visible: false }));
     setAddNewItemForm(true);
@@ -410,7 +396,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
     setTableData((prev) => ({ ...prev, [targetRowId!]: { ...sourceData } }));
   };
 
-  // --- POPUP TRIGGERS ---
   const handleSelectClick = (
     e: React.MouseEvent<HTMLDivElement>,
     rowId: string
@@ -450,7 +435,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
     }
   };
 
-  // --- SELECTION HANDLERS ---
   const handleItemSelect = (item: ItemApiData) => {
     if (popupState.activeRowId) {
       setAttributePanelState({
@@ -495,7 +479,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
     });
   };
 
-  // --- RESIZING & SORTING (Defined via Hooks - MUST be before early return) ---
   const resizingRef = useRef<number | null>(null);
   const startXRef = useRef<number>(0);
   const startWidthRef = useRef<number>(0);
@@ -583,7 +566,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
       .slice(0, idx)
       .reduce((acc, col) => (col.sticky === "left" ? acc + col.width : acc), 0);
 
-  // --- CALCULATION LOGIC (Hook - MUST be before early return) ---
   const totals = useMemo(() => {
     const sums: Record<string, number> = {
       pqty: 0,
@@ -615,7 +597,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
     };
   }, [rows, tableData]);
 
-  // --- CONDITIONAL RENDER (Moved to BOTTOM to prevent Hook Error) ---
   if (addNewItemForm) {
     return (
       <div className="w-full">
@@ -639,13 +620,11 @@ const OrderTable: React.FC<OrderTableProps> = ({
     );
   }
 
-  // --- MAIN RENDER ---
   return (
     <div
       className="flex flex-col h-auto font-sans text-sm overflow-hidden relative z-0"
       style={{ backgroundColor: COLORS.background }}
     >
-      {/* HEADER */}
       <div
         className="flex-none flex justify-between items-center p-2 border-b z-10 relative bg-white"
         style={{ borderColor: COLORS.border }}
@@ -673,7 +652,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
         </button>
       </div>
 
-      {/* TABLE */}
       <div className="flex-1 p-2 relative flex flex-col z-0">
         <div
           className="w-full border shadow-sm relative overflow-hidden bg-white"
@@ -858,7 +836,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
                           } else if (
                             ["qty", "rate", "amount", "mrp"].includes(col.id)
                           ) {
-                            // --- EDITABLE INPUTS ---
                             content = (
                               <input
                                 type="text"
@@ -980,7 +957,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
         initialData={attributePanelState.tempItemData}
       />
 
-      {/* --- ITEM POPUP (Rendered via Portal) --- */}
+      {/* --- ITEM POPUP --- */}
       {popupState.visible &&
         ReactDOM.createPortal(
           <>
@@ -1002,7 +979,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
                     : "none",
               }}
             >
-              {/* HEADER WITH + ICON */}
               <div
                 className="flex justify-between items-center p-2 border-b h-8"
                 style={{ backgroundColor: COLORS.primary, color: COLORS.white }}

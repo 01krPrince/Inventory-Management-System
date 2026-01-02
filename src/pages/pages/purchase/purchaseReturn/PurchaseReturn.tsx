@@ -1,26 +1,19 @@
 import React, { useState } from "react";
-// Adjust these imports to match your project structure
-import PurchaseBillHeader from "./PurchaseBillHeader";
-import PurchaseBillForm from "./PurchaseBillForm";
-import OrderTable from "../purchaseOrder/OrderTable";
-import PurchaseBillFooter from "./PurchaseBillFooter";
+import PurchaseReturnHeader from "./PurchaseReturnHeader";
+import PurchaseReturnForm from "./PurchaseReturnForm";
+import OrderTable from "./OrderTable";
+import PurchaseOrderFooter from "./PurchaseReturnFooter";
 import { COLORS } from "../../../../constants/colors";
+
+import PurchaseReturnLogistics, {
+  LogisticsData,
+} from "./PurchaseReturnLogistic";
 import LedgerAttributes from "../../../../components/LedgerAttributes";
 
-import GoodsRecieptNoteLogistics, {
-  LogisticsData,
-} from "../goodsRecieptNote/GoodsRecieptNoteLogistics";
-
-interface RowData {
-  [key: string]: string | number;
-}
-
-const PurchaseBill: React.FC = () => {
-  const [rows, setRows] = useState<string[]>([]);
-  const [tableData, setTableData] = useState<Record<string, RowData>>({});
-
+const PurchaseReturn: React.FC = () => {
   const [logisticsData, setLogisticsData] = useState<LogisticsData>({
     // Left Column
+    dispatchFrom: "",
     destination: "",
     shippingMode: "Road",
     shippingCompany: "",
@@ -32,28 +25,21 @@ const PurchaseBill: React.FC = () => {
     chargeType: "Paid",
     documentThrough: "",
 
-    // Middle Column (Common)
+    // Middle Column
     portOfLanding: "",
     portOfDischarge: "",
     noOfPackets: "0",
     weight: "0",
-
-    // Middle Column (Specific to Purchase Bill / Optional in interface)
-    // Initialize these to empty strings so they are controlled inputs
-    portAddressForEway: "",
-    portStateForEway: "",
-    distance: "",
-    ewayInvoiceNo: "",
-    ewayInvoiceDate: "",
-    ewayCancelDate: "",
+    distance: "0",
+    eWayInvoiceNo: "",
+    eWayInvoiceDate: new Date().toISOString().split("T")[0],
+    eWayCancelDate: "",
     irnNo: "",
     qrCode: "",
     irnCancelDate: "",
     irnCancelReason: "",
-    ackNo: "",
-    ackDate: "",
-    billOfEntryNum: "",
-    billOfEntryDate: "",
+    acknowledgementNo: "",
+    acknowledgementDate: "",
 
     // Right Column (Overhead Expenses)
     customDuty: "0.00",
@@ -68,6 +54,7 @@ const PurchaseBill: React.FC = () => {
     otherCharges: "0.00",
   });
 
+  // --- 2. Handler for Logistics Updates ---
   const handleLogisticsChange = (newData: LogisticsData) => {
     setLogisticsData(newData);
   };
@@ -77,24 +64,19 @@ const PurchaseBill: React.FC = () => {
       style={{ backgroundColor: COLORS.background }}
       className="flex flex-col bg-gray-100 overflow-hidden"
     >
-      <PurchaseBillHeader />
+      <PurchaseReturnHeader />
 
       <div className="flex-1 overflow-auto p-4">
         <div className="flex flex-col gap-4">
-          <PurchaseBillForm />
+          <PurchaseReturnForm />
 
-          <OrderTable
-            rows={rows}
-            setRows={setRows}
-            tableData={tableData}
-            setTableData={setTableData}
-          />
+          <OrderTable />
 
-          <PurchaseBillFooter />
+          <PurchaseOrderFooter />
 
           <LedgerAttributes />
 
-          <GoodsRecieptNoteLogistics
+          <PurchaseReturnLogistics
             data={logisticsData}
             onChange={handleLogisticsChange}
           />
@@ -104,4 +86,4 @@ const PurchaseBill: React.FC = () => {
   );
 };
 
-export default PurchaseBill;
+export default PurchaseReturn;

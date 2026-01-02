@@ -121,15 +121,6 @@ const DEFAULT_COLUMNS: Column[] = [
     visible: true,
   },
   {
-    id: "reciss",
-    label: "Rec Iss",
-    width: 80,
-    align: "center",
-    sticky: "left",
-    resizable: true,
-    visible: true,
-  },
-  {
     id: "select",
     label: "Select Item",
     width: 110,
@@ -1031,42 +1022,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
                                 className="mx-auto text-blue-600"
                               />
                             );
-                          else if (col.id === "reciss") {
-                            content = (
-                              <div className="relative w-full h-full group">
-                                <div className="flex justify-between items-center h-full px-1 text-[10px]">
-                                  <span
-                                    style={{
-                                      color:
-                                        rowData.reciss === "Issue"
-                                          ? "red"
-                                          : "inherit",
-                                    }}
-                                  >
-                                    {rowData.reciss || "Receipt"}
-                                  </span>
-                                  <ChevronDown
-                                    size={10}
-                                    className="text-gray-400"
-                                  />
-                                </div>
-                                <select
-                                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                  value={rowData.reciss || "Receipt"}
-                                  onChange={(e) =>
-                                    handleInputChange(
-                                      rowId,
-                                      "reciss",
-                                      e.target.value
-                                    )
-                                  }
-                                >
-                                  <option value="Receipt">Receipt</option>
-                                  <option value="Issue">Issue</option>
-                                </select>
-                              </div>
-                            );
-                          } else if (col.id === "select") {
+                          else if (col.id === "select") {
                             content = (
                               <div
                                 className="text-[10px] italic text-gray-400 flex justify-between cursor-pointer hover:bg-gray-100 h-full items-center px-1"

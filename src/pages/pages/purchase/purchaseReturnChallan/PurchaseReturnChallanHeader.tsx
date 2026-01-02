@@ -11,11 +11,15 @@ import {
 } from "../../../../components/icons";
 import { COLORS } from "../../../../constants/colors";
 
+// --- Interfaces ---
+
 interface HeaderButtonProps {
   label: string;
   icon: React.ReactNode;
   onClick?: () => void;
 }
+
+// --- Components ---
 
 const HeaderButton: React.FC<HeaderButtonProps> = ({
   label,
@@ -33,14 +37,18 @@ const HeaderButton: React.FC<HeaderButtonProps> = ({
   );
 };
 
-export default function PurchaseOrderHeader() {
+export default function PurchaseReturnChallanHeader() {
   return (
-    <div className="w-full border-t" style={{ borderColor: COLORS.borderDark }}>
+    <div
+      className="w-full border-t"
+      style={{ borderColor: COLORS.borderDark }} // Used COLORS.borderDark
+    >
       <header
         className="flex flex-wrap items-center justify-between w-full px-4 py-1 shadow-md transition-colors duration-300"
-        style={{ backgroundColor: COLORS.primary }}
+        style={{ backgroundColor: COLORS.primary }} // Used COLORS.primary
       >
         <div className="flex items-center gap-2">
+          {/* Spacer for responsive alignment */}
           <div className="w-0 md:w-12 lg:w-24"></div>
 
           <HeaderButton

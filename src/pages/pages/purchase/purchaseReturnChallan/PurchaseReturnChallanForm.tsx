@@ -20,12 +20,15 @@ import {
   LocationMaster as LocationMasterType,
 } from "../../inventory/stockAdjustment/api/LocationMaster";
 
+// --- 1. Types & Interfaces ---
+
 interface DropdownItem {
   name: string;
   code?: string;
   [key: string]: any;
 }
 
+// Updated Mock Data
 interface MockData {
   gstTypes: DropdownItem[];
   stores: LocationMasterType[];
@@ -35,6 +38,7 @@ interface MockData {
   paymentTerms: DropdownItem[];
   states: DropdownItem[];
   shipToLocations: DropdownItem[];
+  returnReasons: DropdownItem[];
 }
 
 const mockData: MockData = {
@@ -72,6 +76,11 @@ const mockData: MockData = {
     { name: "Warehouse A", code: "WH01" },
     { name: "Store Branch 2", code: "BR02" },
   ],
+  returnReasons: [
+    { name: "Others", code: "OTH" },
+    { name: "Damaged", code: "dmg" },
+    { name: "Wrong Item", code: "wrg" },
+  ],
 };
 
 const defaultColumns: ColumnDef<DropdownItem>[] = [
@@ -88,6 +97,8 @@ const codeNameColumns: ColumnDef<DropdownItem>[] = [
   { header: "Code", key: "code", width: "w-20" },
   { header: "Name", key: "name", width: "w-full" },
 ];
+
+// --- Helper Components ---
 
 const Label: React.FC<{ children: React.ReactNode; required?: boolean }> = ({
   children,
@@ -141,21 +152,29 @@ const ActionBtn: React.FC<{
   </button>
 );
 
+// Updated Accordion to support header actions (e.g. Shipping Address button)
 const AccordionSection: React.FC<{
   title: string;
   isOpen: boolean;
   onToggle: () => void;
   children: React.ReactNode;
-}> = ({ title, isOpen, onToggle, children }) => {
+  action?: React.ReactNode; // New prop for header buttons
+}> = ({ title, isOpen, onToggle, children, action }) => {
   return (
     <div className="mb-2 border border-gray-200 rounded bg-white shadow-sm">
       <div
         onClick={onToggle}
         className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-50 transition-colors select-none border-b border-transparent"
       >
-        <div className="flex items-center gap-2 text-[var(--theme-secondary)] font-bold text-sm">
+        <div className="flex items-center gap-2 text-[var(--theme-secondary)] font-bold text-sm flex-1">
           <DocumentIcon className="w-5 h-5" />
           <span>{title}</span>
+          {/* Render Action Button if present, stop propagation to prevent toggle */}
+          {action && (
+            <div onClick={(e) => e.stopPropagation()} className="ml-4">
+              {action}
+            </div>
+          )}
         </div>
         <div className="text-[var(--theme-secondary)]">
           {isOpen ? (
@@ -170,57 +189,67 @@ const AccordionSection: React.FC<{
   );
 };
 
+// --- Main Component ---
+
 interface POSOrderFormProps {
   themeColor?: string;
 }
 
-const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
+const PurchaseReturnChallanForm: React.FC<POSOrderFormProps> = ({
   themeColor = "#0f3c63",
 }) => {
+  // --- UI State ---
+  const [isBillingFromOpen, setBillingFromOpen] = useState<boolean>(false);
+  const [isShippingFromOpen, setShippingFromOpen] = useState<boolean>(false);
 
-  const [isBillToOpen, setBillToOpen] = useState<boolean>(false);
-  const [isShipToOpen, setShipToOpen] = useState<boolean>(false);
-
+  // Modals State
   const [isCounterMasterOpen, setIsCounterMasterOpen] = useState(false);
   const [isStateOpen, setIsStateOpen] = useState(false);
   const [isLocationMasterOpen, setIsLocationMasterOpen] =
     useState<boolean>(false);
 
+  // Vendor Modal State
   const [isVendorFormOpen, setIsVendorFormOpen] = useState(false);
   const [editingVendor, setEditingVendor] = useState<DropdownItem | null>(null);
 
+  // Constants for Z-Index
   const nestedModalZIndex = 1200;
 
+  // Data State
   const [locationList, setLocationList] = useState<LocationMasterType[]>([]);
 
+  // Form Data State
   const [formData, setFormData] = useState({
     gstType: "TaxInvoice",
     store: "SPORTS HUB",
     vendor: "",
     email: "",
-    deliveryDate: "26/12/2025",
     priceCategory: "",
-    orderDate: "26/12/2025",
-    orderNo: "00002",
+    returnDate: "02/01/2026",
+    returnNo: "00002",
     refNo: "",
-    refDate: "26/12/2025",
+    refDate: "02/01/2026",
     tax: "Inclusive",
-    paymentTerms: "",
-    // Billing Address Section
+    // Billing From Section
     billingAddress: "",
     gstNo: "",
     contactPerson: "",
     placeOfSupply: "",
-    // Delivery Address Section
+    // Shipping From Section
     shipTo: "",
-    deliveryAddress: "",
+    shippingAddress: "",
+    // Bottom Section
+    paymentTerms: "",
+    dueDate: "02/01/2026",
+    returnReason: "Others",
   });
 
   const [isLegderOpen, setIsLedgerOpen] = useState<boolean>(false);
   const [ledgerEditingRow, setLedgerEditingRow] =
     useState<NameAndCodeData | null>(null);
 
-    useEffect(() => {
+  // --- Effects ---
+  useEffect(() => {
     loadLocations();
   }, []);
 
@@ -245,13 +274,14 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  // --- Location Handlers ---
   const getSelectedStoreData = (): LocationMasterType | null => {
     if (!formData.store) return null;
     return locationList.find((s) => s.name === formData.store) || null;
   };
 
   const handleLocationSuccess = async () => {
-    await loadLocations(); // Reload the dropdown data
+    await loadLocations();
   };
 
   const handleLocationSelect = (locationName: string) => {
@@ -259,27 +289,21 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
     setIsLocationMasterOpen(false);
   };
 
+  // --- Vendor Handlers ---
   const handleVendorAction = () => {
     const selectedVendorName = formData.vendor;
-
     if (selectedVendorName) {
-      // 1. EDIT MODE: Find the vendor object from the list based on name
       const vendorData = mockData.vendors.find(
         (v) => v.name === selectedVendorName
       );
-      // Pass the found object, or null if not found (fallback to create)
       setEditingVendor(vendorData || null);
     } else {
-      // 2. CREATE MODE: No vendor selected
       setEditingVendor(null);
     }
-
-    // Open the modal
     setIsVendorFormOpen(true);
   };
 
   const handleVendorSaveSuccess = () => {
-    // Logic to reload vendors list would go here
     setIsVendorFormOpen(false);
   };
 
@@ -299,13 +323,16 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
       style={themeStyles}
       className="bg-white rounded border border-gray-200 p-5 relative"
     >
+      {/* --- Modals --- */}
       {isCounterMasterOpen && (
         <CounterMaster onClose={() => setIsCounterMasterOpen(false)} />
       )}
       {isStateOpen && <State onClose={() => setIsStateOpen(false)} />}
 
       <div className="grid grid-cols-12 gap-6">
+        {/* === LEFT COLUMN === */}
         <div className="col-span-4 space-y-2">
+          {/* GST Type */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
               <Label>GST Type</Label>
@@ -323,6 +350,7 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
             </div>
           </div>
 
+          {/* Store */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
               <Label required>Store</Label>
@@ -346,6 +374,7 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
             </div>
           </div>
 
+          {/* Vendor */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
               <Label required>Vendor</Label>
@@ -371,6 +400,7 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
             </div>
           </div>
 
+          {/* Email */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
               <Label>Email</Label>
@@ -383,20 +413,7 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-12 gap-2 items-center">
-            <div className="col-span-4">
-              <Label required>Delivery Date</Label>
-            </div>
-            <div className="col-span-8">
-              <DateInput
-                value={formData.deliveryDate}
-                onChange={(e) =>
-                  handleFieldChange("deliveryDate", e.target.value)
-                }
-              />
-            </div>
-          </div>
-
+          {/* Price Category */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
               <Label>Price Category</Label>
@@ -424,31 +441,38 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
           </div>
         </div>
 
+        {/* === MIDDLE COLUMN === */}
         <div className="col-span-4 space-y-2">
+          {/* Return Date */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
-              <Label required>Order Date</Label>
+              <Label required>Return Date</Label>
             </div>
             <div className="col-span-8">
               <DateInput
-                value={formData.orderDate}
-                onChange={(e) => handleFieldChange("orderDate", e.target.value)}
+                value={formData.returnDate}
+                onChange={(e) =>
+                  handleFieldChange("returnDate", e.target.value)
+                }
               />
             </div>
           </div>
 
+          {/* Return No */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
-              <Label required>Order No</Label>
+              <Label required>Return No</Label>
             </div>
             <div className="col-span-8">
               <Input
-                value={formData.orderNo}
-                onChange={(e) => handleFieldChange("orderNo", e.target.value)}
+                value={formData.returnNo}
+                readOnly
+                onChange={(e) => handleFieldChange("returnNo", e.target.value)}
               />
             </div>
           </div>
 
+          {/* Ref No */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
               <Label>Ref No</Label>
@@ -461,6 +485,7 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
             </div>
           </div>
 
+          {/* Ref Date */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
               <Label required>Ref.Date</Label>
@@ -473,6 +498,7 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
             </div>
           </div>
 
+          {/* Tax */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
               <Label>Tax</Label>
@@ -489,26 +515,30 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
           </div>
         </div>
 
+        {/* === RIGHT COLUMN === */}
         <div className="col-span-4 flex flex-col h-full justify-between">
           <div className="space-y-4">
+            {/* Billing From Accordion */}
             <AccordionSection
-              title="Billing Address"
-              isOpen={isBillToOpen}
-              onToggle={() => setBillToOpen(!isBillToOpen)}
+              title="Billing From"
+              isOpen={isBillingFromOpen}
+              onToggle={() => setBillingFromOpen(!isBillingFromOpen)}
             >
+              {/* Text Area */}
               <div className="relative mb-2">
                 <textarea
                   value={formData.billingAddress}
                   onChange={(e) =>
                     handleFieldChange("billingAddress", e.target.value)
                   }
-                  className="w-full h-24 border border-gray-300 rounded text-[13px] p-2 resize-none focus:ring-1 focus:border-[var(--theme-focus)] focus:ring-[var(--theme-focus)] outline-none"
+                  className="w-full h-20 border border-gray-300 rounded text-[13px] p-2 resize-none focus:ring-1 focus:border-[var(--theme-focus)] focus:ring-[var(--theme-focus)] outline-none"
                 />
                 <span className="absolute bottom-1 right-2 text-[10px] text-gray-400">
                   {formData.billingAddress.length}/200
                 </span>
               </div>
 
+              {/* GST No */}
               <div className="flex items-center gap-2 mb-2">
                 <span className="w-24 text-[13px] text-gray-700 shrink-0">
                   GST No
@@ -521,6 +551,7 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
                 </div>
               </div>
 
+              {/* Contact Person */}
               <div className="flex items-center gap-2 mb-2">
                 <span className="w-24 text-[13px] text-gray-700 shrink-0">
                   Contact Person
@@ -535,7 +566,8 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              {/* Place of Supply */}
+              <div className="flex items-center gap-2 mb-2">
                 <span className="w-24 text-[13px] text-gray-700 shrink-0">
                   Place of Supply
                 </span>
@@ -559,11 +591,13 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
               </div>
             </AccordionSection>
 
+            {/* Shipping From Accordion with Button */}
             <AccordionSection
-              title="Delivery At"
-              isOpen={isShipToOpen}
-              onToggle={() => setShipToOpen(!isShipToOpen)}
+              title="Shipping From"
+              isOpen={isShippingFromOpen}
+              onToggle={() => setShippingFromOpen(!isShippingFromOpen)}
             >
+              {/* Ship To Dropdown */}
               <div className="flex items-center gap-2 mb-2">
                 <span className="w-16 text-[13px] text-gray-700 shrink-0 font-medium">
                   Ship To
@@ -585,27 +619,30 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
                 </div>
               </div>
 
+              {/* Shipping Address Text Area */}
               <div className="relative">
                 <textarea
-                  value={formData.deliveryAddress}
+                  value={formData.shippingAddress}
                   onChange={(e) =>
-                    handleFieldChange("deliveryAddress", e.target.value)
+                    handleFieldChange("shippingAddress", e.target.value)
                   }
                   className="w-full h-24 border border-gray-300 rounded text-[13px] p-2 resize-none focus:ring-1 focus:border-[var(--theme-focus)] focus:ring-[var(--theme-focus)] outline-none"
                 />
                 <span className="absolute bottom-1 right-2 text-[10px] text-gray-400">
-                  {formData.deliveryAddress.length}/200
+                  {formData.shippingAddress.length}/200
                 </span>
               </div>
             </AccordionSection>
           </div>
 
-          <div className="mt-4 pt-4">
+          {/* Bottom Fields (Right Column) */}
+          <div className="mt-4 pt-4 space-y-2">
+            {/* Payment Terms */}
             <div className="grid grid-cols-12 gap-2 items-center">
-              <div className="col-span-4 flex items-center gap-1">
+              <div className="col-span-4">
                 <Label>Payment Terms</Label>
               </div>
-              <div className="col-span-7">
+              <div className="col-span-8">
                 <InputGroup>
                   <Dropdown
                     data={mockData.paymentTerms}
@@ -621,10 +658,42 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
                 </InputGroup>
               </div>
             </div>
+
+            {/* Due Date */}
+            <div className="grid grid-cols-12 gap-2 items-center">
+              <div className="col-span-4">
+                <Label>Due Date</Label>
+              </div>
+              <div className="col-span-8">
+                <DateInput
+                  value={formData.dueDate}
+                  onChange={(e) => handleFieldChange("dueDate", e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* DN/CN Return Reason */}
+            <div className="grid grid-cols-12 gap-2 items-center">
+              <div className="col-span-4">
+                <Label>DN/CN Return Reason</Label>
+              </div>
+              <div className="col-span-8">
+                <Dropdown
+                  data={mockData.returnReasons}
+                  columns={defaultColumns}
+                  value={formData.returnReason}
+                  valueKey="name"
+                  onChange={(item) =>
+                    handleFieldChange("returnReason", item?.name || "")
+                  }
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
+      {/* --- Location Master Popup --- */}
       {isLocationMasterOpen && (
         <div
           className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
@@ -642,6 +711,7 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
         </div>
       )}
 
+      {/* --- Vendor CRUD Popup --- */}
       {isVendorFormOpen && (
         <div
           className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
@@ -657,6 +727,7 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
         </div>
       )}
 
+      {/* --- Price Category / NameAndCode Popup --- */}
       {isLegderOpen && (
         <NameAndCodeMaster
           title="Price Category"
@@ -669,4 +740,4 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
   );
 };
 
-export default PurchaseOrderForm;
+export default PurchaseReturnChallanForm;
