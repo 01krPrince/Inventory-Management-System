@@ -19,7 +19,6 @@ interface HeaderButtonProps {
   onClick?: () => void;
 }
 
-// 1. Define what actions the Parent can pass down
 export interface StockAdjustmentFormHeaderProps {
   onOpen?: () => void;
   onDelete?: () => void;
@@ -30,8 +29,6 @@ export interface StockAdjustmentFormHeaderProps {
   onConfiguration?: () => void;
   onHelp?: () => void;
 }
-
-// --- Components ---
 
 const HeaderButton: React.FC<HeaderButtonProps> = ({
   label,
@@ -70,7 +67,6 @@ const PurchaseRequisitionFormHeader: React.FC<
         style={{ backgroundColor: COLORS.primary }}
       >
         <div className="flex items-center gap-2">
-          {/* Spacer for responsive alignment */}
           <div className="w-0 md:w-12 lg:w-24"></div>
 
           <HeaderButton

@@ -5,7 +5,7 @@ import OrderTable from "../purchaseOrder/OrderTable";
 import GoodsRecieptNoteFooter from "./GoodsRecieptNoteFooter";
 import { COLORS } from "../../../../constants/colors";
 
-// FIX: Import the Component AND the Interface from the file we just fixed
+// FIX: Import the Component AND the Interface
 import GoodsRecieptNoteLogistics, {
   LogisticsData,
 } from "./GoodsRecieptNoteLogistics";
@@ -35,26 +35,43 @@ const GoodsRecieptNote: React.FC = () => {
     // Middle Column
     portOfLanding: "",
     portOfDischarge: "",
-    portAddressForEway: "", // Keep these, they exist in the interface as optional
-    portStateForEway: "", // Keep these, they exist in the interface as optional
+    portAddressForEway: "",
+    portStateForEway: "",
     noOfPackets: "0",
     weight: "0",
 
-    // Note: We DO NOT need to initialize fields like irnNo, ackNo, etc.
-    // because they are marked as optional (?) in the interface and
-    // are not used on this specific page.
+    // Note: Skipped optional fields like irnNo, ackNo as per your existing code logic.
 
-    // Right Column (Overhead Expenses)
+    // Right Column (Overhead Expenses with Tenders)
     customDuty: "0.00",
+    customDutyTender: "", // Added
+
     chaPayment: "0.00",
+    chaPaymentTender: "", // Added
+
     freight: "0.00",
+    freightTender: "", // Added
+
     insurance: "0.00",
+    insuranceTender: "", // Added
+
     handling: "0.00",
+    handlingTender: "", // Added
+
     documentationCharges: "0.00",
+    documentationChargesTender: "", // Added
+
     bankCharges: "0.00",
+    bankChargesTender: "", // Added
+
     customExpenses: "0.00",
+    customExpensesTender: "", // Added
+
     loadingUnloading: "0.00",
+    loadingUnloadingTender: "", // Added
+
     otherCharges: "0.00",
+    otherChargesTender: "", // Added
   });
 
   // --- 2. Handler for Logistics Updates ---

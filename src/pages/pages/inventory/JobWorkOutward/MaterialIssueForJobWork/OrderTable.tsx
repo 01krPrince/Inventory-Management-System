@@ -32,7 +32,6 @@ const OrderTable: React.FC = () => {
     { id: "sno", label: "SNo", width: 40, fixed: true, align: "center" },
     { id: "add", label: "", width: 40, fixed: true, align: "center" },
     { id: "del", label: "", width: 40, fixed: true, align: "center" },
-    { id: "srch", label: "", width: 40, fixed: true, align: "center" },
     { id: "copy", label: "", width: 40, fixed: true, align: "center" },
     {
       id: "select",
@@ -358,14 +357,6 @@ const OrderTable: React.FC = () => {
                             <X
                               size={14}
                               style={{ color: COLORS.danger }}
-                              className="mx-auto cursor-pointer"
-                            />
-                          );
-                        else if (col.id === "srch")
-                          content = (
-                            <Search
-                              size={14}
-                              style={{ color: COLORS.success }}
                               className="mx-auto cursor-pointer"
                             />
                           );

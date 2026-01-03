@@ -15,8 +15,8 @@ import {
   Settings,
   Check,
   ShieldCheck,
-  DollarSign,
   Clock,
+  DollarSign,
   RotateCcw,
 } from "lucide-react";
 import { COLORS } from "../../../../constants/colors";
@@ -26,8 +26,8 @@ import AddNewItem from "../../../../components/addItemMaster/AddNewItem";
 import { fetchItems } from "../../inventory/itemMaster/api/itemService";
 import { StockUnitData } from "../../../../components/addItemMaster/api/types";
 import { fetchStockUnits } from "../../../../components/addItemMaster/api/stockunitservice";
-import AttributePanel from "../../../../components/AttributePanel";
 import { ItemApiData } from "../../inventory/itemMaster/models/ItemModel";
+import AttributePanel from "../../../../components/AttributePanel";
 import PullFromOrderModal from "../../../../components/PullFromOrderModal";
 
 interface Column {
@@ -46,15 +46,15 @@ interface RowData {
 
 interface WarrantyOption {
   id: string;
-  label: string; // e.g. "1 Year"
-  price: number; // e.g. 500
+  label: string;
+  price: number;
 }
 
 const getStandardWarranties = (itemText: string): WarrantyOption[] => {
   if (!itemText) return [];
-  const text = itemText.toLowerCase();
+  const text = String(itemText).toLowerCase();
 
-  if (text.includes("bat") || text.includes("elec")) {
+  if (text.includes("bat") || text.includes("elec") || text.startsWith("1")) {
     return [
       { id: "w1", label: "6 Months", price: 0 },
       { id: "w2", label: "1 Year", price: 500 },
@@ -103,7 +103,7 @@ const DEFAULT_COLUMNS: Column[] = [
     visible: true,
   },
   {
-    id: "copy",
+    id: "srch",
     label: "",
     width: 35,
     sticky: "left",
@@ -112,11 +112,11 @@ const DEFAULT_COLUMNS: Column[] = [
     visible: true,
   },
   {
-    id: "postype",
-    label: "POS Type",
-    width: 80,
-    align: "center",
+    id: "copy",
+    label: "",
+    width: 35,
     sticky: "left",
+    align: "center",
     resizable: true,
     visible: true,
   },
@@ -138,16 +138,14 @@ const DEFAULT_COLUMNS: Column[] = [
     resizable: true,
     visible: true,
   },
-
   {
     id: "warranty",
     label: "Warranty",
-    width: 130,
+    width: 110,
     align: "left",
     resizable: true,
     visible: true,
   },
-
   {
     id: "attr",
     label: "Attribute",
@@ -213,8 +211,8 @@ const DEFAULT_COLUMNS: Column[] = [
     visible: true,
   },
   {
-    id: "rate",
-    label: "Rate",
+    id: "manual_rate",
+    label: "Manual Rate",
     width: 120,
     align: "left",
     resizable: true,
@@ -402,8 +400,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
   const [configOpen, setConfigOpen] = useState(false);
   const [configSearch, setConfigSearch] = useState("");
 
-  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-
   const [popupState, setPopupState] = useState<{
     visible: boolean;
     top: number;
@@ -436,7 +432,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
       const initialData: Record<string, RowData> = {};
       initialRows.forEach((id) => {
         initialData[id] = {
-          postype: "Sale",
+          reciss: "Receipt",
           qty: 0,
           rate: 0,
           amount: 0,
@@ -466,6 +462,8 @@ const OrderTable: React.FC<OrderTableProps> = ({
     JSON.parse(JSON.stringify(DEFAULT_COLUMNS))
   );
 
+  const [isPullModalOpen, setIsPullModalOpen] = useState<boolean>(false);
+
   const visibleColumns = useMemo(
     () => columns.filter((c) => c.visible),
     [columns]
@@ -473,7 +471,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
 
   const handleResetDefault = () => {
     setColumns(JSON.parse(JSON.stringify(DEFAULT_COLUMNS)));
-
     setConfigSearch("");
   };
 
@@ -523,7 +520,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
       setTableData((prev) => ({
         ...prev,
         [rowIdToDelete]: {
-          postype: "Sale",
+          reciss: "Receipt",
           qty: 0,
           rate: 0,
           amount: 0,
@@ -543,7 +540,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
       setTableData((prev) => ({
         ...prev,
         [newId]: {
-          postype: "Sale",
+          reciss: "Receipt",
           qty: 0,
           rate: 0,
           amount: 0,
@@ -572,14 +569,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
     setTableData((prev) => ({ ...prev, [targetRowId!]: { ...sourceData } }));
   };
 
-  const toggleColumnVisibility = (colId: string) => {
-    setColumns((prev) =>
-      prev.map((col) =>
-        col.id === colId ? { ...col, visible: !col.visible } : col
-      )
-    );
-  };
-
+  // --- POPUP HANDLERS (Select Item) ---
   const handleSelectClick = (
     e: React.MouseEvent<HTMLDivElement>,
     rowId: string
@@ -609,6 +599,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
     }
   };
 
+  // --- WARRANTY POPUP HANDLERS ---
   const handleWarrantyClick = (
     e: React.MouseEvent<HTMLDivElement>,
     rowId: string
@@ -616,8 +607,8 @@ const OrderTable: React.FC<OrderTableProps> = ({
     e.stopPropagation();
     const rowData = tableData[rowId];
     const options = getStandardWarranties(String(rowData?.select || ""));
-
     const rect = e.currentTarget.getBoundingClientRect();
+
     setWarrantyPopup({
       visible: true,
       top: rect.bottom,
@@ -680,7 +671,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
     const { activeRowId, tempItemData } = attributePanelState;
     if (activeRowId && tempItemData) {
       const baseData: RowData = {
-        postype: "Sale",
+        reciss: "Receipt",
         select: tempItemData.code || "",
         desc: tempItemData.name || "",
         unit: tempItemData.stock_unit || "",
@@ -708,6 +699,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
     });
   };
 
+  // --- RESIZING & SORTING ---
   const resizingRef = useRef<number | null>(null);
   const startXRef = useRef<number>(0);
   const startWidthRef = useRef<number>(0);
@@ -718,11 +710,12 @@ const OrderTable: React.FC<OrderTableProps> = ({
         "sno",
         "add",
         "del",
+        "srch",
         "copy",
         "attr",
         "widg",
         "batch",
-        "postype",
+        "reciss",
         "warranty",
       ].includes(columnId)
     )
@@ -795,6 +788,14 @@ const OrderTable: React.FC<OrderTableProps> = ({
     resizingRef.current = null;
     document.removeEventListener("mousemove", handleMouseMove as any);
     document.removeEventListener("mouseup", handleMouseUp);
+  };
+
+  const toggleColumnVisibility = (colId: string) => {
+    setColumns((prev) =>
+      prev.map((col) =>
+        col.id === colId ? { ...col, visible: !col.visible } : col
+      )
+    );
   };
 
   const getStickyLeft = (idx: number) =>
@@ -874,11 +875,20 @@ const OrderTable: React.FC<OrderTableProps> = ({
           <button
             className="px-6 py-1.5 rounded text-xs font-bold text-white shadow-sm flex items-center gap-2"
             style={{ backgroundColor: COLORS.primary }}
-            onClick={() => setIsImportModalOpen(true)}
+            onClick={() => setIsPullModalOpen(true)}
           >
             <BarChart2 size={14} />
             Analyze & Import
           </button>
+
+          {isPullModalOpen &&
+            ReactDOM.createPortal(
+              <PullFromOrderModal
+                isOpen={isPullModalOpen}
+                onClose={() => setIsPullModalOpen(false)}
+              />,
+              document.body
+            )}
         </div>
       </div>
 
@@ -975,6 +985,13 @@ const OrderTable: React.FC<OrderTableProps> = ({
                                 onClick={() => handleDeleteRow(rowId)}
                               />
                             );
+                          else if (col.id === "srch")
+                            content = (
+                              <Search
+                                size={12}
+                                className="mx-auto text-blue-500 cursor-pointer"
+                              />
+                            );
                           else if (col.id === "copy")
                             content = (
                               <Copy
@@ -1005,42 +1022,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
                                 className="mx-auto text-blue-600"
                               />
                             );
-                          else if (col.id === "postype") {
-                            content = (
-                              <div className="relative w-full h-full group">
-                                <div className="flex justify-between items-center h-full px-1 text-[10px]">
-                                  <span
-                                    style={{
-                                      color:
-                                        rowData.postype === "Sale"
-                                          ? "inherit"
-                                          : "red",
-                                    }}
-                                  >
-                                    {rowData.postype || "Return"}
-                                  </span>
-                                  <ChevronDown
-                                    size={10}
-                                    className="text-gray-400"
-                                  />
-                                </div>
-                                <select
-                                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                  value={rowData.postype || "Sale"}
-                                  onChange={(e) =>
-                                    handleInputChange(
-                                      rowId,
-                                      "postype",
-                                      e.target.value
-                                    )
-                                  }
-                                >
-                                  <option value="Sale">Sale</option>
-                                  <option value="Return">Return</option>
-                                </select>
-                              </div>
-                            );
-                          } else if (col.id === "select") {
+                          else if (col.id === "select") {
                             content = (
                               <div
                                 className="text-[10px] italic text-gray-400 flex justify-between cursor-pointer hover:bg-gray-100 h-full items-center px-1"
@@ -1049,13 +1031,9 @@ const OrderTable: React.FC<OrderTableProps> = ({
                                 {rowData.select || "Select..."} <span>▶</span>
                               </div>
                             );
-                          }
-                          // --- NEW WARRANTY LOGIC ---
-                          else if (col.id === "warranty") {
-                            // If user already selected a value, show it. If not, show "Select"
+                          } else if (col.id === "warranty") {
                             const displayValue = rowData.warranty || "Select";
                             const hasSelection = !!rowData.warranty;
-
                             content = (
                               <div
                                 className="w-full h-full px-1 flex items-center justify-between cursor-pointer hover:bg-gray-100 text-[10px] text-gray-700"
@@ -1064,8 +1042,8 @@ const OrderTable: React.FC<OrderTableProps> = ({
                                 <span
                                   className={
                                     hasSelection
-                                      ? "text-blue-700 font-medium"
-                                      : "text-gray-400 italic"
+                                      ? "text-blue-700 font-medium truncate"
+                                      : "text-gray-400 italic truncate"
                                   }
                                 >
                                   {displayValue}
@@ -1198,7 +1176,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
               className="absolute inset-0"
               onClick={() => setConfigOpen(false)}
             />
-
             <div
               className="relative rounded-xl shadow-2xl w-full max-w-3xl flex flex-col border overflow-hidden h-[90vh]"
               style={{
@@ -1215,8 +1192,8 @@ const OrderTable: React.FC<OrderTableProps> = ({
                   className="font-bold text-xl flex items-center gap-2"
                   style={{ color: COLORS.textPrimary }}
                 >
-                  <Settings size={20} style={{ color: COLORS.primary }} />
-                  Table Configuration
+                  <Settings size={20} style={{ color: COLORS.primary }} /> Table
+                  Columns
                 </h3>
                 <button
                   onClick={() => setConfigOpen(false)}
@@ -1226,7 +1203,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
                 </button>
               </div>
 
-              {/* Search Bar Area */}
               <div
                 className="px-6 py-4 border-b"
                 style={{
@@ -1241,7 +1217,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
                   />
                   <input
                     type="text"
-                    placeholder="Search columns to show/hide..."
+                    placeholder="Search columns..."
                     className="w-full pl-10 pr-4 py-3 border rounded-lg text-sm transition-all focus:ring-2 outline-none"
                     style={{
                       borderColor: COLORS.border,
@@ -1256,7 +1232,8 @@ const OrderTable: React.FC<OrderTableProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                   {columns
                     .filter(
-                      (c) => !["sno", "add", "del", "copy"].includes(c.id)
+                      (c) =>
+                        !["sno", "add", "del", "srch", "copy"].includes(c.id)
                     )
                     .filter((c) =>
                       c.label.toLowerCase().includes(configSearch.toLowerCase())
@@ -1413,69 +1390,69 @@ const OrderTable: React.FC<OrderTableProps> = ({
               onClick={closeWarrantyPopup}
             />
             <div
-              className="fixed z-[9999] bg-white border shadow-xl flex flex-col rounded overflow-hidden"
+              className="fixed z-[9999] bg-white border border-gray-200 shadow-2xl flex flex-col rounded-md overflow-hidden ring-1 ring-black/5"
               style={{
                 top: warrantyPopup.top,
                 left: warrantyPopup.left,
-                borderColor: COLORS.borderDark,
-                width: "300px",
+                borderColor: COLORS.borderDark || "#e5e7eb",
+                width: "320px",
                 transform:
                   warrantyPopup.top + 350 > window.innerHeight
                     ? "translateY(-100%)"
                     : "none",
               }}
             >
-              <div className="flex justify-between items-center px-3 py-2 border-b bg-gray-50">
-                <span className="font-bold text-xs text-gray-700 flex items-center gap-1">
-                  <ShieldCheck size={14} className="text-blue-600" /> Select
-                  Warranty
+              <div className="flex justify-between items-center px-4 py-3 border-b border-gray-200 bg-gray-50">
+                <span className="font-semibold text-sm text-gray-700 flex items-center gap-2">
+                  <ShieldCheck size={16} className="text-blue-600" />
+                  Select Warranty
                 </span>
                 <button
                   onClick={closeWarrantyPopup}
-                  className="text-gray-400 hover:text-red-500"
+                  className="text-gray-400 hover:text-red-500 transition-colors"
                 >
-                  <X size={16} />
+                  <X size={18} />
                 </button>
               </div>
 
-              <div className="max-h-[150px] overflow-y-auto">
+              <div className="max-h-[200px] overflow-y-auto custom-scrollbar">
                 {warrantyPopup.options.length > 0 ? (
                   warrantyPopup.options.map((opt) => (
                     <div
                       key={opt.id}
-                      className="px-3 py-2 border-b text-xs cursor-pointer hover:bg-blue-50 flex justify-between items-center group"
+                      className="px-4 py-2.5 border-b border-gray-100 text-sm cursor-pointer hover:bg-blue-50/50 flex justify-between items-center group transition-colors last:border-0"
                       onClick={() => handleWarrantySelect(opt)}
                     >
-                      <span className="text-gray-700 font-medium">
+                      <span className="text-gray-700 font-medium group-hover:text-blue-700">
                         {opt.label}
                       </span>
                       {opt.price > 0 && (
-                        <span className="text-green-600 font-bold bg-green-50 px-1.5 py-0.5 rounded">
+                        <span className="text-emerald-700 font-bold bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded text-xs">
                           +₹{opt.price}
                         </span>
                       )}
                     </div>
                   ))
                 ) : (
-                  <div className="p-3 text-xs text-center text-gray-400 italic">
+                  <div className="p-4 text-sm text-center text-gray-400 italic bg-white">
                     No standard plans available for this item.
                   </div>
                 )}
               </div>
 
-              <div className="bg-gray-50 border-t p-3">
-                <div className="text-[10px] uppercase font-bold text-gray-500 mb-2">
+              <div className="bg-gray-50 border-t border-gray-200 p-3">
+                <div className="text-[11px] uppercase tracking-wider font-bold text-gray-500 mb-2 pl-1">
                   Add Custom Plan
                 </div>
                 <div className="space-y-2">
-                  <div className="flex items-center border bg-white rounded overflow-hidden h-8">
-                    <div className="bg-gray-100 px-2 h-full flex items-center border-r">
-                      <Clock size={12} className="text-gray-500" />
+                  <div className="flex items-center border border-gray-300 bg-white rounded hover:border-blue-400 transition-colors h-9 overflow-hidden">
+                    <div className="bg-gray-100 px-3 h-full flex items-center border-r border-gray-300 text-gray-500">
+                      <Clock size={14} />
                     </div>
                     <input
                       type="text"
                       placeholder="Duration (e.g. 3 Years)"
-                      className="w-full h-full px-2 text-xs outline-none"
+                      className="w-full h-full px-3 text-sm outline-none text-gray-700 placeholder:text-gray-400"
                       value={newWarranty.duration}
                       onChange={(e) =>
                         setNewWarranty((prev) => ({
@@ -1485,14 +1462,14 @@ const OrderTable: React.FC<OrderTableProps> = ({
                       }
                     />
                   </div>
-                  <div className="flex items-center border bg-white rounded overflow-hidden h-8">
-                    <div className="bg-gray-100 px-2 h-full flex items-center border-r">
-                      <DollarSign size={12} className="text-gray-500" />
+                  <div className="flex items-center border border-gray-300 bg-white rounded hover:border-blue-400 transition-colors h-9 overflow-hidden">
+                    <div className="bg-gray-100 px-3 h-full flex items-center border-r border-gray-300 text-gray-500">
+                      <DollarSign size={14} />
                     </div>
                     <input
                       type="number"
                       placeholder="Price (Optional)"
-                      className="w-full h-full px-2 text-xs outline-none"
+                      className="w-full h-full px-3 text-sm outline-none text-gray-700 placeholder:text-gray-400"
                       value={newWarranty.price}
                       onChange={(e) =>
                         setNewWarranty((prev) => ({
@@ -1503,7 +1480,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
                     />
                   </div>
                   <button
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 rounded transition-colors disabled:opacity-50"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2 rounded shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
                     onClick={handleAddCustomWarranty}
                     disabled={!newWarranty.duration}
                   >
@@ -1513,15 +1490,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
               </div>
             </div>
           </>,
-          document.body
-        )}
-
-      {isImportModalOpen &&
-        ReactDOM.createPortal(
-          <PullFromOrderModal
-            isOpen={isImportModalOpen}
-            onClose={() => setIsImportModalOpen(false)}
-          />,
           document.body
         )}
 

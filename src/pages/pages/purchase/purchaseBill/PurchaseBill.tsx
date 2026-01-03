@@ -5,7 +5,11 @@ import PurchaseBillForm from "./PurchaseBillForm";
 import OrderTable from "../purchaseOrder/OrderTable";
 import PurchaseBillFooter from "./PurchaseBillFooter";
 import { COLORS } from "../../../../constants/colors";
-import LedgerAttributes from "../../../../components/LedgerAttributes";
+
+// Import LedgerAttributes and its Type
+import LedgerAttributes, {
+  LedgerData,
+} from "../../../../components/LedgerAttributes";
 
 import GoodsRecieptNoteLogistics, {
   LogisticsData,
@@ -19,6 +23,13 @@ const PurchaseBill: React.FC = () => {
   const [rows, setRows] = useState<string[]>([]);
   const [tableData, setTableData] = useState<Record<string, RowData>>({});
 
+  // --- 1. NEW STATE: Financial/Ledger Attributes ---
+  const [ledgerData, setLedgerData] = useState<LedgerData>({
+    employee: "",
+    group: "",
+  });
+
+  // --- 2. EXISTING STATE: Logistics Data ---
   const [logisticsData, setLogisticsData] = useState<LogisticsData>({
     // Left Column
     destination: "",
@@ -38,8 +49,7 @@ const PurchaseBill: React.FC = () => {
     noOfPackets: "0",
     weight: "0",
 
-    // Middle Column (Specific to Purchase Bill / Optional in interface)
-    // Initialize these to empty strings so they are controlled inputs
+    // Middle Column (Specific)
     portAddressForEway: "",
     portStateForEway: "",
     distance: "",
@@ -56,16 +66,36 @@ const PurchaseBill: React.FC = () => {
     billOfEntryDate: "",
 
     // Right Column (Overhead Expenses)
+    // IMPORTANT: Initialize both Amount and Tender fields
     customDuty: "0.00",
+    customDutyTender: "", // New
+
     chaPayment: "0.00",
+    chaPaymentTender: "", // New
+
     freight: "0.00",
+    freightTender: "", // New
+
     insurance: "0.00",
+    insuranceTender: "", // New
+
     handling: "0.00",
+    handlingTender: "", // New
+
     documentationCharges: "0.00",
+    documentationChargesTender: "", // New
+
     bankCharges: "0.00",
+    bankChargesTender: "", // New
+
     customExpenses: "0.00",
+    customExpensesTender: "", // New
+
     loadingUnloading: "0.00",
+    loadingUnloadingTender: "", // New
+
     otherCharges: "0.00",
+    otherChargesTender: "", // New
   });
 
   const handleLogisticsChange = (newData: LogisticsData) => {
@@ -92,7 +122,8 @@ const PurchaseBill: React.FC = () => {
 
           <PurchaseBillFooter />
 
-          <LedgerAttributes />
+          {/* --- 3. Pass State and Handler to LedgerAttributes --- */}
+          <LedgerAttributes data={ledgerData} onChange={setLedgerData} />
 
           <GoodsRecieptNoteLogistics
             data={logisticsData}

@@ -37,7 +37,7 @@ const PurchaseCreditNote: React.FC = () => {
     noOfPackets: "0",
     weight: "0",
 
-    // Middle Column
+    // Middle Column (Continued)
     portAddressForEway: "",
     portStateForEway: "",
     distance: "",
@@ -53,17 +53,36 @@ const PurchaseCreditNote: React.FC = () => {
     billOfEntryNum: "",
     billOfEntryDate: "",
 
-    // Right Column (Overhead Expenses)
+    // Right Column (Overhead Expenses) - Missing Tender Fields Added Below
     customDuty: "0.00",
+    customDutyTender: "", // Added this
+
     chaPayment: "0.00",
+    chaPaymentTender: "", // Added this
+
     freight: "0.00",
+    freightTender: "", // Added this
+
     insurance: "0.00",
+    insuranceTender: "", // Added this
+
     handling: "0.00",
+    handlingTender: "", // Added this
+
     documentationCharges: "0.00",
+    documentationChargesTender: "", // Added this
+
     bankCharges: "0.00",
+    bankChargesTender: "", // Added this
+
     customExpenses: "0.00",
+    customExpensesTender: "", // Added this
+
     loadingUnloading: "0.00",
+    loadingUnloadingTender: "", // Added this
+
     otherCharges: "0.00",
+    otherChargesTender: "", // Added this
   });
 
   const handleLogisticsChange = (newData: LogisticsData) => {

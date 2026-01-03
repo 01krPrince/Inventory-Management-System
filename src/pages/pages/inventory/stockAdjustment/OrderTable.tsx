@@ -104,15 +104,6 @@ const DEFAULT_COLUMNS: Column[] = [
     visible: true,
   },
   {
-    id: "srch",
-    label: "",
-    width: 35,
-    sticky: "left",
-    align: "center",
-    resizable: true,
-    visible: true,
-  },
-  {
     id: "copy",
     label: "",
     width: 35,
@@ -728,7 +719,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
         "sno",
         "add",
         "del",
-        "srch",
         "copy",
         "attr",
         "widg",
@@ -984,13 +974,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
                                 size={12}
                                 className="mx-auto text-red-500 cursor-pointer"
                                 onClick={() => handleDeleteRow(rowId)}
-                              />
-                            );
-                          else if (col.id === "srch")
-                            content = (
-                              <Search
-                                size={12}
-                                className="mx-auto text-blue-500 cursor-pointer"
                               />
                             );
                           else if (col.id === "copy")
@@ -1274,8 +1257,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                   {columns
                     .filter(
-                      (c) =>
-                        !["sno", "add", "del", "srch", "copy"].includes(c.id)
+                      (c) => !["sno", "add", "del", "copy"].includes(c.id)
                     )
                     .filter((c) =>
                       c.label.toLowerCase().includes(configSearch.toLowerCase())

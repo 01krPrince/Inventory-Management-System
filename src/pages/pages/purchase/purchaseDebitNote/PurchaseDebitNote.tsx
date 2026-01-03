@@ -37,7 +37,7 @@ const PurchaseDebitNote: React.FC = () => {
     noOfPackets: "0",
     weight: "0",
 
-    // Middle Column
+    // Middle Column (E-way & IRN details)
     portAddressForEway: "",
     portStateForEway: "",
     distance: "",
@@ -53,17 +53,36 @@ const PurchaseDebitNote: React.FC = () => {
     billOfEntryNum: "",
     billOfEntryDate: "",
 
-    // Right Column (Overhead Expenses)
+    // Right Column (Overhead Expenses with Tender Fields)
     customDuty: "0.00",
+    customDutyTender: "", // Added
+
     chaPayment: "0.00",
+    chaPaymentTender: "", // Added
+
     freight: "0.00",
+    freightTender: "", // Added
+
     insurance: "0.00",
+    insuranceTender: "", // Added
+
     handling: "0.00",
+    handlingTender: "", // Added
+
     documentationCharges: "0.00",
+    documentationChargesTender: "", // Added
+
     bankCharges: "0.00",
+    bankChargesTender: "", // Added
+
     customExpenses: "0.00",
+    customExpensesTender: "", // Added
+
     loadingUnloading: "0.00",
+    loadingUnloadingTender: "", // Added
+
     otherCharges: "0.00",
+    otherChargesTender: "", // Added
   });
 
   const handleLogisticsChange = (newData: LogisticsData) => {

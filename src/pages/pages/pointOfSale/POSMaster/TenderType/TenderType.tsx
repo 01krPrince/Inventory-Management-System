@@ -57,7 +57,6 @@ export default function TenderType() {
     direction: "ascending",
   });
 
-  // Mock Data for Tender Types
   const mockTenders: TenderTypeData[] = [
     {
       _id: "1",
@@ -87,7 +86,6 @@ export default function TenderType() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Filter & Sort Logic
   const filteredData = useMemo(() => {
     let result = apiData.filter((item) =>
       Object.values(item).some((val) =>
@@ -106,8 +104,6 @@ export default function TenderType() {
     return result;
   }, [apiData, searchTerm, sortConfig]);
 
-  //   const totalEntries = filteredData.length;
-  //   const totalPages = Math.ceil(totalEntries / pageSize);
   const paginatedData = filteredData.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize

@@ -201,7 +201,7 @@ const PurchaseBillFooter: React.FC<InvoiceFooterProps> = ({
           {/* Price Category */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
-              <Label>Price Category</Label>
+              <Label>Tender Type</Label>
             </div>
             <div className="col-span-8">
               <InputGroup>

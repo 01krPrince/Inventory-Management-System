@@ -43,16 +43,37 @@ const PurchaseReturn: React.FC = () => {
 
     // Right Column (Overhead Expenses)
     customDuty: "0.00",
+    customDutyTender: "", // Added this
+
     chaPayment: "0.00",
+    chaPaymentTender: "", // Added this
+
     freight: "0.00",
+    freightTender: "", // Added this
+
     insurance: "0.00",
+    insuranceTender: "", // Added this
+
     handling: "0.00",
+    handlingTender: "", // Added this
+
     documentationCharges: "0.00",
+    documentationChargesTender: "", // Added this
+
     bankCharges: "0.00",
+    bankChargesTender: "", // Added this
+
     customExpenses: "0.00",
+    customExpensesTender: "", // Added this
+
     loadingUnloading: "0.00",
+    loadingUnloadingTender: "", // Added this
+
     otherCharges: "0.00",
+    otherChargesTender: "", // Added this
   });
+
+  // ... baaki code same rahega
 
   // --- 2. Handler for Logistics Updates ---
   const handleLogisticsChange = (newData: LogisticsData) => {
