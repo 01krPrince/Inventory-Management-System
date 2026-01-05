@@ -28,7 +28,6 @@ const POSInvoice: React.FC = () => {
       data: { rows: [], tableData: {} },
     };
 
-  // Helper to update the CURRENT tab's data
   const updateActiveTabData = (
     updater: (prevData: {
       rows: string[];
@@ -68,15 +67,12 @@ const POSInvoice: React.FC = () => {
     setActiveTabId(newId);
   };
 
-  // --- RESET HANDLER ---
   const handleResetTab = () => {
-    // Basic confirm dialog. Can be replaced with custom modal.
     if (window.confirm("Are you sure you want to clear the current invoice?")) {
       updateActiveTabData(() => ({ rows: [], tableData: {} }));
     }
   };
 
-  // --- DELETE HANDLER ---
   const handleDeleteTab = () => {
     handleCloseSpecificTab(null, activeTabId);
   };
@@ -87,7 +83,6 @@ const POSInvoice: React.FC = () => {
   ) => {
     if (e) e.stopPropagation();
 
-    // Prevent closing the last tab; just reset it instead
     if (tabs.length === 1) {
       const resetTab = { ...tabs[0], data: { rows: [], tableData: {} } };
       setTabs([resetTab]);
@@ -100,13 +95,11 @@ const POSInvoice: React.FC = () => {
     const newTabs = tabs.filter((t) => t.id !== idToClose);
     setTabs(newTabs);
 
-    // If we closed the active tab, switch to the last available one
     if (idToClose === activeTabId) {
       setActiveTabId(newTabs[newTabs.length - 1].id);
     }
   };
 
-  // --- RESTORE HANDLER ---
   const handleRestoreTab = () => {
     if (!lastClosedTab) return;
     setTabs([...tabs, lastClosedTab]);
@@ -114,7 +107,6 @@ const POSInvoice: React.FC = () => {
     setLastClosedTab(null);
   };
 
-  // --- ADAPTERS FOR CHILDREN ---
   const setRowsWrapper = (val: string[] | ((prev: string[]) => string[])) => {
     updateActiveTabData((prevData) => {
       const newRows = typeof val === "function" ? val(prevData.rows) : val;

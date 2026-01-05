@@ -1,7 +1,6 @@
 import React from "react";
 import { EditIcon } from "lucide-react";
 import { COLORS } from "../../../../constants/colors";
-
 import Attachment from "../../../../components/Attachment";
 
 type InvoiceFooterProps = {
@@ -56,14 +55,13 @@ const InvoiceFooter: React.FC<InvoiceFooterProps> = ({ amount = -8500 }) => {
             </div>
           </div>
 
-          {/* Received Amount */}
           <div className="flex flex-col sm:flex-row gap-4 items-center">
             <label className="w-32" style={{ color: COLORS.textPrimary }}>
-              Received Amount
+              Advance amount (Amount / %)
             </label>
-            <div className="w-40 relative">
+            <div className="w-40 relative flex">
               <span
-                className="absolute left-2 top-1/2 -translate-y-1/2 text-xs"
+                className="absolute top-1/2 -translate-y-1/2 text-xs"
                 style={{ color: COLORS.textMuted }}
               >
                 ₹
@@ -77,13 +75,22 @@ const InvoiceFooter: React.FC<InvoiceFooterProps> = ({ amount = -8500 }) => {
                   color: COLORS.textPrimary,
                 }}
               />
+
+              <input
+                type="text"
+                defaultValue="0.00"
+                className="w-full border rounded-sm py-1 pl-6 pr-2 text-right outline-none text-xs custom-input"
+                style={{
+                  borderColor: COLORS.borderDark,
+                  color: COLORS.textPrimary,
+                }}
+              />
             </div>
           </div>
 
-          {/* Cash/Bank Ledger */}
           <div className="flex flex-col sm:flex-row gap-4 items-center">
             <label className="w-32" style={{ color: COLORS.textPrimary }}>
-              Cash/Bank Ledger
+              Advance Ledger
             </label>
             <div className="flex-1 flex items-center gap-1">
               <div className="relative flex-1">
@@ -122,9 +129,6 @@ const InvoiceFooter: React.FC<InvoiceFooterProps> = ({ amount = -8500 }) => {
         {/* --- RIGHT SECTION (Totals) --- */}
         <div className="w-full lg:w-[400px] flex flex-col gap-2">
           <TotalRow label="Item Value" value="0.00" />
-          <TotalRow label="Promo Discount" value="0.00" />
-          <TotalRow label="Promo Discount 2" value="0.00" />
-          <TotalRow label="Coupon Discount" value="0.00" />
           <TotalRow label="Discount" value="0.00" />
           <TotalRow label="Discount %" value="0.00" />
           <TotalRow label="Taxable" value="0.00" />
@@ -252,16 +256,6 @@ const InvoiceFooter: React.FC<InvoiceFooterProps> = ({ amount = -8500 }) => {
                 {isDue && "-"} ₹{Math.abs(amount).toFixed(2)}
               </span>
             </div>
-          </div>
-
-          {/* Generate EMI Button */}
-          <div className="flex justify-end mt-2">
-            <button
-              className="custom-btn-primary text-xs font-medium px-4 py-1.5 rounded-sm shadow-sm"
-              style={{ color: COLORS.white }}
-            >
-              Generate EMI
-            </button>
           </div>
         </div>
       </div>

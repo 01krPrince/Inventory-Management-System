@@ -20,15 +20,12 @@ import {
   LocationMaster as LocationMasterType,
 } from "../../inventory/stockAdjustment/api/LocationMaster";
 
-// --- 1. Types & Interfaces ---
-
 interface DropdownItem {
   name: string;
   code?: string;
   [key: string]: any;
 }
 
-// Updated Mock Data
 interface MockData {
   gstTypes: DropdownItem[];
   stores: LocationMasterType[];
@@ -175,7 +172,6 @@ const AccordionSection: React.FC<{
   );
 };
 
-// --- Main Component ---
 
 interface POSOrderFormProps {
   themeColor?: string;
@@ -184,21 +180,17 @@ interface POSOrderFormProps {
 const GoodsRecieptNoteForm: React.FC<POSOrderFormProps> = ({
   themeColor = "#0f3c63",
 }) => {
-  // --- UI State ---
-  const [isBillToOpen, setBillToOpen] = useState<boolean>(false); // Default open based on screenshot suggestion
-  const [isShipToOpen, setShipToOpen] = useState<boolean>(false); // Default open based on screenshot suggestion
+  const [isBillToOpen, setBillToOpen] = useState<boolean>(false);
+  const [isShipToOpen, setShipToOpen] = useState<boolean>(false);
 
-  // Modals State
   const [isCounterMasterOpen, setIsCounterMasterOpen] = useState(false);
   const [isStateOpen, setIsStateOpen] = useState(false);
   const [isLocationMasterOpen, setIsLocationMasterOpen] =
     useState<boolean>(false);
 
-  // Vendor Modal State
   const [isVendorFormOpen, setIsVendorFormOpen] = useState(false);
   const [editingVendor, setEditingVendor] = useState<DropdownItem | null>(null);
 
-  // Constants for Z-Index
   const nestedModalZIndex = 1200;
 
   // Data State
@@ -233,8 +225,8 @@ const GoodsRecieptNoteForm: React.FC<POSOrderFormProps> = ({
   const [isLegderOpen, setIsLedgerOpen] = useState<boolean>(false);
   const [ledgerEditingRow, setLedgerEditingRow] =
     useState<NameAndCodeData | null>(null);
-  // --- Effects ---
-  useEffect(() => {
+
+    useEffect(() => {
     loadLocations();
   }, []);
 
@@ -259,14 +251,13 @@ const GoodsRecieptNoteForm: React.FC<POSOrderFormProps> = ({
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // --- Location Handlers ---
   const getSelectedStoreData = (): LocationMasterType | null => {
     if (!formData.store) return null;
     return locationList.find((s) => s.name === formData.store) || null;
   };
 
   const handleLocationSuccess = async () => {
-    await loadLocations(); // Reload the dropdown data
+    await loadLocations();
   };
 
   const handleLocationSelect = (locationName: string) => {
@@ -274,28 +265,22 @@ const GoodsRecieptNoteForm: React.FC<POSOrderFormProps> = ({
     setIsLocationMasterOpen(false);
   };
 
-  // --- Vendor Handlers (NEW LOGIC) ---
   const handleVendorAction = () => {
     const selectedVendorName = formData.vendor;
 
     if (selectedVendorName) {
-      // 1. EDIT MODE: Find the vendor object from the list based on name
       const vendorData = mockData.vendors.find(
         (v) => v.name === selectedVendorName
       );
-      // Pass the found object, or null if not found (fallback to create)
       setEditingVendor(vendorData || null);
     } else {
-      // 2. CREATE MODE: No vendor selected
       setEditingVendor(null);
     }
 
-    // Open the modal
     setIsVendorFormOpen(true);
   };
 
   const handleVendorSaveSuccess = () => {
-    // Logic to reload vendors list would go here
     setIsVendorFormOpen(false);
   };
 
@@ -315,16 +300,13 @@ const GoodsRecieptNoteForm: React.FC<POSOrderFormProps> = ({
       style={themeStyles}
       className="bg-white rounded border border-gray-200 p-5 relative"
     >
-      {/* --- Modals --- */}
       {isCounterMasterOpen && (
         <CounterMaster onClose={() => setIsCounterMasterOpen(false)} />
       )}
       {isStateOpen && <State onClose={() => setIsStateOpen(false)} />}
 
       <div className="grid grid-cols-12 gap-6">
-        {/* === LEFT COLUMN === */}
         <div className="col-span-4 space-y-2">
-          {/* GST Type */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
               <Label>GST Type</Label>
@@ -342,7 +324,6 @@ const GoodsRecieptNoteForm: React.FC<POSOrderFormProps> = ({
             </div>
           </div>
 
-          {/* Store */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
               <Label required>Store</Label>
@@ -366,7 +347,6 @@ const GoodsRecieptNoteForm: React.FC<POSOrderFormProps> = ({
             </div>
           </div>
 
-          {/* Vendor */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
               <Label required>Vendor</Label>
@@ -392,7 +372,6 @@ const GoodsRecieptNoteForm: React.FC<POSOrderFormProps> = ({
             </div>
           </div>
 
-          {/* Email */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
               <Label>Email</Label>
@@ -405,7 +384,6 @@ const GoodsRecieptNoteForm: React.FC<POSOrderFormProps> = ({
             </div>
           </div>
 
-          {/* Price Category */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
               <Label>Price Category</Label>
@@ -433,9 +411,7 @@ const GoodsRecieptNoteForm: React.FC<POSOrderFormProps> = ({
           </div>
         </div>
 
-        {/* === MIDDLE COLUMN === */}
         <div className="col-span-4 space-y-2">
-          {/* GRN Date */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
               <Label required>GRN Date</Label>
@@ -448,7 +424,6 @@ const GoodsRecieptNoteForm: React.FC<POSOrderFormProps> = ({
             </div>
           </div>
 
-          {/* GRN No */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
               <Label required>GRN No</Label>
@@ -461,7 +436,6 @@ const GoodsRecieptNoteForm: React.FC<POSOrderFormProps> = ({
             </div>
           </div>
 
-          {/* Ref No */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
               <Label required>Ref No</Label>
@@ -474,7 +448,6 @@ const GoodsRecieptNoteForm: React.FC<POSOrderFormProps> = ({
             </div>
           </div>
 
-          {/* Ref.Date */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
               <Label required>Ref.Date</Label>
@@ -487,7 +460,6 @@ const GoodsRecieptNoteForm: React.FC<POSOrderFormProps> = ({
             </div>
           </div>
 
-          {/* Tax */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
               <Label>Tax</Label>
@@ -504,16 +476,13 @@ const GoodsRecieptNoteForm: React.FC<POSOrderFormProps> = ({
           </div>
         </div>
 
-        {/* === RIGHT COLUMN === */}
         <div className="col-span-4 flex flex-col h-full justify-between">
           <div className="space-y-4">
-            {/* Billing From Accordion */}
             <AccordionSection
               title="Billing From"
               isOpen={isBillToOpen}
               onToggle={() => setBillToOpen(!isBillToOpen)}
             >
-              {/* Text Area */}
               <div className="relative mb-2">
                 <textarea
                   value={formData.billingAddress}
@@ -527,7 +496,6 @@ const GoodsRecieptNoteForm: React.FC<POSOrderFormProps> = ({
                 </span>
               </div>
 
-              {/* GST No */}
               <div className="flex items-center gap-2 mb-2">
                 <span className="w-24 text-[13px] text-gray-700 shrink-0">
                   GST No
@@ -540,7 +508,6 @@ const GoodsRecieptNoteForm: React.FC<POSOrderFormProps> = ({
                 </div>
               </div>
 
-              {/* Contact Person */}
               <div className="flex items-center gap-2 mb-2">
                 <span className="w-24 text-[13px] text-gray-700 shrink-0">
                   Contact Person
@@ -555,7 +522,6 @@ const GoodsRecieptNoteForm: React.FC<POSOrderFormProps> = ({
                 </div>
               </div>
 
-              {/* Place of Supply */}
               <div className="flex items-center gap-2">
                 <span className="w-24 text-[13px] text-gray-700 shrink-0">
                   Place of Supply
@@ -580,13 +546,11 @@ const GoodsRecieptNoteForm: React.FC<POSOrderFormProps> = ({
               </div>
             </AccordionSection>
 
-            {/* Shipping From Accordion */}
             <AccordionSection
               title="Shipping From"
               isOpen={isShipToOpen}
               onToggle={() => setShipToOpen(!isShipToOpen)}
             >
-              {/* Ship To Dropdown */}
               <div className="flex items-center gap-2 mb-2">
                 <span className="w-16 text-[13px] text-gray-700 shrink-0 font-medium">
                   Ship To
@@ -608,7 +572,6 @@ const GoodsRecieptNoteForm: React.FC<POSOrderFormProps> = ({
                 </div>
               </div>
 
-              {/* Delivery Address Text Area */}
               <div className="relative">
                 <textarea
                   value={formData.deliveryAddress}
@@ -626,7 +589,6 @@ const GoodsRecieptNoteForm: React.FC<POSOrderFormProps> = ({
         </div>
       </div>
 
-      {/* --- Location Master Popup --- */}
       {isLocationMasterOpen && (
         <div
           className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
@@ -644,13 +606,11 @@ const GoodsRecieptNoteForm: React.FC<POSOrderFormProps> = ({
         </div>
       )}
 
-      {/* --- Vendor CRUD Popup --- */}
       {isVendorFormOpen && (
         <div
           className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
           style={{ zIndex: nestedModalZIndex }}
         >
-          {/* You might need to adjust w-full/h-[90vh] depending on CrudVendor's size */}
           <div className="w-full max-w-6xl h-[90vh] rounded-xl overflow-hidden relative">
             <CrudVendor
               onClose={() => setIsVendorFormOpen(false)}
@@ -661,7 +621,6 @@ const GoodsRecieptNoteForm: React.FC<POSOrderFormProps> = ({
         </div>
       )}
 
-      {/* --- Price Category / NameAndCode Popup (Moved Here) --- */}
       {isLegderOpen && (
         <NameAndCodeMaster
           title="Price Category"

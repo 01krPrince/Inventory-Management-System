@@ -228,7 +228,6 @@ const GoodsRecieptNoteFooter: React.FC<InvoiceFooterProps> = ({
           </div>
         </div>
 
-        {/* --- RIGHT SECTION (Totals) --- */}
         <div className="w-full lg:w-[400px] flex flex-col gap-2">
           <TotalRow label="Item Value" value="0.00" />
           <TotalRow label="Discount" value="0.00" />
@@ -348,7 +347,6 @@ const GoodsRecieptNoteFooter: React.FC<InvoiceFooterProps> = ({
 
           <TotalRow label="Round Off" value="0.00" />
 
-          {/* Doc Amount (Bold) */}
           <div className="grid grid-cols-[1fr_120px] gap-2 items-center mt-1">
             <label
               className="text-xs font-bold"
@@ -377,7 +375,6 @@ const GoodsRecieptNoteFooter: React.FC<InvoiceFooterProps> = ({
             </div>
           </div>
 
-          {/* Payment Status Display */}
           <div className="grid grid-cols-[1fr_160px] gap-2 items-center mt-1">
             <label className="text-xs font-bold text-gray-800">
               Payment Status
@@ -394,7 +391,6 @@ const GoodsRecieptNoteFooter: React.FC<InvoiceFooterProps> = ({
             </div>
           </div>
 
-          {/* Generate EMI Button */}
           <div className="flex justify-end mt-2">
             <button
               className="custom-btn-primary text-xs font-medium px-4 py-1.5 rounded-sm shadow-sm"
@@ -406,7 +402,6 @@ const GoodsRecieptNoteFooter: React.FC<InvoiceFooterProps> = ({
         </div>
       </div>
 
-      {/* --- GLOBAL STYLES FOR HOVER & FOCUS --- */}
       <style>{`
         .custom-btn-primary {
           background-color: ${COLORS.primary};
