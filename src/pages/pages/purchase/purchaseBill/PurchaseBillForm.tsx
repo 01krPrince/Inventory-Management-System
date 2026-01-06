@@ -257,7 +257,6 @@ const PurchaseBillForm: React.FC<POSOrderFormProps> = ({
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // --- Location Handlers ---
   const getSelectedStoreData = (): LocationMasterType | null => {
     if (!formData.store) return null;
     return locationList.find((s) => s.name === formData.store) || null;
@@ -284,12 +283,10 @@ const PurchaseBillForm: React.FC<POSOrderFormProps> = ({
       setEditingVendor(null);
     }
 
-    // Open the modal
     setIsVendorFormOpen(true);
   };
 
   const handleVendorSaveSuccess = () => {
-    // Logic to reload vendors list would go here
     setIsVendorFormOpen(false);
   };
 
@@ -309,16 +306,13 @@ const PurchaseBillForm: React.FC<POSOrderFormProps> = ({
       style={themeStyles}
       className="bg-white rounded border border-gray-200 p-5 relative"
     >
-      {/* --- Modals --- */}
       {isCounterMasterOpen && (
         <CounterMaster onClose={() => setIsCounterMasterOpen(false)} />
       )}
       {isStateOpen && <State onClose={() => setIsStateOpen(false)} />}
 
       <div className="grid grid-cols-12 gap-6">
-        {/* === LEFT COLUMN === */}
         <div className="col-span-4 space-y-2">
-          {/* GST Type */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
               <Label>GST Type</Label>
@@ -336,7 +330,6 @@ const PurchaseBillForm: React.FC<POSOrderFormProps> = ({
             </div>
           </div>
 
-          {/* Cash/Credit */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
               <Label>Cash/Credit</Label>
@@ -354,7 +347,6 @@ const PurchaseBillForm: React.FC<POSOrderFormProps> = ({
             </div>
           </div>
 
-          {/* Store */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
               <Label required>Store</Label>
@@ -378,7 +370,6 @@ const PurchaseBillForm: React.FC<POSOrderFormProps> = ({
             </div>
           </div>
 
-          {/* Vendor */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
               <Label required>Vendor</Label>
@@ -405,7 +396,6 @@ const PurchaseBillForm: React.FC<POSOrderFormProps> = ({
             </div>
           </div>
 
-          {/* Email */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
               <Label>Email</Label>
@@ -418,7 +408,6 @@ const PurchaseBillForm: React.FC<POSOrderFormProps> = ({
             </div>
           </div>
 
-          {/* Price Category */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
               <Label>Price Category</Label>
@@ -446,7 +435,6 @@ const PurchaseBillForm: React.FC<POSOrderFormProps> = ({
           </div>
         </div>
 
-        {/* === MIDDLE COLUMN === */}
         <div className="col-span-4 space-y-2">
           {/* Date */}
           <div className="grid grid-cols-12 gap-2 items-center">
@@ -532,7 +520,6 @@ const PurchaseBillForm: React.FC<POSOrderFormProps> = ({
           </div>
         </div>
 
-        {/* === RIGHT COLUMN === */}
         <div className="col-span-4 flex flex-col h-full justify-between">
           <div className="space-y-4">
             {/* Billing Address Accordion */}
@@ -667,8 +654,7 @@ const PurchaseBillForm: React.FC<POSOrderFormProps> = ({
             </AccordionSection>
           </div>
 
-          {/* Payment Terms (Bottom of Right Column) */}
-          <div className="mt-4 pt-4">
+          <div>
             <div className="grid grid-cols-12 gap-2 items-center">
               <div className="col-span-4 flex items-center gap-1">
                 <Label>Payment Terms</Label>
@@ -713,7 +699,7 @@ const PurchaseBillForm: React.FC<POSOrderFormProps> = ({
           className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
           style={{ zIndex: nestedModalZIndex }}
         >
-          <div className="w-full max-w-4xl h-[90vh] bg-white rounded shadow-lg overflow-hidden relative">
+          <div className="shadow-lg overflow-hidden relative">
             <LocationMaster
               onClose={() => setIsLocationMasterOpen(false)}
               initialData={getSelectedStoreData()}

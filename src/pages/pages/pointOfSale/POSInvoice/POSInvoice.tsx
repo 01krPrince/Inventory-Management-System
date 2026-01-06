@@ -5,6 +5,7 @@ import OrderTable from "./OrderTable";
 import POSInvoiceFooter from "./POSOrderFooter";
 import { COLORS } from "../../../../constants/colors";
 import { v4 as uuidv4 } from "uuid";
+import LedgerAttributes from "../../../../components/LedgerAttributes";
 
 interface RowData {
   [key: string]: string | number;
@@ -146,18 +147,16 @@ const POSInvoice: React.FC = () => {
         <div className="flex flex-col gap-4 max-w-[1600px] mx-auto">
           <POSInvoideForm />
 
-          <div className="bg-white rounded shadow-sm border border-gray-200">
-            <OrderTable
-              rows={activeTab.data.rows}
-              setRows={setRowsWrapper}
-              tableData={activeTab.data.tableData}
-              setTableData={setTableDataWrapper}
-            />
-          </div>
+          <OrderTable
+            rows={activeTab.data.rows}
+            setRows={setRowsWrapper}
+            tableData={activeTab.data.tableData}
+            setTableData={setTableDataWrapper}
+          />
 
-          <div className="bg-white rounded shadow-sm border border-gray-200">
-            <POSInvoiceFooter />
-          </div>
+          <POSInvoiceFooter />
+
+          <LedgerAttributes />
         </div>
       </div>
     </div>

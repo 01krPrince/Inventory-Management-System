@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import {
   DeleteIcon,
   CopyIcon,
@@ -7,9 +7,7 @@ import {
   CancelIcon,
 } from "../../../../components/icons";
 import { COLORS } from "../../../../constants/colors";
-import { PlusIcon, X, FileText } from "lucide-react";
-
-// --- Interfaces ---
+import { PlusIcon, X, FileText, ChevronLeft, ChevronRight } from "lucide-react";
 
 export interface InvoiceTab {
   id: string;
@@ -27,20 +25,17 @@ interface HeaderButtonProps {
   className?: string;
 }
 
-// --- UPDATED PROPS INTERFACE ---
 interface POSInvoiceHeaderProps {
   tabs: InvoiceTab[];
   activeTabId: string;
   onNewTab: () => void;
   onCopyTab: () => void;
-  onDeleteTab: () => void; // Ensure this exists
-  onRestoreTab: () => void; // Ensure this exists
-  onResetTab: () => void; // Ensure this exists
+  onDeleteTab: () => void;
+  onRestoreTab: () => void;
+  onResetTab: () => void;
   onSwitchTab: (id: string) => void;
   onCloseSpecificTab: (e: React.MouseEvent, id: string) => void;
 }
-
-// --- Components ---
 
 const HeaderButton: React.FC<HeaderButtonProps> = ({
   label,
@@ -66,17 +61,50 @@ export default function POSInvoiceHeader({
   onCopyTab,
   onDeleteTab,
   onRestoreTab,
-  onResetTab, // Destructure the new prop
+  onResetTab,
   onSwitchTab,
   onCloseSpecificTab,
 }: POSInvoiceHeaderProps) {
+  // 1. Create a Ref for the scrollable container
+  const tabsContainerRef = useRef<HTMLDivElement>(null);
+
+  // 2. Scroll Logic
+  const handleScroll = (direction: "left" | "right") => {
+    if (tabsContainerRef.current) {
+      const scrollAmount = 150;
+      const currentScroll = tabsContainerRef.current.scrollLeft;
+
+      tabsContainerRef.current.scrollTo({
+        left:
+          direction === "left"
+            ? currentScroll - scrollAmount
+            : currentScroll + scrollAmount,
+        behavior: "smooth",
+      });
+    }
+  };
+
+  const ArrowButton = ({
+    onClick,
+    icon,
+  }: {
+    onClick: () => void;
+    icon: React.ReactNode;
+  }) => (
+    <button
+      onClick={onClick}
+      className="p-1 rounded hover:bg-white/20 text-white/80 hover:text-white transition-colors active:bg-white/30"
+    >
+      {icon}
+    </button>
+  );
+
   return (
     <div className="w-full border-t" style={{ borderColor: COLORS.borderDark }}>
       <header
         className="flex items-center justify-between w-full px-4 py-1 shadow-md transition-colors duration-300 gap-4"
         style={{ backgroundColor: COLORS.primary }}
       >
-        {/* Left Side: Configuration Buttons */}
         <div className="flex items-center gap-2 shrink-0">
           <HeaderButton
             label="New"
@@ -90,7 +118,6 @@ export default function POSInvoiceHeader({
             onClick={onCopyTab}
           />
 
-          {/* Reset Button */}
           <HeaderButton
             label="Reset"
             icon={<CancelIcon className="w-full h-full" />}
@@ -118,40 +145,56 @@ export default function POSInvoiceHeader({
         {/* Vertical Divider */}
         <div className="h-6 w-px bg-white/20 mx-2 shrink-0"></div>
 
-        {/* Right Side: Tab List */}
-        <div className="flex-1 flex items-center gap-1 overflow-x-auto no-scrollbar">
-          {tabs.map((tab) => {
-            const isActive = tab.id === activeTabId;
-            return (
-              <div
-                key={tab.id}
-                onClick={() => onSwitchTab(tab.id)}
-                className={`
-                  group flex items-center gap-2 px-3 py-1.5 rounded-t-md cursor-pointer border-t border-x text-xs font-medium min-w-[120px] max-w-[160px] justify-between
+        <div className="flex-1 flex items-center min-w-0 gap-2">
+          <div
+            ref={tabsContainerRef}
+            className="flex-1 flex items-center gap-1 overflow-x-auto no-scrollbar scroll-smooth"
+          >
+            {tabs.map((tab) => {
+              const isActive = tab.id === activeTabId;
+              return (
+                <div
+                  key={tab.id}
+                  onClick={() => onSwitchTab(tab.id)}
+                  className={`
+                  group flex items-center gap-2 px-3 py-1.5 rounded-t-md cursor-pointer border-t border-x text-xs font-medium min-w-[120px] max-w-[160px] justify-between shrink-0
                   ${
                     isActive
                       ? "bg-gray-100 text-[var(--theme-primary)] border-white"
                       : "bg-white/10 text-white/80 border-transparent hover:bg-white/20"
                   }
                 `}
-                style={isActive ? { color: COLORS.primary } : {}}
-              >
-                <div className="flex items-center gap-2 truncate">
-                  <FileText size={12} />
-                  <span className="truncate">{tab.name}</span>
-                </div>
-
-                <button
-                  onClick={(e) => onCloseSpecificTab(e, tab.id)}
-                  className={`p-0.5 rounded-full hover:bg-red-500 hover:text-white transition-colors ${
-                    isActive ? "text-gray-400" : "text-white/60"
-                  }`}
+                  style={isActive ? { color: COLORS.primary } : {}}
                 >
-                  <X size={10} />
-                </button>
-              </div>
-            );
-          })}
+                  <div className="flex items-center gap-2 truncate">
+                    <FileText size={12} />
+                    <span className="truncate">{tab.name}</span>
+                  </div>
+
+                  <button
+                    onClick={(e) => onCloseSpecificTab(e, tab.id)}
+                    className={`p-0.5 rounded-full hover:bg-red-500 hover:text-white transition-colors ${
+                      isActive ? "text-gray-400" : "text-white/60"
+                    }`}
+                  >
+                    <X size={10} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center gap-0.5 bg-black/20 rounded px-1 py-0.5 shrink-0 ml-1">
+            <ArrowButton
+              onClick={() => handleScroll("left")}
+              icon={<ChevronLeft size={16} />}
+            />
+            <div className="w-px h-4 bg-white/20 mx-0.5"></div>
+            <ArrowButton
+              onClick={() => handleScroll("right")}
+              icon={<ChevronRight size={16} />}
+            />
+          </div>
         </div>
       </header>
     </div>

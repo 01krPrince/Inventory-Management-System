@@ -10,11 +10,6 @@ import {
   DocumentCategoryInventory,
 } from "../pages/pages/inventory/stockAdjustment/api/DocumentCategoryInventory";
 
-// ==========================================
-// INTERFACES
-// ==========================================
-
-// UPDATED: Full interface to match LocationMaster requirements
 export interface LocationData {
   _id: string;
   name: string;
@@ -46,29 +41,22 @@ interface ModalProps {
   onSuccess?: () => void;
 }
 
-// ==========================================
-// MAIN COMPONENT: DocumentCategoryInventoryModal
-// ==========================================
-
 const DocumentCategoryInventoryModal: React.FC<ModalProps> = ({
   isOpen,
   onClose,
   initialData,
   onSuccess,
 }) => {
-  // --- STATE: Form Fields ---
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [inactive, setInactive] = useState(false);
   const [specificToDocument, setSpecificToDocument] = useState("None");
   const [defaultLocation, setDefaultLocation] = useState("");
 
-  // --- STATE: UI & Data ---
   const [showLocationMaster, setShowLocationMaster] = useState(false);
   const [locationList, setLocationList] = useState<LocationData[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // --- COLUMNS for Dropdown ---
   const locationColumns: ColumnDef<LocationData>[] = [
     { header: "Name", key: "name", width: "w-[40%]" },
     { header: "Party", key: "party", width: "w-[40%]" },
@@ -212,7 +200,7 @@ const DocumentCategoryInventoryModal: React.FC<ModalProps> = ({
           </div>
 
           {/* Location Master Component */}
-          <div className="flex-1 overflow-hidden">
+          <div className="shadow-lg overflow-hidden relative">
             <LocationMaster
               onClose={() => setShowLocationMaster(false)}
               onSuccess={() => setShowLocationMaster(false)}

@@ -12,14 +12,13 @@ import React, {
 import {
   Plus,
   Trash2,
-  Edit,
   Search,
   ChevronDown,
   ChevronUp,
   Loader2,
-  Package,
   Printer,
   Download,
+  EditIcon,
 } from "lucide-react";
 
 // --- LOCAL IMPORTS ---
@@ -74,22 +73,6 @@ interface SortConfig {
 
 // --- COLUMN DEFINITIONS ---
 const ItemColumns: Column[] = [
-  {
-    key: "widget",
-    label: "Widget",
-    sortable: true,
-    render: (value: boolean) => (
-      <span
-        className={`inline-flex items-center justify-center p-1 rounded-full ${
-          value
-            ? "bg-blue-100 text-blue-600 dark:bg-blue-900/40"
-            : "bg-gray-100 text-gray-500 dark:bg-gray-700"
-        }`}
-      >
-        <Package className="size-3" />
-      </span>
-    ),
-  },
   {
     key: "inactive",
     label: "Inactive",
@@ -842,7 +825,7 @@ export default function ItemMaster() {
                         className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400 transition"
                         title="Edit"
                       >
-                        <Edit className="size-4 inline" />
+                        <EditIcon className="size-4 inline" />
                       </button>
 
                       <button

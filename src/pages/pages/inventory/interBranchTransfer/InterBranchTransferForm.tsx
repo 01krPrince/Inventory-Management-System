@@ -391,7 +391,7 @@ const InterBranchTransferForm: React.FC<SalesInvoiceFormProps> = ({
         {/* MODALS */}
         {categoryModal && (
           <div className="fixed inset-0 z-[30] flex items-center justify-center bg-transparent bg-opacity-50 backdrop-blur-sm p-4">
-            <div className="w-auto h-auto bg-white rounded-lg shadow-2xl overflow-hidden relative">
+            <div className="shadow-lg overflow-hidden relative">
               <DocumentInventoryModal
                 isOpen={categoryModal}
                 onClose={() => setCategoryModal(false)}
@@ -404,7 +404,7 @@ const InterBranchTransferForm: React.FC<SalesInvoiceFormProps> = ({
 
         {locationModal && (
           <div className="fixed inset-0 z-[30] flex items-center justify-center bg-transparent bg-opacity-50 backdrop-blur-sm p-4">
-            <div className="w-auto h-auto bg-white rounded-lg shadow-2xl overflow-hidden relative">
+            <div className="shadow-lg overflow-hidden relative">
               <LocationMaster
                 onClose={closeLocationModal}
                 initialData={

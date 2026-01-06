@@ -595,9 +595,7 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
   // --- MAIN RENDER ---
   return (
     <>
-      {/* 1. Main Location Form */}
-      {/* KEY FIX: h-full w-full ensures it fills the fixed-size modal wrapper */}
-      <div className="h-full w-full flex flex-col bg-white">
+      <div className="w-[40vw] flex flex-col bg-white h-[70vh]">
         <div className="bg-[#104a7d] px-6 py-4 text-white flex justify-between items-center shrink-0">
           <h1 className="text-xl font-semibold tracking-wide">
             {initialData ? "EDIT LOCATION" : "NEW LOCATION"}

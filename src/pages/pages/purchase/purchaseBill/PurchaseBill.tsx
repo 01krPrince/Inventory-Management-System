@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-// Adjust these imports to match your project structure
 import PurchaseBillHeader from "./PurchaseBillHeader";
 import PurchaseBillForm from "./PurchaseBillForm";
 import OrderTable from "../purchaseOrder/OrderTable";

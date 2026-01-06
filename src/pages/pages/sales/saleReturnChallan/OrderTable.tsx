@@ -67,13 +67,6 @@ const getStandardWarranties = (itemText: string): WarrantyOption[] => {
   return [];
 };
 
-interface OrderTableProps {
-  rows: string[];
-  setRows: React.Dispatch<React.SetStateAction<string[]>>;
-  tableData: Record<string, RowData>;
-  setTableData: React.Dispatch<React.SetStateAction<Record<string, RowData>>>;
-}
-
 const DEFAULT_COLUMNS: Column[] = [
   {
     id: "sno",
@@ -103,7 +96,7 @@ const DEFAULT_COLUMNS: Column[] = [
     visible: true,
   },
   {
-    id: "copy",
+    id: "srch",
     label: "",
     width: 35,
     sticky: "left",
@@ -112,11 +105,11 @@ const DEFAULT_COLUMNS: Column[] = [
     visible: true,
   },
   {
-    id: "postype",
-    label: "POS Type",
-    width: 80,
-    align: "center",
+    id: "copy",
+    label: "",
+    width: 35,
     sticky: "left",
+    align: "center",
     resizable: true,
     visible: true,
   },
@@ -382,14 +375,13 @@ const DEFAULT_COLUMNS: Column[] = [
   },
 ];
 
-const OrderTable: React.FC<OrderTableProps> = ({
-  rows,
-  setRows,
-  tableData,
-  setTableData,
-}) => {
+const OrderTable: React.FC = () => {
   const generateRowId = () =>
     `row-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+  // --- Internal State for Table Data ---
+  const [rows, setRows] = useState<string[]>([]);
+  const [tableData, setTableData] = useState<Record<string, RowData>>({});
 
   const [items, setItems] = useState<ItemApiData[]>([]);
   const [, setStockUnits] = useState<StockUnitData[]>([]);
@@ -429,14 +421,15 @@ const OrderTable: React.FC<OrderTableProps> = ({
 
   const [addNewItemForm, setAddNewItemForm] = useState(false);
 
+  // Initialize empty rows
   useEffect(() => {
     if (rows.length === 0) {
-      const initialRows = Array.from({ length: 8 }, () => generateRowId());
+      const initialRows = Array.from({ length: 15 }, () => generateRowId());
       setRows(initialRows);
       const initialData: Record<string, RowData> = {};
       initialRows.forEach((id) => {
         initialData[id] = {
-          postype: "Sale",
+          reciss: "Receipt",
           qty: 0,
           rate: 0,
           amount: 0,
@@ -445,7 +438,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
       });
       setTableData(initialData);
     }
-  }, [rows.length, setRows, setTableData]);
+  }, [rows.length]);
 
   useEffect(() => {
     loadMasterData();
@@ -512,7 +505,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
   };
 
   const handleDeleteRow = (rowIdToDelete: string) => {
-    if (rows.length > 8) {
+    if (rows.length > 15) {
       setRows((prev) => prev.filter((id) => id !== rowIdToDelete));
       setTableData((prev) => {
         const next = { ...prev };
@@ -523,7 +516,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
       setTableData((prev) => ({
         ...prev,
         [rowIdToDelete]: {
-          postype: "Sale",
+          reciss: "Receipt",
           qty: 0,
           rate: 0,
           amount: 0,
@@ -543,7 +536,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
       setTableData((prev) => ({
         ...prev,
         [newId]: {
-          postype: "Sale",
+          reciss: "Receipt",
           qty: 0,
           rate: 0,
           amount: 0,
@@ -680,7 +673,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
     const { activeRowId, tempItemData } = attributePanelState;
     if (activeRowId && tempItemData) {
       const baseData: RowData = {
-        postype: "Sale",
+        reciss: "Receipt",
         select: tempItemData.code || "",
         desc: tempItemData.name || "",
         unit: tempItemData.stock_unit || "",
@@ -718,11 +711,12 @@ const OrderTable: React.FC<OrderTableProps> = ({
         "sno",
         "add",
         "del",
+        "srch",
         "copy",
         "attr",
         "widg",
         "batch",
-        "postype",
+        "reciss",
         "warranty",
       ].includes(columnId)
     )
@@ -848,11 +842,11 @@ const OrderTable: React.FC<OrderTableProps> = ({
       >
         <div className="flex items-center gap-4">
           <div
-            className="flex items-center border h-8 w-72 rounded-sm bg-white"
+            className="flex items-center border h-9 w-72 rounded-sm bg-white"
             style={{ borderColor: COLORS.borderDark }}
           >
             <div className="px-2 border-r h-full flex items-center justify-center bg-gray-50">
-              <ScanLine className="w-6 h-5 text-orange-500" />
+              <ScanLine className="w-6 h-6 text-orange-500" />
             </div>
             <input
               type="text"
@@ -882,14 +876,14 @@ const OrderTable: React.FC<OrderTableProps> = ({
         </div>
       </div>
 
-      <div className="flex-1 p-0 relative flex flex-col z-0">
+      <div className="flex-1 p-2 relative flex flex-col z-0">
         <div
           className="w-full border shadow-sm relative overflow-hidden bg-white"
           style={{ borderColor: COLORS.borderDark }}
         >
           <div
             className="w-full overflow-auto custom-scrollbar"
-            style={{ height: "250px" }}
+            style={{ height: "400px" }}
           >
             <div
               style={{ width: visibleColumns.reduce((a, c) => a + c.width, 0) }}
@@ -975,6 +969,13 @@ const OrderTable: React.FC<OrderTableProps> = ({
                                 onClick={() => handleDeleteRow(rowId)}
                               />
                             );
+                          else if (col.id === "srch")
+                            content = (
+                              <Search
+                                size={12}
+                                className="mx-auto text-blue-500 cursor-pointer"
+                              />
+                            );
                           else if (col.id === "copy")
                             content = (
                               <Copy
@@ -1005,42 +1006,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
                                 className="mx-auto text-blue-600"
                               />
                             );
-                          else if (col.id === "postype") {
-                            content = (
-                              <div className="relative w-full h-full group">
-                                <div className="flex justify-between items-center h-full px-1 text-[10px]">
-                                  <span
-                                    style={{
-                                      color:
-                                        rowData.postype === "Sale"
-                                          ? "inherit"
-                                          : "red",
-                                    }}
-                                  >
-                                    {rowData.postype || "Return"}
-                                  </span>
-                                  <ChevronDown
-                                    size={10}
-                                    className="text-gray-400"
-                                  />
-                                </div>
-                                <select
-                                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                  value={rowData.postype || "Sale"}
-                                  onChange={(e) =>
-                                    handleInputChange(
-                                      rowId,
-                                      "postype",
-                                      e.target.value
-                                    )
-                                  }
-                                >
-                                  <option value="Sale">Sale</option>
-                                  <option value="Return">Return</option>
-                                </select>
-                              </div>
-                            );
-                          } else if (col.id === "select") {
+                          else if (col.id === "select") {
                             content = (
                               <div
                                 className="text-[10px] italic text-gray-400 flex justify-between cursor-pointer hover:bg-gray-100 h-full items-center px-1"
@@ -1256,7 +1222,8 @@ const OrderTable: React.FC<OrderTableProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                   {columns
                     .filter(
-                      (c) => !["sno", "add", "del", "copy"].includes(c.id)
+                      (c) =>
+                        !["sno", "add", "del", "srch", "copy"].includes(c.id)
                     )
                     .filter((c) =>
                       c.label.toLowerCase().includes(configSearch.toLowerCase())
@@ -1371,7 +1338,10 @@ const OrderTable: React.FC<OrderTableProps> = ({
             >
               <div
                 className="flex justify-between items-center p-2 border-b h-8"
-                style={{ backgroundColor: COLORS.primary, color: COLORS.white }}
+                style={{
+                  backgroundColor: COLORS.primary,
+                  color: COLORS.white,
+                }}
               >
                 <span className="font-bold text-xs pl-1">Select Item</span>
                 <button onClick={closePopup}>

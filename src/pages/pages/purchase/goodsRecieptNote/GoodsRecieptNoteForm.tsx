@@ -172,7 +172,6 @@ const AccordionSection: React.FC<{
   );
 };
 
-
 interface POSOrderFormProps {
   themeColor?: string;
 }
@@ -226,7 +225,7 @@ const GoodsRecieptNoteForm: React.FC<POSOrderFormProps> = ({
   const [ledgerEditingRow, setLedgerEditingRow] =
     useState<NameAndCodeData | null>(null);
 
-    useEffect(() => {
+  useEffect(() => {
     loadLocations();
   }, []);
 
@@ -594,7 +593,7 @@ const GoodsRecieptNoteForm: React.FC<POSOrderFormProps> = ({
           className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
           style={{ zIndex: nestedModalZIndex }}
         >
-          <div className="w-full max-w-4xl h-[90vh] bg-white rounded shadow-lg overflow-hidden relative">
+          <div className="shadow-lg overflow-hidden relative">
             <LocationMaster
               onClose={() => setIsLocationMasterOpen(false)}
               initialData={getSelectedStoreData()}

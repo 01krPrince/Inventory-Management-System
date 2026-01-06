@@ -1427,14 +1427,17 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
       style={{ zIndex: overlayZIndex }}
     >
       <div className="max-w-6xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
-        {/* Header */}
+        {/* Header - Updated with Close Button */}
         <div className="bg-[#0c5888] px-6 py-4 text-white flex justify-between items-center">
           <h1 className="text-xl font-semibold tracking-wide">
             {isEditMode ? "EDIT CUSTOMER" : "ADD NEW CUSTOMER"}
           </h1>
-          <div className="text-sm opacity-80">
-            Step {activeStep + 1} of {STEPS.length}
-          </div>
+          <button
+            onClick={() => onClose(false)}
+            className="text-white hover:text-gray-200 transition-colors"
+          >
+            <X className="w-6 h-6 cursor-pointer" />
+          </button>
         </div>
 
         {/* Timeline / Progress Bar */}
@@ -1485,7 +1488,7 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
           </div>
         </div>
 
-        <div className="p-6 bg-white min-h-[500px]">
+        <div className="p-6 bg-white h-[50vh] overflow-y-scroll">
           {activeStep === 0 && renderBasicDetails()}
           {activeStep === 1 && renderStatutory()}
           {activeStep === 2 && renderCommunication()}
@@ -1497,38 +1500,43 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
           {activeStep === 8 && Attachments()}
         </div>
 
-        {/* Footer Actions */}
-        <div className="bg-gray-50 px-6 py-4 border-t flex justify-end gap-3">
-          <button
-            onClick={handleBack}
-            className="flex items-center px-4 py-2 rounded border font-medium transition-colors text-gray-700 border-gray-300 hover:bg-gray-100 bg-white"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />{" "}
-            {activeStep > 0 ? "Back" : "Close"}
-          </button>
+        {/* Footer Actions - Updated with Step counter on left, Buttons on right */}
+        <div className="bg-gray-50 px-6 py-4 border-t flex justify-between items-center">
+          <div className="text-sm text-gray-600 font-medium">
+            Step {activeStep + 1} of {STEPS.length}
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={handleBack}
+              className="flex items-center px-4 py-2 rounded border font-medium transition-colors text-gray-700 border-gray-300 hover:bg-gray-100 bg-white"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />{" "}
+              {activeStep > 0 ? "Back" : "Close"}
+            </button>
 
-          <button
-            onClick={handleNext}
-            disabled={isSubmitting}
-            className={`flex items-center px-6 py-2 bg-[#0c5888] text-white rounded hover:bg-[#0a4a70] font-medium shadow-sm ${
-              isSubmitting ? "opacity-70 cursor-not-allowed" : ""
-            }`}
-          >
-            {activeStep === STEPS.length - 1 ? (
-              <>
-                <Save className="w-4 h-4 mr-2" />{" "}
-                {isSubmitting
-                  ? "Processing..."
-                  : isEditMode
-                  ? "Update"
-                  : "Submit"}
-              </>
-            ) : (
-              <>
-                Save & Next <ArrowRight className="w-4 h-4 ml-2" />
-              </>
-            )}
-          </button>
+            <button
+              onClick={handleNext}
+              disabled={isSubmitting}
+              className={`flex items-center px-6 py-2 bg-[#0c5888] text-white rounded hover:bg-[#0a4a70] font-medium shadow-sm ${
+                isSubmitting ? "opacity-70 cursor-not-allowed" : ""
+              }`}
+            >
+              {activeStep === STEPS.length - 1 ? (
+                <>
+                  <Save className="w-4 h-4 mr-2" />{" "}
+                  {isSubmitting
+                    ? "Processing..."
+                    : isEditMode
+                    ? "Update"
+                    : "Submit"}
+                </>
+              ) : (
+                <>
+                  Save & Next <ArrowRight className="w-4 h-4 ml-2" />
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
       {showChartOfAccounts && (

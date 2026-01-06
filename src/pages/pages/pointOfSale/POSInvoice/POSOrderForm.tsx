@@ -4,15 +4,22 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
 } from "../../../../components/icons";
+import {
+  Search,
+  EditIcon,
+  FileText,
+  Minimize2,
+  ExternalLink,
+  ChevronUp,
+  ChevronDown,
+} from "lucide-react";
+
 import Dropdown, { ColumnDef } from "../../../../components/Dropdown";
 import DateInput from "../../../../components/DateInput";
-import { Search, EditIcon } from "lucide-react";
-
 import CounterMaster from "../../../../components/CounterMaster";
 import SalesExecutiveMaster from "../../../../components/SalesExecutiveMaster";
 import TenderTypeMaster from "../../../../components/TenderTypeMaster";
 import State from "../../../../components/State";
-// --- Import the generic NameAndCodeMaster component ---
 import NameAndCodeMaster from "../../../../components/NameAndCodeComponent";
 
 // --- 1. Types & Interfaces ---
@@ -26,7 +33,7 @@ interface DropdownItem {
 interface MockData {
   gstTypes: DropdownItem[];
   salesmen: DropdownItem[];
-  priceCategories: DropdownItem[]; // Added specific type for price categories
+  priceCategories: DropdownItem[];
   paymentModes: DropdownItem[];
   tenderAccounts: DropdownItem[];
   states: DropdownItem[];
@@ -96,6 +103,7 @@ interface InputProps {
   placeholder?: string;
   readOnly?: boolean;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  className?: string;
 }
 
 const Input: React.FC<InputProps> = ({
@@ -103,6 +111,7 @@ const Input: React.FC<InputProps> = ({
   placeholder,
   readOnly,
   onChange,
+  className,
 }) => (
   <input
     type="text"
@@ -110,7 +119,7 @@ const Input: React.FC<InputProps> = ({
     onChange={onChange}
     className={`w-full h-[30px] border border-gray-300 rounded-sm px-2 text-[13px] text-gray-700 focus:outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)] ${
       readOnly ? "bg-gray-100 text-gray-500 cursor-not-allowed" : "bg-white"
-    }`}
+    } ${className || ""}`}
     value={value}
     placeholder={placeholder}
   />
@@ -167,9 +176,15 @@ interface SalesInvoiceFormProps {
 const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
   themeColor = "#0f3c63",
 }) => {
+  // --- View States ---
+  const [isOpen, setIsOpen] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // --- Internal Accordion States ---
   const [isBillToOpen, setBillToOpen] = useState<boolean>(true);
   const [isShipToOpen, setShipToOpen] = useState<boolean>(false);
   const [isCustomerOpen, setIsCustomerOpen] = useState<boolean>(false);
+  const [isDetailsOpen, setIsDetailsOpen] = useState<boolean>(true);
 
   // --- Modal States ---
   const [isCounterMasterOpen, setIsCounterMasterOpen] = useState(false);
@@ -177,8 +192,6 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
   const [isSalesExecutiveMasterOpen, setIsSalesExecutiveMasterOpen] =
     useState(false);
   const [isTenderTypeOpen, setIsTenderTypeOpen] = useState(false);
-
-  // --- NEW: Price Category Modal State ---
   const [isPriceCategoryOpen, setIsPriceCategoryOpen] = useState(false);
 
   const overlayZIndex = 10;
@@ -187,7 +200,7 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
   const [formData, setFormData] = useState({
     counter: "BillOfSupply",
     salesman: "",
-    priceCategory: "", // Corrected key for state
+    priceCategory: "",
     paymentMode: "",
     advanceTender: "",
     state: "",
@@ -220,31 +233,23 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
   ];
 
   return (
-    <div
-      style={themeStyles}
-      className="bg-white rounded border border-gray-200 p-5 relative"
-    >
-      {/* --- Modals / Popups --- */}
+    <div style={themeStyles} className="w-full">
+      {/* --- Modals --- */}
       {isCounterMasterOpen && (
         <CounterMaster onClose={() => setIsCounterMasterOpen(false)} />
       )}
-
       {isStateOpen && <State onClose={() => setIsStateOpen(false)} />}
-
       {isSalesExecutiveMasterOpen && (
         <SalesExecutiveMaster
           onClose={() => setIsSalesExecutiveMasterOpen(false)}
         />
       )}
-
       {isTenderTypeOpen && (
         <TenderTypeMaster
           onClose={() => setIsTenderTypeOpen(false)}
           index={nestedModalZIndex}
         />
       )}
-
-      {/* --- Generic Name and Code Master used for Price Category --- */}
       {isPriceCategoryOpen && (
         <NameAndCodeMaster
           title="Price Category"
@@ -252,280 +257,392 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
           index={nestedModalZIndex}
           onSuccess={() => {
             console.log("Price Category refreshed");
-            // Here you would typically re-fetch your price categories from API
           }}
         />
       )}
 
-      <div className="grid grid-cols-12 gap-8">
-        {/* === LEFT COLUMN (General Info) === */}
-        <div className="col-span-4 space-y-1">
-          {/* 1. COUNTER */}
-          <div className="grid grid-cols-12 gap-2">
-            <div className="col-span-4">
-              <Label>Counter</Label>
-            </div>
-            <div className="col-span-8">
-              <InputGroup>
-                <Dropdown
-                  data={mockData.gstTypes}
-                  columns={defaultColumns}
-                  value={formData.counter}
-                  valueKey="name"
-                  onChange={(item) =>
-                    handleFieldChange("counter", item?.name || "")
-                  }
-                  placeholder="Select Counter..."
-                />
-                <ActionBtn
-                  icon={<EditIcon size={16} />}
-                  onClick={() => setIsCounterMasterOpen(true)}
-                />
-              </InputGroup>
-            </div>
+      {/* === MAIN CONTAINER === */}
+      <div className="bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden transition-all duration-300">
+        {/* --- HEADER --- */}
+        <div className="flex items-center justify-between px-4 py-2 bg-white border-b border-gray-100">
+          <div
+            className="flex items-center gap-2 cursor-pointer"
+            onClick={() => setIsOpen(!isOpen)}
+          >
+            <FileText className="text-[var(--theme-primary)]" size={16} />
+            <h3 className="text-[var(--theme-primary)] font-semibold text-sm">
+              POS Order
+            </h3>
           </div>
 
-          {/* 2. SALESMAN */}
-          <div className="grid grid-cols-12 gap-2">
-            <div className="col-span-4">
-              <Label>Salesman</Label>
-            </div>
-            <div className="col-span-8">
-              <InputGroup>
-                <Dropdown
-                  data={mockData.salesmen}
-                  columns={codeNameColumns}
-                  value={formData.salesman}
-                  valueKey="name"
-                  onChange={(item) =>
-                    handleFieldChange("salesman", item?.name || "")
-                  }
-                  placeholder="Select Salesman..."
-                />
-                <ActionBtn
-                  icon={<EditIcon size={16} />}
-                  onClick={() => setIsSalesExecutiveMasterOpen(true)}
-                />
-              </InputGroup>
-            </div>
-          </div>
+          <div className="flex items-center gap-4">
+            {isOpen && (
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="text-xs flex items-center gap-1 text-gray-700 hover:text-gray-800 font-medium transition-colors"
+              >
+                {isExpanded ? (
+                  <>
+                    <Minimize2 size={12} /> Collapse
+                  </>
+                ) : (
+                  <>
+                    <ExternalLink size={12} /> Expand
+                  </>
+                )}
+              </button>
+            )}
 
-          {/* 3. PRICE CATEGORY (Now using NameAndCodeMaster) */}
-          <div className="grid grid-cols-12 gap-2">
-            <div className="col-span-4">
-              <Label>Price Category</Label>
-            </div>
-            <div className="col-span-8">
-              <InputGroup>
-                <Dropdown
-                  data={mockData.priceCategories}
-                  columns={codeNameColumns}
-                  value={formData.priceCategory}
-                  valueKey="name"
-                  onChange={(item) =>
-                    handleFieldChange("priceCategory", item?.name || "")
-                  }
-                  placeholder="Select Price Category..."
-                />
-                {/* Updated onClick to trigger Price Category Modal */}
-                <ActionBtn
-                  icon={<EditIcon size={16} />}
-                  onClick={() => setIsPriceCategoryOpen(true)}
-                />
-              </InputGroup>
-            </div>
-          </div>
-
-          {/* Ref No */}
-          <div className="grid grid-cols-12 gap-2">
-            <div className="col-span-4">
-              <Label>Ref No</Label>
-            </div>
-            <div className="col-span-8">
-              <Input
-                value={formData.refNo}
-                onChange={(e) => handleFieldChange("refNo", e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* GST No */}
-          <div className="grid grid-cols-12 gap-2">
-            <div className="col-span-4">
-              <Label>GST No (If B2B)</Label>
-            </div>
-            <div className="col-span-8">
-              <Input
-                value={formData.gstNo}
-                onChange={(e) => handleFieldChange("gstNo", e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Delivery Type */}
-          <div className="grid grid-cols-12 gap-2">
-            <div className="col-span-4">
-              <Label>Delivery Type</Label>
-            </div>
-            <div className="col-span-8">
-              <Input
-                value={formData.deliveryType}
-                onChange={(e) =>
-                  handleFieldChange("deliveryType", e.target.value)
-                }
-              />
-            </div>
-          </div>
-
-          {/* Ref Date */}
-          <div className="grid grid-cols-12 gap-2">
-            <div className="col-span-4">
-              <Label>Ref.Date</Label>
-            </div>
-            <div className="col-span-8">
-              <DateInput
-                value={formData.refDate}
-                onChange={(e) => handleFieldChange("refDate", e.target.value)}
-              />
+            <div
+              className="text-gray-500 cursor-pointer"
+              onClick={() => setIsOpen(!isOpen)}
+            >
+              {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </div>
           </div>
         </div>
 
-        {/* === MIDDLE COLUMN (Details) === */}
-        <div className="col-span-4 space-y-1">
-          {/* Voucher No */}
-          <div className="grid grid-cols-12 gap-2">
-            <div className="col-span-4">
-              <Label>Voucher No</Label>
-            </div>
-            <div className="col-span-8">
-              <Input
-                value={formData.voucherNo}
-                onChange={(e) => handleFieldChange("voucherNo", e.target.value)}
-              />
-            </div>
+        {/* --- BODY --- */}
+        {isOpen && (
+          // Reduced padding for container
+          <div className={isExpanded ? "p-5" : "p-2"}>
+            {/* === MODE 1: SUMMARY VIEW (Optimized Row Layout) === */}
+            {!isExpanded && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-gray-50 p-2 rounded-md border border-gray-100 animate-in fade-in duration-300">
+                {/* 1. Voucher No - Row Layout */}
+                <div className="flex items-center gap-2">
+                  <div className="w-[80px] shrink-0">
+                    <Label>Voucher No</Label>
+                  </div>
+                  <div className="flex-grow">
+                    <Input
+                      value={formData.voucherNo}
+                      onChange={(e) =>
+                        handleFieldChange("voucherNo", e.target.value)
+                      }
+                    />
+                  </div>
+                </div>
+
+                {/* 2. Date - Row Layout */}
+                <div className="flex items-center gap-2">
+                  <div className="w-[40px] shrink-0">
+                    <Label>Date</Label>
+                  </div>
+                  <div className="flex-grow">
+                    <DateInput
+                      value={formData.orderDate}
+                      onChange={(e) =>
+                        handleFieldChange("orderDate", e.target.value)
+                      }
+                    />
+                  </div>
+                </div>
+
+                {/* 3. Customer - Row Layout */}
+                <div className="flex items-center gap-2">
+                  <div className="w-[70px] shrink-0">
+                    <Label required>Customer</Label>
+                  </div>
+                  <div className="flex-grow">
+                    <InputGroup>
+                      <Input value="" placeholder="Find name/ph" />
+                      <ActionBtn icon={<Search size={14} />} />
+                    </InputGroup>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* === MODE 2: DETAILED VIEW (Original Layout) === */}
+            {isExpanded && (
+              <div className="grid grid-cols-12 gap-8 animate-in fade-in slide-in-from-top-2 duration-300">
+                {/* === LEFT COLUMN === */}
+                <div className="col-span-4 space-y-1">
+                  {/* Counter */}
+                  <div className="grid grid-cols-12 gap-2">
+                    <div className="col-span-4">
+                      <Label>Counter</Label>
+                    </div>
+                    <div className="col-span-8">
+                      <InputGroup>
+                        <Dropdown
+                          data={mockData.gstTypes}
+                          columns={defaultColumns}
+                          value={formData.counter}
+                          valueKey="name"
+                          onChange={(item) =>
+                            handleFieldChange("counter", item?.name || "")
+                          }
+                          placeholder="Select Counter..."
+                        />
+                        <ActionBtn
+                          icon={<EditIcon size={16} />}
+                          onClick={() => setIsCounterMasterOpen(true)}
+                        />
+                      </InputGroup>
+                    </div>
+                  </div>
+
+                  {/* Salesman */}
+                  <div className="grid grid-cols-12 gap-2">
+                    <div className="col-span-4">
+                      <Label>Salesman</Label>
+                    </div>
+                    <div className="col-span-8">
+                      <InputGroup>
+                        <Dropdown
+                          data={mockData.salesmen}
+                          columns={codeNameColumns}
+                          value={formData.salesman}
+                          valueKey="name"
+                          onChange={(item) =>
+                            handleFieldChange("salesman", item?.name || "")
+                          }
+                          placeholder="Select Salesman..."
+                        />
+                        <ActionBtn
+                          icon={<EditIcon size={16} />}
+                          onClick={() => setIsSalesExecutiveMasterOpen(true)}
+                        />
+                      </InputGroup>
+                    </div>
+                  </div>
+
+                  {/* Price Category */}
+                  <div className="grid grid-cols-12 gap-2">
+                    <div className="col-span-4">
+                      <Label>Price Category</Label>
+                    </div>
+                    <div className="col-span-8">
+                      <InputGroup>
+                        <Dropdown
+                          data={mockData.priceCategories}
+                          columns={codeNameColumns}
+                          value={formData.priceCategory}
+                          valueKey="name"
+                          onChange={(item) =>
+                            handleFieldChange("priceCategory", item?.name || "")
+                          }
+                          placeholder="Select Price Category..."
+                        />
+                        <ActionBtn
+                          icon={<EditIcon size={16} />}
+                          onClick={() => setIsPriceCategoryOpen(true)}
+                        />
+                      </InputGroup>
+                    </div>
+                  </div>
+
+                  {/* Ref No */}
+                  <div className="grid grid-cols-12 gap-2">
+                    <div className="col-span-4">
+                      <Label>Ref No</Label>
+                    </div>
+                    <div className="col-span-8">
+                      <Input
+                        value={formData.refNo}
+                        onChange={(e) =>
+                          handleFieldChange("refNo", e.target.value)
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  {/* GST No */}
+                  <div className="grid grid-cols-12 gap-2">
+                    <div className="col-span-4">
+                      <Label>GST No (If B2B)</Label>
+                    </div>
+                    <div className="col-span-8">
+                      <Input
+                        value={formData.gstNo}
+                        onChange={(e) =>
+                          handleFieldChange("gstNo", e.target.value)
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  {/* Delivery Type */}
+                  <div className="grid grid-cols-12 gap-2">
+                    <div className="col-span-4">
+                      <Label>Delivery Type</Label>
+                    </div>
+                    <div className="col-span-8">
+                      <Input
+                        value={formData.deliveryType}
+                        onChange={(e) =>
+                          handleFieldChange("deliveryType", e.target.value)
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  {/* Ref Date */}
+                  <div className="grid grid-cols-12 gap-2">
+                    <div className="col-span-4">
+                      <Label>Ref.Date</Label>
+                    </div>
+                    <div className="col-span-8">
+                      <DateInput
+                        value={formData.refDate}
+                        onChange={(e) =>
+                          handleFieldChange("refDate", e.target.value)
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* === MIDDLE COLUMN === */}
+                <div className="col-span-4 space-y-1">
+                  <AccordionSection
+                    title="Order Details"
+                    isOpen={isDetailsOpen}
+                    onToggle={() => setIsDetailsOpen(!isDetailsOpen)}
+                  >
+                    <div className="space-y-1">
+                      <div className="grid grid-cols-12 gap-2">
+                        <div className="col-span-4">
+                          <Label>Voucher No</Label>
+                        </div>
+                        <div className="col-span-8">
+                          <Input
+                            value={formData.voucherNo}
+                            onChange={(e) =>
+                              handleFieldChange("voucherNo", e.target.value)
+                            }
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-12 gap-2">
+                        <div className="col-span-4">
+                          <Label>Date</Label>
+                        </div>
+                        <div className="col-span-8">
+                          <DateInput
+                            value={formData.orderDate}
+                            onChange={(e) =>
+                              handleFieldChange("orderDate", e.target.value)
+                            }
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-12 gap-2">
+                        <div className="col-span-4">
+                          <Label required>Customer</Label>
+                        </div>
+                        <div className="col-span-8">
+                          <InputGroup>
+                            <Input
+                              value=""
+                              placeholder="Find by name/email/phone"
+                            />
+                            <ActionBtn icon={<Search size={16} />} />
+                          </InputGroup>
+                        </div>
+                      </div>
+                    </div>
+                  </AccordionSection>
+                </div>
+
+                {/* === RIGHT COLUMN === */}
+                <div className="col-span-4 flex flex-col min-h-full">
+                  <AccordionSection
+                    title="Customer"
+                    isOpen={isCustomerOpen}
+                    onToggle={() => setIsCustomerOpen(!isCustomerOpen)}
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-3 text-sm text-gray-700">
+                      <div className="flex gap-2">
+                        <span className="font-medium">Name:</span>
+                        <span>AMIT</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <span className="font-medium">Last Visit:</span>
+                        <span>12-07-2025</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <span className="font-medium">Bill Amount:</span>
+                        <span>258</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <span className="font-medium">Phone:</span>
+                        <span>9140712317</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <span className="font-medium">O/S:</span>
+                        <span>₹0.00</span>
+                      </div>
+                    </div>
+                  </AccordionSection>
+
+                  <AccordionSection
+                    title="Bill To"
+                    isOpen={isBillToOpen}
+                    onToggle={() => setBillToOpen(!isBillToOpen)}
+                  >
+                    <textarea
+                      placeholder="Billing Address..."
+                      className="w-full h-24 border border-gray-300 rounded text-[13px] p-2 resize-none focus:ring-1 focus:border-[var(--theme-focus)] outline-none"
+                    />
+                  </AccordionSection>
+
+                  <AccordionSection
+                    title="Ship To"
+                    isOpen={isShipToOpen}
+                    onToggle={() => setShipToOpen(!isShipToOpen)}
+                  >
+                    <div className="relative mb-2">
+                      <textarea
+                        placeholder="Shipping Address..."
+                        className="w-full h-24 border border-gray-300 rounded text-[13px] p-2 resize-none focus:ring-1 focus:border-[var(--theme-focus)] outline-none"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="w-16 text-[13px] text-gray-600 shrink-0">
+                        State
+                      </span>
+                      <div className="w-full">
+                        <InputGroup>
+                          <Dropdown
+                            data={mockData.states}
+                            columns={codeNameColumns}
+                            value={formData.state}
+                            valueKey="name"
+                            onChange={(item) =>
+                              handleFieldChange("state", item?.name || "")
+                            }
+                            placeholder="Select State..."
+                          />
+                          <ActionBtn
+                            icon={<EditIcon size={16} />}
+                            onClick={() => setIsStateOpen(true)}
+                          />
+                        </InputGroup>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-16 text-[13px] text-gray-600 shrink-0">
+                        City
+                      </span>
+                      <div className="flex-grow w-full">
+                        <Input
+                          value={formData.city}
+                          onChange={(e) =>
+                            handleFieldChange("city", e.target.value)
+                          }
+                          placeholder="Enter City"
+                        />
+                      </div>
+                    </div>
+                  </AccordionSection>
+                </div>
+              </div>
+            )}
           </div>
-
-          {/* Date */}
-          <div className="grid grid-cols-12 gap-2">
-            <div className="col-span-4">
-              <Label>Date</Label>
-            </div>
-            <div className="col-span-8">
-              <DateInput
-                value={formData.orderDate}
-                onChange={(e) => handleFieldChange("orderDate", e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Customer */}
-          <div className="grid grid-cols-12 gap-2">
-            <div className="col-span-4">
-              <Label required>Customer</Label>
-            </div>
-            <div className="col-span-8">
-              <InputGroup>
-                <Input value="" placeholder="Find by name/email/phone" />
-                <ActionBtn icon={<Search size={16} />} />
-              </InputGroup>
-            </div>
-          </div>
-        </div>
-
-        {/* === RIGHT COLUMN (Address & Details) === */}
-        <div className="col-span-4 flex flex-col min-h-full">
-          {/* Customer Accordion */}
-          <AccordionSection
-            title="Customer"
-            isOpen={isCustomerOpen}
-            onToggle={() => setIsCustomerOpen(!isCustomerOpen)}
-          >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-3 text-sm text-gray-700">
-              <div className="flex gap-2">
-                <span className="font-medium">Name:</span>
-                <span>AMIT</span>
-              </div>
-              <div className="flex gap-2">
-                <span className="font-medium">Last Visit:</span>
-                <span>12-07-2025</span>
-              </div>
-              <div className="flex gap-2">
-                <span className="font-medium">Bill Amount:</span>
-                <span>258</span>
-              </div>
-              <div className="flex gap-2">
-                <span className="font-medium">Phone:</span>
-                <span>9140712317</span>
-              </div>
-              <div className="flex gap-2">
-                <span className="font-medium">O/S:</span>
-                <span>₹0.00</span>
-              </div>
-            </div>
-          </AccordionSection>
-
-          {/* Bill To Accordion */}
-          <AccordionSection
-            title="Bill To"
-            isOpen={isBillToOpen}
-            onToggle={() => setBillToOpen(!isBillToOpen)}
-          >
-            <textarea
-              placeholder="Billing Address..."
-              className="w-full h-24 border border-gray-300 rounded text-[13px] p-2 resize-none focus:ring-1 focus:border-[var(--theme-focus)] outline-none"
-            />
-          </AccordionSection>
-
-          {/* Ship To Accordion */}
-          <AccordionSection
-            title="Ship To"
-            isOpen={isShipToOpen}
-            onToggle={() => setShipToOpen(!isShipToOpen)}
-          >
-            <div className="relative mb-2">
-              <textarea
-                placeholder="Shipping Address..."
-                className="w-full h-24 border border-gray-300 rounded text-[13px] p-2 resize-none focus:ring-1 focus:border-[var(--theme-focus)] outline-none"
-              />
-            </div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="w-16 text-[13px] text-gray-600 shrink-0">
-                State
-              </span>
-              <div className="w-full">
-                <InputGroup>
-                  <Dropdown
-                    data={mockData.states}
-                    columns={codeNameColumns}
-                    value={formData.state}
-                    valueKey="name"
-                    onChange={(item) =>
-                      handleFieldChange("state", item?.name || "")
-                    }
-                    placeholder="Select State..."
-                  />
-                  <ActionBtn
-                    icon={<EditIcon size={16} />}
-                    onClick={() => setIsStateOpen(true)}
-                  />
-                </InputGroup>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-16 text-[13px] text-gray-600 shrink-0">
-                City
-              </span>
-              <div className="flex-grow w-full">
-                <Input
-                  value={formData.city}
-                  onChange={(e) => handleFieldChange("city", e.target.value)}
-                  placeholder="Enter City"
-                />
-              </div>
-            </div>
-          </AccordionSection>
-        </div>
+        )}
       </div>
     </div>
   );

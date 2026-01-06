@@ -1,5 +1,12 @@
 import React, { useState, ChangeEvent, useEffect } from "react";
-import { Edit, Save, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
+import {
+  Edit,
+  Save,
+  ArrowRight,
+  ArrowLeft,
+  Loader2,
+  XIcon,
+} from "lucide-react";
 import Brand from "./Brand";
 import ItemCategory from "./ItemCategory";
 
@@ -31,7 +38,6 @@ import ChartOfAccounts from "../ChartOfAccount";
 import { GstClassificationForm } from "../GstClassificationForm";
 import Dropdown, { ColumnDef } from "../Dropdown";
 
-// --- Static Data for Simple Dropdowns ---
 const ITEM_MODES = [
   { label: "Inventory", value: "Inventory" },
   { label: "Non-Inventory", value: "Non-Inventory" },
@@ -71,8 +77,6 @@ const DRUG_TYPES = [
   { label: "Schedule H", value: "Schedule H" },
 ];
 
-// --- Column Definitions ---
-
 const simpleLabelColumns: ColumnDef<any>[] = [
   { header: "Option", key: "label", width: "w-full" },
 ];
@@ -110,8 +114,6 @@ const glColumns: ColumnDef<SalesAndPurchaseGL>[] = [
   { header: "Code", key: "code", width: "w-24" },
   { header: "Name", key: "name", width: "w-full" },
 ];
-
-// --- Interfaces & Constants ---
 
 const INITIAL_DATA: ItemFormData = {
   // Basic Details
@@ -259,16 +261,14 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
   onClose,
   initialData,
   onSuccess,
-  index = 50, // Default base index
+  index = 50,
 }) => {
-  // LOGIC: Calculate Z-Index for nested overlays
   const overlayZIndex = index + 10;
 
   const [activeStep, setActiveStep] = useState(0);
   const [formData, setFormData] = useState<ItemFormData>(INITIAL_DATA);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // --- MODAL VISIBILITY STATES ---
   const [showItemGroupModal, setShowItemGroupModal] = useState(false);
   const [showStockUnit, setShowStockUnit] = useState(false);
   const [isBrandOpen, setIsBrandOpen] = useState(false);
@@ -276,7 +276,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
   const [isGstModalOpen, setIsGstModalOpen] = useState(false);
   const [showChartOfAccounts, setShowChartOfAccounts] = useState(false);
 
-  // --- MODAL INITIAL DATA STATES (For Edit Logic) ---
   const [gstInitialData, setGstInitialData] = useState<any>(undefined);
   const [coaFormData, setCoaFormData] = useState<SalesAndPurchaseGL | null>(
     null
@@ -292,7 +291,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
     null
   );
 
-  // --- DATA LIST STATES ---
   const [glDataFull, setGlDataFull] = useState<SalesAndPurchaseGL[]>([]);
   const [categories, setCategories] = useState<CategoryData[]>([]);
   const [underGroup, setUnderGroup] = useState<UnderGroupData[]>([]);
@@ -305,51 +303,37 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
     undefined
   );
 
-  // 2. Create a handler function for the Edit button
   const handleBrandEditClick = (e: React.MouseEvent) => {
     e.preventDefault();
 
-    // If a brand is selected in the dropdown (formData.brand has a name)
     if (formData.brand) {
-      // Find the full object from your 'brands' list
       const selectedBrand = brands.find((b) => b.name === formData.brand);
 
-      // Set it to state to pass to the modal
       setBrandToEdit(selectedBrand);
     } else {
-      // If nothing is selected, we clear it (acts as "Create New")
       setBrandToEdit(undefined);
     }
 
-    // Open the modal
     setIsBrandOpen(true);
   };
 
-  // 1. State to store the category object we want to edit
-  // Make sure to import CategoryData from your ItemCategory file if you haven't yet
   const [categoryToEdit, setCategoryToEdit] = useState<
     CategoryData | undefined
   >(undefined);
 
-  // 2. Handler for the Category Edit button
   const handleCategoryEditClick = (e: React.MouseEvent) => {
     e.preventDefault();
 
-    // If a category is selected in the dropdown
     if (formData.category) {
-      // Find the full object from your 'categories' list
       const selectedCategory = categories.find(
         (c) => c.name === formData.category
       );
 
-      // Set it to state to pass to the modal
       setCategoryToEdit(selectedCategory);
     } else {
-      // If nothing is selected, clear it (Create Mode)
       setCategoryToEdit(undefined);
     }
 
-    // Open the modal
     setIsItemCategory(true);
   };
 
@@ -513,7 +497,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
     }
   };
 
-  // --- GST Handler Logic ---
   const handleGstEditClick = (e: React.MouseEvent) => {
     e.preventDefault();
     const currentSelection = formData.gstClassification;
@@ -567,7 +550,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
     setIsGstModalOpen(false);
   };
 
-  // --- UNDER GROUP Logic (Unified) ---
   const handleUnderGroupEditClick = (e: React.MouseEvent) => {
     e.preventDefault();
     const currentSelection = formData.underGroup;
@@ -578,10 +560,7 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
     setShowItemGroupModal(true);
   };
 
-  // ... inside your AddNewItem component
   const handleUnderGroupSave = (savedData: UnderGroupData) => {
-    // 1. Update the Form's selected value
-    // Fix: Use logical OR (||) to ensure it's a string, even if undefined
     setFormData((prev) => ({
       ...prev,
       underGroup: savedData.item_name || "",
@@ -608,7 +587,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
     setShowItemGroupModal(false);
   };
 
-  // --- STOCK UNIT Logic (Unified) ---
   const handleStockUnitEditClick = (e: React.MouseEvent) => {
     e.preventDefault();
     const currentSelection = formData.stockUnit;
@@ -619,7 +597,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
     setShowStockUnit(true);
   };
 
-  // --- COA (Sales/Purchase GL) Logic ---
   const handleOpenCOA = (type: "sales" | "purchase", currentValue: string) => {
     setActiveGLType(type);
 
@@ -667,7 +644,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
     <div className="bg-white border rounded-lg p-6 shadow-sm mt-4">
       <div className="grid grid-cols-12 gap-6">
         <div className="col-span-12 md:col-span-9 space-y-3">
-          {/* Item Mode */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4 md:col-span-3">
               <FormLabel>Item Mode</FormLabel>
@@ -820,7 +796,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
       <div className="bg-white border rounded-lg p-6 shadow-sm mt-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="col-span-1 md:col-span-2 space-y-4 max-w-4xl">
-            {/* Category Field */}
             <div className="mb-3">
               <FormLabel>Category</FormLabel>
               <div className="flex w-full">
@@ -837,7 +812,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
                   />
                 </div>
                 <button
-                  // Updated: Use the handler
                   onClick={handleCategoryEditClick}
                   className="bg-[#0c5888] text-white px-2 rounded-r hover:bg-[#0a4a70] transition-colors ml-[1px]"
                   title={
@@ -851,7 +825,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
               </div>
             </div>
 
-            {/* Brand */}
             <div className="mb-3">
               <FormLabel>Brand</FormLabel>
               <div className="flex w-full">
@@ -868,7 +841,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
                   />
                 </div>
                 <button
-                  // Updated: Use the handler to find data before opening
                   onClick={handleBrandEditClick}
                   className="bg-[#0c5888] text-white px-2 rounded-r hover:bg-[#0a4a70] transition-colors ml-[1px]"
                   title={
@@ -880,7 +852,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
               </div>
             </div>
 
-            {/* Type */}
             <div className="mb-3">
               <FormLabel>Type</FormLabel>
               <Dropdown
@@ -895,7 +866,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
               />
             </div>
 
-            {/* Unit Option */}
             <div className="mb-3">
               <FormLabel>Unit Option</FormLabel>
               <Dropdown
@@ -1274,13 +1244,17 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
   return (
     <div className="h-auto bg-transparent p-4 font-sans text-gray-800">
       <div className="max-w-6xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
+        {/* HEADER SECTION UPDATED */}
         <div className="bg-[#0c5888] px-6 py-4 text-white flex justify-between items-center">
           <h1 className="text-xl font-semibold tracking-wide">
             {isEditMode ? "EDIT ITEM" : "ADD NEW ITEM"}
           </h1>
-          <div className="text-sm opacity-80">
-            Step {activeStep + 1} of {STEPS.length}
-          </div>
+          <button
+            onClick={onClose}
+            className="text-white hover:text-gray-200 transition-colors"
+          >
+            <XIcon className="w-6 h-6 cursor-pointer" />
+          </button>
         </div>
 
         <div className="bg-gray-100 border-b overflow-x-auto">
@@ -1310,7 +1284,7 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
           </div>
         </div>
 
-        <div className="p-6 bg-white min-h-[500px]">
+        <div className="p-6 bg-white h-[50vh] overflow-y-scroll">
           {activeStep === 0 && renderBasicDetails()}
           {activeStep === 1 && renderAdvanceInfo()}
           {activeStep === 2 && saleConfig()}
@@ -1329,42 +1303,46 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
           )}
         </div>
 
-        <div className="bg-gray-50 px-6 py-4 border-t flex justify-end gap-3">
-          <button
-            onClick={() =>
-              activeStep > 0 ? setActiveStep((prev) => prev - 1) : onClose()
-            }
-            className="flex items-center px-4 py-2 rounded border hover:bg-gray-100 bg-white"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back
-          </button>
-          <button
-            onClick={handleNext}
-            disabled={isSubmitting}
-            className="flex items-center px-6 py-2 bg-[#0c5888] text-white rounded hover:bg-[#0a4a70]"
-          >
-            {activeStep === STEPS.length - 1 ? (
-              isSubmitting ? (
-                <>
-                  <Loader2 className="animate-spin mr-2" />
-                  Processing
-                </>
+        {/* FOOTER SECTION UPDATED */}
+        <div className="bg-gray-50 px-6 py-4 border-t flex justify-between items-center">
+          <div className="text-sm text-gray-600 font-medium">
+            Step {activeStep + 1} of {STEPS.length}
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={() =>
+                activeStep > 0 ? setActiveStep((prev) => prev - 1) : onClose()
+              }
+              className="flex items-center px-4 py-2 rounded border hover:bg-gray-100 bg-white"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" /> Back
+            </button>
+            <button
+              onClick={handleNext}
+              disabled={isSubmitting}
+              className="flex items-center px-6 py-2 bg-[#0c5888] text-white rounded hover:bg-[#0a4a70]"
+            >
+              {activeStep === STEPS.length - 1 ? (
+                isSubmitting ? (
+                  <>
+                    <Loader2 className="animate-spin mr-2" />
+                    Processing
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2" />
+                    {isEditMode ? "Update" : "Submit"}
+                  </>
+                )
               ) : (
                 <>
-                  <Save className="mr-2" />
-                  {isEditMode ? "Update" : "Submit"}
+                  Save & Next <ArrowRight className="ml-2" />
                 </>
-              )
-            ) : (
-              <>
-                Save & Next <ArrowRight className="ml-2" />
-              </>
-            )}
-          </button>
+              )}
+            </button>
+          </div>
         </div>
       </div>
-
-      {/* --- MODALS SECTION --- */}
 
       {showItemGroupModal && (
         <div
@@ -1397,7 +1375,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
         </div>
       )}
 
-      {/* Item Category Modal */}
       {isItemCategory && (
         <div
           className="fixed inset-0 flex items-center justify-center bg-black/50 p-4"
@@ -1406,8 +1383,7 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
           <div className="bg-white rounded shadow-lg">
             <ItemCategory
               onClose={() => setIsItemCategory(false)}
-              initialData={categoryToEdit} // <--- Pass the selected data here
-              // index={overlayZIndex} // Pass if ItemCategory supports it
+              initialData={categoryToEdit}
             />
           </div>
         </div>
@@ -1427,7 +1403,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
         </div>
       )}
 
-      {/* --- GST MODAL --- */}
       {isGstModalOpen && (
         <div
           className="fixed inset-0 flex items-center justify-center bg-black/50 p-4"
@@ -1456,7 +1431,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
               onClose={() => setShowChartOfAccounts(false)}
               initialData={coaFormData}
               onSave={handleSaveCOA}
-              // index={overlayZIndex} // Pass if ChartOfAccounts supports it
             />
           </div>
         </div>

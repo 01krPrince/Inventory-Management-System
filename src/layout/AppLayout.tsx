@@ -40,6 +40,8 @@ import PurchaseReturn from "../pages/pages/purchase/purchaseReturn/PurchaseRetur
 import PurchaseReturnChallan from "../pages/pages/purchase/purchaseReturnChallan/PurchaseReturnChallan.tsx";
 import SalseOrder from "../pages/pages/sales/salesOrder/SalseOrder.tsx";
 import Dispatch from "../pages/pages/sales/dispatch/Dispatch.tsx";
+import Estimate from "../pages/pages/sales/estimate/Estimate.tsx";
+import SaleReturnChallan from "../pages/pages/sales/saleReturnChallan/SaleReturnChallan.tsx";
 
 const useSidebar = () => ({
   isExpanded: false,
@@ -85,6 +87,8 @@ const ComponentMap: { [key: string]: React.FC } = {
   "/purchase-return-challan": PurchaseReturnChallan,
   "/sales-order": SalseOrder,
   "/dispatch": Dispatch,
+  "/estimate": Estimate,
+  "/sales-return-challan": SaleReturnChallan,
   "/fallback": () => (
     <div className="p-6 mt-6 bg-gray-100 dark:bg-gray-800 rounded-lg shadow text-center">
       <p className="text-gray-600 dark:text-gray-300 font-medium">
@@ -135,7 +139,7 @@ const LayoutContent: React.FC = () => {
 
           {/* MAIN CONTENT AREA */}
           <main className="flex-grow overflow-y-auto hidden-scrollbar px-5">
-            <div className="mx-auto max-w-[1600px] w-full pb-10 pt-2">
+            <div className="mx-auto max-w-[1600px] w-full pb-10 pt-0">
               {openTabs.map((tab) => {
                 const TabComponent =
                   ComponentMap[tab.path] || ComponentMap["/fallback"];

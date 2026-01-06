@@ -366,7 +366,7 @@ const GoodsRecieptNoteLogistics: React.FC<LogisticsProps> = ({
             {isOpen && (
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="text-xs flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                className="text-xs flex items-center gap-1 text-gray-700  hover:text-gray-800 font-medium transition-colors"
               >
                 {isExpanded ? (
                   <>

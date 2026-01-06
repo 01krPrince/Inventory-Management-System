@@ -190,7 +190,7 @@ const InterBranchTransfer: React.FC<ModalProps> = ({
               Back to Inventory
             </button>
           </div>
-          <div className="flex-1 overflow-hidden">
+          <div className="shadow-lg overflow-hidden relative">
             <LocationMaster
               onClose={() => setShowLocationMaster(false)}
               onSuccess={() => setShowLocationMaster(false)}
