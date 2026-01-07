@@ -265,7 +265,7 @@ const LandingPage = () => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-700 rounded-lg py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
-                      placeholder="admin@gmail.com"
+                      placeholder="admin@example.com"
                     />
                   </div>
                 </div>

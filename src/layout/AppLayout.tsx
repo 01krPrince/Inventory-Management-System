@@ -42,6 +42,7 @@ import SalseOrder from "../pages/pages/sales/salesOrder/SalseOrder.tsx";
 import Dispatch from "../pages/pages/sales/dispatch/Dispatch.tsx";
 import Estimate from "../pages/pages/sales/estimate/Estimate.tsx";
 import SaleReturnChallan from "../pages/pages/sales/saleReturnChallan/SaleReturnChallan.tsx";
+import OpeningStock from "../pages/pages/header/openingTransaction/OpeningStock.tsx";
 
 const useSidebar = () => ({
   isExpanded: false,
@@ -89,6 +90,78 @@ const ComponentMap: { [key: string]: React.FC } = {
   "/dispatch": Dispatch,
   "/estimate": Estimate,
   "/sales-return-challan": SaleReturnChallan,
+
+  "/opening-stock": OpeningStock,
+  "/opening-outstanding-customer": () => (
+    <div className="p-10 text-center">
+      <h1 className="text-3xl font-bold text-[#003f6b] dark:text-white mb-4">
+        Opening Outstanding Bills - Customer
+      </h1>
+      <p className="text-gray-600 dark:text-gray-400">
+        This opening transaction page is under development.
+      </p>
+    </div>
+  ),
+  "/opening-outstanding-vendor": () => (
+    <div className="p-10 text-center">
+      <h1 className="text-3xl font-bold text-[#003f6b] dark:text-white mb-4">
+        Opening Outstanding Bills - Vendor
+      </h1>
+      <p className="text-gray-600 dark:text-gray-400">
+        This opening transaction page is under development.
+      </p>
+    </div>
+  ),
+  "/opening-financials": () => (
+    <div className="p-10 text-center">
+      <h1 className="text-3xl font-bold text-[#003f6b] dark:text-white mb-4">
+        Opening Financials
+      </h1>
+      <p className="text-gray-600 dark:text-gray-400">
+        This opening transaction page is under development.
+      </p>
+    </div>
+  ),
+  "/opening-leaves": () => (
+    <div className="p-10 text-center">
+      <h1 className="text-3xl font-bold text-[#003f6b] dark:text-white mb-4">
+        Opening Leaves
+      </h1>
+      <p className="text-gray-600 dark:text-gray-400">
+        This opening transaction page is under development.
+      </p>
+    </div>
+  ),
+  "/opening-stock-barcode": () => (
+    <div className="p-10 text-center">
+      <h1 className="text-3xl font-bold text-[#003f6b] dark:text-white mb-4">
+        Opening Stock - Barcode
+      </h1>
+      <p className="text-gray-600 dark:text-gray-400">
+        This opening transaction page is under development.
+      </p>
+    </div>
+  ),
+  "/opening-stock-fixed-asset": () => (
+    <div className="p-10 text-center">
+      <h1 className="text-3xl font-bold text-[#003f6b] dark:text-white mb-4">
+        Opening Stock - Fixed Asset
+      </h1>
+      <p className="text-gray-600 dark:text-gray-400">
+        This opening transaction page is under development.
+      </p>
+    </div>
+  ),
+  "/opening-pos-customer": () => (
+    <div className="p-10 text-center">
+      <h1 className="text-3xl font-bold text-[#003f6b] dark:text-white mb-4">
+        Opening POS Customer
+      </h1>
+      <p className="text-gray-600 dark:text-gray-400">
+        This opening transaction page is under development.
+      </p>
+    </div>
+  ),
   "/fallback": () => (
     <div className="p-6 mt-6 bg-gray-100 dark:bg-gray-800 rounded-lg shadow text-center">
       <p className="text-gray-600 dark:text-gray-300 font-medium">

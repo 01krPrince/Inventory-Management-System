@@ -606,8 +606,6 @@ const CounterMaster: React.FC<CounterMasterProps> = ({
         </div>
       </div>
 
-      {/* --- NESTED MODALS --- */}
-
       {/* 1. Location Master Popup */}
       {isLocationMasterOpen && (
         <div

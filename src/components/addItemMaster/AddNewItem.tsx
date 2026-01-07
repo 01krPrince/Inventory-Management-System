@@ -14,6 +14,8 @@ import Attachment from "../Attachment";
 import UnderGroup from "./UnderGroup";
 import StockUnit from "./StockUnit";
 
+import { ItemFormData, ItemApiData, CustomWarranty } from "./models/ItemModel";
+
 import {
   CategoryData,
   BrandData,
@@ -33,7 +35,6 @@ import {
   SalesAndPurchaseGL,
 } from "./api/saleAndPurchaseGL";
 
-import { ItemFormData, ItemApiData } from "./models/ItemModel";
 import ChartOfAccounts from "../ChartOfAccount";
 import { GstClassificationForm } from "../GstClassificationForm";
 import Dropdown, { ColumnDef } from "../Dropdown";
@@ -123,6 +124,12 @@ const INITIAL_DATA: ItemFormData = {
   stockUnit: "",
   gstClassification: "",
   profileImage: null,
+
+  warrantyEnabled: false,
+  warranty1YearPrice: "",
+  warranty2YearPrice: "",
+  warranty3YearPrice: "",
+  customWarranties: [],
 
   // Advance Info
   category: "",
@@ -661,7 +668,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
               />
             </div>
           </div>
-
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4 md:col-span-3">
               <FormLabel required>Name</FormLabel>
@@ -788,6 +794,113 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
           </label>
         </div>
       </div>
+    </div>
+  );
+
+  const renderWarrantySection = () => (
+    <div className="bg-white border rounded-lg p-6 shadow-sm mt-6">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-sm font-semibold">Warranty</h3>
+        <ToggleSwitch
+          name="warrantyEnabled"
+          checked={formData.warrantyEnabled}
+          onChange={handleInputChange}
+        />
+      </div>
+
+      {formData.warrantyEnabled && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-3 gap-4">
+            <InputField
+              label="1 Year Warranty Price"
+              name="warranty1YearPrice"
+              value={formData.warranty1YearPrice}
+              onChange={handleInputChange}
+            />
+            <InputField
+              label="2 Year Warranty Price"
+              name="warranty2YearPrice"
+              value={formData.warranty2YearPrice}
+              onChange={handleInputChange}
+            />
+            <InputField
+              label="3 Year Warranty Price"
+              name="warranty3YearPrice"
+              value={formData.warranty3YearPrice}
+              onChange={handleInputChange}
+            />
+          </div>
+
+          <div>
+            <h4 className="text-xs font-semibold mb-2">Custom Warranties</h4>
+
+            {formData.customWarranties.map(
+              (cw: CustomWarranty, idx: number) => (
+                <div key={idx} className="grid grid-cols-3 gap-3 mb-2">
+                  <input
+                    type="text"
+                    placeholder="Duration (e.g. 18 Months)"
+                    value={cw.duration}
+                    onChange={(e) => {
+                      const updated = [...formData.customWarranties];
+                      updated[idx].duration = e.target.value;
+                      setFormData((prev) => ({
+                        ...prev,
+                        customWarranties: updated,
+                      }));
+                    }}
+                    className="border rounded px-2 py-1 text-sm"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Price"
+                    value={cw.price}
+                    onChange={(e) => {
+                      const updated = [...formData.customWarranties];
+                      updated[idx].price = e.target.value;
+                      setFormData((prev) => ({
+                        ...prev,
+                        customWarranties: updated,
+                      }));
+                    }}
+                    className="border rounded px-2 py-1 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        customWarranties: prev.customWarranties.filter(
+                          (_, i) => i !== idx
+                        ),
+                      }));
+                    }}
+                    className="text-red-600 text-sm"
+                  >
+                    Remove
+                  </button>
+                </div>
+              )
+            )}
+
+            <button
+              type="button"
+              onClick={() =>
+                setFormData((prev) => ({
+                  ...prev,
+                  customWarranties: [
+                    ...prev.customWarranties,
+                    { duration: "", price: "" },
+                  ],
+                }))
+              }
+              className="text-[#0c5888] text-sm mt-2"
+            >
+              + Add Custom Warranty
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -1285,7 +1398,12 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
         </div>
 
         <div className="p-6 bg-white h-[50vh] overflow-y-scroll">
-          {activeStep === 0 && renderBasicDetails()}
+          {activeStep === 0 && (
+            <>
+              {renderBasicDetails()}
+              {renderWarrantySection()}
+            </>
+          )}
           {activeStep === 1 && renderAdvanceInfo()}
           {activeStep === 2 && saleConfig()}
           {activeStep === 3 && purchageConfig()}

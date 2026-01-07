@@ -6,6 +6,12 @@ export interface SuggestedItem {
   itemId: string;
 }
 
+export interface CustomWarranty {
+  duration: string;
+  price: string;
+}
+
+
 export interface ItemFormData {
   // Basic Details
   itemMode: string;
@@ -14,6 +20,13 @@ export interface ItemFormData {
   stockUnit: string;
   gstClassification: string;
   profileImage: string | null;
+
+  // 🔹 WARRANTY (NEW)
+  warrantyEnabled: boolean;
+  warranty1YearPrice: string;
+  warranty2YearPrice: string;
+  warranty3YearPrice: string;
+  customWarranties: CustomWarranty[];
 
   // Advance Info
   category: string;
@@ -67,6 +80,7 @@ export interface ItemFormData {
   suggestedItems: SuggestedItem[];
 }
 
+
 // --- 2. API TYPES (Used by Service/Server) ---
 export interface ItemApiData {
   _id?: string;
@@ -75,6 +89,14 @@ export interface ItemApiData {
   under_group: string | null;
   stock_unit: string | null;
   gst_classfication: string | null;
+
+  // 🔹 WARRANTY (NEW)
+  warranty_enabled?: boolean;
+  warranty_1year_price?: string | null;
+  warranty_2year_price?: string | null;
+  warranty_3year_price?: string | null;
+  custom_warranties?: CustomWarranty[];
+
   category: string | null;
   brand: string | null;
   type: string | null;
@@ -83,6 +105,7 @@ export interface ItemApiData {
   auto_barcode: string | null;
   gst_applicable: boolean;
   print_barcode: boolean;
+
   sale_desc: string | null;
   sales_gl: string | null;
   mrp: string | null;
@@ -93,12 +116,14 @@ export interface ItemApiData {
   rate_factor: string | null;
   sale_discount: string | null;
   sale_discount_percent: string | null;
+
   purch_desc: string | null;
   purchase_gl: string | null;
   purchase_rate: string | null;
   purchase_ratefactor: string | null;
   purchase_discount: string | null;
   purchase_discount_percent: string | null;
+
   item_workflow: string | null;
   procurement_type: string | null;
   minimum_level: string | null;
@@ -114,9 +139,11 @@ export interface ItemApiData {
   exclude_cvss_applist: boolean;
   ask_udf_in_document: string | null;
   attachment: string | null;
+
   code?: string | null;
   __v?: number;
 }
+
 
 export interface ItemResponse {
   success: boolean;

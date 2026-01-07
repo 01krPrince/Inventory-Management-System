@@ -100,7 +100,7 @@ interface LocationMasterProps {
   onSuccess?: (data?: any) => void;
   onSelect?: (locationName: string) => void;
   initialData?: LocationMasterType | null;
-  index?: number; // ADDED: Index Prop
+  index?: number;
 }
 
 const partyColumns: ColumnDef<Customer>[] = [
@@ -115,25 +115,20 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
   onSuccess,
   onSelect,
   initialData,
-  index = 50, // Default Index
+  index = 50,
 }) => {
-  // Logic: Calculate Z-Index Layers
-  const overlayZIndex = index + 10; // For this modal wrapper
-  const dropdownZIndex = overlayZIndex + 10; // For dropdowns inside this modal
-  const nestedModalZIndex = overlayZIndex + 20; // For the nested Customer modal
+  const overlayZIndex = index + 10;
+  const dropdownZIndex = overlayZIndex + 10;
+  const nestedModalZIndex = overlayZIndex + 20;
 
   const [activeStep, setActiveStep] = useState(0);
   const [formData, setFormData] = useState<any>(INITIAL_LOCATION_DATA);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Data for Dropdown
   const [customerList, setCustomerList] = useState<Customer[]>([]);
-
-  // State for Customer Modal (Create/Edit)
   const [editingRow, setEditingRow] = useState<Customer | null>(null);
   const [isCustomerFormOpen, setIsCustomerFormOpen] = useState(false);
 
-  // --- FUNCTION: Fetch Customers ---
   const loadCustomers = async () => {
     try {
       const result = await getAllCustomers();
@@ -147,12 +142,10 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
     }
   };
 
-  // --- EFFECT: Load Initial Data ---
   useEffect(() => {
     loadCustomers();
   }, []);
 
-  // --- EFFECT: Populate Form on Edit ---
   useEffect(() => {
     if (initialData) {
       setFormData({
@@ -195,7 +188,6 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
     </button>
   );
 
-  // --- Input Handler ---
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
@@ -204,7 +196,6 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
     setFormData((prev: any) => ({ ...prev, [name]: value }));
   };
 
-  // --- HANDLER: Open Customer Form (Stacked Modal) ---
   const handleCustomerActionClick = () => {
     if (formData.party) {
       const selectedCustomer = customerList.find(
@@ -221,20 +212,17 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
     setIsCustomerFormOpen(true);
   };
 
-  // --- HANDLER: Close Customer Form ---
   const handleCustomerFormClose = () => {
     setIsCustomerFormOpen(false);
     setEditingRow(null);
   };
 
-  // --- HANDLER: Customer Form Success ---
   const handleCustomerFormSuccess = async () => {
-    await loadCustomers(); // Refresh list to see new customer
+    await loadCustomers();
     setIsCustomerFormOpen(false);
     setEditingRow(null);
   };
 
-  // --- SUBMIT HANDLER (Location) ---
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
@@ -312,12 +300,10 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
     }
   };
 
-  // --- RENDERERS ---
   const renderBasicDetails = () => (
     <div className="bg-white border rounded-lg p-6 shadow-sm mt-4">
       <div className="grid grid-cols-12 gap-6">
         <div className="col-span-12 md:col-span-9 space-y-3">
-          {/* Name */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4 md:col-span-3">
               <FormLabel required>Name</FormLabel>
@@ -334,7 +320,6 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
             </div>
           </div>
 
-          {/* Code */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4 md:col-span-3">
               <FormLabel required>Code</FormLabel>
@@ -352,7 +337,6 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
             </div>
           </div>
 
-          {/* Party Dropdown */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4 md:col-span-3">
               <FormLabel>Party</FormLabel>
@@ -371,7 +355,6 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
                       party: item ? item.cust_name : "",
                     }))
                   }
-                  // Pass the Calculated Z-Index
                   zIndex={dropdownZIndex}
                 />
               </div>
@@ -388,7 +371,6 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
           </div>
         </div>
 
-        {/* Profile Image */}
         <div className="col-span-12 md:col-span-3 flex flex-col items-center">
           <div className="w-full max-w-[150px] h-[150px] bg-gray-100 border border-dashed border-gray-400 rounded relative flex flex-col items-center justify-center overflow-hidden mb-2">
             {formData.profileImage ? (
@@ -592,7 +574,6 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
     </div>
   );
 
-  // --- MAIN RENDER ---
   return (
     <>
       <div className="w-[40vw] flex flex-col bg-white h-[70vh]">
@@ -600,9 +581,14 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
           <h1 className="text-xl font-semibold tracking-wide">
             {initialData ? "EDIT LOCATION" : "NEW LOCATION"}
           </h1>
-          <div className="text-sm opacity-80">
-            Step {activeStep + 1} of {STEPS.length}
-          </div>
+          {/* Close button only in Header now */}
+          <button
+            onClick={onClose}
+            className="hover:text-[#cccaca] transition-colors focus:outline-none"
+            title="Close"
+          >
+            <X size={24} />
+          </button>
         </div>
 
         <div className="bg-gray-100 border-b overflow-x-auto shrink-0">
@@ -636,15 +622,20 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
           </div>
         </div>
 
-        {/* Scrollable Content Area */}
         <div className="p-6 overflow-y-auto flex-1">
           {activeStep === 0 && renderBasicDetails()}
           {activeStep === 1 && renderCompliance()}
           {activeStep === 2 && renderAddress()}
         </div>
 
-        <div className="bg-gray-50 px-6 py-4 border-t flex justify-between shrink-0">
-          <div>
+        <div className="bg-gray-50 px-6 py-4 border-t flex justify-between items-center shrink-0">
+          <div className="flex items-center gap-4">
+            {/* Step Counter moved here (Bottom Left) */}
+            <div className="text-sm font-medium text-gray-500">
+              Step {activeStep + 1} of {STEPS.length}
+            </div>
+
+            {/* Delete button (if visible) */}
             {initialData && initialData._id && (
               <button
                 type="button"
@@ -697,7 +688,6 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
         </div>
       </div>
 
-      {/* 2. Customer Form Modal (Stacked on top) */}
       {isCustomerFormOpen && (
         <div
           className="fixed inset-0 flex items-center justify-center bg-transparent backdrop-blur-sm p-4"
