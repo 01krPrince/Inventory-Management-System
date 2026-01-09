@@ -12,10 +12,10 @@ import Dropdown, { ColumnDef } from "./Dropdown";
 import {
   Customer,
   getAllCustomers,
-} from "../pages/pages/sales/customer/api/customerService";
+} from "../services/sales/customer/customerService";
 
 // --- Import Customer CRUD Component ---
-import CrudCustomer from "../pages/pages/sales/customer/pages/AddNewCustomer";
+import CrudCustomer from "../pages/pages/sales/customer/AddNewCustomer";
 
 // --- Import API Functions & Types ---
 import {

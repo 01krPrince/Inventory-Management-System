@@ -30,12 +30,12 @@ import { fetchGstClassifications } from "./api/gstservice";
 import { createItem, updateItem } from "./api/itemService";
 import { fetchUnderGroup } from "./api/underGroupservice";
 
-import {
-  fetchSalesAndPurchaseGL,
-  SalesAndPurchaseGL,
-} from "./api/saleAndPurchaseGL";
+// import {
+//   fetchSalesAndPurchaseGL,
+//   SalesAndPurchaseGL,
+// } from "./api/saleAndPurchaseGL";
 
-import ChartOfAccounts from "../ChartOfAccount";
+// import ChartOfAccounts from "../ChartOfAccount";
 import { GstClassificationForm } from "../GstClassificationForm";
 import Dropdown, { ColumnDef } from "../Dropdown";
 
@@ -111,10 +111,10 @@ const brandColumns: ColumnDef<BrandData>[] = [
   { header: "Salesman", key: "salesman", width: "w-1/3" },
 ];
 
-const glColumns: ColumnDef<SalesAndPurchaseGL>[] = [
-  { header: "Code", key: "code", width: "w-24" },
-  { header: "Name", key: "name", width: "w-full" },
-];
+// const glColumns: ColumnDef<SalesAndPurchaseGL>[] = [
+//   { header: "Code", key: "code", width: "w-24" },
+//   { header: "Name", key: "name", width: "w-full" },
+// ];
 
 const INITIAL_DATA: ItemFormData = {
   // Basic Details
@@ -281,12 +281,12 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
   const [isBrandOpen, setIsBrandOpen] = useState(false);
   const [isItemCategory, setIsItemCategory] = useState(false);
   const [isGstModalOpen, setIsGstModalOpen] = useState(false);
-  const [showChartOfAccounts, setShowChartOfAccounts] = useState(false);
+  // const [showChartOfAccounts, setShowChartOfAccounts] = useState(false);
 
   const [gstInitialData, setGstInitialData] = useState<any>(undefined);
-  const [coaFormData, setCoaFormData] = useState<SalesAndPurchaseGL | null>(
-    null
-  );
+  // const [coaFormData, setCoaFormData] = useState<SalesAndPurchaseGL | null>(
+  //   null
+  // );
   const [underGroupInitialData, setUnderGroupInitialData] = useState<
     UnderGroupData | undefined
   >(undefined);
@@ -294,11 +294,11 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
     StockUnitData | undefined
   >(undefined);
 
-  const [activeGLType, setActiveGLType] = useState<"sales" | "purchase" | null>(
-    null
-  );
+  // const [activeGLType, setActiveGLType] = useState<"sales" | "purchase" | null>(
+  //   null
+  // );
 
-  const [glDataFull, setGlDataFull] = useState<SalesAndPurchaseGL[]>([]);
+  // const [glDataFull, setGlDataFull] = useState<SalesAndPurchaseGL[]>([]);
   const [categories, setCategories] = useState<CategoryData[]>([]);
   const [underGroup, setUnderGroup] = useState<UnderGroupData[]>([]);
   const [brands, setBrands] = useState<BrandData[]>([]);
@@ -353,14 +353,14 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
           brandsData,
           stockUnitsData,
           gstData,
-          glDataResult,
+          // glDataResult,
         ] = await Promise.all([
           fetchUnderGroup(),
           fetchCategories(),
           fetchBrands(),
           fetchStockUnits(),
           fetchGstClassifications(),
-          fetchSalesAndPurchaseGL(),
+          // fetchSalesAndPurchaseGL(),
         ]);
 
         setUnderGroup(underGroupData || []);
@@ -369,9 +369,9 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
         setStockUnitList(stockUnitsData || []);
         setGstList(gstData || []);
 
-        if (glDataResult && Array.isArray(glDataResult)) {
-          setGlDataFull(glDataResult);
-        }
+        // if (glDataResult && Array.isArray(glDataResult)) {
+        //   setGlDataFull(glDataResult);
+        // }
       } catch (error) {
         console.error("Failed to load dropdown data", error);
       }
@@ -604,48 +604,48 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
     setShowStockUnit(true);
   };
 
-  const handleOpenCOA = (type: "sales" | "purchase", currentValue: string) => {
-    setActiveGLType(type);
+  // const handleOpenCOA = (type: "sales" | "purchase", currentValue: string) => {
+  //   setActiveGLType(type);
 
-    if (currentValue && currentValue.trim() !== "") {
-      const selectedItem = glDataFull.find(
-        (item) => item.name === currentValue
-      );
+  //   if (currentValue && currentValue.trim() !== "") {
+  //     const selectedItem = glDataFull.find(
+  //       (item) => item.name === currentValue
+  //     );
 
-      if (selectedItem) {
-        setCoaFormData(selectedItem);
-      } else {
-        setCoaFormData({ name: currentValue } as SalesAndPurchaseGL);
-      }
-    } else {
-      setCoaFormData(null);
-    }
+  //     if (selectedItem) {
+  //       setCoaFormData(selectedItem);
+  //     } else {
+  //       setCoaFormData({ name: currentValue } as SalesAndPurchaseGL);
+  //     }
+  //   } else {
+  //     setCoaFormData(null);
+  //   }
 
-    setShowChartOfAccounts(true);
-  };
+  //   setShowChartOfAccounts(true);
+  // };
 
-  const handleSaveCOA = (savedData: SalesAndPurchaseGL) => {
-    const savedName = savedData?.name;
+  // const handleSaveCOA = (savedData: SalesAndPurchaseGL) => {
+  //   const savedName = savedData?.name;
 
-    if (savedName) {
-      setGlDataFull((prev) => {
-        const exists = prev.find((item) => item.name === savedName);
-        if (exists) {
-          return prev.map((item) =>
-            item.name === savedName ? savedData : item
-          );
-        }
-        return [...prev, savedData];
-      });
+  //   if (savedName) {
+  //     setGlDataFull((prev) => {
+  //       const exists = prev.find((item) => item.name === savedName);
+  //       if (exists) {
+  //         return prev.map((item) =>
+  //           item.name === savedName ? savedData : item
+  //         );
+  //       }
+  //       return [...prev, savedData];
+  //     });
 
-      if (activeGLType === "sales") {
-        setFormData((prev) => ({ ...prev, salesGL: savedName }));
-      } else if (activeGLType === "purchase") {
-        setFormData((prev) => ({ ...prev, purchaseGL: savedName }));
-      }
-    }
-    setShowChartOfAccounts(false);
-  };
+  //     if (activeGLType === "sales") {
+  //       setFormData((prev) => ({ ...prev, salesGL: savedName }));
+  //     } else if (activeGLType === "purchase") {
+  //       setFormData((prev) => ({ ...prev, purchaseGL: savedName }));
+  //     }
+  //   }
+  //   setShowChartOfAccounts(false);
+  // };
 
   const renderBasicDetails = () => (
     <div className="bg-white border rounded-lg p-6 shadow-sm mt-4">
@@ -1040,44 +1040,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
     <div className="bg-white border rounded-lg p-6 shadow-sm mt-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="space-y-3">
-          <div>
-            <FormLabel>Description</FormLabel>
-            <textarea
-              name="salesDescription"
-              value={formData.salesDescription}
-              onChange={handleInputChange}
-              className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none"
-              rows={3}
-            />
-          </div>
-          <div className="mb-3">
-            <FormLabel required>Sales GL</FormLabel>
-            <div className="flex w-full">
-              <div className="flex-1 min-w-0">
-                <Dropdown
-                  data={glDataFull}
-                  columns={glColumns}
-                  value={formData.salesGL}
-                  valueKey="name"
-                  onChange={(item) =>
-                    handleDropdownChange("salesGL", item?.name || "")
-                  }
-                  placeholder="Select..."
-                />
-              </div>
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleOpenCOA("sales", formData.salesGL);
-                }}
-                className="bg-[#0c5888] text-white px-2 rounded-r hover:bg-[#0a4a70] transition-colors ml-[1px]"
-              >
-                <Edit className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-        <div className="space-y-3">
           <div className="grid grid-cols-2 gap-4">
             <InputField
               label="MRP"
@@ -1131,6 +1093,45 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
             />
           </div>
         </div>
+
+        <div className="space-y-3">
+          <div>
+            <FormLabel>Description</FormLabel>
+            <textarea
+              name="salesDescription"
+              value={formData.salesDescription}
+              onChange={handleInputChange}
+              className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none"
+              rows={3}
+            />
+          </div>
+          {/* <div className="mb-3">
+            <FormLabel required>Sales GL</FormLabel>
+            <div className="flex w-full">
+              <div className="flex-1 min-w-0">
+                <Dropdown
+                  data={glDataFull}
+                  columns={glColumns}
+                  value={formData.salesGL}
+                  valueKey="name"
+                  onChange={(item) =>
+                    handleDropdownChange("salesGL", item?.name || "")
+                  }
+                  placeholder="Select..."
+                />
+              </div>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleOpenCOA("sales", formData.salesGL);
+                }}
+                className="bg-[#0c5888] text-white px-2 rounded-r hover:bg-[#0a4a70] transition-colors ml-[1px]"
+              >
+                <Edit className="w-4 h-4" />
+              </button>
+            </div>
+          </div> */}
+        </div>
       </div>
     </div>
   );
@@ -1139,45 +1140,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
     return (
       <div className="bg-white border rounded-lg p-6 shadow-sm mt-4">
         <div className="grid grid-cols-12 gap-8">
-          <div className="col-span-12 md:col-span-7 space-y-6">
-            <div>
-              <FormLabel>Description</FormLabel>
-              <textarea
-                name="purchaseDescription"
-                value={formData.purchaseDescription}
-                onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none"
-                rows={3}
-              />
-            </div>
-
-            <div className="mb-3">
-              <FormLabel required>Purchase GL</FormLabel>
-              <div className="flex w-full">
-                <div className="flex-1 min-w-0">
-                  <Dropdown
-                    data={glDataFull}
-                    columns={glColumns}
-                    value={formData.purchaseGL}
-                    valueKey="name"
-                    onChange={(item) =>
-                      handleDropdownChange("purchaseGL", item?.name || "")
-                    }
-                    placeholder="Select..."
-                  />
-                </div>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleOpenCOA("purchase", formData.purchaseGL);
-                  }}
-                  className="bg-[#0c5888] text-white px-2 rounded-r hover:bg-[#0a4a70] transition-colors ml-[1px]"
-                >
-                  <Edit className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </div>
           <div className="col-span-12 md:col-span-5 space-y-3">
             <InputField
               label="Purchase Rate"
@@ -1203,6 +1165,45 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
               value={formData.purchaseDiscount2}
               onChange={handleInputChange}
             />
+          </div>
+          <div className="col-span-12 md:col-span-7 space-y-6">
+            <div>
+              <FormLabel>Description</FormLabel>
+              <textarea
+                name="purchaseDescription"
+                value={formData.purchaseDescription}
+                onChange={handleInputChange}
+                className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none"
+                rows={3}
+              />
+            </div>
+
+            {/* <div className="mb-3">
+              <FormLabel required>Purchase GL</FormLabel>
+              <div className="flex w-full">
+                <div className="flex-1 min-w-0">
+                  <Dropdown
+                    data={glDataFull}
+                    columns={glColumns}
+                    value={formData.purchaseGL}
+                    valueKey="name"
+                    onChange={(item) =>
+                      handleDropdownChange("purchaseGL", item?.name || "")
+                    }
+                    placeholder="Select..."
+                  />
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleOpenCOA("purchase", formData.purchaseGL);
+                  }}
+                  className="bg-[#0c5888] text-white px-2 rounded-r hover:bg-[#0a4a70] transition-colors ml-[1px]"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+              </div>
+            </div> */}
           </div>
         </div>
       </div>
@@ -1538,7 +1539,7 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
         </div>
       )}
 
-      {showChartOfAccounts && (
+      {/* {showChartOfAccounts && (
         <div
           className="fixed inset-0 flex items-center justify-center bg-black/50 p-4"
           style={{ zIndex: overlayZIndex }}
@@ -1552,7 +1553,7 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
             />
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 };

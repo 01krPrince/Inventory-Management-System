@@ -1,15 +1,21 @@
-// 1. Interface Definition (was in ../models/AddCustomerPayload)
-export interface CustomerPayload {
+export interface ContactPerson {
+  name: string;
+  email: string;
+  phone: string;
+  designation: string;
+}
+
+export interface FormData {
+  // Basic Details
   gst_no: string;
   cust_name: string;
   print_name: string;
   identification: string;
-  code: string;
   under_ledger: string;
   cust_comman: boolean;
   is_sub_customer: boolean;
   under_customer: boolean | string;
-  profile_photo: string | null;
+  profileImage?: string | null;
 
   // Statutory
   gst: string;
@@ -22,7 +28,7 @@ export interface CustomerPayload {
   distance: number;
   tds_on_gst_applicable: boolean;
 
-  // Billing Address
+  // Communication (Billing)
   address: string;
   country: string;
   state: string;
@@ -34,7 +40,7 @@ export interface CustomerPayload {
   latitude: string;
   route_map: string;
 
-  // Shipping Address
+  // Communication (Shipping)
   address_ship: string;
   country_ship: string;
   state_ship: string;
@@ -46,7 +52,7 @@ export interface CustomerPayload {
   latitude_ship: string;
   route_map_ship: string;
 
-  // Social
+  // Social Profile
   website: string;
   facebook: string;
   skype: string;
@@ -62,17 +68,18 @@ export interface CustomerPayload {
   credit_limit: string;
   max_credit_days: string;
   interest_rate_yearly: string;
-  customer_on_watch: string;
+  customer_on_watch: string | boolean;
   firm_status: string;
   territory: string;
   customer_category: string;
-  contact_person: string;
 
-  // Bank
+  // Bank Detail
   ifsc_code: string;
   account_number: string;
   bank_name: string;
   branch: string;
 
-  attachment: string | null;
+  // Contact Persons
+  contact_person: string;
+  contact: ContactPerson[];
 }

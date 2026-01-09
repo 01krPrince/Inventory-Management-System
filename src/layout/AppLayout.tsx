@@ -6,7 +6,6 @@ import AppFooter from "./AppFooter";
 import { TabBar } from "./TabBar";
 import { AppSidebar } from "./AppSidebar";
 import Welcome from "../pages/pages/Welcome";
-import Customer from "../pages/pages/sales/customer/pages/Customer.tsx";
 import PriceList from "../pages/pages/sales/salesPriceList/PriceList";
 import PartySalesDiscountRate from "../pages/pages/sales/salesPriceList/PartySalesDiscountRate";
 import BrandwiseDiscountCharges from "../pages/pages/sales/salesPriceList/BrandwiseDiscountCharges";
@@ -43,6 +42,7 @@ import Dispatch from "../pages/pages/sales/dispatch/Dispatch.tsx";
 import Estimate from "../pages/pages/sales/estimate/Estimate.tsx";
 import SaleReturnChallan from "../pages/pages/sales/saleReturnChallan/SaleReturnChallan.tsx";
 import OpeningStock from "../pages/pages/header/openingTransaction/OpeningStock.tsx";
+import CustomerDirectory from "../pages/pages/sales/customer/Customer.tsx";
 
 const useSidebar = () => ({
   isExpanded: false,
@@ -53,7 +53,7 @@ const Backdrop = () => null;
 
 const ComponentMap: { [key: string]: React.FC } = {
   "/welcome": Welcome,
-  "/customer": Customer,
+  "/customer": CustomerDirectory,
   "/price-list": PriceList,
   "/party-sale-discount-rate": PartySalesDiscountRate,
   "/brandwise-discount-charges": BrandwiseDiscountCharges,

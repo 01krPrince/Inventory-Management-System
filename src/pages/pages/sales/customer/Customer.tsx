@@ -21,29 +21,28 @@ import {
 import {
   handlePrint,
   handleExport,
-} from "../../../../../components/function/functions.tsx";
-
-import { PrintIcon, ExportIcon } from "../../../../../components/icons.tsx";
+} from "../../../../components/function/functions.tsx";
+import {
+  PrintIcon,
+  ExportIcon,
+} from "../../../../components/function/functions.tsx";
 import CrudCustomer from "./AddNewCustomer.tsx";
-// --- SIMULATING THE API SERVICE IMPORT ---
 import {
   getAllCustomers as fetchAllCustomers,
   customerDeleteApi,
-} from "../api/customerService.ts";
+} from "../../../../services/sales/customer/customerService.ts";
 
-// --- IMPORT YOUR COMPONENT ---
-// Ensure this path points to your AddNewCustomer.tsx file
-("./AddNewCustomer.tsx");
-
-// --- TYPE DEFINITIONS ---
+// --- UPDATED INTERFACE ---
 interface Customer {
-  _id: string; // Used as the unique ID
+  _id: string;
   cust_name: string;
   print_name: string;
   gst_no: string;
   identification: string;
   code: string;
-  under_ledger: string;
+  // Updated: under_ledger can be an object based on your screenshot
+  under_ledger: string | { _id: string; name: string; [key: string]: any };
+
   gst: string;
   registration_date: string;
   cin?: string;
@@ -122,20 +121,41 @@ const useCustomerTableLogic = (
 
   const sortedAndFilteredData = useMemo(() => {
     let sortableData = [...data];
-    let filteredData = sortableData.filter((item) =>
-      Object.values(item).some((val) =>
-        String(val).toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    );
 
+    // Filter Logic
+    let filteredData = sortableData.filter((item) => {
+      // Helper to safely get string value for search
+      const getStringValue = (val: any): string => {
+        if (val && typeof val === "object" && val.name) return String(val.name); // Handle under_ledger object
+        return String(val);
+      };
+
+      return Object.values(item).some((val) =>
+        getStringValue(val).toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    });
+
+    // Sorting Logic
     if (sortConfig.key) {
       filteredData.sort((a, b) => {
         const sortKey = sortConfig.key!;
-        const aVal = a[sortKey];
-        const bVal = b[sortKey];
+        let aVal = a[sortKey];
+        let bVal = b[sortKey];
 
-        if (aVal < bVal) return sortConfig.direction === "ascending" ? -1 : 1;
-        if (aVal > bVal) return sortConfig.direction === "ascending" ? 1 : -1;
+        // --- FIX FOR SORTING NESTED OBJECTS (under_ledger) ---
+        if (sortKey === "under_ledger") {
+          if (typeof aVal === "object" && aVal !== null)
+            aVal = (aVal as any).name;
+          if (typeof bVal === "object" && bVal !== null)
+            bVal = (bVal as any).name;
+        }
+
+        // Convert to lowercase string for comparison
+        const aStr = String(aVal || "").toLowerCase();
+        const bStr = String(bVal || "").toLowerCase();
+
+        if (aStr < bStr) return sortConfig.direction === "ascending" ? -1 : 1;
+        if (aStr > bStr) return sortConfig.direction === "ascending" ? 1 : -1;
         return 0;
       });
     }
@@ -739,15 +759,26 @@ export default function CustomerDirectory() {
                     />
                   </td>
 
-                  {/* Data Cells (N/A Check) */}
+                  {/* Data Cells (With Object Checking Logic) */}
                   {currentColumns.map((col: Column, colIndex: number) => {
                     const value = row[col.key as keyof DataItem];
-                    const displayValue =
-                      value === null ||
-                      value === undefined ||
-                      String(value).trim() === ""
-                        ? "N/A"
-                        : String(value);
+
+                    // --- FIX: Check if value is object (under_ledger) ---
+                    let displayValue = "N/A";
+
+                    if (
+                      col.key === "under_ledger" &&
+                      typeof value === "object" &&
+                      value !== null
+                    ) {
+                      displayValue = (value as any).name || "N/A";
+                    } else if (
+                      value !== null &&
+                      value !== undefined &&
+                      String(value).trim() !== ""
+                    ) {
+                      displayValue = String(value);
+                    }
 
                     return (
                       <td

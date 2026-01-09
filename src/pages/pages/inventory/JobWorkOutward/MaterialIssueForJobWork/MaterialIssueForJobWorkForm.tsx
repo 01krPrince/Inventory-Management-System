@@ -9,7 +9,7 @@ import {
   Plus,
 } from "lucide-react";
 import DocumentInventoryModal from "../../../../../components/DocumentCategoryInventory";
-import CrudCustomer from "../../../sales/customer/pages/AddNewCustomer";
+import CrudCustomer from "../../../sales/customer/AddNewCustomer";
 import AddNewItem from "../../../../../components/addItemMaster/AddNewItem";
 
 // --- Types ---

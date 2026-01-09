@@ -3,7 +3,7 @@ import { X, FileText, EditIcon } from "lucide-react";
 import Dropdown, { ColumnDef } from "./Dropdown";
 
 import { LocationMaster } from "./LocationMaster";
-import CrudCustomer from "../pages/pages/sales/customer/pages/AddNewCustomer";
+import CrudCustomer from "../pages/pages/sales/customer/AddNewCustomer";
 import NameAndCodeMaster, { NameAndCodeData } from "./NameAndCodeComponent";
 import POSCustomerMaster from "./POSCustomerMaster";
 import TenderTypeMaster from "./TenderTypeMaster";
@@ -16,7 +16,7 @@ import {
 import {
   Customer,
   getAllCustomers,
-} from "../pages/pages/sales/customer/api/customerService";
+} from "../services/sales/customer/customerService";
 
 // --- Interfaces ---
 

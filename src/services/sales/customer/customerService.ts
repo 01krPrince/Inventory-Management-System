@@ -1,6 +1,6 @@
-import api from "../../../../../services/api";
+import api from "../../api";
 import { AxiosResponse } from "axios";
-import { CustomerPayload } from "../models/AddCustomerPayload";
+import { FormData } from "./AddCustomerPayload";
 
 /* ==========================
    Interfaces
@@ -45,7 +45,7 @@ export const getAllCustomers = async (): Promise<Customer[]> => {
 ========================== */
 
 export const addCustomer = async (
-  payload: CustomerPayload
+  payload: FormData
 ): Promise<{ success: boolean; message: string }> => {
   try {
     const response = await api.post("/customer/add-customer", payload);
@@ -112,7 +112,7 @@ export const fetchBankDetailsApi = async (ifscCode: string) => {
 ========================== */
 export const customerUpdateApi = async (
   customerId: string,
-  payload: CustomerPayload
+  payload: FormData
 ) => {
   if (!customerId) {
     throw new Error("Customer ID is required");

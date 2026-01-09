@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { CalenderIcon } from "../../../../components/icons";
-import CrudCustomer from "../../sales/customer/pages/AddNewCustomer";
+import CrudCustomer from "../../sales/customer/AddNewCustomer";
 import { EditIcon, ArrowLeft, RefreshCw } from "lucide-react";
 
 // --- IMPORTS ---
@@ -19,7 +19,7 @@ import { LocationMaster } from "../../../../components/LocationMaster";
 import {
   getAllCustomers,
   Customer,
-} from "../../sales/customer/api/customerService";
+} from "../../../../services/sales/customer/customerService";
 
 import Dropdown, { ColumnDef } from "../../../../components/Dropdown";
 
