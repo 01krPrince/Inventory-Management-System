@@ -262,9 +262,9 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
       )}
 
       {/* === MAIN CONTAINER === */}
-      <div className="bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden transition-all duration-300">
+      <div className="bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden transition-all duration-300 my-0">
         {/* --- HEADER --- */}
-        <div className="flex items-center justify-between px-4 py-2 bg-white border-b border-gray-100">
+        <div className="flex items-center justify-between  px-4 py-1 bg-white border-b border-gray-100">
           <div
             className="flex items-center gap-2 cursor-pointer"
             onClick={() => setIsOpen(!isOpen)}

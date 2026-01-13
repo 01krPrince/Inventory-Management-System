@@ -1,6 +1,6 @@
 // src/models/ItemModel.ts
 
-// --- 1. UI TYPES (Used by React Component) ---
+// --- 1. UI TYPES (Used by React Component State) ---
 export interface SuggestedItem {
   id: number;
   itemId: string;
@@ -9,19 +9,19 @@ export interface SuggestedItem {
 export interface CustomWarranty {
   duration: string;
   price: string;
+  _id?: string;
 }
-
 
 export interface ItemFormData {
   // Basic Details
   itemMode: string;
   item_name: string;
-  underGroup: string;
-  stockUnit: string;
+  underGroup: string;       // Stores the _ID string
+  stockUnit: string;        // Stores the _ID string
   gstClassification: string;
   profileImage: string | null;
 
-  // 🔹 WARRANTY (NEW)
+  // Warranty
   warrantyEnabled: boolean;
   warranty1YearPrice: string;
   warranty2YearPrice: string;
@@ -29,8 +29,8 @@ export interface ItemFormData {
   customWarranties: CustomWarranty[];
 
   // Advance Info
-  category: string;
-  brand: string;
+  category: string;         // Stores the _ID string
+  brand: string;            // Stores the _ID string
   type: string;
   unitOption: string;
   barCode: string;
@@ -73,32 +73,43 @@ export interface ItemFormData {
   skipLoyaltyPoints: boolean;
   excludeInCvss: boolean;
 
-  // UDF
-  askUdfInDocument: boolean;
-
   // Suggested Items
   suggestedItems: SuggestedItem[];
 }
 
+// --- 2. API TYPES (Used by Service/Server response) ---
+// These interfaces define what the Objects inside the response look like
+export interface IdNameObject {
+  _id: string;
+  name?: string;
+  item_name?: string;
+  code?: string;
+}
 
-// --- 2. API TYPES (Used by Service/Server) ---
 export interface ItemApiData {
   _id?: string;
+  id?: string;
+  
+  // Basic
   item_mode: string | null;
-  item_name: string | null;
-  under_group: string | null;
-  stock_unit: string | null;
-  gst_classfication: string | null;
+  name: string | null; 
+  
+  // Relational fields are Objects in the GET response
+  under_group: IdNameObject | null;
+  stock_unit: IdNameObject | null;
+  gst_classfication: string | null; // Note: Typo 'classfication' matches server
 
-  // 🔹 WARRANTY (NEW)
-  warranty_enabled?: boolean;
-  warranty_1year_price?: string | null;
-  warranty_2year_price?: string | null;
-  warranty_3year_price?: string | null;
-  custom_warranties?: CustomWarranty[];
+  // Warranty
+  warranty?: boolean;
+  firstyearwarranty?: string | null;
+  secyearwarranty?: string | null;
+  thirdyearwarranty?: string | null;
+  customWarranty?: CustomWarranty[];
 
-  category: string | null;
-  brand: string | null;
+  // Advance
+  category: IdNameObject["_id"] | null;
+  brand: IdNameObject | null;
+  
   type: string | null;
   unit_option: string | null;
   barcode: string | null;
@@ -106,44 +117,52 @@ export interface ItemApiData {
   gst_applicable: boolean;
   print_barcode: boolean;
 
+  // Sales
   sale_desc: string | null;
   sales_gl: string | null;
-  mrp: string | null;
-  minimum_price: string | null;
-  sales_rate: string | null;
-  wholesale_rate: string | null;
-  dealer_factor: string | null;
-  rate_factor: string | null;
-  sale_discount: string | null;
-  sale_discount_percent: string | null;
+  mrp: string | number | null;
+  minimum_price: string | number | null;
+  sales_rate: string | number | null;
+  wholesale_rate: string | number | null;
+  dealer_factor: string | number | null;
+  rate_factor: string | number | null;
+  sale_discount: string | number | null;
+  sale_discount_percent: string | number | null;
 
+  // Purchase
   purch_desc: string | null;
   purchase_gl: string | null;
-  purchase_rate: string | null;
-  purchase_ratefactor: string | null;
-  purchase_discount: string | null;
-  purchase_discount_percent: string | null;
+  purchase_rate: string | number | null;
+  purchase_ratefactor: string | number | null;
+  purchase_discount: string | number | null;
+  purchase_discount_percent: string | number | null;
 
+  // Attributes
   item_workflow: string | null;
   procurement_type: string | null;
-  minimum_level: string | null;
-  maximum_level: string | null;
+  minimum_level: string | number | null;
+  maximum_level: string | number | null;
   weighscale_mapping_code: string | null;
   rackbin_no: string | null;
   add_in_item_set_template: string | null;
+  
+  track_inventory?: boolean;
   batch_wise_inventory: boolean;
   batch_wise_rate: boolean;
+  
   drug_type: string | null;
   salt: string | null;
   skip_item_from_loyalty: string | null;
   exclude_cvss_applist: boolean;
   ask_udf_in_document: string | null;
+  
   attachment: string | null;
+
+  suggested_cat?: { itemId: string; _id?: string }[]; 
 
   code?: string | null;
   __v?: number;
 }
-
 
 export interface ItemResponse {
   success: boolean;

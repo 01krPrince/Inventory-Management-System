@@ -74,6 +74,7 @@ export interface SingleLocationResponse {
 export const fetchAllLocations = async (): Promise<LocationMaster[]> => {
   try {
     const response = await api.get<GetLocationMasterResponse>('/locationmaster/getall');
+    console.log(response);
     return response.data.data || [];
   } catch (error) {
     console.error("Error fetching location master:", error);

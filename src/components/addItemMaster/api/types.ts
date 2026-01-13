@@ -70,15 +70,3 @@ export interface UnderGroupData {
   
   image?: string | null;
 }
-
-// const underGroupColumns: ColumnDef<UnderGroupData>[] = [
-//   { header: "Item Name", key: "item_name", width: "w-1/3" },
-//   { header: "Under Group", key: "under_group", width: "w-1/3" },
-//   { header: "Code", key: "code", width: "w-20" },
-// ];
-
-// const gstColumns: ColumnDef<GstClassificationData>[] = [
-//   { header: "Type", key: "type", width: "w-24" },
-//   { header: "HSN/SAC", key: "hsn_sac_code", width: "w-32" },
-//   { header: "Code", key: "code", width: "w-20" },
-// ];

@@ -7,14 +7,12 @@ import OrderTable from "./OrderTable";
 import AttachmentSection from "../../../../components/AttachmentSection";
 import { COLORS } from "../../../../constants/colors";
 
-// --- IMPORT SERVICE ---
 import {
   createStockAdjustment,
   StockAdjustmentItem,
   StockAdjustment as StockAdjustmentPayload,
 } from "./api/StockAdjustmentService";
 
-// --- TYPES ---
 interface RowData {
   [key: string]: string | number;
 }
@@ -27,7 +25,6 @@ const StockAdjustment: React.FC = () => {
   const [isOverlayOpen, setIsOverlayOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // --- STATE MANAGEMENT ---
   const [formData, setFormData] = useState<StockAdjustmentHeaderData>({
     voucherDate: new Date().toISOString().split("T")[0],
     voucherNo: "SA-3005",
@@ -57,7 +54,6 @@ const StockAdjustment: React.FC = () => {
   };
 
   const handleSave = async () => {
-    // 1. Basic Validation
     if (rows.length === 0) {
       alert("Please add at least one item to the table.");
       return;
@@ -69,7 +65,6 @@ const StockAdjustment: React.FC = () => {
 
     setIsSubmitting(true);
 
-    // 2. Data Mapping
     const formattedItems: StockAdjustmentItem[] = rows
       .map((rowId) => tableData[rowId])
       .filter((row) => row && row.select && row.select !== "")
@@ -108,7 +103,6 @@ const StockAdjustment: React.FC = () => {
     }
 
     // 3. Construct Payload
-    // FIX: Use the aliased type 'StockAdjustmentPayload' here
     const payload: StockAdjustmentPayload = {
       category: formData.category,
       store: formData.store,

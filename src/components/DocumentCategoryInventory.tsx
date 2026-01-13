@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, Save, Trash2, EditIcon, ArrowLeft } from "lucide-react";
+import { X, Save, Trash2, EditIcon } from "lucide-react";
 import { LocationMaster } from "./LocationMaster";
 import Dropdown, { ColumnDef } from "./Dropdown";
 import { fetchAllLocations } from "../pages/pages/inventory/stockAdjustment/api/LocationMaster";
@@ -10,28 +10,22 @@ import {
   DocumentCategoryInventory,
 } from "../pages/pages/inventory/stockAdjustment/api/DocumentCategoryInventory";
 
+interface DocumentType {
+  name: string;
+}
+
+const DOCUMENT_TYPES: DocumentType[] = [
+  { name: "None" },
+  { name: "Invoice" },
+  { name: "Receipt" },
+  { name: "Purchase Order" },
+];
+
 export interface LocationData {
   _id: string;
   name: string;
   party: string;
   code: string;
-  profilePic?: string;
-  gstNo?: string;
-  ewayUsername?: string;
-  ewayPassword?: string;
-  gstInUsername?: string;
-  gstInPassword?: string;
-  othelicense1?: string;
-  othelicense2?: string;
-  bankDetails?: string;
-  address?: string;
-  country?: string;
-  state?: string;
-  city?: string;
-  pinCode?: string;
-  phone?: string;
-  email?: string;
-  __v?: number;
 }
 
 interface ModalProps {
@@ -58,12 +52,14 @@ const DocumentCategoryInventoryModal: React.FC<ModalProps> = ({
   const [loading, setLoading] = useState(false);
 
   const locationColumns: ColumnDef<LocationData>[] = [
-    { header: "Name", key: "name", width: "w-[40%]" },
-    { header: "Party", key: "party", width: "w-[40%]" },
     { header: "Code", key: "code", width: "w-[20%]" },
+    { header: "Name", key: "name", width: "w-[40%]" },
   ];
 
-  // --- EFFECT: Fetch Locations for Dropdown ---
+  const docTypeColumns: ColumnDef<DocumentType>[] = [
+    { header: "Document Type", key: "name", width: "w-full" },
+  ];
+
   useEffect(() => {
     if (isOpen) {
       const loadLocations = async () => {
@@ -79,14 +75,13 @@ const DocumentCategoryInventoryModal: React.FC<ModalProps> = ({
             setLocationList((result as any).data as LocationData[]);
           }
         } catch (error) {
-          console.error("Failed to load locations for dropdown", error);
+          console.error("Failed to load locations", error);
         }
       };
       loadLocations();
     }
   }, [isOpen]);
 
-  // --- EFFECT: Populate Form ---
   useEffect(() => {
     if (isOpen) {
       if (initialData) {
@@ -105,11 +100,9 @@ const DocumentCategoryInventoryModal: React.FC<ModalProps> = ({
     }
   }, [isOpen, initialData]);
 
-  // --- HANDLER: Save ---
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       const payload = {
         name,
@@ -118,37 +111,30 @@ const DocumentCategoryInventoryModal: React.FC<ModalProps> = ({
         specificToDocument,
         defaultLocation,
       };
-
       if (initialData && initialData._id) {
         await updateDocumentCategoryInventory(initialData._id, payload);
-        alert("Updated successfully!");
       } else {
         await createDocumentCategoryInventory(payload);
-        alert("Created successfully!");
       }
-
       if (onSuccess) onSuccess();
       onClose();
     } catch (error) {
-      console.error("Error saving:", error);
-      alert("Failed to save. Please try again.");
+      alert("Failed to save.");
     } finally {
       setLoading(false);
     }
   };
 
-  // --- HANDLER: Delete ---
   const handleDelete = async () => {
     if (!initialData?._id) return;
-    if (window.confirm("Are you sure you want to delete this category?")) {
+    if (window.confirm("Are you sure?")) {
       setLoading(true);
       try {
         await deleteDocumentCategoryInventory(initialData._id);
         if (onSuccess) onSuccess();
         onClose();
       } catch (error) {
-        console.error("Error deleting:", error);
-        alert("Failed to delete.");
+        alert("Delete failed.");
       } finally {
         setLoading(false);
       }
@@ -158,10 +144,6 @@ const DocumentCategoryInventoryModal: React.FC<ModalProps> = ({
   const handleLocationSelectFromMaster = (selectedLocationName: string) => {
     setDefaultLocation(selectedLocationName);
     setShowLocationMaster(false);
-    fetchAllLocations().then((res: any) => {
-      if (res && res.data) setLocationList(res.data);
-      else if (Array.isArray(res)) setLocationList(res);
-    });
   };
 
   if (!isOpen) return null;
@@ -173,59 +155,29 @@ const DocumentCategoryInventoryModal: React.FC<ModalProps> = ({
     const locationToEdit = locationList.find(
       (loc) => loc.name === defaultLocation
     );
-
     return (
-      <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-        onClick={onClose}
-      >
-        <div
-          className="w-full max-w-5xl bg-white shadow-xl rounded-sm overflow-hidden flex flex-col h-[650px]"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Sub-form Header */}
-          <div className="p-4 border-b flex items-center gap-2 bg-gray-50">
-            <button
-              onClick={() => setShowLocationMaster(false)}
-              className="flex items-center text-sm text-gray-600 hover:text-[#104a7d] transition-colors font-medium"
-            >
-              <ArrowLeft className="w-4 h-4 mr-1" />
-              Back to Inventory
-            </button>
-            {locationToEdit && (
-              <span className="text-xs text-gray-400 border-l pl-2 ml-1">
-                Editing: {locationToEdit.name}
-              </span>
-            )}
-          </div>
-
-          {/* Location Master Component */}
-          <div className="shadow-lg overflow-hidden relative">
-            <LocationMaster
-              onClose={() => setShowLocationMaster(false)}
-              onSuccess={() => setShowLocationMaster(false)}
-              onSelect={handleLocationSelectFromMaster}
-              initialData={locationToEdit as any}
-            />
-          </div>
-        </div>
+      <div className="shadow-lg overflow-hidden relative">
+        <LocationMaster
+          onClose={() => setShowLocationMaster(false)}
+          onSuccess={() => setShowLocationMaster(false)}
+          onSelect={handleLocationSelectFromMaster}
+          initialData={locationToEdit as any}
+        />
       </div>
     );
   }
 
-  // --- View 1: Main Inventory Form ---
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-4xl bg-white shadow-xl rounded-sm overflow-hidden flex flex-col h-[600px]"
+        className="w-full max-w-4xl bg-white shadow-xl rounded-sm overflow-hidden flex flex-col h-[550px]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         <div
-          className={`${themeBlue} text-white px-4 py-2 flex justify-between items-center select-none`}
+          className={`${themeBlue} text-white px-4 py-2 flex justify-between items-center`}
         >
           <h2 className="text-sm font-semibold tracking-wide">
             {initialData ? "Edit Document Category" : "New Document Category"}
@@ -239,7 +191,6 @@ const DocumentCategoryInventoryModal: React.FC<ModalProps> = ({
           </button>
         </div>
 
-        {/* Body */}
         <div className="flex-1 p-6 overflow-y-auto">
           <form className="space-y-4 max-w-3xl" onSubmit={handleSave}>
             {/* Name */}
@@ -256,27 +207,12 @@ const DocumentCategoryInventoryModal: React.FC<ModalProps> = ({
               />
             </div>
 
-            {/* Code */}
-            <div className="grid grid-cols-[200px_1fr] items-center gap-4">
-              <label className="text-gray-700 text-sm font-medium">
-                Code <span className="text-red-500">*</span>
-              </label>
-              <input
-                disabled
-                type="text"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                required
-                className="w-full border border-gray-300 px-2 py-1.5 text-sm bg-gray-50 focus:outline-none focus:border-[#104a7d] rounded-sm shadow-sm"
-              />
-            </div>
-
             {/* Inactive */}
             <div className="grid grid-cols-[200px_1fr] items-center gap-4">
               <label className="text-gray-700 text-sm font-medium">
                 Inactive
               </label>
-              <div className="flex justify-end w-full">
+              <div className="flex justify-start w-full">
                 <input
                   type="checkbox"
                   checked={inactive}
@@ -288,21 +224,21 @@ const DocumentCategoryInventoryModal: React.FC<ModalProps> = ({
 
             <div className="h-2"></div>
 
-            {/* Specific to Document */}
+            {/* Specific to Document (Custom Dropdown) */}
             <div className="grid grid-cols-[200px_1fr] items-center gap-4">
               <label className="text-gray-700 text-sm font-medium">
                 Specific to Document
               </label>
-              <select
+              <Dropdown<DocumentType>
+                data={DOCUMENT_TYPES}
+                columns={docTypeColumns}
                 value={specificToDocument}
-                onChange={(e) => setSpecificToDocument(e.target.value)}
-                className="w-full border border-gray-300 px-2 py-1.5 text-sm bg-white focus:outline-none focus:border-[#104a7d] rounded-sm shadow-sm"
-              >
-                <option value="None">None</option>
-                <option value="Invoice">Invoice</option>
-                <option value="Receipt">Receipt</option>
-                <option value="Purchase Order">Purchase Order</option>
-              </select>
+                valueKey="name"
+                placeholder="Select Document Type..."
+                onChange={(item) =>
+                  setSpecificToDocument(item ? item.name : "None")
+                }
+              />
             </div>
 
             {/* Default Location */}
@@ -340,7 +276,6 @@ const DocumentCategoryInventoryModal: React.FC<ModalProps> = ({
           </form>
         </div>
 
-        {/* Footer */}
         <div
           className={`${themeBlue} px-4 py-2 flex gap-2 border-t border-blue-800`}
         >
@@ -354,7 +289,6 @@ const DocumentCategoryInventoryModal: React.FC<ModalProps> = ({
               {loading ? "Saving..." : initialData ? "Update" : "Save"}
             </span>
           </button>
-
           {initialData && (
             <button
               onClick={handleDelete}

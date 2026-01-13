@@ -1,4 +1,3 @@
-// src/services/itemQueries.ts
 import api from "../../../../../services/api";
 import { ItemResponse, ItemApiData } from "../models/ItemModel";
 
@@ -23,8 +22,6 @@ export const fetchItems = async (): Promise<ItemApiData[]> => {
 
 export const deleteItemApi = async (id: string): Promise<ItemResponse> => {
   try {
-    // FIX 3: Simplified path.
-    // Result: [BaseURL] + /item_master + /delete_item/{id}
     const response = await api.delete<ItemResponse>(`${ENDPOINT}/delete_item/${id}`);
     return response.data;
   } catch (error) {

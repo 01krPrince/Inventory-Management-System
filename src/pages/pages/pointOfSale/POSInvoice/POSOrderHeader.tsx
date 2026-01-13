@@ -102,7 +102,7 @@ export default function POSInvoiceHeader({
   return (
     <div className="w-full border-t" style={{ borderColor: COLORS.borderDark }}>
       <header
-        className="flex items-center justify-between w-full px-4 py-1 shadow-md transition-colors duration-300 gap-4"
+        className="flex items-center justify-between w-full px-4 py-0 shadow-md transition-colors duration-300 gap-4"
         style={{ backgroundColor: COLORS.primary }}
       >
         <div className="flex items-center gap-2 shrink-0">

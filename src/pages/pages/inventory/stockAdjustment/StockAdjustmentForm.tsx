@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { CalenderIcon } from "../../../../components/icons";
 import CrudCustomer from "../../sales/customer/AddNewCustomer";
-import { EditIcon, ArrowLeft, RefreshCw } from "lucide-react";
+import { EditIcon, ArrowLeft } from "lucide-react";
 
-// --- IMPORTS ---
 import DocumentInventoryModal from "../../../../components/DocumentCategoryInventory";
 import {
   fetchDocumentCategoryInventory,
@@ -23,7 +22,6 @@ import {
 
 import Dropdown, { ColumnDef } from "../../../../components/Dropdown";
 
-// --- DATA INTERFACE ---
 export interface StockAdjustmentHeaderData {
   voucherDate: string;
   voucherNo: string;
@@ -32,7 +30,6 @@ export interface StockAdjustmentHeaderData {
   party: string;
 }
 
-// --- Types ---
 interface ActionBtnProps {
   icon: React.ReactElement;
   onClick?: () => void;
@@ -41,9 +38,9 @@ interface ActionBtnProps {
 export interface SalesInvoiceFormProps {
   themeColor?: string;
   onOverlayChange?: (isOpen: boolean) => void;
-  // --- LIFTED STATE PROPS ---
   data: StockAdjustmentHeaderData;
   onDataChange: (data: StockAdjustmentHeaderData) => void;
+  zIndex?: number;
 }
 
 interface LabelProps {
@@ -55,18 +52,6 @@ interface InputGroupProps {
   children: React.ReactNode;
 }
 
-// --- HELPER: Random Voucher Generator (Uppercase + Numbers) ---
-const generateVoucherNo = () => {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let result = "";
-  const length = 10; // Length of the random ID
-  for (let i = 0; i < length; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-};
-
-// --- UI Components ---
 const Label: React.FC<LabelProps> = ({ children, required }) => (
   <label className="text-[13px] text-gray-700 font-medium flex items-center h-[32px] whitespace-nowrap">
     {children} {required && <span className="text-red-500 ml-1">*</span>}
@@ -87,7 +72,6 @@ const ActionBtn: React.FC<ActionBtnProps> = ({ icon, onClick }) => (
   </button>
 );
 
-// --- FIXED VOUCHER DATE INPUT ---
 const VoucherDateInput: React.FC<{
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -99,7 +83,7 @@ const VoucherDateInput: React.FC<{
       <input
         ref={inputRef}
         type="date"
-        value={value || ""} // Handle undefined/null gracefully
+        value={value || ""}
         onChange={onChange}
         className="w-full h-[32px] bg-white border border-gray-300 rounded-sm px-3 text-[13px] text-gray-700 focus:outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)] pr-8 uppercase"
       />
@@ -114,24 +98,12 @@ const VoucherDateInput: React.FC<{
   );
 };
 
-const VoucherNoInput: React.FC<{ value: string }> = ({ value }) => (
-  <div className="w-full">
-    <input
-      type="text"
-      value={value || ""} // Ensure it is never uncontrolled
-      readOnly
-      placeholder="Click button to generate"
-      className="w-full h-[32px] bg-white border border-gray-300 rounded-sm px-3 text-[13px] text-gray-700 focus:outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)] bg-gray-50"
-    />
-  </div>
-);
-
-// --- Main Component ---
 const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
   themeColor = "#0f3c63",
   onOverlayChange,
-  data, // Recieve Data
-  onDataChange, // Receive Updater
+  data,
+  onDataChange,
+  zIndex,
 }) => {
   const themeStyles = {
     "--theme-primary": themeColor,
@@ -143,14 +115,12 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<Customer | null>(null);
 
-  // --- DATA Lists ---
   const [categoryList, setCategoryList] = useState<DocumentCategoryInventory[]>(
     []
   );
   const [locationList, setLocationList] = useState<LocationMasterType[]>([]);
   const [customerList, setCustomerList] = useState<Customer[]>([]);
 
-  // --- COLUMNS CONFIGURATION ---
   const categoryColumns: ColumnDef<DocumentCategoryInventory>[] = [
     { header: "Code", key: "code", width: "w-20" },
     { header: "Name", key: "name", width: "flex-1" },
@@ -168,14 +138,11 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
     { header: "GST", key: "gst_no", width: "w-28" },
   ];
 
-  // --- LOAD DATA ---
   useEffect(() => {
     loadCategories();
     loadLocations();
     loadCustomers();
   }, []);
-
-  // --- NOTE: Auto-generation useEffect removed so it stays empty initially ---
 
   const loadCategories = async () => {
     try {
@@ -213,12 +180,6 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
       ...data,
       [field]: value,
     });
-  };
-
-  // --- HANDLER: Manual Generate Voucher ---
-  const handleGenerateVoucher = () => {
-    const newVoucher = generateVoucherNo();
-    handleFieldChange("voucherNo", newVoucher);
   };
 
   // --- SELECTION HELPERS ---
@@ -282,7 +243,7 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
     <>
       <div
         style={themeStyles}
-        className="bg-white rounded-lg shadow-md border border-gray-200 p-6 w-full"
+        className="bg-white rounded-lg border border-gray-200 p-6 w-full"
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
           {/* LEFT COLUMN */}
@@ -336,7 +297,10 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
                 </InputGroup>
               </div>
             </div>
+          </div>
 
+          {/* RIGHT COLUMN */}
+          <div className="space-y-4">
             {/* PARTY (Customer) */}
             <div className="grid grid-cols-12 gap-3 items-center">
               <div className="col-span-4">
@@ -361,10 +325,6 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
                 </InputGroup>
               </div>
             </div>
-          </div>
-
-          {/* RIGHT COLUMN */}
-          <div className="space-y-4">
             <div className="grid grid-cols-12 gap-3 items-center">
               <div className="col-span-4">
                 <Label>Voucher Date</Label>
@@ -376,20 +336,6 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
                     handleFieldChange("voucherDate", e.target.value)
                   }
                 />
-              </div>
-            </div>
-            <div className="grid grid-cols-12 gap-3 items-center">
-              <div className="col-span-4">
-                <Label>Voucher No</Label>
-              </div>
-              <div className="col-span-8">
-                <InputGroup>
-                  <VoucherNoInput value={data.voucherNo} />
-                  <ActionBtn
-                    icon={<RefreshCw size={16} />}
-                    onClick={handleGenerateVoucher}
-                  />
-                </InputGroup>
               </div>
             </div>
           </div>

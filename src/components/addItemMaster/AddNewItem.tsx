@@ -9,33 +9,26 @@ import {
 } from "lucide-react";
 import Brand from "./Brand";
 import ItemCategory from "./ItemCategory";
-
+import SuggestedCategory from "../../pages/pages/inventory/itemMaster/pages/SuggestedCategory";
 import Attachment from "../Attachment";
 import UnderGroup from "./UnderGroup";
 import StockUnit from "./StockUnit";
 
-import { ItemFormData, ItemApiData, CustomWarranty } from "./models/ItemModel";
+import { ItemFormData, CustomWarranty, ItemApiData } from "./models/ItemModel";
 
 import {
   CategoryData,
   BrandData,
   StockUnitData,
   GstClassificationData,
-  UnderGroupData,
 } from "./api/types";
 import { fetchCategories } from "./api/categoryservice";
 import { fetchBrands } from "./api/brandservice";
 import { fetchStockUnits } from "./api/stockunitservice";
 import { fetchGstClassifications } from "./api/gstservice";
 import { createItem, updateItem } from "./api/itemService";
-import { fetchUnderGroup } from "./api/underGroupservice";
+import { fetchUnderGroup, UnderGroupData } from "./api/underGroupservice";
 
-// import {
-//   fetchSalesAndPurchaseGL,
-//   SalesAndPurchaseGL,
-// } from "./api/saleAndPurchaseGL";
-
-// import ChartOfAccounts from "../ChartOfAccount";
 import { GstClassificationForm } from "../GstClassificationForm";
 import Dropdown, { ColumnDef } from "../Dropdown";
 
@@ -44,17 +37,20 @@ const ITEM_MODES = [
   { label: "Non-Inventory", value: "Non-Inventory" },
   { label: "Service", value: "Service" },
   { label: "Bundle", value: "Bundle" },
+  { label: "Product", value: "Product" },
 ];
 
 const ITEM_TYPES = [
   { label: "Pack", value: "Pack" },
   { label: "FinishProduct", value: "FinishProduct" },
   { label: "RawMaterial", value: "RawMaterial" },
+  { label: "Electrical", value: "Electrical" },
 ];
 
 const UNIT_OPTIONS = [
   { label: "Packet", value: "Packet" },
   { label: "StockUnit", value: "StockUnit" },
+  { label: "Box", value: "Box" },
   { label: "Other", value: "Other" },
 ];
 
@@ -89,8 +85,8 @@ const stockUnitColumns: ColumnDef<StockUnitData>[] = [
 ];
 
 const underGroupColumns: ColumnDef<UnderGroupData>[] = [
-  { header: "Item Name", key: "item_name", width: "w-1/3" },
   { header: "Under Group", key: "under_group", width: "w-1/3" },
+  { header: "Item Name", key: "item_name", width: "w-1/3" },
   { header: "Code", key: "code", width: "w-20" },
 ];
 
@@ -111,27 +107,18 @@ const brandColumns: ColumnDef<BrandData>[] = [
   { header: "Salesman", key: "salesman", width: "w-1/3" },
 ];
 
-// const glColumns: ColumnDef<SalesAndPurchaseGL>[] = [
-//   { header: "Code", key: "code", width: "w-24" },
-//   { header: "Name", key: "name", width: "w-full" },
-// ];
-
 const INITIAL_DATA: ItemFormData = {
-  // Basic Details
   itemMode: "Inventory",
   item_name: "",
   underGroup: "",
   stockUnit: "",
   gstClassification: "",
   profileImage: null,
-
   warrantyEnabled: false,
   warranty1YearPrice: "",
   warranty2YearPrice: "",
   warranty3YearPrice: "",
   customWarranties: [],
-
-  // Advance Info
   category: "",
   brand: "",
   type: "FinishProduct",
@@ -140,8 +127,6 @@ const INITIAL_DATA: ItemFormData = {
   autoBarcodePrefix: "",
   gstInputNotApplicable: false,
   printBarcode: true,
-
-  // Sales
   salesDescription: "",
   salesGL: "",
   mrp: "",
@@ -152,16 +137,12 @@ const INITIAL_DATA: ItemFormData = {
   rateFactor: "",
   salesDiscount: "",
   salesDiscountPercent: "",
-
-  // Purchase
   purchaseDescription: "",
   purchaseGL: "Purchases - Traded Goods",
   purchaseRate: "0",
   purchaseRateFactor: "0",
   purchaseDiscount1: "0",
   purchaseDiscount2: "0",
-
-  // Attributes
   itemWorkflow: "Regular",
   procurementType: "Purchase",
   minLevel: "0",
@@ -175,10 +156,7 @@ const INITIAL_DATA: ItemFormData = {
   salt: "",
   skipLoyaltyPoints: false,
   excludeInCvss: false,
-  askUdfInDocument: false,
-
-  // Suggested Items
-  suggestedItems: [{ id: 1, itemId: "" }],
+  suggestedItems: [],
 };
 
 const STEPS = [
@@ -187,9 +165,8 @@ const STEPS = [
   { id: 2, label: "Sales Config" },
   { id: 3, label: "Purchase Config" },
   { id: 4, label: "Attributes Config" },
-  { id: 5, label: "UDF And Attributes" },
-  { id: 6, label: "Suggested Category Items" },
-  { id: 7, label: "Attachments" },
+  { id: 5, label: "Suggested Category Items" },
+  { id: 6, label: "Attachments" },
 ];
 
 const FormLabel = ({
@@ -261,7 +238,7 @@ interface AddNewItemProps {
   onClose: () => void;
   initialData?: ItemApiData;
   onSuccess?: (data?: any) => void;
-  index?: number; // ADDED: For Dynamic Z-Indexing
+  index?: number;
 }
 
 const AddNewItem: React.FC<AddNewItemProps> = ({
@@ -275,18 +252,22 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
   const [activeStep, setActiveStep] = useState(0);
   const [formData, setFormData] = useState<ItemFormData>(INITIAL_DATA);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
+
+  const handleSelectionChange = (ids: string[]) => {
+    setSelectedItemIds(ids);
+  };
+
+  const getObjectId = (obj: any) =>
+    obj && typeof obj === "object" && obj._id ? obj._id : obj || "";
 
   const [showItemGroupModal, setShowItemGroupModal] = useState(false);
   const [showStockUnit, setShowStockUnit] = useState(false);
   const [isBrandOpen, setIsBrandOpen] = useState(false);
   const [isItemCategory, setIsItemCategory] = useState(false);
   const [isGstModalOpen, setIsGstModalOpen] = useState(false);
-  // const [showChartOfAccounts, setShowChartOfAccounts] = useState(false);
 
   const [gstInitialData, setGstInitialData] = useState<any>(undefined);
-  // const [coaFormData, setCoaFormData] = useState<SalesAndPurchaseGL | null>(
-  //   null
-  // );
   const [underGroupInitialData, setUnderGroupInitialData] = useState<
     UnderGroupData | undefined
   >(undefined);
@@ -294,33 +275,25 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
     StockUnitData | undefined
   >(undefined);
 
-  // const [activeGLType, setActiveGLType] = useState<"sales" | "purchase" | null>(
-  //   null
-  // );
-
-  // const [glDataFull, setGlDataFull] = useState<SalesAndPurchaseGL[]>([]);
   const [categories, setCategories] = useState<CategoryData[]>([]);
   const [underGroup, setUnderGroup] = useState<UnderGroupData[]>([]);
   const [brands, setBrands] = useState<BrandData[]>([]);
   const [stockUnitList, setStockUnitList] = useState<StockUnitData[]>([]);
   const [gstList, setGstList] = useState<GstClassificationData[]>([]);
 
-  const isEditMode = !!initialData && !!initialData._id;
+  const isEditMode = !!initialData && (!!initialData._id || !!initialData.id);
   const [brandToEdit, setBrandToEdit] = useState<BrandData | undefined>(
     undefined
   );
 
   const handleBrandEditClick = (e: React.MouseEvent) => {
     e.preventDefault();
-
     if (formData.brand) {
-      const selectedBrand = brands.find((b) => b.name === formData.brand);
-
+      const selectedBrand = brands.find((b) => b._id === formData.brand);
       setBrandToEdit(selectedBrand);
     } else {
       setBrandToEdit(undefined);
     }
-
     setIsBrandOpen(true);
   };
 
@@ -330,20 +303,18 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
 
   const handleCategoryEditClick = (e: React.MouseEvent) => {
     e.preventDefault();
-
     if (formData.category) {
       const selectedCategory = categories.find(
-        (c) => c.name === formData.category
+        (c) => c._id === formData.category
       );
-
       setCategoryToEdit(selectedCategory);
     } else {
       setCategoryToEdit(undefined);
     }
-
     setIsItemCategory(true);
   };
 
+  // --- 1. LOAD DATA ---
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -353,83 +324,101 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
           brandsData,
           stockUnitsData,
           gstData,
-          // glDataResult,
         ] = await Promise.all([
           fetchUnderGroup(),
           fetchCategories(),
           fetchBrands(),
           fetchStockUnits(),
           fetchGstClassifications(),
-          // fetchSalesAndPurchaseGL(),
         ]);
+
+        console.log("DEBUG: API Data Loaded");
+        console.log("DEBUG: Brands List:", brandsData); // CHECK 1: Do we have brands?
 
         setUnderGroup(underGroupData || []);
         setCategories(categoriesData || []);
         setBrands(brandsData || []);
         setStockUnitList(stockUnitsData || []);
         setGstList(gstData || []);
-
-        // if (glDataResult && Array.isArray(glDataResult)) {
-        //   setGlDataFull(glDataResult);
-        // }
       } catch (error) {
         console.error("Failed to load dropdown data", error);
       }
     };
     loadData();
-  }, [
-    formData,
-    showStockUnit,
-    gstList,
-    isBrandOpen,
-    isGstModalOpen,
-    isEditMode,
-    isItemCategory,
-  ]);
+  }, [isBrandOpen, isGstModalOpen, isItemCategory, stockUnitList]);
 
+  // --- 2. INITIALIZE FORM (Handle IDs from Object) ---
   useEffect(() => {
     if (initialData && Object.keys(initialData).length > 0) {
+      const extractedBrandId = getObjectId(initialData.brand);
+      console.log("DEBUG: Initial Data Received:", initialData);
+      console.log("DEBUG: Extracted Brand ID for state:", extractedBrandId); // CHECK 2: Is the ID extracted correctly?
+
       setFormData((prev) => ({
         ...prev,
-        itemMode: initialData.item_mode || prev.itemMode,
-        item_name:
-          initialData.item_name || initialData.item_name || prev.item_name,
-        underGroup: initialData.under_group || prev.underGroup,
-        stockUnit: initialData.stock_unit || prev.stockUnit,
+        itemMode:
+          initialData.item_mode || initialData.item_mode || prev.itemMode,
+        item_name: initialData.name || prev.item_name,
+
+        underGroup: initialData.under_group?._id || "",
+        stockUnit: initialData.stock_unit?._id || "",
+
         gstClassification:
           initialData.gst_classfication || prev.gstClassification,
-        category: initialData.category || prev.category,
-        brand: initialData.brand || prev.brand,
+
+        warrantyEnabled: initialData.warranty === true,
+        warranty1YearPrice:
+          initialData.firstyearwarranty || prev.warranty1YearPrice,
+        warranty2YearPrice:
+          initialData.secyearwarranty || prev.warranty2YearPrice,
+        warranty3YearPrice:
+          initialData.thirdyearwarranty || prev.warranty3YearPrice,
+        customWarranties: initialData.customWarranty || prev.customWarranties,
+
+        category: getObjectId(initialData.category),
+
+        // Use the debugged extraction
+        brand: extractedBrandId,
+
         type: initialData.type || prev.type,
         unitOption: initialData.unit_option || prev.unitOption,
         barCode: initialData.barcode || prev.barCode,
         autoBarcodePrefix: initialData.auto_barcode || prev.autoBarcodePrefix,
         gstInputNotApplicable: initialData.gst_applicable === false,
         printBarcode: initialData.print_barcode,
+
         salesDescription: initialData.sale_desc || prev.salesDescription,
         salesGL: initialData.sales_gl || prev.salesGL,
-        mrp: initialData.mrp || prev.mrp,
-        minPrice: initialData.minimum_price || prev.minPrice,
-        salesRate: initialData.sales_rate || prev.salesRate,
-        wholesaleRate: initialData.wholesale_rate || prev.wholesaleRate,
-        dealerRate: initialData.dealer_factor || prev.dealerRate,
-        rateFactor: initialData.rate_factor || prev.rateFactor,
-        salesDiscount: initialData.sale_discount || prev.salesDiscount,
+        mrp: initialData.mrp?.toString() || prev.mrp,
+        minPrice: initialData.minimum_price?.toString() || prev.minPrice,
+        salesRate: initialData.sales_rate?.toString() || prev.salesRate,
+        wholesaleRate:
+          initialData.wholesale_rate?.toString() || prev.wholesaleRate,
+        dealerRate: initialData.dealer_factor?.toString() || prev.dealerRate,
+        rateFactor: initialData.rate_factor?.toString() || prev.rateFactor,
+        salesDiscount:
+          initialData.sale_discount?.toString() || prev.salesDiscount,
         salesDiscountPercent:
-          initialData.sale_discount_percent || prev.salesDiscountPercent,
+          initialData.sale_discount_percent?.toString() ||
+          prev.salesDiscountPercent,
+
         purchaseDescription: initialData.purch_desc || prev.purchaseDescription,
         purchaseGL: initialData.purchase_gl || prev.purchaseGL,
-        purchaseRate: initialData.purchase_rate || prev.purchaseRate,
+        purchaseRate:
+          initialData.purchase_rate?.toString() || prev.purchaseRate,
         purchaseRateFactor:
-          initialData.purchase_ratefactor || prev.purchaseRateFactor,
+          initialData.purchase_ratefactor?.toString() ||
+          prev.purchaseRateFactor,
         purchaseDiscount1:
-          initialData.purchase_discount || prev.purchaseDiscount1,
+          initialData.purchase_discount?.toString() || prev.purchaseDiscount1,
         purchaseDiscount2:
-          initialData.purchase_discount_percent || prev.purchaseDiscount2,
+          initialData.purchase_discount_percent?.toString() ||
+          prev.purchaseDiscount2,
+
         itemWorkflow: initialData.item_workflow || prev.itemWorkflow,
         procurementType: initialData.procurement_type || prev.procurementType,
-        minLevel: initialData.minimum_level || prev.minLevel,
-        maxLevel: initialData.maximum_level || prev.maxLevel,
+        minLevel: initialData.minimum_level?.toString() || prev.minLevel,
+        maxLevel: initialData.maximum_level?.toString() || prev.maxLevel,
         weighscaleMappingCode:
           initialData.weighscale_mapping_code || prev.weighscaleMappingCode,
         rackBinNo: initialData.rackbin_no || prev.rackBinNo,
@@ -441,10 +430,18 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
         salt: initialData.salt || prev.salt,
         skipLoyaltyPoints: initialData.skip_item_from_loyalty === "Yes",
         excludeInCvss: initialData.exclude_cvss_applist,
-        askUdfInDocument: initialData.ask_udf_in_document === "Y",
         profileImage: initialData.attachment || prev.profileImage,
-        suggestedItems: prev.suggestedItems,
       }));
+
+      if (
+        initialData.suggested_cat &&
+        Array.isArray(initialData.suggested_cat)
+      ) {
+        const extractedIds = initialData.suggested_cat.map(
+          (item: any) => item.itemId
+        );
+        setSelectedItemIds(extractedIds);
+      }
     } else {
       setFormData(INITIAL_DATA);
     }
@@ -469,20 +466,126 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
   };
 
   const handleDropdownChange = (fieldName: string, value: any) => {
+    console.log(`DEBUG: handleDropdownChange for ${fieldName}`, value); // CHECK 3: What does the user select?
     setFormData((prev) => ({ ...prev, [fieldName]: value }));
   };
 
+  // --- 3. SUBMIT LOGIC (Send IDs directly) ---
   const handleNext = async () => {
     if (activeStep < STEPS.length - 1) {
       setActiveStep((prev) => prev + 1);
     } else {
       setIsSubmitting(true);
       try {
+        console.log("DEBUG: Final Form Data before payload:", formData); // CHECK 4: Is brand present in State?
+        console.log("DEBUG: Brand Value in State:", formData.brand);
+
+        // Normalize Brand ID Logic (Simplifying to avoid Object check issues)
+        const brandIdPayload =
+          formData.brand && typeof formData.brand === "string"
+            ? formData.brand
+            : (formData.brand as any)?._id || null;
+
+        console.log("DEBUG: Brand ID going to Payload:", brandIdPayload);
+
+        const payload = {
+          item_mode: formData.itemMode,
+          name: formData.item_name,
+
+          under_group: formData.underGroup || null,
+          stock_unit: formData.stockUnit || null,
+          gst_classfication: formData.gstClassification,
+
+          warranty: formData.warrantyEnabled,
+          firstyearwarranty: formData.warranty1YearPrice,
+          secyearwarranty: formData.warranty2YearPrice,
+          thirdyearwarranty: formData.warranty3YearPrice,
+          customWarranty: formData.customWarranties,
+
+          category:
+            formData.category && typeof formData.category === "object"
+              ? (formData.category as any)._id
+              : formData.category || null,
+
+          // FIXED PAYLOAD LOGIC
+          brand: brandIdPayload,
+
+          // Assuming this maps to what you need
+          under_group_id:
+            formData.underGroup && typeof formData.underGroup === "object"
+              ? (formData.underGroup as any)._id
+              : formData.underGroup || null,
+
+          type: formData.type,
+          unit_option: formData.unitOption,
+          barcode: formData.barCode,
+          auto_barcode: formData.autoBarcodePrefix,
+
+          gst_applicable: !formData.gstInputNotApplicable,
+          print_barcode: formData.printBarcode,
+
+          sale_desc: formData.salesDescription,
+          sales_gl: formData.salesGL,
+          mrp: formData.mrp ? Number(formData.mrp) : 0,
+          minimum_price: formData.minPrice ? Number(formData.minPrice) : 0,
+          sales_rate: formData.salesRate ? Number(formData.salesRate) : 0,
+          wholesale_rate: formData.wholesaleRate
+            ? Number(formData.wholesaleRate)
+            : 0,
+          dealer_factor: formData.dealerRate ? Number(formData.dealerRate) : 0,
+          rate_factor: formData.rateFactor ? Number(formData.rateFactor) : 0,
+          sale_discount: formData.salesDiscount
+            ? Number(formData.salesDiscount)
+            : 0,
+          sale_discount_percent: formData.salesDiscountPercent
+            ? Number(formData.salesDiscountPercent)
+            : 0,
+
+          purch_desc: formData.purchaseDescription,
+          purchase_gl: formData.purchaseGL,
+          purchase_rate: formData.purchaseRate
+            ? Number(formData.purchaseRate)
+            : 0,
+          purchase_ratefactor: formData.purchaseRateFactor
+            ? Number(formData.purchaseRateFactor)
+            : 0,
+          purchase_discount: formData.purchaseDiscount1
+            ? Number(formData.purchaseDiscount1)
+            : 0,
+          purchase_discount_percent: formData.purchaseDiscount2
+            ? Number(formData.purchaseDiscount2)
+            : 0,
+
+          item_workflow: formData.itemWorkflow,
+          procurement_type: formData.procurementType,
+          minimum_level: formData.minLevel ? Number(formData.minLevel) : 0,
+          maximum_level: formData.maxLevel ? Number(formData.maxLevel) : 0,
+          weighscale_mapping_code: formData.weighscaleMappingCode,
+          rackbin_no: formData.rackBinNo,
+          add_in_item_set_template: formData.itemSetTemplate,
+
+          track_inventory:
+            formData.itemMode === "Inventory" ||
+            formData.itemMode === "Product",
+          batch_wise_inventory: formData.batchWiseInventory,
+          batch_wise_rate: formData.batchWiseRate,
+
+          drug_type: formData.drugType,
+          salt: formData.salt,
+          skip_item_from_loyalty: formData.skipLoyaltyPoints ? "Yes" : "No",
+          exclude_cvss_applist: formData.excludeInCvss,
+
+          suggested_cat: selectedItemIds.map((id) => ({ itemId: id })),
+          attachment: formData.profileImage,
+        };
+
+        console.log("DEBUG: Final Payload:", JSON.stringify(payload, null, 2)); // CHECK 5: Final output
+
         let response;
         if (isEditMode && initialData?._id) {
-          response = await updateItem(initialData._id, formData);
+          response = await updateItem(initialData._id, payload);
         } else {
-          response = await createItem(formData);
+          response = await createItem(payload);
         }
 
         if (response.success) {
@@ -497,6 +600,7 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
           alert(`Failed: ${response.message}`);
         }
       } catch (error) {
+        console.error(error);
         alert("An error occurred. Please check console.");
       } finally {
         setIsSubmitting(false);
@@ -559,9 +663,9 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
 
   const handleUnderGroupEditClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    const currentSelection = formData.underGroup;
+    // Use ID to find
     const selectedItem = underGroup.find(
-      (item) => item.item_name === currentSelection
+      (item) => item._id === formData.underGroup
     );
     setUnderGroupInitialData(selectedItem || undefined);
     setShowItemGroupModal(true);
@@ -570,15 +674,12 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
   const handleUnderGroupSave = (savedData: UnderGroupData) => {
     setFormData((prev) => ({
       ...prev,
-      underGroup: savedData.item_name || "",
+      underGroup: savedData._id || "", // Save ID
     }));
 
-    // 2. Update the Dropdown List Options
     setUnderGroup((prev: UnderGroupData[]) => {
       const existingIndex = prev.findIndex(
-        (item) =>
-          (savedData._id && item._id === savedData._id) ||
-          item.item_name === savedData.item_name
+        (item) => savedData._id && item._id === savedData._id
       );
 
       if (existingIndex >= 0) {
@@ -590,62 +691,18 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
       }
     });
 
-    // 3. Close the modal
     setShowItemGroupModal(false);
   };
 
   const handleStockUnitEditClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    const currentSelection = formData.stockUnit;
+    // Use ID to find
     const selectedItem = stockUnitList.find(
-      (item) => item.name === currentSelection
+      (item) => item._id === formData.stockUnit
     );
     setStockUnitInitialData(selectedItem || undefined);
     setShowStockUnit(true);
   };
-
-  // const handleOpenCOA = (type: "sales" | "purchase", currentValue: string) => {
-  //   setActiveGLType(type);
-
-  //   if (currentValue && currentValue.trim() !== "") {
-  //     const selectedItem = glDataFull.find(
-  //       (item) => item.name === currentValue
-  //     );
-
-  //     if (selectedItem) {
-  //       setCoaFormData(selectedItem);
-  //     } else {
-  //       setCoaFormData({ name: currentValue } as SalesAndPurchaseGL);
-  //     }
-  //   } else {
-  //     setCoaFormData(null);
-  //   }
-
-  //   setShowChartOfAccounts(true);
-  // };
-
-  // const handleSaveCOA = (savedData: SalesAndPurchaseGL) => {
-  //   const savedName = savedData?.name;
-
-  //   if (savedName) {
-  //     setGlDataFull((prev) => {
-  //       const exists = prev.find((item) => item.name === savedName);
-  //       if (exists) {
-  //         return prev.map((item) =>
-  //           item.name === savedName ? savedData : item
-  //         );
-  //       }
-  //       return [...prev, savedData];
-  //     });
-
-  //     if (activeGLType === "sales") {
-  //       setFormData((prev) => ({ ...prev, salesGL: savedName }));
-  //     } else if (activeGLType === "purchase") {
-  //       setFormData((prev) => ({ ...prev, purchaseGL: savedName }));
-  //     }
-  //   }
-  //   setShowChartOfAccounts(false);
-  // };
 
   const renderBasicDetails = () => (
     <div className="bg-white border rounded-lg p-6 shadow-sm mt-4">
@@ -683,7 +740,8 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
             </div>
           </div>
 
-          {/* Under Group */}
+          {/* ... inside renderBasicDetails function ... */}
+
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4 md:col-span-3">
               <FormLabel required>Under Group</FormLabel>
@@ -694,15 +752,15 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
                   data={underGroup}
                   columns={underGroupColumns}
                   value={formData.underGroup}
-                  valueKey="item_name"
+                  valueKey="_id"
                   onChange={(item) =>
-                    handleDropdownChange("underGroup", item?.item_name || "")
+                    handleDropdownChange("underGroup", item?._id || "")
                   }
                   placeholder="Select..."
                 />
               </div>
               <button
-                type="button" // Added type="button" to prevent form submission
+                type="button"
                 onClick={handleUnderGroupEditClick}
                 className="bg-[#0c5888] text-white px-2 rounded-r ml-[1px]"
               >
@@ -711,26 +769,26 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
             </div>
           </div>
 
-          {/* Stock Unit */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4 md:col-span-3">
               <FormLabel required>Stock Unit</FormLabel>
             </div>
             <div className="col-span-8 md:col-span-9 flex">
               <div className="flex-1 min-w-0">
+                {/* ValueKey changed to _id */}
                 <Dropdown
                   data={stockUnitList}
                   columns={stockUnitColumns}
                   value={formData.stockUnit}
-                  valueKey="name"
+                  valueKey="_id"
                   onChange={(item) =>
-                    handleDropdownChange("stockUnit", item?.name || "")
+                    handleDropdownChange("stockUnit", item?._id || "")
                   }
                   placeholder="Select..."
                 />
               </div>
               <button
-                type="button" // Added type="button" to prevent form submission
+                type="button"
                 onClick={handleStockUnitEditClick}
                 className="bg-[#0c5888] text-white px-2 rounded-r ml-[1px]"
               >
@@ -739,13 +797,13 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
             </div>
           </div>
 
-          {/* GST CLASSIFICATION SECTION */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4 md:col-span-3">
               <FormLabel>GST Classification(HSN/SAC)</FormLabel>
             </div>
             <div className="col-span-8 md:col-span-9 flex">
               <div className="flex-1 min-w-0">
+                {/* GST usually uses description/code as value, keeping as is but ensuring mapping */}
                 <Dropdown
                   data={gstList}
                   columns={gstColumns}
@@ -761,7 +819,7 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
                 />
               </div>
               <button
-                type="button" // Added type="button" to prevent form submission
+                type="button"
                 onClick={handleGstEditClick}
                 className="bg-[#0c5888] text-white px-2 rounded-r ml-[1px]"
               >
@@ -769,8 +827,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
               </button>
             </div>
           </div>
-
-          {/* --- END GST CLASSIFICATION SECTION --- */}
         </div>
         <div className="col-span-12 md:col-span-3 flex flex-col items-center">
           <div className="w-full h-[180px] bg-gray-100 border border-dashed rounded flex flex-col items-center justify-center mb-2 overflow-hidden relative">
@@ -913,13 +969,14 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
               <FormLabel>Category</FormLabel>
               <div className="flex w-full">
                 <div className="flex-1 min-w-0">
+                  {/* ValueKey changed to _id */}
                   <Dropdown
                     data={categories}
                     columns={categoryColumns}
                     value={formData.category}
-                    valueKey="name"
+                    valueKey="_id"
                     onChange={(item) =>
-                      handleDropdownChange("category", item?.name || "")
+                      handleDropdownChange("category", item?._id || "")
                     }
                     placeholder="Select..."
                   />
@@ -927,11 +984,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
                 <button
                   onClick={handleCategoryEditClick}
                   className="bg-[#0c5888] text-white px-2 rounded-r hover:bg-[#0a4a70] transition-colors ml-[1px]"
-                  title={
-                    formData.category
-                      ? "Edit Selected Category"
-                      : "Create New Category"
-                  }
                 >
                   <Edit className="w-4 h-4" />
                 </button>
@@ -942,13 +994,14 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
               <FormLabel>Brand</FormLabel>
               <div className="flex w-full">
                 <div className="flex-1 min-w-0">
+                  {/* CRITICAL FIX HERE: Simplify Value to always be state */}
                   <Dropdown
                     data={brands}
                     columns={brandColumns}
-                    value={formData.brand}
-                    valueKey="name"
+                    value={formData.brand} // <--- FIXED: Just use state. It's an ID.
+                    valueKey="_id"
                     onChange={(item) =>
-                      handleDropdownChange("brand", item?.name || "")
+                      handleDropdownChange("brand", item?._id || "")
                     }
                     placeholder="Select..."
                   />
@@ -1105,32 +1158,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
               rows={3}
             />
           </div>
-          {/* <div className="mb-3">
-            <FormLabel required>Sales GL</FormLabel>
-            <div className="flex w-full">
-              <div className="flex-1 min-w-0">
-                <Dropdown
-                  data={glDataFull}
-                  columns={glColumns}
-                  value={formData.salesGL}
-                  valueKey="name"
-                  onChange={(item) =>
-                    handleDropdownChange("salesGL", item?.name || "")
-                  }
-                  placeholder="Select..."
-                />
-              </div>
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleOpenCOA("sales", formData.salesGL);
-                }}
-                className="bg-[#0c5888] text-white px-2 rounded-r hover:bg-[#0a4a70] transition-colors ml-[1px]"
-              >
-                <Edit className="w-4 h-4" />
-              </button>
-            </div>
-          </div> */}
         </div>
       </div>
     </div>
@@ -1177,33 +1204,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
                 rows={3}
               />
             </div>
-
-            {/* <div className="mb-3">
-              <FormLabel required>Purchase GL</FormLabel>
-              <div className="flex w-full">
-                <div className="flex-1 min-w-0">
-                  <Dropdown
-                    data={glDataFull}
-                    columns={glColumns}
-                    value={formData.purchaseGL}
-                    valueKey="name"
-                    onChange={(item) =>
-                      handleDropdownChange("purchaseGL", item?.name || "")
-                    }
-                    placeholder="Select..."
-                  />
-                </div>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleOpenCOA("purchase", formData.purchaseGL);
-                  }}
-                  className="bg-[#0c5888] text-white px-2 rounded-r hover:bg-[#0a4a70] transition-colors ml-[1px]"
-                >
-                  <Edit className="w-4 h-4" />
-                </button>
-              </div>
-            </div> */}
           </div>
         </div>
       </div>
@@ -1342,23 +1342,9 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
     </div>
   );
 
-  const udfAndAttributes = () => (
-    <div className="bg-white border rounded-lg p-6 shadow-sm mt-4 min-h-[200px]">
-      <div className="flex items-center justify-between max-w-md">
-        <span className="text-sm text-gray-700">Ask UDF In Document</span>
-        <ToggleSwitch
-          name="askUdfInDocument"
-          checked={formData.askUdfInDocument}
-          onChange={handleInputChange}
-        />
-      </div>
-    </div>
-  );
-
   return (
     <div className="h-auto bg-transparent p-4 font-sans text-gray-800">
       <div className="max-w-6xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
-        {/* HEADER SECTION UPDATED */}
         <div className="bg-[#0c5888] px-6 py-4 text-white flex justify-between items-center">
           <h1 className="text-xl font-semibold tracking-wide">
             {isEditMode ? "EDIT ITEM" : "ADD NEW ITEM"}
@@ -1409,20 +1395,22 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
           {activeStep === 2 && saleConfig()}
           {activeStep === 3 && purchageConfig()}
           {activeStep === 4 && attributesConfig()}
-          {activeStep === 5 && udfAndAttributes()}
-          {activeStep === 6 && (
-            <div className="p-4 text-center text-gray-500">
-              Suggested Items Placeholder
-            </div>
+
+          {activeStep === 5 && (
+            <SuggestedCategory
+              onSelectionChange={handleSelectionChange}
+              selectedItemIds={selectedItemIds}
+            />
           )}
-          {activeStep === 7 && (
+
+          {activeStep === 6 && (
             <div className="p-4 text-center text-gray-500">
               <Attachment />
             </div>
           )}
         </div>
 
-        {/* FOOTER SECTION UPDATED */}
+        {/* FOOTER SECTION */}
         <div className="bg-gray-50 px-6 py-4 border-t flex justify-between items-center">
           <div className="text-sm text-gray-600 font-medium">
             Step {activeStep + 1} of {STEPS.length}
@@ -1528,32 +1516,14 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
           style={{ zIndex: overlayZIndex }}
         >
           <div className="w-auto">
-            {/* This checks if we have initial data (edit mode) or undefined (create mode) */}
             <GstClassificationForm
               initialData={gstInitialData}
               onSubmit={handleGstSave}
               onCancel={() => setIsGstModalOpen(false)}
-              // index={overlayZIndex} // Pass if GstClassificationForm supports it
             />
           </div>
         </div>
       )}
-
-      {/* {showChartOfAccounts && (
-        <div
-          className="fixed inset-0 flex items-center justify-center bg-black/50 p-4"
-          style={{ zIndex: overlayZIndex }}
-        >
-          <div className="bg-white rounded shadow-lg w-full max-w-4xl max-h-[90vh] overflow-auto">
-            <ChartOfAccounts
-              isOpen={showChartOfAccounts}
-              onClose={() => setShowChartOfAccounts(false)}
-              initialData={coaFormData}
-              onSave={handleSaveCOA}
-            />
-          </div>
-        </div>
-      )} */}
     </div>
   );
 };

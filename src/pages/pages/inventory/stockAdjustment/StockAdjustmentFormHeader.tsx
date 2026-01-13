@@ -19,7 +19,6 @@ interface HeaderButtonProps {
   onClick?: () => void;
 }
 
-// 1. Define what actions the Parent can pass down
 export interface StockAdjustmentFormHeaderProps {
   onOpen?: () => void;
   onDelete?: () => void;
@@ -29,6 +28,8 @@ export interface StockAdjustmentFormHeaderProps {
   onCalculator?: () => void;
   onConfiguration?: () => void;
   onHelp?: () => void;
+  // 1. Added zIndex to the main props interface
+  zIndex?: number;
 }
 
 // --- Components ---
@@ -41,16 +42,17 @@ const HeaderButton: React.FC<HeaderButtonProps> = ({
   return (
     <button
       onClick={onClick}
-      type="button" // Important: prevents submitting forms accidentally
-      className="flex items-center gap-2 px-3 py-1 border border-white/30 rounded-[3px] text-white text-xs font-medium hover:bg-white/10 hover:border-white/50 transition-colors active:bg-white/20"
+      type="button"
+      className="flex items-center gap-2 px-3 py-1 border border-white/30 rounded-[3px] text-white text-[11px] font-medium hover:bg-white/10 hover:border-white/50 transition-colors active:bg-white/20 whitespace-nowrap"
     >
-      <span className="w-4 h-4 flex items-center justify-center">{icon}</span>
+      <span className="w-3.5 h-3.5 flex items-center justify-center">
+        {icon}
+      </span>
       <span>{label}</span>
     </button>
   );
 };
 
-// 2. Accept the props in the component
 const StockAdjustmentFormHeader: React.FC<StockAdjustmentFormHeaderProps> = ({
   onOpen,
   onDelete,
@@ -60,16 +62,19 @@ const StockAdjustmentFormHeader: React.FC<StockAdjustmentFormHeaderProps> = ({
   onCalculator,
   onConfiguration,
   onHelp,
+  zIndex,
 }) => {
   return (
-    <div className="w-full border-t" style={{ borderColor: COLORS.borderDark }}>
+    <div
+      className="w-full border-t"
+      style={{ borderColor: COLORS.borderDark, zIndex: zIndex }}
+    >
       <header
-        className="flex flex-wrap items-center justify-between w-full px-4 py-1 shadow-md transition-colors duration-300"
+        className="flex flex-wrap items-center justify-between w-full px-4 py-1.5 shadow-md"
         style={{ backgroundColor: COLORS.primary }}
       >
         <div className="flex items-center gap-2">
-          {/* Spacer for responsive alignment */}
-          <div className="w-0 md:w-12 lg:w-24"></div>
+          <div className="hidden lg:block lg:w-16"></div>
 
           <HeaderButton
             label="Open"

@@ -8,7 +8,6 @@ import React, {
   useMemo,
 } from "react";
 
-// --- REPLACED CUSTOM ICONS WITH LUCIDE-REACT ---
 import {
   Plus,
   Trash2,
@@ -21,11 +20,29 @@ import {
   EditIcon,
 } from "lucide-react";
 
-// --- LOCAL IMPORTS ---
 import AddNewItem from "../../../../../components/addItemMaster/AddNewItem";
 import { ItemApiData } from "../models/ItemModel";
 import { fetchItems, deleteItemApi } from "../api/itemService";
 import { handlePrint } from "../../../../../components/function/functions";
+
+// --- HELPER: Extract Display Value (CRITICAL FIX) ---
+// Handles 'name' (Brand/Category) and 'item_name' (Under Group)
+const getDisplayValue = (value: any): string => {
+  if (value === null || value === undefined) return "";
+
+  if (typeof value === "object") {
+    // 1. Handle "Under Group" which uses 'item_name'
+    if (value.item_name) return String(value.item_name);
+    // 2. Handle "Brand/Category" which uses 'name'
+    if (value.name) return String(value.name);
+    // 3. Fallback to code if names are missing
+    if (value.code) return String(value.code);
+
+    return ""; // Empty object or unrecognized structure
+  }
+
+  return String(value);
+};
 
 // --- EXPORT FUNCTION ---
 const handleExport = (data: any[], columns: Column[], fileName: string) => {
@@ -37,7 +54,12 @@ const handleExport = (data: any[], columns: Column[], fileName: string) => {
     .map((row) =>
       columns
         .filter((col) => col.key !== "actions" && col.key !== "checkbox")
-        .map((col) => `"${row[col.key] || ""}"`)
+        .map((col) => {
+          const val = row[col.key];
+          // Use helper to ensure objects are exported as strings
+          const cleanVal = getDisplayValue(val).replace(/"/g, '""');
+          return `"${cleanVal}"`;
+        })
         .join(",")
     )
     .join("\n");
@@ -54,6 +76,8 @@ const handleExport = (data: any[], columns: Column[], fileName: string) => {
 
 // --- TYPE DEFINITIONS ---
 export interface DataItem extends ItemApiData {
+  widget?: boolean;
+  inactive?: boolean;
   [key: string]: any;
 }
 
@@ -91,14 +115,40 @@ const ItemColumns: Column[] = [
   },
   { key: "name", label: "Name", sortable: true },
   { key: "code", label: "Code", sortable: true },
-  { key: "brand", label: "Brand", sortable: true },
+
+  // BRAND: Object with .name
+  {
+    key: "brand",
+    label: "Brand",
+    sortable: true,
+    render: (value: any) => (
+      <span className="font-medium text-gray-700">
+        {getDisplayValue(value)}
+      </span>
+    ),
+  },
+
   { key: "gst_classfication", label: "HSN Code", sortable: true },
-  { key: "category", label: "Category", sortable: true },
-  { key: "under_group", label: "Group", sortable: true },
+
+  // CATEGORY: Object with .name
+  {
+    key: "category",
+    label: "Category",
+    sortable: true,
+    render: (value: any) => <span>{getDisplayValue(value)}</span>,
+  },
+
+  // UNDER GROUP: Object with .item_name (Handled by getDisplayValue)
+  {
+    key: "under_group",
+    label: "Group",
+    sortable: true,
+    render: (value: any) => <span>{getDisplayValue(value)}</span>,
+  },
+
   { key: "type", label: "Type", sortable: true },
   { key: "barcode", label: "Bar Code", sortable: true },
   { key: "rackbin_no", label: "Rack Box", sortable: true },
-  { key: "timestamp", label: "Timestamp", sortable: true },
 ];
 
 const pageSizeOptions = [5, 10, 20, 50];
@@ -128,19 +178,23 @@ const useItemTableLogic = (initialData: DataItem[], initialSize: number) => {
 
   const sortedAndFilteredData = useMemo(() => {
     let sortableData = [...data];
+
+    // FILTER LOGIC: Uses getDisplayValue to search inside objects
     let filteredData = sortableData.filter((item) =>
-      Object.values(item).some((val) =>
-        String(val || "")
+      Object.keys(item).some((key) => {
+        const val = item[key];
+        return getDisplayValue(val)
           .toLowerCase()
-          .includes(searchTerm.toLowerCase())
-      )
+          .includes(searchTerm.toLowerCase());
+      })
     );
 
+    // SORT LOGIC: Uses getDisplayValue to sort based on the name text
     if (sortConfig.key) {
       filteredData.sort((a, b) => {
         const sortKey = sortConfig.key!;
-        const aVal = a[sortKey] || "";
-        const bVal = b[sortKey] || "";
+        const aVal = getDisplayValue(a[sortKey]);
+        const bVal = getDisplayValue(b[sortKey]);
 
         if (aVal < bVal) return sortConfig.direction === "ascending" ? -1 : 1;
         if (aVal > bVal) return sortConfig.direction === "ascending" ? 1 : -1;
@@ -380,10 +434,10 @@ export default function ItemMaster() {
       const result = await fetchItems();
 
       // Transform API data to include UI specific flags
-      const processedData: DataItem[] = result.map((item) => ({
+      const processedData: DataItem[] = result.map((item: any) => ({
         ...item,
-        widget: false, // Default
-        inactive: false, // Default
+        widget: false, // Default UI state
+        inactive: false, // Default UI state
       }));
 
       setApiData(processedData);
@@ -791,12 +845,8 @@ export default function ItemMaster() {
                         );
                       }
 
-                      const displayValue =
-                        value === null ||
-                        value === undefined ||
-                        String(value).trim() === ""
-                          ? "null"
-                          : String(value);
+                      // Use helper for standard cells as well to catch any unhandled objects
+                      const displayValue = getDisplayValue(value);
 
                       return (
                         <td
@@ -808,7 +858,7 @@ export default function ItemMaster() {
                               : undefined,
                           }}
                         >
-                          {displayValue}
+                          {displayValue === "" ? "null" : displayValue}
                         </td>
                       );
                     })}

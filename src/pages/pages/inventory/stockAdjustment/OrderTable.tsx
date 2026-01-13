@@ -68,6 +68,17 @@ const getStandardWarranties = (itemText: string): WarrantyOption[] => {
   return [];
 };
 
+// --- FIX: Helper Function to Extract String from Objects ---
+// This ensures we never render [object Object]
+const getStringValue = (val: any): string => {
+  if (val === null || val === undefined) return "";
+  if (typeof val === "object") {
+    // Check common name properties
+    return val.name || val.item_name || val.code || "";
+  }
+  return String(val);
+};
+
 interface OrderTableProps {
   rows: string[];
   setRows: React.Dispatch<React.SetStateAction<string[]>>;
@@ -680,16 +691,21 @@ const OrderTable: React.FC<OrderTableProps> = ({
   const handleAttributeSave = (attributeData: any) => {
     const { activeRowId, tempItemData } = attributePanelState;
     if (activeRowId && tempItemData) {
+      // FIX: Use getStringValue here to prevent objects from entering the state
       const baseData: RowData = {
         reciss: "Receipt",
         select: tempItemData.code || "",
         desc: tempItemData.name || "",
-        unit: tempItemData.stock_unit || "",
+
+        // --- FIXED HERE ---
+        unit: getStringValue(tempItemData.stock_unit),
         hsn: tempItemData.gst_classfication || "",
-        brand: tempItemData.brand || "",
+        brand: getStringValue(tempItemData.brand),
+        // ------------------
+
         qty: "1",
-        mrp: tempItemData.mrp || "0",
-        rate: tempItemData.sales_rate || "0",
+        mrp: String(tempItemData.mrp || "0"),
+        rate: String(tempItemData.sales_rate || "0"),
         barcode: tempItemData.barcode || "",
         printdesc: tempItemData.name || "",
       };
@@ -1109,11 +1125,14 @@ const OrderTable: React.FC<OrderTableProps> = ({
                               />
                             );
                           } else {
+                            // --- FIX: Use helper function here too for extra safety ---
+                            const displayVal = getStringValue(rowData[col.id]);
+
                             content = (
                               <input
                                 type="text"
                                 className="w-full h-full bg-transparent outline-none px-1"
-                                value={rowData[col.id] || ""}
+                                value={displayVal}
                                 onChange={(e) =>
                                   handleInputChange(
                                     rowId,
