@@ -333,7 +333,7 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
         ]);
 
         console.log("DEBUG: API Data Loaded");
-        console.log("DEBUG: Brands List:", brandsData); // CHECK 1: Do we have brands?
+        console.log("DEBUG: Brands List:", brandsData);
 
         setUnderGroup(underGroupData || []);
         setCategories(categoriesData || []);
@@ -466,7 +466,7 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
   };
 
   const handleDropdownChange = (fieldName: string, value: any) => {
-    console.log(`DEBUG: handleDropdownChange for ${fieldName}`, value); // CHECK 3: What does the user select?
+    console.log(`DEBUG: handleDropdownChange for ${fieldName}`, value);
     setFormData((prev) => ({ ...prev, [fieldName]: value }));
   };
 

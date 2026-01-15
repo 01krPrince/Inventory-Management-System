@@ -441,6 +441,29 @@ export const navItems = [
       { name: "Asset Transfer", path: "/asset-transfer", pro: false },
     ],
   },
+
+  {
+    name: "E-commerce",
+    icon: <AssetIcon className="w-5 h-5" />,
+    subItems: [
+      { name: "Products", path: "/ecom-products", pro: false },
+      {
+        name: "Wishlist",
+        path: "/wishlist",
+        pro: false,
+      },
+      {
+        name: "Order",
+        path: "/order",
+        pro: false,
+      },
+      { name: "Delivery", path: "/delivery", pro: false },
+      { name: "Return", path: "/return", pro: false },
+      { name: "Invoice", path: "/invoice", pro: false },
+      { name: "Customer", path: "/customer", pro: false },
+    ],
+  },
+
   {
     name: "Employee",
     icon: <EmployeeIcon className="w-5 h-5" />,

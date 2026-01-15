@@ -33,7 +33,6 @@ const InterBranchTransfer: React.FC<ModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  // --- 1. FORM HEADER STATE ---
   const [formData, setFormData] = useState<InterBranchTransferData>({
     category: "",
     store: "",
@@ -124,7 +123,6 @@ const InterBranchTransfer: React.FC<ModalProps> = ({
         })
       );
 
-      // 3. Construct the Payload
       const payload: CreateInterBranchPayload = {
         category: formData.category,
         store: formData.store,
@@ -137,7 +135,6 @@ const InterBranchTransfer: React.FC<ModalProps> = ({
         items: formattedItems,
         logistics: {
           ...logisticsData,
-          // Explicit conversions if strictly needed, otherwise spread works
           eWayCancelDate: logisticsData.eWayCancelDate || null,
           irnCancelDate: logisticsData.irnCancelDate || null,
         },
@@ -145,10 +142,8 @@ const InterBranchTransfer: React.FC<ModalProps> = ({
 
       console.log("Sending Payload:", payload);
 
-      // 4. Call the Service
       const response = await interBranchService.createTransfer(payload);
 
-      // 5. Success Handling
       if (response.success) {
         alert("Transfer Created Successfully!");
         if (onClose) onClose();
@@ -170,7 +165,6 @@ const InterBranchTransfer: React.FC<ModalProps> = ({
     }
   };
 
-  // --- View 2: Location Master Form ---
   if (showLocationMaster) {
     return (
       <div
@@ -206,7 +200,6 @@ const InterBranchTransfer: React.FC<ModalProps> = ({
       style={{ backgroundColor: COLORS.background }}
       className="flex flex-col h-auto bg-gray-100 overflow-hidden"
     >
-      {/* Header (Fixed at top) */}
       {!isOverlayOpen && (
         <>
           <InterBranchTransferHeader />
@@ -215,7 +208,6 @@ const InterBranchTransfer: React.FC<ModalProps> = ({
 
       <div className="flex-1 overflow-auto p-4">
         <div className="flex flex-col gap-4">
-          {/* Header Form */}
           <InterBranchTransferForm
             themeColor="#0f3c63"
             onOverlayChange={(isOpen) => setIsOverlayOpen(isOpen)}
@@ -225,7 +217,6 @@ const InterBranchTransfer: React.FC<ModalProps> = ({
 
           {!isOverlayOpen && (
             <>
-              {/* Item Table */}
               <OrderTable
                 rows={rows}
                 setRows={setRows}
@@ -233,20 +224,17 @@ const InterBranchTransfer: React.FC<ModalProps> = ({
                 setTableData={setTableData}
               />
 
-              {/* Remarks / Footer */}
               <AttachmentSection
                 data={footerData}
                 onDataChange={setFooterData}
               />
 
-              {/* Logistics Form - Controlled by Parent */}
               <Logistics
                 themeColor="#0f3c63"
                 data={logisticsData}
                 onChange={setLogisticsData}
               />
 
-              {/* Submit Button */}
               <div className="flex justify-end pb-4">
                 <button
                   onClick={handleSave}

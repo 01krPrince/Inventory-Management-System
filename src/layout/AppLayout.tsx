@@ -43,6 +43,8 @@ import Estimate from "../pages/pages/sales/estimate/Estimate.tsx";
 import SaleReturnChallan from "../pages/pages/sales/saleReturnChallan/SaleReturnChallan.tsx";
 import OpeningStock from "../pages/pages/header/openingTransaction/OpeningStock.tsx";
 import CustomerDirectory from "../pages/pages/sales/customer/Customer.tsx";
+import EcomProductDetail from "../pages/pages/e-commerce/EcommerceProductDetail.tsx";
+import WishlistStockManager from "../pages/pages/e-commerce/WishlistManager.tsx";
 
 const useSidebar = () => ({
   isExpanded: false,
@@ -90,7 +92,10 @@ const ComponentMap: { [key: string]: React.FC } = {
   "/dispatch": Dispatch,
   "/estimate": Estimate,
   "/sales-return-challan": SaleReturnChallan,
-
+  //
+  "/wishlist": WishlistStockManager,
+  "/ecom-products": EcomProductDetail,
+  //
   "/opening-stock": OpeningStock,
   "/opening-outstanding-customer": () => (
     <div className="p-10 text-center">

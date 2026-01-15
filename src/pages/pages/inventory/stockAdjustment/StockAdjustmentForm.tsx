@@ -182,15 +182,15 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
     });
   };
 
-  // --- SELECTION HELPERS ---
+  // --- SELECTION HELPERS (Updated to find by _id) ---
   const getSelectedCategoryObject = () =>
-    categoryList.find((cat) => cat.name === data.category) || null;
+    categoryList.find((cat) => cat._id === data.category) || null;
 
   const getSelectedLocationObject = () =>
-    locationList.find((loc) => loc.name === data.store) || null;
+    locationList.find((loc) => loc._id === data.store) || null;
 
   const getSelectedCustomerObject = () =>
-    customerList.find((cust) => cust.cust_name === data.party) || null;
+    customerList.find((cust) => cust._id === data.party) || null;
 
   // --- HANDLERS ---
   const handleEditCategoryClick = () => setDocumentInventoryModal(true);
@@ -259,9 +259,9 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
                     data={categoryList}
                     columns={categoryColumns}
                     value={data.category}
-                    valueKey="name"
+                    valueKey="_id"
                     onChange={(item) =>
-                      handleFieldChange("category", item?.name || "")
+                      handleFieldChange("category", item?._id || "")
                     }
                     placeholder="Select Category..."
                   />
@@ -284,9 +284,9 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
                     data={locationList}
                     columns={locationColumns}
                     value={data.store}
-                    valueKey="name"
+                    valueKey="_id"
                     onChange={(item) =>
-                      handleFieldChange("store", item?.name || "")
+                      handleFieldChange("store", item?._id || "")
                     }
                     placeholder="Select Store..."
                   />
@@ -312,9 +312,9 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
                     data={customerList}
                     columns={partyColumns}
                     value={data.party}
-                    valueKey="cust_name"
+                    valueKey="_id"
                     onChange={(item) =>
-                      handleFieldChange("party", item?.cust_name || "")
+                      handleFieldChange("party", item?._id || "")
                     }
                     placeholder="Select Party..."
                   />
