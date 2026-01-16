@@ -1,167 +1,126 @@
-import React, { useState, useEffect } from "react";
-import { Search, Save, Check, Plus } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import {
+  Search,
+  Save,
+  Plus,
+  Loader2,
+  Lock,
+  Layers,
+  CheckCircle2,
+} from "lucide-react";
 import Dropdown from "../../../../components/Dropdown";
 import { LocationMaster } from "../../../../components/LocationMaster";
 import {
   fetchAllLocations,
   LocationMaster as LocationMasterType,
 } from "../../inventory/stockAdjustment/api/LocationMaster";
-import { openingStockService } from "../../../../services/header/openingTransaction/openingStockService";
-import { ItemApiData } from "../../inventory/itemMaster/models/ItemModel";
+import {
+  openingStockService,
+  OpeningStockPayload,
+} from "../../../../services/header/openingTransaction/openingStockService";
 import { fetchItems } from "../../inventory/itemMaster/api/itemService";
 
-// --- Interfaces ---
-interface OpeningStockFormData {
-  storeName: string;
-  storeId: string;
-  voucherDate: string;
-  remarks: string;
-}
-
-interface ItemRow {
-  _id: string;
-  item_name: string;
-  code: string;
-  barcode: string;
-  unit: string;
-  batch_no: string;
-  quantity: number;
-  rate: number;
-  amount: number;
-  sale_rate: number;
-  mrp: number;
-  category_name: string;
-}
-
 const OpeningStock: React.FC = () => {
-  const dropdownZIndex = 1000;
-  const modalZIndex = 1010;
-
-  // --- State ---
-  const [formData, setFormData] = useState<OpeningStockFormData>({
+  // --- State Management ---
+  const [formData, setFormData] = useState({
     storeName: "",
     storeId: "",
     voucherDate: new Date().toISOString().split("T")[0],
-    remarks: "Initial stock entry for new financial year",
+    remarks: "Initial stock entry",
   });
 
   const [storeList, setStoreList] = useState<LocationMasterType[]>([]);
-  const [isLocationMasterOpen, setIsLocationMasterOpen] = useState(false);
-
-  const [availableItems, setAvailableItems] = useState<ItemApiData[]>([]);
-  const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
-  const [tableItems, setTableItems] = useState<ItemRow[]>([]);
-
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [isLocationMasterOpen, setIsLocationMasterOpen] = useState(false); // Modal State
+  const [tableItems, setTableItems] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [tableSearch, setTableSearch] = useState("");
+  const [isAlreadyCreated, setIsAlreadyCreated] = useState(false);
 
-  // --- Initial Store Load ---
-  useEffect(() => {
-    const init = async () => {
-      try {
-        const stores = (await fetchAllLocations()) as any;
-        setStoreList(Array.isArray(stores) ? stores : stores?.data || []);
-      } catch (e) {
-        console.error("Error fetching stores:", e);
-      }
-    };
-    init();
-  }, []);
+  // --- Stats Calculation ---
+  const stats = useMemo(() => {
+    const filtered = tableItems.filter(
+      (i) =>
+        i.item_name.toLowerCase().includes(tableSearch.toLowerCase()) ||
+        i.code.toLowerCase().includes(tableSearch.toLowerCase())
+    );
+    const totalQty = filtered.reduce(
+      (acc, curr) => acc + Number(curr.quantity || 0),
+      0
+    );
+    const totalValue = filtered.reduce(
+      (acc, curr) => acc + Number(curr.amount || 0),
+      0
+    );
+    return { count: filtered.length, totalQty, totalValue };
+  }, [tableItems, tableSearch]);
 
-  // --- Core Logic: Load existing OR provide selection ---
-  const handleLoadItems = async () => {
-    if (!formData.storeId) {
-      alert("Please select a store first");
-      return;
-    }
-
-    setIsLoading(true);
-    setIsSelectionMode(false);
-    setTableItems([]);
-
+  // --- Load Stores Logic ---
+  const loadStoreData = async () => {
     try {
-      let existingItems = [];
+      const stores = (await fetchAllLocations()) as any;
+      setStoreList(Array.isArray(stores) ? stores : stores?.data || []);
+    } catch (e) {
+      console.error("Store Load Error:", e);
+    }
+  };
 
-      try {
-        // 1. Try to get existing stock for the selected store
-        const res = await openingStockService.getStockByStore(formData.storeId);
-        if (res.success && (res.data?.items || res.items)) {
-          existingItems = res.data?.items || res.items || [];
-        }
-      } catch (err: any) {
-        // 2. Handle 404 (No record exists) gracefully
-        if (err.response?.status === 404) {
-          console.log(
-            "No existing record for this store. Loading master items."
-          );
-        } else {
-          throw err;
-        }
-      }
+  useEffect(() => {
+    loadStoreData();
+  }, [isLocationMasterOpen]);
 
-      if (existingItems.length > 0) {
-        // Load existing items into the entry table
-        const mappedItems: ItemRow[] = existingItems.map((apiItem: any) => ({
-          _id: apiItem.item?._id || apiItem.item || "",
-          item_name:
-            apiItem.description || apiItem.item?.name || "Unknown Item",
-          code: apiItem.itemcode || apiItem.item?.code || "",
-          barcode: apiItem.barcode || "",
-          unit: "Unit",
-          batch_no: apiItem.batchNo || "",
-          quantity: apiItem.quantity || 0,
-          rate: apiItem.rate || 0,
-          amount: apiItem.amount || 0,
-          sale_rate: apiItem.sale_rate || 0,
-          mrp: apiItem.mrp || 0,
-          category_name: apiItem.item?.category?.name || "General",
-        }));
-        setTableItems(mappedItems);
+  // --- Load Items Logic ---
+  const handleLoadItems = async () => {
+    if (!formData.storeId)
+      return alert("Please select a store location first.");
+    setIsLoading(true);
+    try {
+      const res = await openingStockService.getOpeningStockByStore(
+        formData.storeId
+      );
+
+      if (res.success && res.items?.length > 0) {
+        setIsAlreadyCreated(true);
+        setTableItems(
+          res.items.map((apiItem: any) => ({
+            _id: apiItem.item?._id,
+            item_name: apiItem.item?.name || apiItem.description,
+            code: apiItem.itemcode || apiItem.item?.code,
+            unit: apiItem.item?.stock_unit?.name || "Unit",
+            batch_no: apiItem.batchNo || "NA",
+            quantity: apiItem.quantity || 0,
+            rate: apiItem.rate || 0,
+            amount: apiItem.amount || 0,
+            category_name: apiItem.item?.category?.name || "General",
+          }))
+        );
       } else {
-        // 3. If no record, fetch all items from Master for manual selection
+        setIsAlreadyCreated(false);
         const masterItems = await fetchItems();
-        setAvailableItems(masterItems);
-        setIsSelectionMode(true);
+        setTableItems(
+          masterItems.map((item: any) => ({
+            _id: item._id,
+            item_name: item.name,
+            code: item.code,
+            unit: item.stock_unit?.name || "Unit",
+            batch_no: "NA",
+            quantity: 0,
+            rate: item.purchase_rate || 0,
+            amount: 0,
+            category_name: item.category?.name || "General",
+            mrp: item.mrp || 0,
+            sale_rate: item.sales_rate || 0,
+          }))
+        );
       }
-    } catch (error) {
-      console.error("Error in handleLoadItems:", error);
-      alert("Failed to load data. Please check your connection.");
+    } catch (e) {
+      alert("Failed to fetch store data.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const toggleItemSelection = (id: string) => {
-    setSelectedItemIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-    );
-  };
-
-  const addSelectedToTable = () => {
-    const newRows: ItemRow[] = availableItems
-      .filter((item) => selectedItemIds.includes(item._id))
-      .map((item) => ({
-        _id: item._id,
-        item_name: item.name,
-        code: item.code,
-        barcode: item.barcode || "",
-        unit: (item.stock_unit as any)?.name || "Unit",
-        batch_no: "",
-        quantity: 0,
-        rate: item.purchase_rate || 0,
-        amount: 0,
-        sale_rate: item.sales_rate || 0,
-        mrp: item.mrp || 0,
-        category_name: (item.category as any)?.name || "General",
-      }));
-
-    setTableItems(newRows);
-    setIsSelectionMode(false);
-    setSelectedItemIds([]);
-  };
-
-  const handleRowChange = (code: string, field: keyof ItemRow, value: any) => {
+  const handleRowChange = (code: string, field: string, value: any) => {
+    if (isAlreadyCreated) return;
     setTableItems((prev) =>
       prev.map((item) => {
         if (item.code === code) {
@@ -179,13 +138,10 @@ const OpeningStock: React.FC = () => {
 
   const handleSave = async () => {
     const activeItems = tableItems.filter((i) => Number(i.quantity) > 0);
+    if (activeItems.length === 0) return alert("No items to save.");
+    if (!formData.storeId) return alert("Store information missing.");
 
-    if (!activeItems.length) {
-      return alert("Please enter quantity for at least one item.");
-    }
-
-    // Mapping payload to match Postman exactly
-    const payload = {
+    const payload: OpeningStockPayload = {
       store: formData.storeId,
       voucherDate: formData.voucherDate,
       remarks: formData.remarks,
@@ -198,43 +154,114 @@ const OpeningStock: React.FC = () => {
         quantity: Number(i.quantity),
         rate: Number(i.rate),
         amount: Number(i.amount),
-        itemBalance: Number(i.quantity), // Required by backend based on Postman success
+        itemBalance: Number(i.quantity),
+        mrp: i.mrp,
+        sale_rate: i.sale_rate,
       })),
     };
 
+    setIsLoading(true);
     try {
-      const res = await openingStockService.createOpeningStock(payload as any);
-      if (res.success) {
-        alert("Opening Stock saved successfully!");
-        setTableItems([]);
-      } else {
-        alert(`Server Error: ${res.message}`);
+      const res = await openingStockService.createOpeningStock(payload);
+      if (res.success || res._id) {
+        alert("Success! Opening stock has been recorded.");
+        await handleLoadItems();
       }
-    } catch (e: any) {
-      console.error("Save Error:", e.response?.data || e.message);
-      alert("Failed to save stock. Check console for details.");
+    } catch (error: any) {
+      alert("Server Error while saving stock.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const filteredMaster = availableItems.filter(
+  const filteredItems = tableItems.filter(
     (i) =>
-      i.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      i.code.toLowerCase().includes(searchTerm.toLowerCase())
+      i.item_name.toLowerCase().includes(tableSearch.toLowerCase()) ||
+      i.code.toLowerCase().includes(tableSearch.toLowerCase())
   );
 
   return (
-    <div className="px-6 py-4 bg-white min-h-screen">
-      {/* HEADER SECTION */}
-      <div className="flex justify-between items-end mb-6 border-b pb-6">
-        <div className="flex gap-8 w-3/4">
-          <div className="w-1/3">
-            <label className="block text-xs font-semibold text-gray-500 mb-1">
-              STORE ★
-            </label>
-            <div className="flex gap-1">
+    <div className="w-full min-h-screen bg-[#f8fafc] flex flex-col font-sans relative">
+      {/* --- Dashboard Header --- */}
+      <div className="bg-[#0f3c63] shadow-xl sticky top-0 z-50">
+        <div className="px-6 py-4 flex items-center justify-between border-b border-white/10">
+          <div className="flex items-center gap-6">
+            <h1 className="text-white font-black text-2xl tracking-tighter uppercase">
+              Opening Stock
+            </h1>
+            <div
+              className={`px-4 py-1.5 rounded-full text-[10px] font-black flex items-center gap-2 shadow-inner ${
+                isAlreadyCreated
+                  ? "bg-red-500/20 text-red-300 border border-red-500/50"
+                  : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/50"
+              }`}
+            >
+              {isAlreadyCreated ? (
+                <Lock size={12} />
+              ) : (
+                <CheckCircle2 size={12} />
+              )}
+              {isAlreadyCreated
+                ? "LOCKED (ENTRY EXISTS)"
+                : "DRAFT (READY TO CREATE)"}
+            </div>
+          </div>
+
+          {/* Header Stats Dashboard */}
+          <div className="flex items-center gap-10 bg-black/30 px-8 py-2.5 rounded-2xl border border-white/5 shadow-2xl">
+            <div className="text-center border-r border-white/10 pr-10">
+              <p className="text-[9px] text-sky-300 font-bold uppercase tracking-[0.2em] mb-1">
+                Items Found
+              </p>
+              <p className="text-xl font-black text-white leading-none">
+                {stats.count}
+              </p>
+            </div>
+            <div className="text-center border-r border-white/10 pr-10">
+              <p className="text-[9px] text-sky-300 font-bold uppercase tracking-[0.2em] mb-1">
+                Total Qty
+              </p>
+              <p className="text-xl font-black text-white leading-none">
+                {stats.totalQty}
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-[9px] text-emerald-400 font-bold uppercase tracking-[0.2em] mb-1">
+                Total Value
+              </p>
+              <p className="text-xl font-black text-emerald-400 leading-none">
+                ₹{stats.totalValue.toLocaleString()}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {!isAlreadyCreated && tableItems.length > 0 && (
+              <button
+                onClick={handleSave}
+                disabled={isLoading}
+                className="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-3 rounded-xl font-black text-sm flex items-center gap-3 shadow-lg transition-all active:scale-95 disabled:opacity-50 uppercase"
+              >
+                {isLoading ? (
+                  <Loader2 className="animate-spin" size={20} />
+                ) : (
+                  <Save size={20} />
+                )}
+                Save Stock
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* --- Controls Bar --- */}
+        <div className="px-6 py-3 bg-[#164e7d] flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-80">
               <Dropdown<LocationMasterType>
                 data={storeList}
-                columns={[{ header: "Name", key: "name", width: "w-full" }]}
+                columns={[
+                  { header: "Store Name", key: "name", width: "w-full" },
+                ]}
                 value={formData.storeName}
                 valueKey="name"
                 onChange={(item) =>
@@ -244,222 +271,179 @@ const OpeningStock: React.FC = () => {
                     storeId: (item as any)?._id || "",
                   }))
                 }
-                placeholder="Select Store"
-                zIndex={dropdownZIndex}
-              />
-              <ActionBtn
-                icon={<Plus size={16} />}
-                onClick={() => setIsLocationMasterOpen(true)}
+                placeholder="Select Warehouse / Store"
               />
             </div>
-          </div>
-          <div className="w-1/2">
-            <label className="block text-xs font-semibold text-gray-500 mb-1">
-              REMARKS
-            </label>
-            <input
-              className="w-full px-3 py-1.5 border border-gray-300 rounded text-sm outline-none focus:ring-1 focus:ring-[#0f3c63]"
-              value={formData.remarks}
-              onChange={(e) =>
-                setFormData((p) => ({ ...p, remarks: e.target.value }))
-              }
-            />
-          </div>
-        </div>
-        <button
-          onClick={handleLoadItems}
-          disabled={!formData.storeId || isLoading}
-          className="bg-[#0f3c63] text-white px-8 py-2 rounded font-medium disabled:opacity-50 hover:bg-[#1a4b75]"
-        >
-          {isLoading ? "Loading..." : "Load Items"}
-        </button>
-      </div>
-
-      {/* SELECTION MODE: Checkbox List */}
-      {isSelectionMode && (
-        <div className="bg-gray-50 p-4 rounded-lg border border-blue-100 shadow-sm mb-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-bold text-[#0f3c63]">Pick Items from Master</h3>
-            <div className="flex gap-3">
-              <div className="relative">
-                <Search
-                  size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                />
-                <input
-                  placeholder="Search Master..."
-                  className="pl-9 pr-4 py-1 border rounded text-sm w-64 focus:ring-1 focus:ring-blue-400 outline-none"
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <button
-                onClick={addSelectedToTable}
-                className="bg-green-600 text-white px-4 py-1 rounded text-sm flex items-center gap-2 hover:bg-green-700"
-              >
-                <Check size={16} /> Add Selected ({selectedItemIds.length})
-              </button>
-            </div>
-          </div>
-          <div className="max-h-64 overflow-y-auto bg-white border rounded">
-            <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-gray-50 border-b">
-                <tr>
-                  <th className="p-2 w-10"></th>
-                  <th className="p-2 text-left text-gray-500">Code</th>
-                  <th className="p-2 text-left text-gray-500">Item Name</th>
-                  <th className="p-2 text-left text-gray-500">Category</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredMaster.map((item) => (
-                  <tr
-                    key={item._id}
-                    className={`border-b hover:bg-blue-50 cursor-pointer ${
-                      selectedItemIds.includes(item._id) ? "bg-blue-50/50" : ""
-                    }`}
-                    onClick={() => toggleItemSelection(item._id)}
-                  >
-                    <td className="p-2 text-center">
-                      <input
-                        type="checkbox"
-                        checked={selectedItemIds.includes(item._id)}
-                        onChange={() => {}}
-                      />
-                    </td>
-                    <td className="p-2">{item.code}</td>
-                    <td className="p-2 font-medium">{item.name}</td>
-                    <td className="p-2 text-gray-500">
-                      {(item.category as any)?.name}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* ENTRY LIST: The Editable Grid */}
-      {tableItems.length > 0 && (
-        <div className="mt-4">
-          <div className="flex justify-between items-center mb-3">
-            <h2 className="text-sm font-bold text-[#0f3c63] uppercase tracking-wide">
-              Opening Entry List
-            </h2>
+            {/* ADD NEW STORE BUTTON */}
             <button
-              onClick={handleSave}
-              className="bg-green-700 text-white px-6 py-2 rounded flex items-center gap-2 shadow hover:bg-green-800 transition-colors"
+              onClick={() => setIsLocationMasterOpen(true)}
+              className="bg-sky-500 hover:bg-sky-400 text-white p-2.5 rounded-xl shadow-lg transition-all active:scale-90"
+              title="Add New Store"
             >
-              <Save size={18} /> Save Opening Stock
+              <Plus size={20} strokeWidth={3} />
             </button>
           </div>
-          <div className="border rounded shadow-sm overflow-hidden bg-white">
-            <table className="w-full text-[13px]">
-              <thead className="bg-[#003f6b] text-white">
-                <tr>
-                  <th className="px-4 py-3 text-left">Item Details</th>
-                  <th className="px-4 py-3 text-left w-32">Batch No</th>
-                  <th className="px-4 py-3 text-left w-24">Qty</th>
-                  <th className="px-4 py-3 text-left w-28">Rate</th>
-                  <th className="px-4 py-3 text-left">Amount</th>
-                  <th className="px-4 py-3 text-left w-28">Sale Rate</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {tableItems.map((item) => (
-                  <tr key={item.code} className="hover:bg-gray-50">
-                    <td className="px-4 py-2">
-                      <div className="font-bold text-gray-800">
-                        {item.item_name}
-                      </div>
-                      <div className="text-[11px] text-gray-400 font-medium">
-                        {item.code} | {item.category_name}
-                      </div>
-                    </td>
-                    <td className="px-2 py-2">
-                      <input
-                        className="w-full border rounded px-2 py-1 focus:border-blue-400 outline-none"
-                        value={item.batch_no}
-                        onChange={(e) =>
-                          handleRowChange(item.code, "batch_no", e.target.value)
-                        }
-                      />
-                    </td>
-                    <td className="px-2 py-2">
-                      <input
-                        type="number"
-                        className="w-full border border-blue-200 rounded px-2 py-1 font-bold text-blue-800 bg-blue-50/30"
-                        value={item.quantity}
-                        onChange={(e) =>
-                          handleRowChange(item.code, "quantity", e.target.value)
-                        }
-                      />
-                    </td>
-                    <td className="px-2 py-2">
-                      <input
-                        type="number"
-                        className="w-full border rounded px-2 py-1"
-                        value={item.rate}
-                        onChange={(e) =>
-                          handleRowChange(item.code, "rate", e.target.value)
-                        }
-                      />
-                    </td>
-                    <td className="px-4 py-2 font-bold text-gray-700">
-                      ₹{item.amount.toLocaleString()}
-                    </td>
-                    <td className="px-2 py-2">
-                      <input
-                        type="number"
-                        className="w-full border rounded px-2 py-1"
-                        value={item.sale_rate}
-                        onChange={(e) =>
-                          handleRowChange(
-                            item.code,
-                            "sale_rate",
-                            e.target.value
-                          )
-                        }
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
 
-      {/* LOCATION MASTER MODAL */}
+          <div className="flex-1 relative">
+            <Search
+              size={16}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40"
+            />
+            <input
+              placeholder="Quick search by name or code..."
+              className="w-full bg-white/10 border border-white/10 rounded-xl px-12 py-2 text-sm text-white placeholder:text-white/30 outline-none focus:bg-white focus:text-gray-900 transition-all"
+              value={tableSearch}
+              onChange={(e) => setTableSearch(e.target.value)}
+            />
+          </div>
+          <button
+            onClick={handleLoadItems}
+            disabled={isLoading || !formData.storeId}
+            className="bg-white text-[#0f3c63] px-8 py-2 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-sky-50 transition-all disabled:opacity-50"
+          >
+            {isLoading ? "Fetching..." : "Fetch Records"}
+          </button>
+        </div>
+      </div>
+
+      {/* --- Data Table Section --- */}
+      <div className="p-6 flex-1">
+        {tableItems.length > 0 ? (
+          <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+            <div className="overflow-y-auto max-h-[calc(100vh-280px)]">
+              <table className="w-full text-left border-collapse">
+                <thead className="bg-slate-50 text-slate-400 text-[10px] uppercase font-black border-b sticky top-0 z-10">
+                  <tr>
+                    <th className="px-6 py-4 w-16 text-center">#</th>
+                    <th className="px-6 py-4">Item Detail</th>
+                    <th className="px-6 py-4">Category</th>
+                    <th className="px-6 py-4 w-52">Batch No.</th>
+                    <th className="px-6 py-4 w-36 text-center">Quantity</th>
+                    <th className="px-6 py-4 w-40 text-right">Purchase Rate</th>
+                    <th className="px-6 py-4 w-44 text-right bg-slate-100/50">
+                      Total Amount
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {filteredItems.map((item, idx) => (
+                    <tr
+                      key={item.code}
+                      className={`group transition-all ${
+                        isAlreadyCreated
+                          ? "bg-gray-50/40"
+                          : "hover:bg-blue-50/50"
+                      }`}
+                    >
+                      <td className="px-6 py-2 text-center text-gray-300 text-[10px] font-bold italic">
+                        {idx + 1}
+                      </td>
+                      <td className="px-6 py-2">
+                        <div className="font-bold text-gray-800 text-sm leading-tight uppercase">
+                          {item.item_name}
+                        </div>
+                        <div className="text-[10px] text-gray-400 font-bold mt-1 tracking-tighter">
+                          CODE: {item.code} | UNIT: {item.unit}
+                        </div>
+                      </td>
+                      <td className="px-6 py-2">
+                        <span className="text-[10px] font-black text-gray-400 border border-gray-200 px-2 py-0.5 rounded-md bg-gray-50">
+                          {item.category_name}
+                        </span>
+                      </td>
+                      <td className="px-6 py-2">
+                        <input
+                          className="w-full bg-transparent border-b border-transparent group-hover:border-gray-300 py-1 text-xs font-medium outline-none focus:border-blue-400 disabled:text-gray-400"
+                          value={item.batch_no}
+                          disabled={isAlreadyCreated}
+                          onChange={(e) =>
+                            handleRowChange(
+                              item.code,
+                              "batch_no",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </td>
+                      <td className="px-6 py-2">
+                        <input
+                          type="number"
+                          className={`w-full text-center py-1.5 rounded-lg text-sm font-black border outline-none transition-all ${
+                            isAlreadyCreated
+                              ? "bg-transparent border-transparent"
+                              : "border-gray-200 bg-white focus:border-blue-500"
+                          } ${
+                            Number(item.quantity) > 0 && !isAlreadyCreated
+                              ? "text-blue-600 border-blue-400 bg-blue-50"
+                              : "text-gray-600"
+                          }`}
+                          value={item.quantity}
+                          disabled={isAlreadyCreated}
+                          onChange={(e) =>
+                            handleRowChange(
+                              item.code,
+                              "quantity",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </td>
+                      <td className="px-6 py-2">
+                        <input
+                          type="number"
+                          className="w-full text-right bg-transparent border-b border-transparent group-hover:border-gray-300 py-1 text-xs font-bold outline-none focus:border-blue-400 disabled:text-gray-400"
+                          value={item.rate}
+                          disabled={isAlreadyCreated}
+                          onChange={(e) =>
+                            handleRowChange(item.code, "rate", e.target.value)
+                          }
+                        />
+                      </td>
+                      <td className="px-6 py-2 text-right bg-slate-50/30">
+                        <span className="text-sm font-black text-slate-700">
+                          ₹
+                          {Number(item.amount).toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                          })}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : (
+          <div className="h-[60vh] flex flex-col items-center justify-center text-gray-300 border-4 border-dashed border-gray-100 rounded-[3rem]">
+            <Layers
+              size={80}
+              strokeWidth={1}
+              className="mb-6 opacity-10 animate-pulse"
+            />
+            <p className="font-black uppercase tracking-[0.3em] text-xs">
+              Awaiting Store Selection
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* --- STORE CREATION MODAL --- */}
       {isLocationMasterOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-[2000]">
-          <LocationMaster
-            onClose={() => setIsLocationMasterOpen(false)}
-            onSuccess={async () => {
-              const res = (await fetchAllLocations()) as any;
-              setStoreList(Array.isArray(res) ? res : res?.data || []);
-            }}
-            index={modalZIndex}
-          />
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className=" rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+            <LocationMaster
+              onClose={() => setIsLocationMasterOpen(false)}
+              onSuccess={() => {
+                setIsLocationMasterOpen(false);
+                loadStoreData(); // Refresh dropdown list
+              }}
+              index={100} // Custom index or pass what is required
+            />
+          </div>
         </div>
       )}
     </div>
   );
 };
-
-const ActionBtn = ({
-  icon,
-  onClick,
-}: {
-  icon: React.ReactNode;
-  onClick: () => void;
-}) => (
-  <button
-    onClick={onClick}
-    className="h-[34px] w-[34px] bg-[#0f3c63] text-white flex items-center justify-center rounded hover:bg-[#1a4b75] transition-colors shadow-sm"
-  >
-    {icon}
-  </button>
-);
 
 export default OpeningStock;
