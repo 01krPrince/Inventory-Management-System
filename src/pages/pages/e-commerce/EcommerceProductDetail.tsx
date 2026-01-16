@@ -1,31 +1,22 @@
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Plus,
   Search,
   Save,
   Image as ImageIcon,
-  Info,
   ArrowLeft,
   RefreshCw,
   ShoppingBag,
   Wallet,
-  ArrowUpRight,
-  TrendingUp,
   Layers,
   Maximize,
   Palette,
-  FileText,
   Package,
   Globe,
   Tag,
-  ChevronRight,
 } from "lucide-react";
 
 import { fetchItems } from "../inventory/itemMaster/api/itemService";
-
-// Theme Constants from Modal reference
-const THEME_BLUE = "#0f3c63";
-const THEME_YELLOW = "#facc15"; // Vivid Yellow for high-contrast actions
 
 const getDisplayValue = (value: any): string => {
   if (value === null || value === undefined) return "";
@@ -39,7 +30,7 @@ export default function EcomProductDetail() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showExtendedForm, setShowExtendedForm] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage] = useState(1);
   const pageSize = 10;
 
   const [ecoData, setEcoData] = useState({
@@ -106,7 +97,7 @@ export default function EcomProductDetail() {
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
-  const totalPages = Math.ceil(filteredItems.length) || 1;
+  // const totalPages = Math.ceil(filteredItems.length) || 1;
 
   if (loading)
     return (

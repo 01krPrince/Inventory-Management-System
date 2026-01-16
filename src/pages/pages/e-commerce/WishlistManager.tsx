@@ -1,17 +1,13 @@
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
   Heart,
   Search,
   ArrowUpRight,
   Package,
   AlertTriangle,
-  Filter,
   Download,
-  ShoppingBag,
   TrendingUp,
   BarChart3,
-  ChevronRight,
-  RefreshCw,
 } from "lucide-react";
 
 // Mock Data representing items gathered from all user wishlists

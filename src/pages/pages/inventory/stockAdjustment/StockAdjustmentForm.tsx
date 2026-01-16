@@ -103,7 +103,6 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
   onOverlayChange,
   data,
   onDataChange,
-  zIndex,
 }) => {
   const themeStyles = {
     "--theme-primary": themeColor,

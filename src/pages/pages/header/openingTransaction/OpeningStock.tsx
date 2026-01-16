@@ -6,10 +6,7 @@ import {
   fetchAllLocations,
   LocationMaster as LocationMasterType,
 } from "../../inventory/stockAdjustment/api/LocationMaster";
-import {
-  openingStockService,
-  OpeningStockPayload,
-} from "../../../../services/header/openingTransaction/openingStockService";
+import { openingStockService } from "../../../../services/header/openingTransaction/openingStockService";
 import { ItemApiData } from "../../inventory/itemMaster/models/ItemModel";
 import { fetchItems } from "../../inventory/itemMaster/api/itemService";
 

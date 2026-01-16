@@ -1,13 +1,5 @@
-import React, { useState, useMemo } from "react";
-import {
-  X,
-  Calculator,
-  CheckCircle,
-  AlertCircle,
-  TrendingUp,
-  ArrowUpRight,
-  Wallet,
-} from "lucide-react";
+import React, { useState } from "react";
+import { X, Calculator, TrendingUp, ArrowUpRight, Wallet } from "lucide-react";
 
 interface OrderItem {
   id: string;
@@ -23,13 +15,13 @@ interface OrderItem {
   extraDiscountType: "flat" | "percent";
 }
 
-interface CustomerInfo {
-  name: string;
-  code: string;
-  paymentStatus: "Paid" | "Pending" | "Overdue" | "Partial";
-  orderNo: string;
-  orderDate: string;
-}
+// interface CustomerInfo {
+//   name: string;
+//   code: string;
+//   paymentStatus: "Paid" | "Pending" | "Overdue" | "Partial";
+//   orderNo: string;
+//   orderDate: string;
+// }
 
 interface PullFromOrderModalProps {
   isOpen: boolean;
@@ -41,13 +33,12 @@ interface PullFromOrderModalProps {
 const PullFromOrderModal: React.FC<PullFromOrderModalProps> = ({
   isOpen,
   onClose,
-  onImport = () => {},
   index = 50,
 }) => {
   const overlayZIndex = index + 10;
   const themeColor = "#0f3c63"; // Deep Blue
 
-  const [items, setItems] = useState<OrderItem[]>([
+  const [items] = useState<OrderItem[]>([
     {
       id: "1",
       itemName: "Cricket Bat (English Willow)",

@@ -10,6 +10,8 @@ import {
   ReportIcon,
 } from "../components/icons";
 
+import { Store } from "lucide-react";
+
 export const navItems = [
   {
     icon: <SaleIcon className="w-5 h-5" />,
@@ -444,7 +446,7 @@ export const navItems = [
 
   {
     name: "E-commerce",
-    icon: <AssetIcon className="w-5 h-5" />,
+    icon: <Store className="w-5 h-5" />,
     subItems: [
       { name: "Products", path: "/ecom-products", pro: false },
       {
