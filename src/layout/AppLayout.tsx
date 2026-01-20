@@ -2,10 +2,10 @@ import React from "react";
 import { TabProvider, useTabs } from "../context/TabContext";
 import AppHeader from "./AppHeader";
 import AppFooter from "./AppFooter";
-
 import { TabBar } from "./TabBar";
 import { AppSidebar } from "./AppSidebar";
 import Welcome from "../pages/pages/Welcome";
+// ... (Keep all your existing imports) ...
 import PriceList from "../pages/pages/sales/salesPriceList/PriceList";
 import PartySalesDiscountRate from "../pages/pages/sales/salesPriceList/PartySalesDiscountRate";
 import BrandwiseDiscountCharges from "../pages/pages/sales/salesPriceList/BrandwiseDiscountCharges";
@@ -47,12 +47,171 @@ import EcomProductDetail from "../pages/pages/e-commerce/EcommerceProductDetail.
 import WishlistStockManager from "../pages/pages/e-commerce/WishlistManager.tsx";
 import ReportDashboard from "../pages/pages/report/ReportDashboard.tsx";
 
+// FIXED: Remove .tsx extension here for safety
+import PlaceholderPage from "../pages/pages/report/PlaceholderPage";
+
 const useSidebar = () => ({
   isExpanded: false,
   isHovered: false,
   isMobileOpen: false,
 });
 const Backdrop = () => null;
+
+const ReportPageRoutes: { [key: string]: React.FC } = {
+  // MIS
+  "/report/financial-statements": () => (
+    <PlaceholderPage title="Financial Statements" />
+  ),
+  "/report/financial-analysis": () => (
+    <PlaceholderPage title="Financial Analysis" />
+  ),
+  "/report/stock-analysis": () => <PlaceholderPage title="Stock Analysis" />,
+  "/report/sales-analysis": () => <PlaceholderPage title="Sales Analysis" />,
+  "/report/purchase-analysis": () => (
+    <PlaceholderPage title="Purchase Analysis" />
+  ),
+  "/report/enterprise-analysis": () => (
+    <PlaceholderPage title="Enterprise Analysis" />
+  ),
+
+  // Finance
+  "/report/primary-books": () => <PlaceholderPage title="Primary Books" />,
+  "/report/ledgers": () => <PlaceholderPage title="Ledgers" />,
+  "/report/trial-balance-finance": () => (
+    <PlaceholderPage title="Trial Balance" />
+  ),
+  "/report/attribute-reports": () => (
+    <PlaceholderPage title="Attribute Reports" />
+  ),
+  "/report/loan-bank-interest": () => (
+    <PlaceholderPage title="Loan-Bank Interest" />
+  ),
+
+  // Sales
+  "/report/customers": () => <PlaceholderPage title="Customers Report" />,
+  "/report/sale-invoice": () => <PlaceholderPage title="Sale Invoice Report" />,
+  "/report/sales-report": () => <PlaceholderPage title="Sales Report" />,
+  "/report/sales-ledgers": () => (
+    <PlaceholderPage title="Sales Ledgers & Trials" />
+  ),
+  "/report/sales-bills-os": () => <PlaceholderPage title="Sales Bills O/S" />,
+  "/report/sales-linkage": () => (
+    <PlaceholderPage title="Sales Linkage Reports" />
+  ),
+
+  // Purchase
+  "/report/vendors": () => <PlaceholderPage title="Vendors Report" />,
+  "/report/purchase-bill": () => (
+    <PlaceholderPage title="Purchase Bill Report" />
+  ),
+  "/report/purchase-registers": () => (
+    <PlaceholderPage title="Purchase Registers" />
+  ),
+  "/report/purchase-trial-ledgers": () => (
+    <PlaceholderPage title="Purchase Trial/Ledgers" />
+  ),
+  "/report/vendor-bills-os": () => <PlaceholderPage title="Vendor Bills O/S" />,
+  "/report/purchase-linkage": () => (
+    <PlaceholderPage title="Purchase Linkage Reports" />
+  ),
+
+  // Inventory
+  "/report/stock-adjustment": () => (
+    <PlaceholderPage title="Stock Adjustment Report" />
+  ),
+  "/report/primary-stock": () => (
+    <PlaceholderPage title="Primary Stock Reports" />
+  ),
+  "/report/store-transfer": () => <PlaceholderPage title="Store Transfer" />,
+  "/report/job-work-reports": () => (
+    <PlaceholderPage title="Job Work Reports" />
+  ),
+  "/report/serial-imei": () => <PlaceholderPage title="Serial/IMEI Reports" />,
+  "/report/barcode-reports": () => <PlaceholderPage title="Barcode Reports" />,
+  "/report/pharma-batch": () => (
+    <PlaceholderPage title="Pharma/Batch Reports" />
+  ),
+
+  // GST
+  "/report/gst-returns": () => <PlaceholderPage title="GST Returns" />,
+  "/report/gstr-reco": () => (
+    <PlaceholderPage title="GSTR 2A/2B Reconciliation" />
+  ),
+  "/report/uae-vat": () => <PlaceholderPage title="UAE VAT Returns" />,
+  "/report/tax-register-sales": () => (
+    <PlaceholderPage title="Tax Register Sales" />
+  ),
+  "/report/tax-register-purchase": () => (
+    <PlaceholderPage title="Tax Register Purchase" />
+  ),
+
+  // Employee
+  "/report/employee-register": () => (
+    <PlaceholderPage title="Employee Register" />
+  ),
+  "/report/attendance-leave": () => (
+    <PlaceholderPage title="Attendance/Leave Reports" />
+  ),
+  "/report/salary-timesheet": () => (
+    <PlaceholderPage title="Salary/Timesheet Reports" />
+  ),
+  "/report/esi-pf": () => <PlaceholderPage title="ESI/PF Reports" />,
+
+  // POS
+  "/report/pos-customer-list": () => (
+    <PlaceholderPage title="POS Customer List" />
+  ),
+  "/report/pos-order-register": () => (
+    <PlaceholderPage title="POS Order Register" />
+  ),
+  "/report/pos-sales-register": () => (
+    <PlaceholderPage title="POS Sales Register" />
+  ),
+  "/report/pos-sales-summary": () => (
+    <PlaceholderPage title="POS Sales Summary" />
+  ),
+  "/report/pos-tender-wise": () => (
+    <PlaceholderPage title="POS Sales Tender Wise" />
+  ),
+
+  // Production
+  "/report/production-register": () => (
+    <PlaceholderPage title="Production Register" />
+  ),
+  "/report/bom-register": () => (
+    <PlaceholderPage title="Bill of Material Register" />
+  ),
+  "/report/de-assembling": () => (
+    <PlaceholderPage title="Production De-Assembling" />
+  ),
+  "/report/issue-request": () => (
+    <PlaceholderPage title="Material Issue Request" />
+  ),
+  "/report/issue-summary": () => (
+    <PlaceholderPage title="Material Issue Summary" />
+  ),
+
+  // Assets
+  "/report/asset-register": () => <PlaceholderPage title="Asset Register" />,
+  "/report/asset-transfer": () => (
+    <PlaceholderPage title="Asset Transfer Register" />
+  ),
+  "/report/asset-depreciation": () => (
+    <PlaceholderPage title="Asset Depreciation" />
+  ),
+  "/report/asset-on-hand": () => <PlaceholderPage title="Asset On Hand" />,
+
+  // Audit
+  "/report/price-list-change": () => (
+    <PlaceholderPage title="Price List Change Track" />
+  ),
+  "/report/physical-stock": () => (
+    <PlaceholderPage title="Physical Stock vs Actual" />
+  ),
+  "/report/mismatch-report": () => <PlaceholderPage title="Mismatch Report" />,
+  "/report/user-geo": () => <PlaceholderPage title="User Geo Tracking" />,
+  "/report/logs": () => <PlaceholderPage title="System Logs" />,
+};
 
 const ComponentMap: { [key: string]: React.FC } = {
   "/welcome": Welcome,
@@ -170,6 +329,11 @@ const ComponentMap: { [key: string]: React.FC } = {
   ),
   //
   "/all-report": ReportDashboard,
+  // "/place-holder-page": PlaceholderPage,
+
+  // SPREAD ROUTES HERE:
+  ...ReportPageRoutes,
+
   //
   "/fallback": () => (
     <div className="p-6 mt-6 bg-gray-100 dark:bg-gray-800 rounded-lg shadow text-center">

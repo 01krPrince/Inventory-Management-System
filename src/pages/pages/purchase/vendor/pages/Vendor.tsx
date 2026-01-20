@@ -21,18 +21,16 @@ import {
 import {
   handlePrint,
   handleExport,
-} from "../../../../../components/function/functions"; // Check extension .tsx vs .ts
+} from "../../../../../components/function/functions";
 
 import { PrintIcon, ExportIcon } from "../../../../../components/icons";
 import CrudVendor from "./AddNewVendor";
 
-// --- CHANGED: Import from Vendor Service ---
 import { getAllVendors, deleteVendor } from "../api/vendorService";
 
-// --- CHANGED: Updated Interface to match Vendor Payload ---
 interface Vendor {
   _id: string;
-  vend_name: string; // Changed from cust_name
+  vend_name: string;
   print_name: string;
   gst_no: string;
   identification: string;
@@ -74,9 +72,8 @@ interface ResizableHeaderProps {
   columnIndex: number;
 }
 
-// --- CHANGED: Column Definitions for Vendors ---
 const VendorColumns: Column[] = [
-  { key: "vend_name", label: "Vendor Name", sortable: true }, // Key updated
+  { key: "vend_name", label: "Vendor Name", sortable: true },
   { key: "print_name", label: "Print Name", sortable: true },
   { key: "code", label: "Code", sortable: true },
   { key: "gst_no", label: "GST No", sortable: true },
@@ -89,11 +86,7 @@ const VendorColumns: Column[] = [
 const pageSizeOptions = [5, 10, 20, 50];
 const initialPageSize = 5;
 
-// --- VENDOR TABLE LOGIC HOOK ---
-const useVendorTableLogic = (
-  initialData: DataItem[],
-  initialSize: number
-) => {
+const useVendorTableLogic = (initialData: DataItem[], initialSize: number) => {
   const [data, setData] = useState<DataItem[]>(initialData);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [pageSize, setPageSize] = useState<number>(initialSize);
@@ -118,21 +111,30 @@ const useVendorTableLogic = (
     let sortableData = [...data];
     let filteredData = sortableData.filter((item) =>
       Object.values(item).some((val) =>
-        String(val).toLowerCase().includes(searchTerm.toLowerCase())
-      )
+        String(val).toLowerCase().includes(searchTerm.toLowerCase()),
+      ),
     );
 
-    if (sortConfig.key) {
-      filteredData.sort((a, b) => {
-        const sortKey = sortConfig.key!;
-        const aVal = a[sortKey];
-        const bVal = b[sortKey];
+    filteredData.sort((a, b) => {
+      const sortKey = sortConfig.key!;
 
-        if (aVal < bVal) return sortConfig.direction === "ascending" ? -1 : 1;
-        if (aVal > bVal) return sortConfig.direction === "ascending" ? 1 : -1;
-        return 0;
-      });
-    }
+      let aVal: any = a[sortKey];
+      let bVal: any = b[sortKey];
+
+      if (sortKey === "under_ledger") {
+        if (typeof aVal === "object" && aVal !== null) {
+          aVal = aVal.name;
+        }
+        if (typeof bVal === "object" && bVal !== null) {
+          bVal = bVal.name;
+        }
+      }
+
+      if (aVal < bVal) return sortConfig.direction === "ascending" ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === "ascending" ? 1 : -1;
+      return 0;
+    });
+
     return filteredData;
   }, [data, searchTerm, sortConfig]);
 
@@ -155,7 +157,7 @@ const useVendorTableLogic = (
 
   const startEntry = Math.min(
     sortedDataLength,
-    (currentPage - 1) * pageSize + 1
+    (currentPage - 1) * pageSize + 1,
   );
   const endEntry = Math.min(sortedDataLength, currentPage * pageSize);
 
@@ -247,7 +249,7 @@ const ResizableHeader = ({
       const doResizing = (mouseMoveEvent: MouseEvent) => {
         const newWidth = Math.max(
           initialWidth + (mouseMoveEvent.clientX - startX),
-          100
+          100,
         );
         setColumnWidths((prev: Record<string, number | undefined>) => ({
           ...prev,
@@ -261,7 +263,7 @@ const ResizableHeader = ({
       window.addEventListener("mousemove", doResizing);
       window.addEventListener("mouseup", stopResizing);
     },
-    [keyString, setColumnWidths]
+    [keyString, setColumnWidths],
   );
 
   const handleHeaderClick = () => {
@@ -376,7 +378,7 @@ export default function VendorDirectory() {
     } catch (err) {
       console.error("Failed to fetch vendor data:", err);
       setError(
-        "Failed to load vendor data. Please check the network connection."
+        "Failed to load vendor data. Please check the network connection.",
       );
     } finally {
       setIsLoading(false);
@@ -392,8 +394,7 @@ export default function VendorDirectory() {
     Record<string, number | undefined>
   >({});
 
-  const [currentColumns, setCurrentColumns] =
-    useState<Column[]>(VendorColumns);
+  const [currentColumns, setCurrentColumns] = useState<Column[]>(VendorColumns);
 
   // Pass the state derived from the API to the logic hook
   const {
@@ -425,10 +426,10 @@ export default function VendorDirectory() {
       if (!draggedKey || !droppedOverKey) return;
 
       const draggedColIndex = currentColumns.findIndex(
-        (col) => col.key === draggedKey
+        (col) => col.key === draggedKey,
       );
       const droppedOverIndex = currentColumns.findIndex(
-        (col) => col.key === droppedOverKey
+        (col) => col.key === droppedOverKey,
       );
 
       if (
@@ -445,7 +446,7 @@ export default function VendorDirectory() {
 
       setCurrentColumns(newColumns);
     },
-    [currentColumns]
+    [currentColumns],
   );
 
   // --- Data Handlers ---
@@ -454,19 +455,19 @@ export default function VendorDirectory() {
     setSelectedRows((prev: string[]) =>
       isSelected(row)
         ? prev.filter((id: string) => id !== row._id)
-        : [...prev, row._id]
+        : [...prev, row._id],
     );
   };
 
   const handleSelectAll = () => {
     const allIdsOnPage = paginatedData.map((row: DataItem) => row._id);
     const areAllSelected = allIdsOnPage.every((id: string) =>
-      selectedRows.includes(id)
+      selectedRows.includes(id),
     );
 
     if (areAllSelected) {
       setSelectedRows((prev: string[]) =>
-        prev.filter((id: string) => !allIdsOnPage.includes(id))
+        prev.filter((id: string) => !allIdsOnPage.includes(id)),
       );
     } else {
       setSelectedRows((prev: string[]) => [
@@ -503,7 +504,7 @@ export default function VendorDirectory() {
   const handleDelete = async (user: DataItem) => {
     const confirmDelete = window.confirm(
       // --- CHANGED: Use vend_name and text ---
-      `Are you sure you want to delete Vendor: ${user.vend_name}?`
+      `Are you sure you want to delete Vendor: ${user.vend_name}?`,
     );
 
     if (!confirmDelete) return;
@@ -513,11 +514,11 @@ export default function VendorDirectory() {
       await deleteVendor(user._id);
 
       setApiData((prev: DataItem[]) =>
-        prev.filter((u: DataItem) => u._id !== user._id)
+        prev.filter((u: DataItem) => u._id !== user._id),
       );
 
       setSelectedRows((prev: string[]) =>
-        prev.filter((id: string) => id !== user._id)
+        prev.filter((id: string) => id !== user._id),
       );
       alert("Vendor deleted successfully");
     } catch (error) {
@@ -534,13 +535,13 @@ export default function VendorDirectory() {
 
     if (
       window.confirm(
-        `Are you sure you want to delete ${selectedRows.length} selected row(s)?`
+        `Are you sure you want to delete ${selectedRows.length} selected row(s)?`,
       )
     ) {
       // In a real app, you would call an API bulk delete function here.
       // For now, optimistic UI update:
       setApiData((prev: DataItem[]) =>
-        prev.filter((u: DataItem) => !selectedRows.includes(u._id))
+        prev.filter((u: DataItem) => !selectedRows.includes(u._id)),
       );
       setSelectedRows([]);
     }
@@ -690,7 +691,6 @@ export default function VendorDirectory() {
                 />
               </th>
 
-              {/* Data Columns */}
               {currentColumns.map((col: Column, index: number) => (
                 <ResizableHeader
                   key={col.key as string}
@@ -706,7 +706,6 @@ export default function VendorDirectory() {
                 />
               ))}
 
-              {/* Actions Column */}
               <th
                 className="p-4 text-center whitespace-nowrap no-print border-r border-dashed border-gray-300 dark:border-gray-600"
                 style={{ width: columnWidths["actions"] || "100px" }}
@@ -736,15 +735,22 @@ export default function VendorDirectory() {
                     />
                   </td>
 
-                  {/* Data Cells (N/A Check) */}
                   {currentColumns.map((col: Column, colIndex: number) => {
                     const value = row[col.key as keyof DataItem];
-                    const displayValue =
-                      value === null ||
-                      value === undefined ||
-                      String(value).trim() === ""
-                        ? "N/A"
-                        : String(value);
+
+                    let displayValue = "N/A";
+
+                    if (value !== null && value !== undefined) {
+                      if (
+                        col.key === "under_ledger" &&
+                        typeof value === "object"
+                      ) {
+                        displayValue = (value as any).name ?? "N/A";
+                      } else {
+                        const stringValue = String(value).trim();
+                        displayValue = stringValue !== "" ? stringValue : "N/A";
+                      }
+                    }
 
                     return (
                       <td
