@@ -21,16 +21,18 @@ import {
 import {
   handlePrint,
   handleExport,
-} from "../../../../../components/function/functions.tsx";
+} from "../../../../../components/function/functions"; // Check extension .tsx vs .ts
 
-import { PrintIcon, ExportIcon } from "../../../../../components/icons.tsx";
-import CrudVendor from "./AddNewVendor.tsx";
+import { PrintIcon, ExportIcon } from "../../../../../components/icons";
+import CrudVendor from "./AddNewVendor";
 
-import { getAllCustomers, customerDeleteApi } from "../api/customerService.ts";
+// --- CHANGED: Import from Vendor Service ---
+import { getAllVendors, deleteVendor } from "../api/vendorService";
 
+// --- CHANGED: Updated Interface to match Vendor Payload ---
 interface Vendor {
   _id: string;
-  cust_name: string;
+  vend_name: string; // Changed from cust_name
   print_name: string;
   gst_no: string;
   identification: string;
@@ -72,9 +74,9 @@ interface ResizableHeaderProps {
   columnIndex: number;
 }
 
-// --- COLUMN DEFINITIONS ---
-const CustomerColumns: Column[] = [
-  { key: "cust_name", label: "Customer Name", sortable: true },
+// --- CHANGED: Column Definitions for Vendors ---
+const VendorColumns: Column[] = [
+  { key: "vend_name", label: "Vendor Name", sortable: true }, // Key updated
   { key: "print_name", label: "Print Name", sortable: true },
   { key: "code", label: "Code", sortable: true },
   { key: "gst_no", label: "GST No", sortable: true },
@@ -87,8 +89,8 @@ const CustomerColumns: Column[] = [
 const pageSizeOptions = [5, 10, 20, 50];
 const initialPageSize = 5;
 
-// --- CUSTOMER TABLE LOGIC HOOK ---
-const useCustomerTableLogic = (
+// --- VENDOR TABLE LOGIC HOOK ---
+const useVendorTableLogic = (
   initialData: DataItem[],
   initialSize: number
 ) => {
@@ -353,7 +355,7 @@ const ResizableHeader = ({
   );
 };
 
-// --- CustomerDirectory Component ---
+// --- VendorDirectory Component ---
 export default function VendorDirectory() {
   // State for controlling the View (Table vs Form)
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -364,16 +366,17 @@ export default function VendorDirectory() {
   const [error, setError] = useState<string | null>(null);
 
   // Function to refresh data from API
-  const loadCustomers = async () => {
+  const loadVendors = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const responseData = await getAllCustomers();
+      // --- CHANGED: Call Vendor Service ---
+      const responseData = await getAllVendors();
       setApiData(responseData);
     } catch (err) {
-      console.error("Failed to fetch customer data:", err);
+      console.error("Failed to fetch vendor data:", err);
       setError(
-        "Failed to load customer data. Please check the network connection."
+        "Failed to load vendor data. Please check the network connection."
       );
     } finally {
       setIsLoading(false);
@@ -382,7 +385,7 @@ export default function VendorDirectory() {
 
   // Initial Load
   useEffect(() => {
-    loadCustomers();
+    loadVendors();
   }, []);
 
   const [columnWidths, setColumnWidths] = useState<
@@ -390,7 +393,7 @@ export default function VendorDirectory() {
   >({});
 
   const [currentColumns, setCurrentColumns] =
-    useState<Column[]>(CustomerColumns);
+    useState<Column[]>(VendorColumns);
 
   // Pass the state derived from the API to the logic hook
   const {
@@ -411,7 +414,7 @@ export default function VendorDirectory() {
     pageNumbers,
     requestSort,
     renderSortIndicator,
-  } = useCustomerTableLogic(apiData, initialPageSize);
+  } = useVendorTableLogic(apiData, initialPageSize);
 
   // --- Drag & Drop Handlers ---
   const handleDragStart = useCallback(() => {}, []);
@@ -492,20 +495,22 @@ export default function VendorDirectory() {
 
   const handleFormSuccess = () => {
     // Refresh data after a successful Add or Edit
-    loadCustomers();
+    loadVendors();
     handleCloseForm();
   };
 
   // --- Delete Handlers ---
   const handleDelete = async (user: DataItem) => {
     const confirmDelete = window.confirm(
-      `Are you sure you want to delete Customer: ${user.cust_name}?`
+      // --- CHANGED: Use vend_name and text ---
+      `Are you sure you want to delete Vendor: ${user.vend_name}?`
     );
 
     if (!confirmDelete) return;
 
     try {
-      await customerDeleteApi(user._id);
+      // --- CHANGED: Call Vendor Delete Service ---
+      await deleteVendor(user._id);
 
       setApiData((prev: DataItem[]) =>
         prev.filter((u: DataItem) => u._id !== user._id)
@@ -514,10 +519,10 @@ export default function VendorDirectory() {
       setSelectedRows((prev: string[]) =>
         prev.filter((id: string) => id !== user._id)
       );
-      alert("Customer deleted successfully");
+      alert("Vendor deleted successfully");
     } catch (error) {
       console.error("Delete failed:", error);
-      alert("Failed to delete customer. Please try again.");
+      alert("Failed to delete vendor. Please try again.");
     }
   };
 
@@ -564,7 +569,7 @@ export default function VendorDirectory() {
       <div className="flex justify-center items-center h-64 bg-white p-6 rounded-xl shadow-lg dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
         <Loader2 className="size-8 text-blue-600 animate-spin mr-2" />
         <span className="text-lg text-gray-700 dark:text-gray-300">
-          Loading customer data...
+          Loading vendor data...
         </span>
       </div>
     );
@@ -577,7 +582,7 @@ export default function VendorDirectory() {
         <p className="font-semibold text-lg">Error</p>
         <p className="text-sm">{error}</p>
         <button
-          onClick={loadCustomers}
+          onClick={loadVendors}
           className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
         >
           Retry
@@ -625,7 +630,7 @@ export default function VendorDirectory() {
 
         <div className="flex items-center space-x-3 w-full md:w-auto justify-end">
           <button
-            onClick={() => handlePrint("printable-table", "Customer Directory")}
+            onClick={() => handlePrint("printable-table", "Vendor Directory")}
             className="p-2 text-gray-600 dark:text-gray-300 border border-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
             title="Print Table"
           >
@@ -634,7 +639,7 @@ export default function VendorDirectory() {
 
           <button
             onClick={() =>
-              handleExport(data, currentColumns, "CustomerDirectory")
+              handleExport(data, currentColumns, "VendorDirectory")
             }
             className="p-2 text-gray-600 dark:text-gray-300 border border-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
             title="Export to CSV"

@@ -14,10 +14,8 @@ import {
   getAllCustomers,
 } from "../services/sales/customer/customerService";
 
-// --- Import Customer CRUD Component ---
 import CrudCustomer from "../pages/pages/sales/customer/AddNewCustomer";
 
-// --- Import API Functions & Types ---
 import {
   createLocation,
   updateLocation,
@@ -32,7 +30,6 @@ interface ActionBtnProps {
   title?: string;
 }
 
-// --- Initial State ---
 const INITIAL_LOCATION_DATA = {
   name: "",
   code: "",
@@ -64,7 +61,6 @@ const STEPS = [
   { id: 2, label: "Address" },
 ];
 
-// --- Sub-Components ---
 const FormLabel = ({ required, children, className = "" }: any) => (
   <label className={`block text-xs font-medium text-gray-700 ${className}`}>
     {children} {required && <span className="text-red-500">*</span>}
@@ -94,7 +90,6 @@ const InputField = ({
   </div>
 );
 
-// --- Props Interface ---
 interface LocationMasterProps {
   onClose: () => void;
   onSuccess?: (data?: any) => void;
@@ -118,7 +113,6 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
   index = 50,
 }) => {
   const overlayZIndex = index + 10;
-  const dropdownZIndex = overlayZIndex + 10;
   const nestedModalZIndex = overlayZIndex + 20;
 
   const [activeStep, setActiveStep] = useState(0);
@@ -189,7 +183,7 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
   );
 
   const handleInputChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
     if (name === "address" && value.length > 200) return;
@@ -199,7 +193,7 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
   const handleCustomerActionClick = () => {
     if (formData.party) {
       const selectedCustomer = customerList.find(
-        (cust) => cust.cust_name === formData.party
+        (cust) => cust._id === formData.party,
       );
       if (selectedCustomer) {
         setEditingRow(selectedCustomer);
@@ -251,6 +245,12 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
         // @ts-ignore
         latitude: formData.latitude,
       };
+
+      console.log("Location master " + payload.party);
+      console.log(
+        "Location master payload:\n",
+        JSON.stringify(payload, null, 2),
+      );
 
       if (initialData && initialData._id) {
         await updateLocation(initialData._id, payload);
@@ -320,7 +320,7 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-12 gap-2 items-center">
+          {/* <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4 md:col-span-3">
               <FormLabel required>Code</FormLabel>
             </div>
@@ -335,7 +335,7 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
                 className="w-full border border-gray-300 rounded-l px-2 py-1.5 text-sm focus:outline-none focus:border-[#104a7d]"
               />
             </div>
-          </div>
+          </div> */}
 
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4 md:col-span-3">
@@ -347,15 +347,14 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
                   data={customerList}
                   columns={partyColumns}
                   value={formData.party}
-                  valueKey="cust_name"
+                  valueKey="_id"
                   placeholder="Select Party..."
                   onChange={(item) =>
                     setFormData((prev: any) => ({
                       ...prev,
-                      party: item ? item.cust_name : "",
+                      party: item ? item._id : "",
                     }))
                   }
-                  zIndex={dropdownZIndex}
                 />
               </div>
               <ActionBtn
@@ -674,8 +673,8 @@ export const LocationMaster: React.FC<LocationMasterProps> = ({
                   {isSubmitting
                     ? "Saving..."
                     : initialData
-                    ? "Update"
-                    : "Submit"}
+                      ? "Update"
+                      : "Submit"}
                 </>
               ) : (
                 <>

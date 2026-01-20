@@ -1,4 +1,12 @@
-import React, { useState, useRef, MouseEvent, useEffect, useMemo } from "react";
+import React, {
+  useState,
+  useRef,
+  MouseEvent,
+  useEffect,
+  useMemo,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import ReactDOM from "react-dom";
 import {
   Plus,
@@ -27,7 +35,10 @@ import { fetchItems } from "../../inventory/itemMaster/api/itemService";
 import { StockUnitData } from "../../../../components/addItemMaster/api/types";
 import { fetchStockUnits } from "../../../../components/addItemMaster/api/stockunitservice";
 import AttributePanel from "../../../../components/AttributePanel";
-import { ItemApiData } from "../../inventory/itemMaster/models/ItemModel";
+import {
+  ItemApiData,
+  NestedObject,
+} from "../../inventory/itemMaster/models/ItemModel";
 import PullFromOrderModal from "../../../../components/PullFromOrderModal";
 
 interface Column {
@@ -40,32 +51,27 @@ interface Column {
   visible: boolean;
 }
 
+interface OrderTableProps {
+  onAnalyze?: (items: any[]) => void;
+}
+
 interface RowData {
-  [key: string]: string | number;
+  [key: string]: string | number | undefined | null;
 }
 
 interface WarrantyOption {
   id: string;
-  label: string; // e.g. "1 Year"
-  price: number; // e.g. 500
+  label: string;
+  price: number;
 }
 
-const getStandardWarranties = (itemText: string): WarrantyOption[] => {
-  if (!itemText) return [];
-  const text = itemText.toLowerCase();
-
-  if (text.includes("bat") || text.includes("elec")) {
-    return [
-      { id: "w1", label: "6 Months", price: 0 },
-      { id: "w2", label: "1 Year", price: 500 },
-      { id: "w3", label: "2 Years", price: 1200 },
-    ];
-  }
-  if (text.includes("pad") || text.includes("glove")) {
-    return [{ id: "w4", label: "3 Months Repair", price: 0 }];
-  }
-  return [];
-};
+export interface OrderTableRef {
+  getTableData: () => {
+    rows: string[];
+    tableData: Record<string, RowData>;
+    visibleRows: Array<{ id: string; data: RowData }>;
+  };
+}
 
 const DEFAULT_COLUMNS: Column[] = [
   {
@@ -131,7 +137,6 @@ const DEFAULT_COLUMNS: Column[] = [
     resizable: true,
     visible: true,
   },
-
   {
     id: "warranty",
     label: "Warranty",
@@ -140,7 +145,6 @@ const DEFAULT_COLUMNS: Column[] = [
     resizable: true,
     visible: true,
   },
-
   {
     id: "attr",
     label: "Attribute",
@@ -202,14 +206,6 @@ const DEFAULT_COLUMNS: Column[] = [
     label: "MRP",
     width: 80,
     align: "right",
-    resizable: true,
-    visible: true,
-  },
-  {
-    id: "rate",
-    label: "Rate",
-    width: 120,
-    align: "left",
     resizable: true,
     visible: true,
   },
@@ -375,11 +371,31 @@ const DEFAULT_COLUMNS: Column[] = [
   },
 ];
 
-const OrderTable: React.FC = () => {
-  const generateRowId = () =>
+const getStandardWarranties = (itemText: string): WarrantyOption[] => {
+  if (!itemText) return [];
+  const text = itemText.toLowerCase();
+
+  if (
+    text.includes("bat") ||
+    text.includes("elec") ||
+    text.includes("laptop")
+  ) {
+    return [
+      { id: "w1", label: "6 Months", price: 0 },
+      { id: "w2", label: "1 Year", price: 500 },
+      { id: "w3", label: "2 Years", price: 1200 },
+    ];
+  }
+  if (text.includes("pad") || text.includes("glove")) {
+    return [{ id: "w4", label: "3 Months Repair", price: 0 }];
+  }
+  return [];
+};
+
+const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
+    const generateRowId = () =>
     `row-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-  // --- Internal State for Table Data ---
   const [rows, setRows] = useState<string[]>([]);
   const [tableData, setTableData] = useState<Record<string, RowData>>({});
 
@@ -421,7 +437,6 @@ const OrderTable: React.FC = () => {
 
   const [addNewItemForm, setAddNewItemForm] = useState(false);
 
-  // Initialize empty rows
   useEffect(() => {
     if (rows.length === 0) {
       const initialRows = Array.from({ length: 15 }, () => generateRowId());
@@ -456,23 +471,54 @@ const OrderTable: React.FC = () => {
   };
 
   const [columns, setColumns] = useState<Column[]>(
-    JSON.parse(JSON.stringify(DEFAULT_COLUMNS))
+    JSON.parse(JSON.stringify(DEFAULT_COLUMNS)),
   );
 
   const visibleColumns = useMemo(
     () => columns.filter((c) => c.visible),
-    [columns]
+    [columns],
   );
+
+  const getTableData = () => {
+  const visibleRows = rows
+    .filter((id) => {
+      const d = tableData[id];
+      // Check if row has data (Item selected OR Description OR Qty > 0)
+      return d && (d.select || d.desc || Number(d.qty) > 0);
+    })
+    .map((id) => ({ id, data: tableData[id] || {} }));
+
+  return {
+    rows,
+    tableData,
+    visibleRows,
+  };
+};
+
+  // ─── Expose data to parent ────────────────────────────────
+  useImperativeHandle(ref, () => ({
+    getTableData: () => {
+      const visibleRows = rows
+        .filter((id) => {
+          const d = tableData[id];
+          return d && (d.select || d.desc || Number(d.qty) > 0);
+        })
+        .map((id) => ({ id, data: tableData[id] || {} }));
+
+      return {
+        rows,
+        tableData,
+        visibleRows,
+      };
+    },
+  }));
 
   const handleResetDefault = () => {
     setColumns(JSON.parse(JSON.stringify(DEFAULT_COLUMNS)));
-
     setConfigSearch("");
   };
 
-  const handleCloseForm = () => {
-    setAddNewItemForm(false);
-  };
+  const handleCloseForm = () => setAddNewItemForm(false);
 
   const handleFormSuccess = async () => {
     await loadMasterData();
@@ -482,24 +528,23 @@ const OrderTable: React.FC = () => {
   const handleInputChange = (
     rowId: string,
     columnId: string,
-    value: string
+    value: string,
   ) => {
     setTableData((prev) => {
       const row = prev[rowId] || {};
       const newData = { ...row, [columnId]: value };
+
       if (columnId === "qty" || columnId === "rate") {
         const qty = parseFloat(
-          columnId === "qty" ? value : String(row.qty || 0)
+          columnId === "qty" ? value : String(row.qty || 0),
         );
         const rate = parseFloat(
-          columnId === "rate" ? value : String(row.rate || 0)
+          columnId === "rate" ? value : String(row.rate || 0),
         );
-        if (!isNaN(qty) && !isNaN(rate)) {
-          newData.amount = (qty * rate).toFixed(2);
-        } else {
-          newData.amount = "0.00";
-        }
+        newData.amount =
+          !isNaN(qty) && !isNaN(rate) ? (qty * rate).toFixed(2) : "0.00";
       }
+
       return { ...prev, [rowId]: newData };
     });
   };
@@ -568,14 +613,14 @@ const OrderTable: React.FC = () => {
   const toggleColumnVisibility = (colId: string) => {
     setColumns((prev) =>
       prev.map((col) =>
-        col.id === colId ? { ...col, visible: !col.visible } : col
-      )
+        col.id === colId ? { ...col, visible: !col.visible } : col,
+      ),
     );
   };
 
   const handleSelectClick = (
     e: React.MouseEvent<HTMLDivElement>,
-    rowId: string
+    rowId: string,
   ) => {
     e.stopPropagation();
     const rect = e.currentTarget.getBoundingClientRect();
@@ -604,11 +649,37 @@ const OrderTable: React.FC = () => {
 
   const handleWarrantyClick = (
     e: React.MouseEvent<HTMLDivElement>,
-    rowId: string
+    rowId: string,
   ) => {
     e.stopPropagation();
     const rowData = tableData[rowId];
-    const options = getStandardWarranties(String(rowData?.select || ""));
+    const itemCode = String(rowData?.select || "");
+    const selectedItem = items.find((i) => i.code === itemCode);
+    let options: WarrantyOption[] = [];
+
+    if (selectedItem && selectedItem.warranty) {
+      if (selectedItem.firstyearwarranty) {
+        options.push({
+          id: "fw",
+          label: selectedItem.firstyearwarranty,
+          price: 0,
+        });
+      }
+      if (
+        selectedItem.customWarranty &&
+        Array.isArray(selectedItem.customWarranty)
+      ) {
+        selectedItem.customWarranty.forEach((cw: any, index: number) => {
+          options.push({
+            id: `cw${index}`,
+            label: `${cw.duration} Years`,
+            price: parseFloat(cw.price) || 0,
+          });
+        });
+      }
+    } else {
+      options = getStandardWarranties(String(rowData?.desc || ""));
+    }
 
     const rect = e.currentTarget.getBoundingClientRect();
     setWarrantyPopup({
@@ -616,7 +687,7 @@ const OrderTable: React.FC = () => {
       top: rect.bottom,
       left: rect.left,
       activeRowId: rowId,
-      options: options,
+      options,
     });
     setNewWarranty({ duration: "", price: "" });
   };
@@ -652,10 +723,11 @@ const OrderTable: React.FC = () => {
     const data = tableData[rowId];
     if (data && data.select) {
       const reconstructedItem: any = {
+        _id: data.itemId,
         code: data.select,
         name: data.desc,
         stock_unit: data.unit,
-        gst_classfication: data.hsn,
+        gst_classification: data.hsn,
         brand: data.brand,
         sales_rate: data.rate,
         mrp: data.mrp,
@@ -669,31 +741,73 @@ const OrderTable: React.FC = () => {
     }
   };
 
-  const handleAttributeSave = (attributeData: any) => {
-    const { activeRowId, tempItemData } = attributePanelState;
-    if (activeRowId && tempItemData) {
-      const baseData: RowData = {
-        reciss: "Receipt",
-        select: tempItemData.code || "",
-        desc: tempItemData.name || "",
-        // unit: tempItemData.stock_unit || "",
-        hsn: tempItemData.gst_classfication || "",
-        // brand: tempItemData.brand || "",
-        qty: "1",
-        mrp: tempItemData.mrp || "0",
-        rate: tempItemData.sales_rate || "0",
-        barcode: tempItemData.barcode || "",
-        printdesc: tempItemData.name || "",
-      };
-      const qty = 1;
-      const rate = parseFloat(String(tempItemData.sales_rate || 0));
-      baseData.amount = (qty * rate).toFixed(2);
+  const getName = (val?: NestedObject | string | null): string => {
+    if (!val) return "";
+    if (typeof val === "string") return val;
+    return val.name || val.item_name || "";
+  };
 
-      setTableData((prev) => ({
-        ...prev,
-        [activeRowId]: { ...prev[activeRowId], ...baseData, ...attributeData },
-      }));
+  const handleAttributeSave = (attributeData: Partial<RowData>) => {
+    const { activeRowId, tempItemData } = attributePanelState as {
+      activeRowId: string | number | null;
+      tempItemData: ItemApiData | null;
+    };
+
+    if (!activeRowId || !tempItemData) {
+      console.warn("No active row or item data found when saving attributes");
+      setAttributePanelState({
+        visible: false,
+        activeRowId: null,
+        tempItemData: null,
+      });
+      return;
     }
+
+    /* ---------------- Base Row Mapping ---------------- */
+    const baseData: RowData = {
+      reciss: "Receipt",
+      select: tempItemData.code ?? "",
+      desc: tempItemData.name ?? "",
+      unit: getName(tempItemData.stock_unit),
+      itemId: tempItemData._id || "",
+      hsn: tempItemData.gst_classfication ?? "",
+      brand: getName(tempItemData.brand),
+      qty: "1",
+      mrp: String(tempItemData.mrp ?? 0),
+      rate: String(tempItemData.sales_rate ?? 0),
+      barcode: tempItemData.barcode ?? "",
+      printdesc: tempItemData.name ?? "",
+    };
+
+    /* ---------------- Amount Calculation ---------------- */
+    const qty = Number(baseData.qty) || 0;
+    const rate = Number(baseData.rate) || 0;
+
+    baseData.amount = (qty * rate).toFixed(2);
+
+    /* ---------------- Merge Into Table ---------------- */
+    setTableData((prev) => {
+      const existingRow = (prev[activeRowId] ?? {}) as Partial<RowData>;
+
+      const mergedRow: RowData = {
+        ...existingRow,
+        ...baseData,
+        ...attributeData,
+      };
+
+      /* -------- Recalculate Amount Safely -------- */
+      const qty = Number(mergedRow.qty) || 0;
+      const rate = Number(mergedRow.rate) || 0;
+
+      mergedRow.amount = (qty * rate).toFixed(2);
+
+      return {
+        ...prev,
+        [activeRowId]: mergedRow,
+      };
+    });
+
+    /* ---------------- Close Attribute Panel ---------------- */
     setAttributePanelState({
       visible: false,
       activeRowId: null,
@@ -744,12 +858,12 @@ const OrderTable: React.FC = () => {
             ? valA.localeCompare(valB)
             : valB.localeCompare(valA)
           : sortConfig.direction === "asc"
-          ? valA < valB
-            ? -1
-            : 1
-          : valA > valB
-          ? -1
-          : 1;
+            ? Number(valA) - Number(valB) || valA < valB
+              ? -1
+              : 1
+            : Number(valB) - Number(valA) || valA > valB
+              ? -1
+              : 1;
       });
     }
     return sortable;
@@ -776,7 +890,7 @@ const OrderTable: React.FC = () => {
             ...col,
             width: Math.max(
               30,
-              startWidthRef.current + (e.clientX - startXRef.current)
+              startWidthRef.current + (e.clientX - startXRef.current),
             ),
           };
         }
@@ -865,14 +979,20 @@ const OrderTable: React.FC = () => {
             <Settings size={18} />
           </button>
 
-          <button
-            className="px-6 py-1.5 rounded text-xs font-bold text-white shadow-sm flex items-center gap-2"
-            style={{ backgroundColor: COLORS.primary }}
-            onClick={() => setIsImportModalOpen(true)}
-          >
-            <BarChart2 size={14} />
-            Analyze & Import
-          </button>
+          {props.onAnalyze && (
+            <button
+                className="px-6 py-1.5 rounded text-xs font-bold text-white shadow-sm flex items-center gap-2 hover:brightness-110 transition-all"
+                style={{ backgroundColor: COLORS.primary }}
+                onClick={() => {
+                    // Extract current visible rows and send to parent
+                    const currentData = getTableData(); 
+                    props.onAnalyze!(currentData.visibleRows);
+                }}
+            >
+                <BarChart2 size={14} />
+                Analyze Profit
+            </button>
+          )}
         </div>
       </div>
 
@@ -1015,13 +1135,9 @@ const OrderTable: React.FC = () => {
                                 {rowData.select || "Select..."} <span>▶</span>
                               </div>
                             );
-                          }
-                          // --- NEW WARRANTY LOGIC ---
-                          else if (col.id === "warranty") {
-                            // If user already selected a value, show it. If not, show "Select"
+                          } else if (col.id === "warranty") {
                             const displayValue = rowData.warranty || "Select";
                             const hasSelection = !!rowData.warranty;
-
                             content = (
                               <div
                                 className="w-full h-full px-1 flex items-center justify-between cursor-pointer hover:bg-gray-100 text-[10px] text-gray-700"
@@ -1044,9 +1160,18 @@ const OrderTable: React.FC = () => {
                             );
                           } else if (col.id === "amount") {
                             content = (
-                              <div className="w-full h-full flex items-center justify-end px-1 bg-gray-50 text-gray-700 font-medium">
-                                {rowData[col.id] || "0.00"}
-                              </div>
+                              <input
+                                type="text"
+                                className="w-full h-full bg-transparent outline-none px-1 text-right"
+                                value={rowData[col.id] || ""}
+                                onChange={(e) =>
+                                  handleInputChange(
+                                    rowId,
+                                    col.id,
+                                    e.target.value,
+                                  )
+                                }
+                              />
                             );
                           } else if (
                             [
@@ -1068,7 +1193,7 @@ const OrderTable: React.FC = () => {
                                   handleInputChange(
                                     rowId,
                                     col.id,
-                                    e.target.value
+                                    e.target.value,
                                   )
                                 }
                               />
@@ -1083,7 +1208,7 @@ const OrderTable: React.FC = () => {
                                   handleInputChange(
                                     rowId,
                                     col.id,
-                                    e.target.value
+                                    e.target.value,
                                   )
                                 }
                               />
@@ -1093,7 +1218,9 @@ const OrderTable: React.FC = () => {
                           const isReadOnly =
                             !col.resizable &&
                             !col.sticky &&
-                            col.id !== "warranty";
+                            col.id !== "warranty" &&
+                            col.id !== "amount";
+
                           return (
                             <td
                               key={col.id}
@@ -1111,8 +1238,8 @@ const OrderTable: React.FC = () => {
                                 col.align === "center"
                                   ? "text-center"
                                   : col.align === "right"
-                                  ? "text-right"
-                                  : "text-left"
+                                    ? "text-right"
+                                    : "text-left"
                               } ${isReadOnly ? "text-gray-500" : ""}`}
                             >
                               {content}
@@ -1157,6 +1284,7 @@ const OrderTable: React.FC = () => {
         </div>
       </div>
 
+      {/* Config Modal */}
       {configOpen &&
         ReactDOM.createPortal(
           <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
@@ -1164,7 +1292,6 @@ const OrderTable: React.FC = () => {
               className="absolute inset-0"
               onClick={() => setConfigOpen(false)}
             />
-
             <div
               className="relative rounded-xl shadow-2xl w-full max-w-3xl flex flex-col border overflow-hidden h-[90vh]"
               style={{
@@ -1192,7 +1319,6 @@ const OrderTable: React.FC = () => {
                 </button>
               </div>
 
-              {/* Search Bar Area */}
               <div
                 className="px-6 py-4 border-b"
                 style={{
@@ -1209,9 +1335,7 @@ const OrderTable: React.FC = () => {
                     type="text"
                     placeholder="Search columns to show/hide..."
                     className="w-full pl-10 pr-4 py-3 border rounded-lg text-sm transition-all focus:ring-2 outline-none"
-                    style={{
-                      borderColor: COLORS.border,
-                    }}
+                    style={{ borderColor: COLORS.border }}
                     value={configSearch}
                     onChange={(e) => setConfigSearch(e.target.value)}
                   />
@@ -1223,10 +1347,12 @@ const OrderTable: React.FC = () => {
                   {columns
                     .filter(
                       (c) =>
-                        !["sno", "add", "del", "srch", "copy"].includes(c.id)
+                        !["sno", "add", "del", "srch", "copy"].includes(c.id),
                     )
                     .filter((c) =>
-                      c.label.toLowerCase().includes(configSearch.toLowerCase())
+                      c.label
+                        .toLowerCase()
+                        .includes(configSearch.toLowerCase()),
                     )
                     .map((col) => (
                       <div
@@ -1303,7 +1429,7 @@ const OrderTable: React.FC = () => {
               </div>
             </div>
           </div>,
-          document.body
+          document.body,
         )}
 
       <AttributePanel
@@ -1338,10 +1464,7 @@ const OrderTable: React.FC = () => {
             >
               <div
                 className="flex justify-between items-center p-2 border-b h-8"
-                style={{
-                  backgroundColor: COLORS.primary,
-                  color: COLORS.white,
-                }}
+                style={{ backgroundColor: COLORS.primary, color: COLORS.white }}
               >
                 <span className="font-bold text-xs pl-1">Select Item</span>
                 <button onClick={closePopup}>
@@ -1372,7 +1495,7 @@ const OrderTable: React.FC = () => {
               </div>
             </div>
           </>,
-          document.body
+          document.body,
         )}
 
       {warrantyPopup.visible &&
@@ -1483,7 +1606,7 @@ const OrderTable: React.FC = () => {
               </div>
             </div>
           </>,
-          document.body
+          document.body,
         )}
 
       {isImportModalOpen &&
@@ -1492,19 +1615,16 @@ const OrderTable: React.FC = () => {
             isOpen={isImportModalOpen}
             onClose={() => setIsImportModalOpen(false)}
           />,
-          document.body
+          document.body,
         )}
 
       <style>{`
-        .custom-btn-primary { background-color: ${COLORS.primary}; transition: background-color 0.2s; }
-        .custom-btn-primary:hover { background-color: ${COLORS.primaryHover}; }
-        .custom-row-hover:hover td { background-color: ${COLORS.primaryLight} !important; }
         .custom-scrollbar::-webkit-scrollbar { width: 14px; height: 14px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: ${COLORS.scrollbarThumb}; border: 3px solid transparent; background-clip: content-box; border-radius: 99px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: ${COLORS.scrollbarTrack}; }
       `}</style>
     </div>
   );
-};
+});
 
 export default OrderTable;

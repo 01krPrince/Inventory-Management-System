@@ -1,11 +1,13 @@
 import React, { useRef } from "react";
+// You can keep using your existing Icon import
+import { PrintIcon } from "../function/functions";
 
-// --- Types for Dynamic Data ---
+// --- Types ---
 interface InvoiceItem {
   id: string | number;
   description: string;
   qty: number;
-  uom: string; // e.g., PCS, KG
+  uom: string;
   rate: number;
   amount: number;
 }
@@ -15,7 +17,7 @@ interface Address {
   addressLine: string;
   cityStateZip: string;
   stateCode?: string;
-  gstin?: string; // Added GSTIN to interface just in case
+  gstin?: string;
 }
 
 interface InvoiceData {
@@ -24,7 +26,7 @@ interface InvoiceData {
   billType: string;
   placeOfSupply: string;
   customer: Address;
-  shipping?: Address; // Optional
+  shipping?: Address;
   items: InvoiceItem[];
   amountInWords: string;
   destination: string;
@@ -39,13 +41,71 @@ interface InvoiceData {
 }
 
 interface InvoiceProps {
-  data?: InvoiceData; // Optional to allow defaults for preview
+  data?: InvoiceData;
 }
 
 const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
   const componentRef = useRef<HTMLDivElement>(null);
 
-  // --- Default/Fallback Data ---
+  // --- FIXED PRINT LOGIC ---
+  const handlePrint = () => {
+    const printContent = componentRef.current;
+    if (!printContent) return;
+
+    const printWindow = window.open("", "", "height=800,width=900");
+
+    if (printWindow) {
+      printWindow.document.write("<html><head><title>Print Invoice</title>");
+
+      // 1. Convert Relative Paths to Absolute and Copy Stylesheets
+      // This fixes the issue where styles were missing in the popup
+      const links = document.querySelectorAll('link[rel="stylesheet"]');
+      links.forEach((link) => {
+        const newLink = printWindow.document.createElement("link");
+        newLink.rel = "stylesheet";
+        // Use .href property (absolute URL) instead of getAttribute (relative)
+        newLink.href = (link as HTMLLinkElement).href;
+        printWindow.document.head.appendChild(newLink);
+      });
+
+      // 2. Copy Inline Styles (e.g., from style-loader or CSS-in-JS)
+      const styles = document.querySelectorAll("style");
+      styles.forEach((style) => {
+        printWindow.document.head.appendChild(style.cloneNode(true));
+      });
+
+      // 3. Add Print-Specific CSS to hide browser headers/footers
+      const customStyle = printWindow.document.createElement("style");
+      customStyle.innerHTML = `
+        @page { size: auto; margin: 0mm; } /* Hides browser header/footer */
+        body { margin: 0; background-color: white; -webkit-print-color-adjust: exact; }
+      `;
+      printWindow.document.head.appendChild(customStyle);
+
+      printWindow.document.write("</head><body>");
+      printWindow.document.write(printContent.outerHTML);
+      printWindow.document.write("</body></html>");
+      printWindow.document.close();
+
+      // 4. Wait for styles to load before printing
+      printWindow.onload = () => {
+        printWindow.focus();
+        setTimeout(() => {
+          printWindow.print();
+        }, 500); // Small delay to ensure rendering is complete
+      };
+
+      // Fallback if onload doesn't trigger immediately
+      setTimeout(() => {
+        if (!printWindow.closed) {
+          printWindow.focus();
+          printWindow.print();
+        }
+      }, 1000);
+    }
+  };
+
+  // --- Default Data ---
   const defaultData: InvoiceData = {
     invoiceNo: "00043/25-26",
     date: "14/11/2025",
@@ -59,7 +119,7 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
       addressLine: "Vill+p.o+p s.-brahmpur, Dist-buxar",
       cityStateZip: "Bihar, Pin-802112",
       stateCode: "10",
-      gstin: "Unregistered", // Placeholder
+      gstin: "Unregistered",
     },
     items: [
       {
@@ -90,18 +150,26 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
   // Calculate Totals
   const totalAmount = activeData.items.reduce(
     (sum, item) => sum + item.amount,
-    0
+    0,
   );
 
   return (
-    <div className="w-auto bg-gray-100 flex flex-col items-center min-h-screen font-sans">
+    <div className="w-auto bg-gray-100 flex flex-col items-center min-h-screen font-sans pb-10">
+      <button
+        onClick={handlePrint}
+        className="p-2 mt-4 mb-4 text-gray-600 dark:text-gray-300 border border-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+        title="Print Invoice"
+      >
+        <PrintIcon className="size-5" />
+      </button>
+
       {/* --- A4 Page Start --- */}
       <div
         ref={componentRef}
-        className="w-[210mm] min-h-[297mm] bg-white text-black text-sm relative shadow-lg print:shadow-none print:w-full print:h-full print:m-0"
+        className="w-[210mm] min-h-[297mm] bg-white text-black text-sm relative shadow-lg print:shadow-none print:w-full print:h-auto print:m-0 box-border"
         style={{ padding: "10mm" }}
       >
-        {/* Top Row: GSTIN and Title */}
+        {/* Header Row */}
         <div className="flex justify-between items-start p-2">
           <div>
             <span className="font-bold">GSTIN: 10HACPS7876F1ZF</span>
@@ -112,33 +180,30 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
           <div className="text-xs text-right">Original For Recipient</div>
         </div>
 
-        {/* Store Branding (YOUR COMPLETED SECTION) */}
+        {/* Branding */}
         <div className="relative text-center py-2">
-          {/* Main Centered Content */}
           <div className="px-24">
             <h1 className="text-3xl font-bold uppercase tracking-wide">
               Chandan Khel Ghar
-            </h1>{" "}
+            </h1>
             <p className="text-[14px] font-extrabold">
               (Registered under CHANDAN KHEL GHAR)
-            </p>{" "}
+            </p>
             <p className="text-[14px] font-medium">
               VIP ROAD, Laheriasarai, Darbhanga, Bihar 846001
-            </p>{" "}
+            </p>
             <p className="text-[14px] mt-1 font-extrabold">
               Sports Fitness * Trophy & Awards * Garments
-            </p>{" "}
+            </p>
             <p className="text-[14px] mt-1 font-extrabold">
-              Phone No: 9852380932 | Email: CHANDANKHELGHAR@GMAIL.COM{" "}
+              Phone No: 9852380932 | Email: CHANDANKHELGHAR@GMAIL.COM
             </p>
           </div>
 
-          {/* Dynamic QR Code - Positioned Absolute Right */}
           <div className="absolute right-2 top-[4vh] transform -translate-y-1/2 flex flex-col items-end">
             <div className="text-xs text-right mb-2 font-semibold">
               Scan for Payment
             </div>
-
             <img
               src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${activeData.invoiceNo}`}
               alt="QR Code"
@@ -153,21 +218,18 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
         </div>
 
         <div className="border border-black">
-          {/* Invoice Meta Data Grid */}
+          {/* Meta Data */}
           <div className="grid grid-cols-4 text-sm">
-            {/* Row 1 */}
             <div className="pl-2 font-semibold">Invoice No.</div>
             <div className="pl-2 font-semibold">{activeData.invoiceNo}</div>
             <div className="pl-2 font-semibold">Invoice Date</div>
             <div className="pl-2 font-semibold">{activeData.date}</div>
 
-            {/* Row 2 */}
             <div className="pl-2 font-semibold">Bill Type</div>
             <div className="pl-2">{activeData.billType}</div>
             <div className="pl-2 font-semibold">GR / LR No</div>
             <div className="pl-2">{activeData.grlrNo || "-"}</div>
 
-            {/* Row 3 - Corrected border-b classes */}
             <div className="pl-2 font-semibold border-b border-black pb-1">
               Place of Supply
             </div>
@@ -182,9 +244,8 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
             </div>
           </div>
 
-          {/* Addresses Section */}
+          {/* Addresses */}
           <div className="text-sm border-b border-black">
-            {/* Header Row */}
             <div className="flex w-full border-b border-black">
               <p className="w-1/2 p-2 font-bold border-r border-black">
                 Customer Name & Billing Address
@@ -193,7 +254,6 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
             </div>
 
             <div className="flex">
-              {/* Billing Address */}
               <div className="w-1/2 p-2 border-r border-black">
                 <p className="uppercase font-semibold">
                   {activeData.customer.name}
@@ -206,14 +266,12 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
                     {activeData.customer.stateCode}
                   </p>
                   <p className="mt-1">
-                    {/* Fixed: Was displaying stateCode for GSTIN */}
                     <span className="font-semibold">GSTIN:</span>{" "}
                     {activeData.customer.gstin || "N/A"}
                   </p>
                 </div>
               </div>
 
-              {/* Shipping Address */}
               <div className="w-1/2 p-2">
                 <p className="uppercase font-semibold">
                   {shippingAddress.name}
@@ -228,7 +286,7 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
             </div>
           </div>
 
-          {/* Item Table */}
+          {/* Table */}
           <div className="w-full">
             <table className="w-full text-xs">
               <thead>
@@ -247,7 +305,7 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
               </thead>
               <tbody>
                 {activeData.items.map((item, index) => (
-                  <tr key={index} className="">
+                  <tr key={index}>
                     <td className="border-r border-black p-1 text-center">
                       {index + 1}
                     </td>
@@ -272,11 +330,11 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
                     </td>
                   </tr>
                 ))}
-                {/* Empty rows filler */}
+                {/* Empty Rows Logic */}
                 {activeData.items.length < 15 &&
                   Array.from({ length: 15 - activeData.items.length }).map(
                     (_, i) => (
-                      <tr key={`empty-${i}`} className=" h-6">
+                      <tr key={`empty-${i}`} className="h-6">
                         <td className="border-r border-black"></td>
                         <td className="border-r border-black"></td>
                         <td className="border-r border-black"></td>
@@ -284,20 +342,18 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
                         <td className="border-r border-black"></td>
                         <td></td>
                       </tr>
-                    )
+                    ),
                   )}
-                <tr>
-                  <td className="border-t border-r border-black p-1 text-center"></td>
-                  <td className="border-t border-r border-black p-1 font-bold">
-                    Total
-                  </td>
-                  <td className="border-t border-r border-black p-1 text-center">
-                    {/* Sum of Qty if needed, otherwise hardcoded 1 */}
+                {/* Total Row */}
+                <tr className="border-t border-black">
+                  <td className="border-r border-black p-1 text-center"></td>
+                  <td className="border-r border-black p-1 font-bold">Total</td>
+                  <td className="border-r border-black p-1 text-center">
                     {activeData.items.reduce((acc, item) => acc + item.qty, 0)}
                   </td>
-                  <td className="border-t border-r border-black p-1 text-center"></td>
-                  <td className="border-t border-r border-black p-1 text-right"></td>
-                  <td className="border-t border-black p-1 text-right font-bold">
+                  <td className="border-r border-black p-1 text-center"></td>
+                  <td className="border-r border-black p-1 text-right"></td>
+                  <td className="p-1 text-right font-bold">
                     {totalAmount.toLocaleString("en-IN", {
                       minimumFractionDigits: 2,
                     })}
@@ -307,7 +363,7 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
             </table>
           </div>
 
-          {/* Totals Section */}
+          {/* Footer Totals */}
           <div className="border-t border-black flex">
             <div className="flex-grow border-r border-black p-2">
               <p className="text-xs font-bold">Amount In Words:</p>
@@ -335,21 +391,19 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
             </div>
           </div>
 
-          {/* Footer / Bank / Terms */}
+          {/* Terms & Signatures */}
           <div className="border-t border-black grid grid-cols-2">
-            {/* Left: Bank & Terms */}
             <div className="border-r border-black p-2 text-xs">
               {activeData.bankDetails && (
                 <div className="mb-2">
-                  <p className="font-bold underline">Bank Details:</p>{" "}
+                  <p className="font-bold underline">Bank Details:</p>
                   <p>{activeData.bankDetails.bankName}</p>
                   <p>IFSC: {activeData.bankDetails.ifsc}</p>
                   <p>A/C: {activeData.bankDetails.accountNo}</p>
                 </div>
               )}
-
               <div className="mt-2">
-                <p className="font-bold underline">Terms and Conditions:</p>{" "}
+                <p className="font-bold underline">Terms and Conditions:</p>
                 <ul className="list-none pl-0 mt-1 space-y-1">
                   {activeData.terms?.map((term, i) => (
                     <li key={i}>{term}</li>
@@ -358,16 +412,13 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
               </div>
             </div>
 
-            {/* Right: Signature */}
             <div className="p-2 flex flex-col justify-between text-center min-h-[150px]">
               <div className="text-xs font-bold text-center border-b border-black pb-1 mb-2">
                 Composition taxable person, not eligible to collect tax on
                 supplies.
               </div>
-
               <div>
-                <p className="text-xs mb-8">For CHANDAN KHEL GHAR</p>{" "}
-                {/* Placeholder for Stamp/Sign */}
+                <p className="text-xs mb-8">For CHANDAN KHEL GHAR</p>
                 <div className="h-10"></div>
                 <p className="text-xs font-bold border-t border-black/50 inline-block px-8 pt-1">
                   Authorized Signatory

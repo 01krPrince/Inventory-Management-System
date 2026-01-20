@@ -28,11 +28,15 @@ export interface StockUnitData {
 }
 
 export interface GstClassificationData {
-  _id: string;
+  _id: string; // Changed from 'id' to '_id'
   type: string;
+  code: string;
   hsn_sac_code: string;
   hsn_description: string;
-  code: string;
+  gstRate?: number;
+  cgst?: number;
+  sgst?: number;
+  igst?: number;
 }
 
 export interface UnderGroupData {

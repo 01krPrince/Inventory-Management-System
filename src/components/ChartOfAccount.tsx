@@ -7,11 +7,14 @@ import {
   EditIcon,
   Loader2,
 } from "lucide-react";
+
+// --- Imports from the new Service ---
 import {
-  createSalesAndPurchaseGL,
-  SalesAndPurchaseGLInput,
-  updateSalesAndPurchaseGL,
-} from "./addItemMaster/api/saleAndPurchaseGL";
+  createChartOfAccount,
+  updateChartOfAccountById,
+  ChartOfAccount,
+} from "../services/chartOfAccountService";
+
 import { fetchCoaGroups, CoaGroup } from "./addItemMaster/api/chartOfAccount";
 import COAGroupsModal, { COAGroupData } from "./COAGroupsModal";
 
@@ -21,7 +24,7 @@ export interface AccountFormData {
   name: string;
   identification: string;
   isSubledger: boolean;
-  salesGlUnderGroup: string;
+  salesGlUnderGroup: string; // This will now store the Group ID
   inactive: boolean;
   type: string;
   accountNo: string;
@@ -51,7 +54,7 @@ interface ChartOfAccountsProps {
   onClose: () => void;
   onSave: (data: any) => void;
   onDelete?: (id: string) => void;
-  index?: number; // Added Index Prop
+  index?: number;
 }
 
 // --- Default State ---
@@ -137,9 +140,8 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
   onClose,
   onSave,
   onDelete,
-  index = 50, // Default Index
+  index = 50,
 }) => {
-  // 1. Calculate Z-Index Layers
   const overlayZIndex = index + 10;
   const nestedModalZIndex = overlayZIndex + 20;
 
@@ -173,35 +175,42 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
   // --- 2. Initialize Form Data ---
   useEffect(() => {
     if (initialData) {
+      // FIX: Extract ID if underGroup is an object, otherwise use the string
+      let groupId = "";
+      if (initialData.underGroup && typeof initialData.underGroup === "object") {
+        groupId = initialData.underGroup._id || "";
+      } else {
+        groupId = initialData.underGroup || initialData.salesGlUnderGroup || "";
+      }
+
       setFormData({
         ...defaultState,
         ...initialData,
-        salesGlUnderGroup:
-          initialData.salesGlUnderGroup || initialData.underGroup || "",
+        salesGlUnderGroup: groupId, // Store ID here
+        
         rtgsIfscCode:
-          initialData.rtgsIfscCode ||
-          initialData.rtgsIfsc ||
           initialData.ifscRtgs ||
+          initialData.rtgsIfscCode ||
           "",
-        employee:
-          initialData.employee === "Yes" ||
-          initialData.employee === true ||
-          initialData.attrEmployee === true,
-        group:
-          initialData.group === "Yes" ||
-          initialData.group === true ||
-          initialData.attrGroup === true,
+        
+        isSubledger: initialData.isSubleder || initialData.isSubledger || false,
+        calculationOn: initialData.calcultaionOn || initialData.calculationOn || "",
+        
+        employee: Boolean(initialData.employee),
+        group: Boolean(initialData.group),
+        intrestRate: initialData.intrestRate ? String(initialData.intrestRate) : "",
       });
     } else {
       setFormData(defaultState);
     }
   }, [initialData, isOpen]);
 
-  // --- 3. Update Selected COA Group when options or form data changes ---
+  // --- 3. Update Selected COA Group (Find by ID now) ---
   useEffect(() => {
     if (formData.salesGlUnderGroup && coaGroupOptions.length > 0) {
+      // FIX: Find group by _id instead of name
       const foundGroup = coaGroupOptions.find(
-        (g) => g.name === formData.salesGlUnderGroup
+        (g) => g._id === formData.salesGlUnderGroup
       );
       if (foundGroup) {
         setSelectedCoaGroup({
@@ -238,80 +247,50 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
     setIsSubmitting(true);
 
     try {
+      const payload: ChartOfAccount = {
+        name: formData.name,
+        identification: formData.identification,
+        isSubleder: formData.isSubledger,
+        // FIX: Sending the ID stored in salesGlUnderGroup
+        underLedger: formData.salesGlUnderGroup, 
+        underGroup: formData.salesGlUnderGroup,
+        type: formData.type,
+        accountNo: formData.accountNo,
+        ifscRtgs: formData.rtgsIfscCode,
+        classification: formData.classification,
+        isLoanAccount: formData.isLoanAccount,
+        intrestRate: parseFloat(String(formData.intrestRate).replace("%", "")) || 0,
+        calcultaionOn: formData.calculationOn,
+        tdsApplicable: formData.tdsApplicable,
+        tdsSection: formData.tdsSection,
+        address: formData.address,
+        pan: formData.pan,
+        employee: formData.employee,
+        group: formData.group,
+      };
+
+      let response;
+
       if (isEditMode && formData._id) {
-        // UPDATE LOGIC
-        const updatePayload = {
-          _id: formData._id,
-          name: formData.name,
-          identification: formData.identification,
-          isSubleder: Boolean(formData.isSubledger),
-          underGroup: formData.salesGlUnderGroup,
-          underLedger: formData.salesGlUnderGroup,
-          type: formData.type,
-          accountNo: formData.accountNo,
-          ifscRtgs: formData.rtgsIfscCode,
-          classification: formData.classification,
-          isLoanAccount: Boolean(formData.isLoanAccount),
-          intrestRate:
-            parseFloat(String(formData.intrestRate).replace("%", "")) || 0,
-          calcultaionOn: formData.calculationOn,
-          tdsApplicable: Boolean(formData.tdsApplicable),
-          tdsSection: formData.tdsSection,
-          address: formData.address,
-          pan: formData.pan,
-          employee: Boolean(formData.employee),
-          group: Boolean(formData.group),
-          inactive: Boolean(formData.inactive),
-        };
-
-        const response = await updateSalesAndPurchaseGL(
-          formData._id,
-          updatePayload
-        );
-
-        if (response && response.success) {
-          onSave(response.data);
-        } else {
-          alert(
-            "Failed to update GL Account: " +
-              (response?.message || "Unknown Error")
-          );
-        }
+        response = await updateChartOfAccountById(formData._id, payload);
       } else {
-        // CREATE LOGIC
-        const apiPayload: SalesAndPurchaseGLInput = {
-          name: formData.name,
-          identification: formData.identification,
-          isSubledger: formData.isSubledger,
-          salesGlUnderGroup: formData.salesGlUnderGroup,
-          inactive: formData.inactive,
-          type: formData.type,
-          accountNo: formData.accountNo,
-          rtgsIfscCode: formData.rtgsIfscCode,
-          classification: formData.classification,
-          isLoanAccount: formData.isLoanAccount,
-          intrestRate: formData.intrestRate,
-          calculationOn: formData.calculationOn,
-          tdsSection: formData.tdsSection,
-          tdsApplicable: formData.tdsApplicable,
-          address: formData.address,
-          pan: formData.pan,
-          attributeApplicable: formData.employee || formData.group,
-          employee: formData.employee ? "Yes" : "No",
-          group: formData.group ? "Yes" : "No",
-        };
-
-        const response = await createSalesAndPurchaseGL(apiPayload);
-
-        if (response && response.success) {
-          onSave(response.data);
-        } else {
-          alert("Failed to create GL Account.");
-        }
+        response = await createChartOfAccount(payload);
       }
-    } catch (error) {
+
+      if (response && response.data && response.data.success) {
+        onSave(response.data.data);
+      } else {
+        alert(
+          `Failed to ${isEditMode ? "update" : "create"} Chart of Account: ` +
+            (response?.data?.message || "Unknown Error")
+        );
+      }
+    } catch (error: any) {
       console.error("Error submitting form:", error);
-      alert("An error occurred while saving.");
+      alert(
+        "An error occurred while saving: " +
+          (error?.response?.data?.message || error.message)
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -323,7 +302,8 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
 
   const handleCoaGroupSave = (savedGroup: CoaGroup) => {
     loadGroups();
-    handleChange("salesGlUnderGroup", savedGroup.name);
+    // FIX: Set the ID of the newly created group
+    handleChange("salesGlUnderGroup", savedGroup._id); 
   };
 
   return (
@@ -404,7 +384,8 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
                     >
                       <option value="">Select...</option>
                       {coaGroupOptions.map((group) => (
-                        <option key={group._id} value={group.name}>
+                        // FIX: Use group._id as the value
+                        <option key={group._id} value={group._id}>
                           {group.name}
                         </option>
                       ))}

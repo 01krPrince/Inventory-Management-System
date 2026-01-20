@@ -88,7 +88,7 @@ export interface ItemApiData {
   
   gst_classfication: string | null;
   type: string | null;
-  unit_option: string | null;
+  unit_option: string;
   barcode: string | null;
   auto_barcode: string | null;
   gst_applicable: boolean;

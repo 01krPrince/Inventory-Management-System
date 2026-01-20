@@ -128,7 +128,7 @@ const ItemColumns: Column[] = [
     ),
   },
 
-  { key: "gst_classfication", label: "HSN Code", sortable: true },
+  { key: "gst_classification", label: "HSN Code", sortable: true },
 
   // CATEGORY: Object with .name
   {

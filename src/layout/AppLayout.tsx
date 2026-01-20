@@ -45,6 +45,7 @@ import OpeningStock from "../pages/pages/header/openingTransaction/OpeningStock.
 import CustomerDirectory from "../pages/pages/sales/customer/Customer.tsx";
 import EcomProductDetail from "../pages/pages/e-commerce/EcommerceProductDetail.tsx";
 import WishlistStockManager from "../pages/pages/e-commerce/WishlistManager.tsx";
+import ReportDashboard from "../pages/pages/report/ReportDashboard.tsx";
 
 const useSidebar = () => ({
   isExpanded: false,
@@ -167,6 +168,9 @@ const ComponentMap: { [key: string]: React.FC } = {
       </p>
     </div>
   ),
+  //
+  "/all-report": ReportDashboard,
+  //
   "/fallback": () => (
     <div className="p-6 mt-6 bg-gray-100 dark:bg-gray-800 rounded-lg shadow text-center">
       <p className="text-gray-600 dark:text-gray-300 font-medium">

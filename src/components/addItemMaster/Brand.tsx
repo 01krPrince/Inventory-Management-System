@@ -126,10 +126,11 @@ const Brand: React.FC<BrandProps> = ({ onClose, initialData, index = 50 }) => {
     try {
       const payload: CreateBrandPayload = {
         name: data.name,
-        salesman: data.salesman || undefined,
+        salesman: data._id || undefined,
         image: data.image || null,
       };
 
+      console.log("Salseman  ->> "+payload)
       if (data._id) {
         const response = await updateItemBrand(data._id, payload);
 

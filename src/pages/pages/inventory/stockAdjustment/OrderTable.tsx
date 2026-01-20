@@ -26,10 +26,33 @@ import AddNewItem from "../../../../components/addItemMaster/AddNewItem";
 import { fetchItems } from "../itemMaster/api/itemService";
 import { StockUnitData } from "../../../../components/addItemMaster/api/types";
 import { fetchStockUnits } from "../../../../components/addItemMaster/api/stockunitservice";
-import { ItemApiData } from "../itemMaster/models/ItemModel";
 import AttributePanel from "../../../../components/AttributePanel";
 
 import PullFromOrderModal from "../../../../components/PullFromOrderModal";
+
+interface CustomWarranty {
+  duration: string;
+  price: string;
+  _id: string;
+}
+
+interface ItemApiData {
+  _id: string;
+  code: string;
+  name: string;
+  stock_unit: { _id: string; code: string; name: string } | null;
+  brand: { _id: string; name: string; code: string } | null;
+  category: { _id: string; name: string; code: string } | null;
+  gst_classification: string;
+  sales_rate: number;
+  mrp: number;
+  barcode: string;
+  warranty: boolean;
+  firstyearwarranty: string;
+  customWarranty: CustomWarranty[];
+  // ... other fields can be optional
+  [key: string]: any;
+}
 
 interface Column {
   id: string;
@@ -47,36 +70,45 @@ interface RowData {
 
 interface WarrantyOption {
   id: string;
-  label: string; // e.g. "1 Year"
-  price: number; // e.g. 500
+  label: string;
+  price: number;
 }
 
-const getStandardWarranties = (itemText: string): WarrantyOption[] => {
-  if (!itemText) return [];
-  const text = itemText.toLowerCase();
-
-  if (text.includes("bat") || text.includes("elec")) {
-    return [
-      { id: "w1", label: "6 Months", price: 0 },
-      { id: "w2", label: "1 Year", price: 500 },
-      { id: "w3", label: "2 Years", price: 1200 },
-    ];
-  }
-  if (text.includes("pad") || text.includes("glove")) {
-    return [{ id: "w4", label: "3 Months Repair", price: 0 }];
-  }
-  return [];
-};
-
-// --- FIX: Helper Function to Extract String from Objects ---
-// This ensures we never render [object Object]
 const getStringValue = (val: any): string => {
   if (val === null || val === undefined) return "";
   if (typeof val === "object") {
-    // Check common name properties
     return val.name || val.item_name || val.code || "";
   }
   return String(val);
+};
+
+const getItemWarranties = (item: ItemApiData | undefined): WarrantyOption[] => {
+  if (!item) return [];
+  const options: WarrantyOption[] = [];
+
+  if (item.firstyearwarranty) {
+    options.push({
+      id: "std-1",
+      label: item.firstyearwarranty,
+      price: 0,
+    });
+  }
+
+  if (item.customWarranty && Array.isArray(item.customWarranty)) {
+    item.customWarranty.forEach((cw) => {
+      const label = isNaN(Number(cw.duration))
+        ? cw.duration
+        : `${cw.duration} Years Extended`;
+
+      options.push({
+        id: cw._id || `cw-${Math.random()}`,
+        label: label,
+        price: Number(cw.price || 0),
+      });
+    });
+  }
+
+  return options;
 };
 
 interface OrderTableProps {
@@ -221,14 +253,6 @@ const DEFAULT_COLUMNS: Column[] = [
     label: "MRP",
     width: 80,
     align: "right",
-    resizable: true,
-    visible: true,
-  },
-  {
-    id: "rate",
-    label: "Rate",
-    width: 120,
-    align: "left",
     resizable: true,
     visible: true,
   },
@@ -448,7 +472,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
       const initialData: Record<string, RowData> = {};
       initialRows.forEach((id) => {
         initialData[id] = {
-          reciss: "Receipt",
+          reciss: "RECEIPT",
           qty: 0,
           rate: 0,
           amount: 0,
@@ -466,7 +490,8 @@ const OrderTable: React.FC<OrderTableProps> = ({
   const loadMasterData = async () => {
     try {
       const itemsData = await fetchItems();
-      if (Array.isArray(itemsData)) setItems(itemsData);
+      if (Array.isArray(itemsData))
+        setItems(itemsData as unknown as ItemApiData[]);
       const unitsData = await fetchStockUnits();
       if (Array.isArray(unitsData)) setStockUnits(unitsData);
     } catch (error) {
@@ -475,17 +500,16 @@ const OrderTable: React.FC<OrderTableProps> = ({
   };
 
   const [columns, setColumns] = useState<Column[]>(
-    JSON.parse(JSON.stringify(DEFAULT_COLUMNS))
+    JSON.parse(JSON.stringify(DEFAULT_COLUMNS)),
   );
 
   const visibleColumns = useMemo(
     () => columns.filter((c) => c.visible),
-    [columns]
+    [columns],
   );
 
   const handleResetDefault = () => {
     setColumns(JSON.parse(JSON.stringify(DEFAULT_COLUMNS)));
-
     setConfigSearch("");
   };
 
@@ -501,17 +525,17 @@ const OrderTable: React.FC<OrderTableProps> = ({
   const handleInputChange = (
     rowId: string,
     columnId: string,
-    value: string
+    value: string,
   ) => {
     setTableData((prev) => {
       const row = prev[rowId] || {};
       const newData = { ...row, [columnId]: value };
       if (columnId === "qty" || columnId === "rate") {
         const qty = parseFloat(
-          columnId === "qty" ? value : String(row.qty || 0)
+          columnId === "qty" ? value : String(row.qty || 0),
         );
         const rate = parseFloat(
-          columnId === "rate" ? value : String(row.rate || 0)
+          columnId === "rate" ? value : String(row.rate || 0),
         );
         if (!isNaN(qty) && !isNaN(rate)) {
           newData.amount = (qty * rate).toFixed(2);
@@ -535,7 +559,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
       setTableData((prev) => ({
         ...prev,
         [rowIdToDelete]: {
-          reciss: "Receipt",
+          reciss: "RECEIPT",
           qty: 0,
           rate: 0,
           amount: 0,
@@ -555,7 +579,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
       setTableData((prev) => ({
         ...prev,
         [newId]: {
-          reciss: "Receipt",
+          reciss: "RECEIPT",
           qty: 0,
           rate: 0,
           amount: 0,
@@ -587,14 +611,14 @@ const OrderTable: React.FC<OrderTableProps> = ({
   const toggleColumnVisibility = (colId: string) => {
     setColumns((prev) =>
       prev.map((col) =>
-        col.id === colId ? { ...col, visible: !col.visible } : col
-      )
+        col.id === colId ? { ...col, visible: !col.visible } : col,
+      ),
     );
   };
 
   const handleSelectClick = (
     e: React.MouseEvent<HTMLDivElement>,
-    rowId: string
+    rowId: string,
   ) => {
     e.stopPropagation();
     const rect = e.currentTarget.getBoundingClientRect();
@@ -623,11 +647,18 @@ const OrderTable: React.FC<OrderTableProps> = ({
 
   const handleWarrantyClick = (
     e: React.MouseEvent<HTMLDivElement>,
-    rowId: string
+    rowId: string,
   ) => {
     e.stopPropagation();
-    const rowData = tableData[rowId];
-    const options = getStandardWarranties(String(rowData?.select || ""));
+
+    // 1. Get the selected item code from the row
+    const selectedItemCode = tableData[rowId]?.select;
+
+    // 2. Find the full item object from our Master List
+    const fullItem = items.find((i) => i.code === selectedItemCode);
+
+    // 3. Generate dynamic options based on the API response
+    const options = getItemWarranties(fullItem);
 
     const rect = e.currentTarget.getBoundingClientRect();
     setWarrantyPopup({
@@ -669,21 +700,13 @@ const OrderTable: React.FC<OrderTableProps> = ({
 
   const handleAttributeClick = (rowId: string) => {
     const data = tableData[rowId];
-    if (data && data.select) {
-      const reconstructedItem: any = {
-        code: data.select,
-        name: data.desc,
-        stock_unit: data.unit,
-        gst_classfication: data.hsn,
-        brand: data.brand,
-        sales_rate: data.rate,
-        mrp: data.mrp,
-        barcode: data.barcode,
-      };
+    const selectedItem = items.find((i) => i.code === data?.select);
+
+    if (selectedItem) {
       setAttributePanelState({
         visible: true,
         activeRowId: rowId,
-        tempItemData: reconstructedItem,
+        tempItemData: selectedItem,
       });
     }
   };
@@ -691,32 +714,38 @@ const OrderTable: React.FC<OrderTableProps> = ({
   const handleAttributeSave = (attributeData: any) => {
     const { activeRowId, tempItemData } = attributePanelState;
     if (activeRowId && tempItemData) {
-      // FIX: Use getStringValue here to prevent objects from entering the state
+      // --- MAPPING LOGIC START ---
       const baseData: RowData = {
-        reciss: "Receipt",
+        reciss: "RECEIPT",
         select: tempItemData.code || "",
         desc: tempItemData.name || "",
 
-        // --- FIXED HERE ---
+        // Extract Object Names safely
         unit: getStringValue(tempItemData.stock_unit),
-        hsn: tempItemData.gst_classfication || "",
         brand: getStringValue(tempItemData.brand),
-        // ------------------
 
-        qty: "1",
-        mrp: String(tempItemData.mrp || "0"),
-        rate: String(tempItemData.sales_rate || "0"),
+        // Map API fields to Table Columns
+        hsn: tempItemData.gst_classification || "",
+        rate: String(tempItemData.sales_rate || 0),
+        mrp: String(tempItemData.mrp || 0),
         barcode: tempItemData.barcode || "",
         printdesc: tempItemData.name || "",
+
+        // Initialize Qty
+        qty: "1",
       };
+
+      // Calculate initial amount
       const qty = 1;
       const rate = parseFloat(String(tempItemData.sales_rate || 0));
       baseData.amount = (qty * rate).toFixed(2);
 
+      // Merge with any specific attribute overrides (e.g. batchNo if set in panel)
       setTableData((prev) => ({
         ...prev,
         [activeRowId]: { ...prev[activeRowId], ...baseData, ...attributeData },
       }));
+      // --- MAPPING LOGIC END ---
     }
     setAttributePanelState({
       visible: false,
@@ -767,12 +796,12 @@ const OrderTable: React.FC<OrderTableProps> = ({
             ? valA.localeCompare(valB)
             : valB.localeCompare(valA)
           : sortConfig.direction === "asc"
-          ? valA < valB
-            ? -1
-            : 1
-          : valA > valB
-          ? -1
-          : 1;
+            ? valA < valB
+              ? -1
+              : 1
+            : valA > valB
+              ? -1
+              : 1;
       });
     }
     return sortable;
@@ -799,7 +828,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
             ...col,
             width: Math.max(
               30,
-              startWidthRef.current + (e.clientX - startXRef.current)
+              startWidthRef.current + (e.clientX - startXRef.current),
             ),
           };
         }
@@ -1029,12 +1058,12 @@ const OrderTable: React.FC<OrderTableProps> = ({
                                   <span
                                     style={{
                                       color:
-                                        rowData.reciss === "Issue"
+                                        rowData.reciss === "ISSUE"
                                           ? "red"
                                           : "inherit",
                                     }}
                                   >
-                                    {rowData.reciss || "Receipt"}
+                                    {rowData.reciss || "RECEIPT"}
                                   </span>
                                   <ChevronDown
                                     size={10}
@@ -1043,17 +1072,17 @@ const OrderTable: React.FC<OrderTableProps> = ({
                                 </div>
                                 <select
                                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                  value={rowData.reciss || "Receipt"}
+                                  value={rowData.reciss || "RECEIPT"}
                                   onChange={(e) =>
                                     handleInputChange(
                                       rowId,
                                       "reciss",
-                                      e.target.value
+                                      e.target.value,
                                     )
                                   }
                                 >
-                                  <option value="Receipt">Receipt</option>
-                                  <option value="Issue">Issue</option>
+                                  <option value="RECEIPT">RECEIPT</option>
+                                  <option value="ISSUE">ISSUE</option>
                                 </select>
                               </div>
                             );
@@ -1067,9 +1096,8 @@ const OrderTable: React.FC<OrderTableProps> = ({
                               </div>
                             );
                           }
-                          // --- NEW WARRANTY LOGIC ---
+                          // --- WARRANTY COLUMN ---
                           else if (col.id === "warranty") {
-                            // If user already selected a value, show it. If not, show "Select"
                             const displayValue = rowData.warranty || "Select";
                             const hasSelection = !!rowData.warranty;
 
@@ -1119,13 +1147,12 @@ const OrderTable: React.FC<OrderTableProps> = ({
                                   handleInputChange(
                                     rowId,
                                     col.id,
-                                    e.target.value
+                                    e.target.value,
                                   )
                                 }
                               />
                             );
                           } else {
-                            // --- FIX: Use helper function here too for extra safety ---
                             const displayVal = getStringValue(rowData[col.id]);
 
                             content = (
@@ -1137,7 +1164,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
                                   handleInputChange(
                                     rowId,
                                     col.id,
-                                    e.target.value
+                                    e.target.value,
                                   )
                                 }
                               />
@@ -1165,8 +1192,8 @@ const OrderTable: React.FC<OrderTableProps> = ({
                                 col.align === "center"
                                   ? "text-center"
                                   : col.align === "right"
-                                  ? "text-right"
-                                  : "text-left"
+                                    ? "text-right"
+                                    : "text-left"
                               } ${isReadOnly ? "text-gray-500" : ""}`}
                             >
                               {content}
@@ -1276,10 +1303,12 @@ const OrderTable: React.FC<OrderTableProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                   {columns
                     .filter(
-                      (c) => !["sno", "add", "del", "copy"].includes(c.id)
+                      (c) => !["sno", "add", "del", "copy"].includes(c.id),
                     )
                     .filter((c) =>
-                      c.label.toLowerCase().includes(configSearch.toLowerCase())
+                      c.label
+                        .toLowerCase()
+                        .includes(configSearch.toLowerCase()),
                     )
                     .map((col) => (
                       <div
@@ -1356,7 +1385,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
               </div>
             </div>
           </div>,
-          document.body
+          document.body,
         )}
 
       <AttributePanel
@@ -1422,7 +1451,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
               </div>
             </div>
           </>,
-          document.body
+          document.body,
         )}
 
       {warrantyPopup.visible &&
@@ -1478,7 +1507,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
                   ))
                 ) : (
                   <div className="p-3 text-xs text-center text-gray-400 italic">
-                    No standard plans available for this item.
+                    No available plans for this item.
                   </div>
                 )}
               </div>
@@ -1533,7 +1562,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
               </div>
             </div>
           </>,
-          document.body
+          document.body,
         )}
 
       {isImportModalOpen &&
@@ -1542,7 +1571,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
             isOpen={isImportModalOpen}
             onClose={() => setIsImportModalOpen(false)}
           />,
-          document.body
+          document.body,
         )}
 
       <style>{`

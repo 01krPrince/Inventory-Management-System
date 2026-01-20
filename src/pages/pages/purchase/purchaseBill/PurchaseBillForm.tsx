@@ -1,96 +1,69 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import {
   DocumentIcon,
   ChevronDownIcon,
   ChevronUpIcon,
 } from "../../../../components/icons";
+import { EditIcon, BarChart2 } from "lucide-react";
 import Dropdown, { ColumnDef } from "../../../../components/Dropdown";
 import DateInput from "../../../../components/DateInput";
-import { EditIcon, BarChart2 } from "lucide-react";
 import { LocationMaster } from "../../../../components/LocationMaster";
-import CounterMaster from "../../../../components/CounterMaster";
-import State from "../../../../components/State";
 import CrudVendor from "../vendor/pages/AddNewVendor";
-import NameAndCodeMaster, {
-  NameAndCodeData,
-} from "../../../../components/NameAndCodeComponent";
+import NameAndCodeMaster from "../../../../components/NameAndCodeComponent";
 
+import { getAllVendors } from "../vendor/api/vendorService";
 import {
   fetchAllLocations,
   LocationMaster as LocationMasterType,
 } from "../../inventory/stockAdjustment/api/LocationMaster";
 
-// --- 1. Types & Interfaces ---
+// --- Types & Interfaces ---
 
-interface DropdownItem {
+export interface PurchaseBillFormData {
+  gstType: string;
+  store: string;
+  storeId?: string;
+  vendor: string;
+  vendorId?: string;
+  priceCategory: string;
+  tax: string;
+  placeOfSupply: string;
+  shipTo: string;
+  paymentTerms: string;
+  email?: string;
+  orderNo?: string;
+  refNo?: string;
+  orderDate: string;
+  refDate: string;
+  dueDate: string;
+
+  // --- NEW FIELDS FOR AUTO-FILL ---
+  billToText?: string;
+  shipToText?: string;
+  gstNo?: string;
+  contactPerson?: string;
+}
+
+interface SimpleOption {
   name: string;
+  id?: string;
   code?: string;
-  [key: string]: any;
 }
 
-// Updated Mock Data
-interface MockData {
-  gstTypes: DropdownItem[];
-  stores: LocationMasterType[];
-  vendors: DropdownItem[];
-  priceCategories: DropdownItem[];
-  taxes: DropdownItem[];
-  paymentTerms: DropdownItem[];
-  states: DropdownItem[];
-  shipToLocations: DropdownItem[];
+interface ActionBtnProps {
+  icon: React.ReactElement;
+  onClick?: () => void;
 }
 
-const mockData: MockData = {
-  gstTypes: [
-    { name: "TaxInvoice", code: "TAX" },
-    { name: "BillOfSupply", code: "BOS" },
-    { name: "Export", code: "EXP" },
-  ],
-  stores: [],
-  vendors: [
-    { name: "Adidas India", code: "V001" },
-    { name: "Nike Corp", code: "V002" },
-    { name: "Puma Sports", code: "V003" },
-  ],
-  priceCategories: [
-    { name: "Wholesale", code: "WS" },
-    { name: "Retail", code: "RT" },
-    { name: "Distributor", code: "DB" },
-  ],
-  taxes: [
-    { name: "Inclusive", code: "INC" },
-    { name: "Exclusive", code: "EXC" },
-  ],
-  paymentTerms: [
-    { name: "Net 30", code: "30" },
-    { name: "Immediate", code: "0" },
-    { name: "Cash on Delivery", code: "COD" },
-  ],
-  states: [
-    { name: "Delhi", code: "DL" },
-    { name: "Maharashtra", code: "MH" },
-    { name: "Bihar", code: "BR" },
-  ],
-  shipToLocations: [
-    { name: "Warehouse A", code: "WH01" },
-    { name: "Store Branch 2", code: "BR02" },
-  ],
-};
+interface PurchaseBillFormProps {
+  themeColor?: string;
+  onSubmit?: (data: PurchaseBillFormData) => void;
+}
 
-const defaultColumns: ColumnDef<DropdownItem>[] = [
-  { header: "Code", key: "code", width: "w-20" },
-  { header: "Name", key: "name", width: "w-[50px]" },
-];
-
-const locationColumns: ColumnDef<LocationMasterType>[] = [
-  { header: "Code", key: "code", width: "w-20" },
-  { header: "Name", key: "name", width: "flex-1" },
-];
-
-const codeNameColumns: ColumnDef<DropdownItem>[] = [
-  { header: "Code", key: "code", width: "w-20" },
-  { header: "Name", key: "name", width: "w-full" },
-];
+export interface PurchaseBillFormRef {
+  triggerSubmit: () => void;
+  getFormData: () => PurchaseBillFormData;
+}
 
 // --- Helper Components ---
 
@@ -103,46 +76,45 @@ const Label: React.FC<{ children: React.ReactNode; required?: boolean }> = ({
   </label>
 );
 
+const toOptions = (arr: string[]): SimpleOption[] =>
+  arr.map((s) => ({ name: s }));
+
+const mockData = {
+  gstTypes: toOptions(["TaxInvoice", "BillOfSupply", "Export"]),
+  priceCategories: toOptions(["Wholesale", "Retail", "Distributor"]),
+  taxOptions: toOptions(["Inclusive", "Exclusive"]),
+  paymentTerms: toOptions(["Net 30", "Immediate", "Cash on Delivery"]),
+};
+
 const InputGroup: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div className="flex items-center w-full relative gap-1">{children}</div>
 );
 
-interface InputProps {
+const Input: React.FC<{
   value?: string;
   placeholder?: string;
   readOnly?: boolean;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
-}
-
-const Input: React.FC<InputProps> = ({
-  value,
-  placeholder,
-  readOnly,
-  onChange,
-}) => (
+}> = ({ value, placeholder, readOnly, onChange }) => (
   <input
     type="text"
-    readOnly={readOnly}
-    onChange={onChange}
-    className={`w-full h-[30px] border border-gray-300 rounded-sm px-2 text-[13px] text-gray-700 focus:outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)] ${
-      readOnly ? "bg-gray-100 text-gray-500 cursor-not-allowed" : "bg-white"
+    className={`w-full h-[30px] bg-white border border-gray-300 rounded-sm px-2 text-[13px] text-gray-700 focus:outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)] ${
+      readOnly ? "bg-gray-50" : ""
     }`}
     value={value || ""}
+    onChange={onChange}
     placeholder={placeholder}
+    readOnly={readOnly}
   />
 );
 
-const ActionBtn: React.FC<{
-  icon: React.ReactNode;
-  onClick?: () => void;
-  className?: string;
-}> = ({ icon, onClick, className }) => (
+const ActionBtn: React.FC<ActionBtnProps> = ({ icon, onClick }) => (
   <button
-    type="button"
     onClick={onClick}
-    className={`h-[30px] w-[30px] bg-[var(--theme-primary)] text-white flex items-center justify-center rounded-sm border border-[var(--theme-primary)] hover:opacity-90 transition-opacity ml-[-1px] z-10 shrink-0 ${className}`}
+    type="button"
+    className="h-[32px] w-[32px] bg-[var(--theme-primary)] text-white flex items-center justify-center rounded-sm border border-[var(--theme-primary)] hover:opacity-90 transition-opacity ml-[-1px] z-10 shadow-sm"
   >
-    <span className="flex items-center justify-center">{icon}</span>
+    {icon}
   </button>
 );
 
@@ -151,594 +123,507 @@ const AccordionSection: React.FC<{
   isOpen: boolean;
   onToggle: () => void;
   children: React.ReactNode;
-}> = ({ title, isOpen, onToggle, children }) => {
-  return (
-    <div className="mb-2 border border-gray-200 rounded bg-white shadow-sm">
-      <div
-        onClick={onToggle}
-        className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-50 transition-colors select-none border-b border-transparent"
-      >
-        <div className="flex items-center gap-2 text-[var(--theme-secondary)] font-bold text-sm">
-          <DocumentIcon className="w-5 h-5" />
-          <span>{title}</span>
-        </div>
-        <div className="text-[var(--theme-secondary)]">
-          {isOpen ? (
-            <ChevronUpIcon className="w-5 h-5" />
-          ) : (
-            <ChevronDownIcon className="w-5 h-5" />
-          )}
-        </div>
-      </div>
-      {isOpen && <div className="p-3 border-t border-gray-100">{children}</div>}
-    </div>
-  );
-};
-
-// --- Main Component ---
-
-interface POSOrderFormProps {
-  themeColor?: string;
-}
-
-const PurchaseBillForm: React.FC<POSOrderFormProps> = ({
-  themeColor = "#0f3c63",
-}) => {
-  // --- UI State ---
-  const [isBillToOpen, setBillToOpen] = useState<boolean>(false);
-  const [isShipToOpen, setShipToOpen] = useState<boolean>(false);
-
-  // Modals State
-  const [isCounterMasterOpen, setIsCounterMasterOpen] = useState(false);
-  const [isStateOpen, setIsStateOpen] = useState(false);
-  const [isLocationMasterOpen, setIsLocationMasterOpen] =
-    useState<boolean>(false);
-
-  // Vendor Modal State
-  const [isVendorFormOpen, setIsVendorFormOpen] = useState(false);
-  const [editingVendor, setEditingVendor] = useState<DropdownItem | null>(null);
-
-  // Constants for Z-Index
-  const nestedModalZIndex = 1200;
-
-  // Data State
-  const [locationList, setLocationList] = useState<LocationMasterType[]>([]);
-
-  // Form Data State
-  const [formData, setFormData] = useState({
-    gstType: "TaxInvoice",
-    store: "SPORTS HUB",
-    vendor: "",
-    email: "",
-    deliveryDate: "26/12/2025",
-    priceCategory: "",
-    orderDate: "26/12/2025",
-    orderNo: "00002",
-    refNo: "",
-    refDate: "26/12/2025",
-    tax: "Inclusive",
-    paymentTerms: "",
-    // Billing Address Section
-    billingAddress: "",
-    gstNo: "",
-    contactPerson: "",
-    placeOfSupply: "",
-    // Delivery Address Section
-    shipTo: "",
-    deliveryAddress: "",
-  });
-
-  const [isLegderOpen, setIsLedgerOpen] = useState<boolean>(false);
-  const [ledgerEditingRow, setLedgerEditingRow] =
-    useState<NameAndCodeData | null>(null);
-  // --- Effects ---
-  useEffect(() => {
-    loadLocations();
-  }, []);
-
-  const loadLocations = async () => {
-    try {
-      const result = await fetchAllLocations();
-      setLocationList(result || []);
-    } catch (err) {
-      console.error(err);
-      setLocationList([
-        { code: "ST01", name: "SPORTS HUB" },
-        { code: "ST02", name: "WAREHOUSE A" },
-      ] as any);
-    }
-  };
-
-  const handleState = () => {
-    setIsStateOpen(true);
-  };
-
-  const handleFieldChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const getSelectedStoreData = (): LocationMasterType | null => {
-    if (!formData.store) return null;
-    return locationList.find((s) => s.name === formData.store) || null;
-  };
-
-  const handleLocationSuccess = async () => {
-    await loadLocations();
-  };
-
-  const handleLocationSelect = (locationName: string) => {
-    handleFieldChange("store", locationName);
-    setIsLocationMasterOpen(false);
-  };
-
-  const handleVendorAction = () => {
-    const selectedVendorName = formData.vendor;
-
-    if (selectedVendorName) {
-      const vendorData = mockData.vendors.find(
-        (v) => v.name === selectedVendorName
-      );
-      setEditingVendor(vendorData || null);
-    } else {
-      setEditingVendor(null);
-    }
-
-    setIsVendorFormOpen(true);
-  };
-
-  const handleVendorSaveSuccess = () => {
-    setIsVendorFormOpen(false);
-  };
-
-  const themeStyles = {
-    "--theme-primary": themeColor,
-    "--theme-secondary": themeColor,
-    "--theme-focus": "#60a5fa",
-  } as React.CSSProperties;
-
-  const handleLedgerClose = () => {
-    setIsLedgerOpen(false);
-    setLedgerEditingRow(null);
-  };
-
-  return (
+}> = ({ title, isOpen, onToggle, children }) => (
+  <div className="mb-2 border border-gray-200 rounded bg-white">
     <div
-      style={themeStyles}
-      className="bg-white rounded border border-gray-200 p-5 relative"
+      onClick={onToggle}
+      className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-50 transition-colors select-none border-b border-transparent"
     >
-      {isCounterMasterOpen && (
-        <CounterMaster onClose={() => setIsCounterMasterOpen(false)} />
-      )}
-      {isStateOpen && <State onClose={() => setIsStateOpen(false)} />}
+      <div className="flex items-center gap-2 text-[var(--theme-secondary)] font-bold text-sm">
+        <DocumentIcon className="w-5 h-5" />
+        <span>{title}</span>
+      </div>
+      <div className="text-[var(--theme-secondary)]">
+        {isOpen ? (
+          <ChevronUpIcon className="w-5 h-5" />
+        ) : (
+          <ChevronDownIcon className="w-5 h-5" />
+        )}
+      </div>
+    </div>
+    {isOpen && <div className="p-3 border-t border-gray-100">{children}</div>}
+  </div>
+);
 
-      <div className="grid grid-cols-12 gap-6">
-        <div className="col-span-4 space-y-2">
-          <div className="grid grid-cols-12 gap-2 items-center">
-            <div className="col-span-4">
-              <Label>GST Type</Label>
-            </div>
-            <div className="col-span-8">
-              <Dropdown
-                data={mockData.gstTypes}
-                columns={defaultColumns}
-                value={formData.gstType}
-                valueKey="name"
-                onChange={(item) =>
-                  handleFieldChange("gstType", item?.name || "")
-                }
-              />
-            </div>
-          </div>
+// --- MAIN COMPONENT ---
+const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
+  ({ themeColor = "#0f3c63", onSubmit }, ref) => {
+    // --- State ---
+    const [storeOptions, setStoreOptions] = useState<SimpleOption[]>([]);
+    const [vendorOptions, setVendorOptions] = useState<SimpleOption[]>([]);
+    const [rawVendors, setRawVendors] = useState<any[]>([]);
 
-          <div className="grid grid-cols-12 gap-2 items-center">
-            <div className="col-span-4">
-              <Label>Cash/Credit</Label>
-            </div>
-            <div className="col-span-8">
-              <Dropdown
-                data={mockData.gstTypes}
-                columns={defaultColumns}
-                value={formData.gstType}
-                valueKey="name"
-                onChange={(item) =>
-                  handleFieldChange("gstType", item?.name || "")
-                }
-              />
-            </div>
-          </div>
+    const [isBillToOpen, setBillToOpen] = useState<boolean>(false);
+    const [isShipToOpen, setShipToOpen] = useState<boolean>(false);
+    const [activeModal, setActiveModal] = useState<string | null>(null);
 
-          <div className="grid grid-cols-12 gap-2 items-center">
-            <div className="col-span-4">
-              <Label required>Store</Label>
-            </div>
-            <div className="col-span-8">
-              <InputGroup>
+    const [formData, setFormData] = useState<PurchaseBillFormData>({
+      gstType: "TaxInvoice",
+      store: "",
+      vendor: "",
+      priceCategory: "Wholesale",
+      tax: "Inclusive",
+      placeOfSupply: "",
+      shipTo: "",
+      paymentTerms: "",
+      email: "",
+      orderNo: "",
+      refNo: "",
+      orderDate: "",
+      refDate: "",
+      dueDate: "",
+      billToText: "",
+      shipToText: "",
+      gstNo: "",
+      contactPerson: "",
+    });
+
+    const simpleColumns: ColumnDef<SimpleOption>[] = [
+      {
+        header: "Name",
+        key: "name",
+        width: "flex-1",
+      },
+    ];
+
+    const themeStyles = {
+      "--theme-primary": themeColor,
+      "--theme-secondary": themeColor,
+      "--theme-focus": "#60a5fa",
+    } as React.CSSProperties;
+
+    // --- Load Data ---
+    useEffect(() => {
+      loadDropdownData();
+    }, []);
+
+    const loadDropdownData = async () => {
+      try {
+        // 1. Stores (used for store and shipTo)
+        const storesData = await fetchAllLocations();
+        const mappedStores = storesData.map((item: LocationMasterType) => ({
+          name: item.name,
+          id: item._id,
+        }));
+        setStoreOptions(mappedStores);
+        if (mappedStores.length > 0) {
+          setFormData((prev) => ({
+            ...prev,
+            store: mappedStores[0].name,
+            storeId: mappedStores[0].id,
+          }));
+        }
+
+        // 2. Vendors
+        const vendorsData = await getAllVendors();
+        setRawVendors(vendorsData); // Store raw data for auto-fill logic
+        
+        // --- FIX: Map 'vend_name' from API to 'name' for Dropdown ---
+        const mappedVendors = vendorsData.map((item: any) => ({
+          name: item.vend_name, // Changed from item.name to item.vend_name
+          id: item._id,
+        }));
+        setVendorOptions(mappedVendors);
+      } catch (error) {
+        console.error("Error loading dropdowns", error);
+      }
+    };
+
+    // --- Dynamic Handler ---
+    const handleDropdownChange = (
+      field: keyof PurchaseBillFormData,
+      item: SimpleOption | null,
+    ) => {
+      setFormData((prev) => ({ ...prev, [field]: item?.name || "" }));
+
+      // === AUTO FILL LOGIC ===
+      if (field === "store" && item) {
+        setFormData((prev) => ({ ...prev, storeId: item.id }));
+      }
+      
+      if (field === "vendor" && item) {
+        setFormData((prev) => ({ ...prev, vendorId: item.id }));
+
+        // Find the full vendor object using the unique ID
+        const fullVendor = rawVendors.find(
+          (v) => v._id === item.id 
+        );
+
+        if (fullVendor) {
+          // 1. Format Bill To Address
+          const billTo = `${fullVendor.vend_name || fullVendor.name || ""}\n${fullVendor.address || ""}\n${fullVendor.city || ""}, ${fullVendor.state || ""} - ${fullVendor.pin_code || ""}\nPhone: ${fullVendor.phone || ""}`;
+
+          // 2. Format Ship To Address
+          const shipTo = `${fullVendor.vend_name || fullVendor.name || ""}\n${fullVendor.address_ship || fullVendor.address || ""}\n${fullVendor.city_ship || fullVendor.city || ""}, ${fullVendor.state_ship || fullVendor.state || ""} - ${fullVendor.pin_code_ship || fullVendor.pin_code || ""}\nPhone: ${fullVendor.phone_ship || fullVendor.phone || ""}`;
+
+          setFormData((prev) => ({
+            ...prev,
+            email: fullVendor.email || "",
+            priceCategory: fullVendor.price_category || prev.priceCategory,
+            paymentTerms: fullVendor.payment_term || prev.paymentTerms, // Note: check if API uses payment_term or payment_terms
+            placeOfSupply: fullVendor.state || "",
+
+            // Auto-fill new fields
+            billToText: billTo,
+            shipToText: shipTo,
+            gstNo: fullVendor.gst_no || "",
+            contactPerson: fullVendor.contact_person || "",
+          }));
+        }
+      }
+    };
+
+    const handleInputChange = (field: keyof PurchaseBillFormData, value: string) => {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+    };
+
+    useImperativeHandle(ref, () => ({
+      triggerSubmit: () => {
+        if (onSubmit) {
+          if (!formData.vendor) {
+            alert("Please select a vendor");
+            return;
+          }
+          onSubmit(formData);
+        }
+      },
+      getFormData: () => formData,
+    }));
+
+    return (
+      <div
+        style={themeStyles}
+        className="bg-white rounded border border-gray-200 p-5 relative"
+      >
+        <div className="grid grid-cols-12 gap-8">
+          {/* LEFT COLUMN */}
+          <div className="col-span-4 space-y-1">
+            <div className="grid grid-cols-12 gap-2">
+              <div className="col-span-4">
+                <Label>GST Type</Label>
+              </div>
+              <div className="col-span-8">
                 <Dropdown
-                  data={locationList}
-                  columns={locationColumns}
-                  value={formData.store}
+                  data={mockData.gstTypes}
+                  columns={[{ header: "Name", key: "name", width: "flex-1" }]}
+                  value={formData.gstType}
                   valueKey="name"
-                  onChange={(item) =>
-                    handleFieldChange("store", item?.name || "")
-                  }
+                  onChange={(i) => handleDropdownChange("gstType", i)}
                 />
-                <ActionBtn
-                  icon={<EditIcon size={16} />}
-                  onClick={() => setIsLocationMasterOpen(true)}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-12 gap-2">
+              <div className="col-span-4">
+                <Label required>Store</Label>
+              </div>
+              <div className="col-span-8">
+                <InputGroup>
+                  <Dropdown
+                    data={storeOptions}
+                    columns={[{ header: "Name", key: "name", width: "flex-1" }]}
+                    value={formData.store}
+                    valueKey="name"
+                    onChange={(item) => handleDropdownChange("store", item)}
+                  />
+                  <ActionBtn
+                    icon={<EditIcon size={14} />}
+                    onClick={() => setActiveModal("store")}
+                  />
+                </InputGroup>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-12 gap-2">
+              <div className="col-span-4">
+                <Label required>Vendor</Label>
+              </div>
+              <div className="col-span-8">
+                <InputGroup>
+                  <Dropdown
+                    data={vendorOptions}
+                    columns={[{ header: "Name", key: "name", width: "flex-1" }]}
+                    value={formData.vendor}
+                    valueKey="name"
+                    placeholder="Select Vendor..."
+                    onChange={(item) => handleDropdownChange("vendor", item)}
+                  />
+                  <ActionBtn
+                    icon={<EditIcon size={16} />}
+                    onClick={() => setActiveModal("vendor")}
+                  />
+                  <ActionBtn icon={<BarChart2 size={14} />} />
+                </InputGroup>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-12 gap-2">
+              <div className="col-span-4">
+                <Label>Email</Label>
+              </div>
+              <div className="col-span-8">
+                <Input
+                  value={formData.email}
+                  onChange={(e) => handleInputChange("email", e.target.value)}
                 />
-              </InputGroup>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-12 gap-2">
+              <div className="col-span-4">
+                <Label>Price Category</Label>
+              </div>
+              <div className="col-span-8">
+                <InputGroup>
+                  <Dropdown
+                    data={mockData.priceCategories}
+                    columns={[{ header: "Name", key: "name", width: "flex-1" }]}
+                    value={formData.priceCategory}
+                    valueKey="name"
+                    onChange={(item) => handleDropdownChange("priceCategory", item)}
+                  />
+                  <ActionBtn
+                    icon={<EditIcon size={16} />}
+                    onClick={() => setActiveModal("priceCategory")}
+                  />
+                </InputGroup>
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-12 gap-2 items-center">
-            <div className="col-span-4">
-              <Label required>Vendor</Label>
+          {/* MIDDLE COLUMN */}
+          <div className="col-span-4 space-y-1">
+            <div className="grid grid-cols-12 gap-2">
+              <div className="col-span-4">
+                <Label required>Date</Label>
+              </div>
+              <div className="col-span-8">
+                <DateInput
+                  value={formData.orderDate}
+                  onChange={(e) => handleInputChange("orderDate", e.target.value)}
+                />
+              </div>
             </div>
-            <div className="col-span-8">
-              <InputGroup>
+            <div className="grid grid-cols-12 gap-2">
+              <div className="col-span-4">
+                <Label>Invoice No</Label>
+              </div>
+              <div className="col-span-8">
+                <Input
+                  value={formData.orderNo}
+                  onChange={(e) => handleInputChange("orderNo", e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-12 gap-2">
+              <div className="col-span-4">
+                <Label>Supplier Inv No</Label>
+              </div>
+              <div className="col-span-8">
+                <Input
+                  value={formData.refNo}
+                  onChange={(e) => handleInputChange("refNo", e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-12 gap-2">
+              <div className="col-span-4">
+                <Label>Supplier Inv Date</Label>
+              </div>
+              <div className="col-span-8">
+                <DateInput
+                  value={formData.refDate}
+                  onChange={(e) => handleInputChange("refDate", e.target.value)}
+                />
+              </div>
+            </div>
+            {/* Tax */}
+            <div className="grid grid-cols-12 gap-2">
+              <div className="col-span-4">
+                <Label>Tax</Label>
+              </div>
+              <div className="col-span-8">
                 <Dropdown
-                  data={mockData.vendors}
-                  columns={defaultColumns}
-                  value={formData.vendor}
+                  data={mockData.taxOptions}
+                  columns={[{ header: "Name", key: "name", width: "flex-1" }]}
+                  value={formData.tax}
                   valueKey="name"
-                  placeholder="Select..."
-                  onChange={(item) =>
-                    handleFieldChange("vendor", item?.name || "")
-                  }
+                  onChange={(i) => handleDropdownChange("tax", i)}
                 />
-                {/* Updated ActionBtn to handle Add/Edit logic */}
-                <ActionBtn
-                  icon={<EditIcon size={14} />}
-                  onClick={handleVendorAction}
-                />
-                <ActionBtn icon={<BarChart2 size={14} />} />
-              </InputGroup>
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-12 gap-2 items-center">
-            <div className="col-span-4">
-              <Label>Email</Label>
-            </div>
-            <div className="col-span-8">
-              <Input
-                value={formData.email}
-                onChange={(e) => handleFieldChange("email", e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-12 gap-2 items-center">
-            <div className="col-span-4">
-              <Label>Price Category</Label>
-            </div>
-            <div className="col-span-8">
-              <InputGroup>
-                <Dropdown
-                  data={mockData.priceCategories}
-                  columns={defaultColumns}
-                  value={formData.priceCategory}
-                  valueKey="name"
-                  placeholder="Select..."
-                  onChange={(item) =>
-                    handleFieldChange("priceCategory", item?.name || "")
-                  }
-                />
-                <ActionBtn
-                  icon={<EditIcon size={16} />}
-                  onClick={() => {
-                    setIsLedgerOpen(true);
-                  }}
-                />
-              </InputGroup>
-            </div>
-          </div>
-        </div>
-
-        <div className="col-span-4 space-y-2">
-          {/* Date */}
-          <div className="grid grid-cols-12 gap-2 items-center">
-            <div className="col-span-4">
-              <Label required>Date</Label>
-            </div>
-            <div className="col-span-8">
-              <DateInput
-                value={formData.deliveryDate}
-                onChange={(e) =>
-                  handleFieldChange("deliveryDate", e.target.value)
-                }
-              />
-            </div>
-          </div>
-
-          {/* Invoice No */}
-          <div className="grid grid-cols-12 gap-2 items-center">
-            <div className="col-span-4">
-              <Label required>Invoice No</Label>
-            </div>
-            <div className="col-span-8">
-              <Input
-                value={formData.orderNo}
-                onChange={(e) => handleFieldChange("orderNo", e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Supplier Inv No */}
-          <div className="grid grid-cols-12 gap-2 items-center">
-            <div className="col-span-4">
-              <Label required>Supplier Inv No</Label>
-            </div>
-            <div className="col-span-8">
-              <Input
-                value={formData.orderNo}
-                onChange={(e) => handleFieldChange("orderNo", e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Ref No */}
-          {/* <div className="grid grid-cols-12 gap-2 items-center">
-            <div className="col-span-4">
-              <Label>Ref No</Label>
-            </div>
-            <div className="col-span-8">
-              <Input
-                value={formData.refNo}
-                onChange={(e) => handleFieldChange("refNo", e.target.value)}
-              />
-            </div>
-          </div> */}
-
-          {/* Supplier Inv Date */}
-          <div className="grid grid-cols-12 gap-2 items-center">
-            <div className="col-span-4">
-              <Label required>Supplier Inv Date</Label>
-            </div>
-            <div className="col-span-8">
-              <DateInput
-                value={formData.refDate}
-                onChange={(e) => handleFieldChange("refDate", e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Tax */}
-          <div className="grid grid-cols-12 gap-2 items-center">
-            <div className="col-span-4">
-              <Label>Tax</Label>
-            </div>
-            <div className="col-span-8">
-              <Dropdown
-                data={mockData.taxes}
-                columns={defaultColumns}
-                value={formData.tax}
-                valueKey="name"
-                onChange={(item) => handleFieldChange("tax", item?.name || "")}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="col-span-4 flex flex-col h-full justify-between">
-          <div className="space-y-4">
-            {/* Billing Address Accordion */}
+          {/* RIGHT COLUMN */}
+          <div className="col-span-4 flex flex-col min-h-full">
             <AccordionSection
               title="Billing Address"
               isOpen={isBillToOpen}
               onToggle={() => setBillToOpen(!isBillToOpen)}
             >
-              {/* Text Area */}
-              <div className="relative mb-2">
-                <textarea
-                  value={formData.billingAddress}
-                  onChange={(e) =>
-                    handleFieldChange("billingAddress", e.target.value)
-                  }
-                  className="w-full h-24 border border-gray-300 rounded text-[13px] p-2 resize-none focus:ring-1 focus:border-[var(--theme-focus)] focus:ring-[var(--theme-focus)] outline-none"
-                />
-                <span className="absolute bottom-1 right-2 text-[10px] text-gray-400">
-                  {formData.billingAddress.length}/200
-                </span>
-              </div>
-
-              {/* GST No */}
-              <div className="flex items-center gap-2 mb-2">
-                <span className="w-24 text-[13px] text-gray-700 shrink-0">
-                  GST No
-                </span>
-                <div className="w-full">
-                  <Input
-                    value={formData.gstNo}
-                    onChange={(e) => handleFieldChange("gstNo", e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Contact Person */}
-              <div className="flex items-center gap-2 mb-2">
-                <span className="w-24 text-[13px] text-gray-700 shrink-0">
-                  Contact Person
-                </span>
-                <div className="w-full">
-                  <Input
-                    value={formData.contactPerson}
+              <div className="space-y-2">
+                <div className="relative">
+                  <textarea
+                    className="w-full h-20 border border-gray-300 rounded text-[13px] p-2 resize-none focus:outline-none"
+                    value={formData.billToText}
                     onChange={(e) =>
-                      handleFieldChange("contactPerson", e.target.value)
+                      handleInputChange("billToText", e.target.value)
                     }
                   />
+                  <span className="absolute bottom-1 right-2 text-[10px] text-gray-400">
+                    0/200
+                  </span>
                 </div>
-              </div>
-
-              {/* Place of Supply */}
-              <div className="flex items-center gap-2">
-                <span className="w-24 text-[13px] text-gray-700 shrink-0">
-                  Place of Supply
-                </span>
-                <div className="w-full">
-                  <InputGroup>
-                    <Dropdown
-                      data={mockData.states}
-                      columns={codeNameColumns}
-                      value={formData.placeOfSupply}
-                      valueKey="name"
-                      placeholder="Select..."
-                      onChange={(item) =>
-                        handleFieldChange("placeOfSupply", item?.name || "")
+                <div className="grid grid-cols-12 gap-2 items-center">
+                  <div className="col-span-4">
+                    <Label>GST No</Label>
+                  </div>
+                  <div className="col-span-8">
+                    <Input
+                      value={formData.gstNo}
+                      onChange={(e) =>
+                        handleInputChange("gstNo", e.target.value)
                       }
                     />
-                    <button onClick={handleState}>
-                      <ActionBtn icon={<EditIcon size={16} />} />
-                    </button>
-                  </InputGroup>
+                  </div>
                 </div>
-              </div>
-
-              {/* eCommerce Inv No */}
-              <div className="flex items-center gap-2 mb-2">
-                <span className="w-24 text-[13px] text-gray-700 shrink-0">
-                  eCommerce Inv No
-                </span>
-                <div className="w-full">
-                  <Input
-                    value={formData.contactPerson}
-                    onChange={(e) =>
-                      handleFieldChange("contactPerson", e.target.value)
-                    }
-                  />
+                <div className="grid grid-cols-12 gap-2 items-center">
+                  <div className="col-span-4">
+                    <Label>Contact Person</Label>
+                  </div>
+                  <div className="col-span-8">
+                    <Input
+                      value={formData.contactPerson}
+                      onChange={(e) =>
+                        handleInputChange("contactPerson", e.target.value)
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-12 gap-2 items-center">
+                  <div className="col-span-4">
+                    <Label>Place of Supply</Label>
+                  </div>
+                  <div className="col-span-8">
+                    <InputGroup>
+                      <Input
+                        value={formData.placeOfSupply}
+                        onChange={(e) =>
+                          handleInputChange("placeOfSupply", e.target.value)
+                        }
+                      />
+                    </InputGroup>
+                  </div>
                 </div>
               </div>
             </AccordionSection>
 
-            {/* Delivery At Accordion */}
             <AccordionSection
               title="Delivery At"
               isOpen={isShipToOpen}
               onToggle={() => setShipToOpen(!isShipToOpen)}
             >
-              {/* Ship To Dropdown */}
-              <div className="flex items-center gap-2 mb-2">
-                <span className="w-16 text-[13px] text-gray-700 shrink-0 font-medium">
-                  Ship To
+              <div className="flex items-center mb-2">
+                <span className="w-16 text-[13px] text-gray-600 font-medium whitespace-nowrap">
+                  Delivery At
                 </span>
-                <div className="w-full">
+                <div className="flex-grow flex w-full relative">
                   <InputGroup>
                     <Dropdown
-                      data={mockData.shipToLocations}
-                      columns={codeNameColumns}
+                      data={storeOptions}
+                      columns={[
+                        { header: "Name", key: "name", width: "flex-1" },
+                      ]}
                       value={formData.shipTo}
                       valueKey="name"
-                      placeholder="Select..."
-                      onChange={(item) =>
-                        handleFieldChange("shipTo", item?.name || "")
-                      }
+                      onChange={(item) => handleDropdownChange("shipTo", item)}
                     />
-                    <ActionBtn icon={<EditIcon size={16} />} />
                   </InputGroup>
                 </div>
               </div>
-
-              {/* Delivery Address Text Area */}
-              <div className="relative">
-                <textarea
-                  value={formData.deliveryAddress}
-                  onChange={(e) =>
-                    handleFieldChange("deliveryAddress", e.target.value)
-                  }
-                  className="w-full h-24 border border-gray-300 rounded text-[13px] p-2 resize-none focus:ring-1 focus:border-[var(--theme-focus)] focus:ring-[var(--theme-focus)] outline-none"
-                />
-                <span className="absolute bottom-1 right-2 text-[10px] text-gray-400">
-                  {formData.deliveryAddress.length}/200
-                </span>
-              </div>
+              <textarea
+                className="w-full h-24 border border-gray-300 rounded text-[13px] p-2 resize-none focus:outline-none"
+                value={formData.shipToText}
+                onChange={(e) =>
+                  handleInputChange("shipToText", e.target.value)
+                }
+              ></textarea>
             </AccordionSection>
-          </div>
 
-          <div>
-            <div className="grid grid-cols-12 gap-2 items-center">
-              <div className="col-span-4 flex items-center gap-1">
-                <Label>Payment Terms</Label>
+            <div className="mt-auto pt-4 space-y-1">
+              <div className="grid grid-cols-12 gap-2 items-center">
+                <div className="col-span-4">
+                  <Label>Payment Terms</Label>
+                </div>
+                <div className="col-span-8">
+                  <InputGroup>
+                    <Dropdown
+                      data={mockData.paymentTerms}
+                      columns={simpleColumns}
+                      value={formData.paymentTerms}
+                      valueKey="name"
+                      onChange={(item) =>
+                        handleDropdownChange("paymentTerms", item)
+                      }
+                    />
+                  </InputGroup>
+                </div>
               </div>
-              <div className="col-span-7">
-                <InputGroup>
-                  <Dropdown
-                    data={mockData.paymentTerms}
-                    columns={defaultColumns}
-                    value={formData.paymentTerms}
-                    valueKey="name"
-                    placeholder="Select..."
-                    onChange={(item) =>
-                      handleFieldChange("paymentTerms", item?.name || "")
-                    }
+              <div className="grid grid-cols-12 gap-2 items-center">
+                <div className="col-span-4">
+                  <Label>Due Date</Label>
+                </div>
+                <div className="col-span-8">
+                  <DateInput
+                    value={formData.dueDate}
+                    onChange={(e) => handleInputChange("dueDate", e.target.value)}
                   />
-                  <ActionBtn icon={<EditIcon size={14} />} />
-                </InputGroup>
-              </div>
-            </div>
-            {/* Due Date */}
-            <div className="grid grid-cols-12 gap-2 items-center">
-              <div className="col-span-4">
-                <Label required>Due Date</Label>
-              </div>
-              <div className="col-span-8">
-                <DateInput
-                  value={formData.deliveryDate}
-                  onChange={(e) =>
-                    handleFieldChange("deliveryDate", e.target.value)
-                  }
-                />
+                </div>
               </div>
             </div>
           </div>
         </div>
+
+        {/* OVERLAY SYSTEM */}
+        {activeModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 backdrop-blur-[2px] p-4">
+            <div>
+              <div className="p-8">
+                {activeModal === "vendor" && (
+                  <CrudVendor
+                    onClose={() => setActiveModal(null)}
+                    onSuccess={() => {
+                      setActiveModal(null);
+                      loadDropdownData();
+                    }}
+                    initialData={null}
+                  />
+                )}
+                {activeModal === "store" && (
+                  <LocationMaster
+                    onClose={() => setActiveModal(null)}
+                    onSuccess={() => {
+                      setActiveModal(null);
+                      loadDropdownData();
+                    }}
+                    initialData={null}
+                  />
+                )}
+                {activeModal === "priceCategory" && (
+                  <NameAndCodeMaster
+                    title="Price Category"
+                    onClose={() => setActiveModal(null)}
+                    index={1200}
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-
-      {/* --- Location Master Popup --- */}
-      {isLocationMasterOpen && (
-        <div
-          className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-          style={{ zIndex: nestedModalZIndex }}
-        >
-          <div className="shadow-lg overflow-hidden relative">
-            <LocationMaster
-              onClose={() => setIsLocationMasterOpen(false)}
-              initialData={getSelectedStoreData()}
-              onSuccess={handleLocationSuccess}
-              onSelect={handleLocationSelect}
-              index={nestedModalZIndex}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* --- Vendor CRUD Popup --- */}
-      {isVendorFormOpen && (
-        <div
-          className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-          style={{ zIndex: nestedModalZIndex }}
-        >
-          {/* You might need to adjust w-full/h-[90vh] depending on CrudVendor's size */}
-          <div className="w-full max-w-6xl h-[90vh] rounded-xl overflow-hidden relative">
-            <CrudVendor
-              onClose={() => setIsVendorFormOpen(false)}
-              initialData={editingVendor}
-              onSuccess={handleVendorSaveSuccess}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* --- Price Category / NameAndCode Popup (Moved Here) --- */}
-      {isLegderOpen && (
-        <NameAndCodeMaster
-          title="Price Category"
-          onClose={handleLedgerClose}
-          initialData={ledgerEditingRow}
-          index={nestedModalZIndex}
-        />
-      )}
-    </div>
-  );
-};
+    );
+  },
+);
 
 export default PurchaseBillForm;

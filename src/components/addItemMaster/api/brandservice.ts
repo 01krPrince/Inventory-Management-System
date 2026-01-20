@@ -18,7 +18,7 @@ export interface ApiResponse {
 export const fetchBrands = async (): Promise<BrandData[]> => {
   try {
     const response = await api.get<ListResponse<BrandData>>(
-      "/itembrand/get_item_brand"
+      "/brand/getallbrand"
     );
     return response.data.data || [];
   } catch {
@@ -31,7 +31,7 @@ export const createItemBrand = async (
   payload: CreateBrandPayload
 ): Promise<ApiResponse> => {
   const response = await api.post<ApiResponse>(
-    "/itembrand/create_item_brand",
+    "/brand/add_brand",
     payload
   );
   return response.data;

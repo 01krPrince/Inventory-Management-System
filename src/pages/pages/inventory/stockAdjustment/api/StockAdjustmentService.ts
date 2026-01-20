@@ -5,7 +5,7 @@ import api from "../../../../../services/api";
 // ==========================================
 
 export interface StockAdjustmentItem {
-  _id?: string; // Optional for creation, present in get/update
+  _id?: string;
   itemcode: string;
   description: string;
   packUnit: string;
@@ -52,7 +52,7 @@ export interface ApiResponse<T> {
   success: boolean;
   message?: string;
   data?: T;
-  error?: string;
+  error?: any; // Changed to 'any' to accommodate object errors
 }
 
 // ==========================================
@@ -67,10 +67,8 @@ export const createStockAdjustment = async (
   payload: StockAdjustment
 ): Promise<ApiResponse<StockAdjustment>> => {
   try {
-    // api.post automatically uses BASE_URL and adds the Token
-    const response = await api.post<ApiResponse<StockAdjustment>>('/stockadjustment/create', payload);
+    const response = await api.post<ApiResponse<StockAdjustment>>('/stockadjustment/stock-adjustment', payload);  // stockadjustment/stock-adjustment
     
-    // Assuming backend returns { success: true, data: { ... } }
     return {
       success: true,
       message: "Stock Adjustment Created Successfully",
@@ -80,19 +78,35 @@ export const createStockAdjustment = async (
     console.error("API Error (Create):", error);
     const responseData = error.response?.data;
 
-    // Handle Duplicate Key Error
-    if (responseData?.error && typeof responseData.error === 'string' && responseData.error.includes("E11000 duplicate key")) {
+    // --- FIX: Detailed Error Extraction ---
+    
+    // 1. Check for Duplicate Key Error (E11000)
+    // Sometimes backend returns it in 'error', sometimes in 'message'
+    const errorMsg = typeof responseData?.error === 'string' ? responseData.error : JSON.stringify(responseData?.error || "");
+    
+    if (errorMsg.includes("E11000") || (responseData?.message && responseData.message.includes("E11000"))) {
       return {
         success: false,
         message: `Voucher Number "${payload.voucherNo}" already exists.`,
-        error: responseData.error,
+        error: responseData?.error,
       };
     }
 
+    // 2. Check for Mongoose Validation Errors
+    // These usually come in responseData.error.errors (e.g., { hsnCode: { message: "Path is required" } })
+    if (responseData?.error?.errors) {
+       return {
+         success: false,
+         message: "Validation Failed",
+         error: responseData.error // Return the full error object so we can see which field failed
+       };
+    }
+
+    // 3. Fallback generic error
     return {
       success: false,
-      message: responseData?.message || "Failed to create stock adjustment.",
-      error: responseData?.error,
+      message: responseData?.message || error.message || "Failed to create stock adjustment.",
+      error: responseData,
     };
   }
 };

@@ -275,7 +275,7 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
   // --- Contact Modal States ---
   const [showContactModal, setShowContactModal] = useState(false);
   const [editingContactIndex, setEditingContactIndex] = useState<number | null>(
-    null
+    null,
   );
   const [contactForm, setContactForm] = useState<ContactData>({
     name: "",
@@ -312,7 +312,7 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
 
       if (glDataFull.length > 0) {
         const found = glDataFull.find(
-          (g) => g._id === ledgerName || g.name === ledgerName
+          (g) => g._id === ledgerName || g.name === ledgerName,
         );
         if (found) {
           ledgerName = found.name;
@@ -401,7 +401,7 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
   }, [initialData, glDataFull]);
 
   const handleInputChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
@@ -511,7 +511,7 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
 
       if (formData.under_ledger) {
         const foundLedger = glDataFull.find(
-          (gl) => gl.name === formData.under_ledger
+          (gl) => gl.name === formData.under_ledger,
         );
         if (foundLedger) {
           underLedgerId = foundLedger._id!;
@@ -557,7 +557,7 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
       if (response.success) {
         alert(
           response.message ||
-            (isEditMode ? "Updated successfully!" : "Created successfully!")
+            (isEditMode ? "Updated successfully!" : "Created successfully!"),
         );
         if (onSuccess) onSuccess();
         onClose(false);
@@ -578,7 +578,7 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
         const exists = prev.find((item) => item.name === savedData.name);
         if (exists) {
           return prev.map((item) =>
-            item.name === savedData.name ? savedData : item
+            item.name === savedData.name ? savedData : item,
           );
         }
         return [...prev, savedData];
@@ -1311,7 +1311,7 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
         </div>
 
         {/* Content - Scrollable */}
-        <div className="p-6 bg-white overflow-y-auto flex-1">
+        <div className="px-6 py-2 bg-white overflow-y-auto flex-1">
           {activeStep === 0 && renderBasicDetails()}
           {activeStep === 1 && renderStatutory()}
           {activeStep === 2 && renderCommunication()}
