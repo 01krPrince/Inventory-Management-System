@@ -47,8 +47,10 @@ import EcomProductDetail from "../pages/pages/e-commerce/EcommerceProductDetail.
 import WishlistStockManager from "../pages/pages/e-commerce/WishlistManager.tsx";
 import ReportDashboard from "../pages/pages/report/ReportDashboard.tsx";
 
-// FIXED: Remove .tsx extension here for safety
 import PlaceholderPage from "../pages/pages/report/PlaceholderPage";
+import CustomerReport from "../pages/pages/report/reportPages/CustomerReport.tsx";
+import VendorReport from "../pages/pages/report/reportPages/VendorReport.tsx";
+import PurchaseBillReport from "../pages/pages/report/reportPages/PurchaseBillReport.tsx";
 
 const useSidebar = () => ({
   isExpanded: false,
@@ -88,7 +90,7 @@ const ReportPageRoutes: { [key: string]: React.FC } = {
   ),
 
   // Sales
-  "/report/customers": () => <PlaceholderPage title="Customers Report" />,
+  "/report/customers": CustomerReport,
   "/report/sale-invoice": () => <PlaceholderPage title="Sale Invoice Report" />,
   "/report/sales-report": () => <PlaceholderPage title="Sales Report" />,
   "/report/sales-ledgers": () => (
@@ -100,10 +102,8 @@ const ReportPageRoutes: { [key: string]: React.FC } = {
   ),
 
   // Purchase
-  "/report/vendors": () => <PlaceholderPage title="Vendors Report" />,
-  "/report/purchase-bill": () => (
-    <PlaceholderPage title="Purchase Bill Report" />
-  ),
+  "/report/vendors": VendorReport,
+  "/report/purchase-bill": PurchaseBillReport,
   "/report/purchase-registers": () => (
     <PlaceholderPage title="Purchase Registers" />
   ),

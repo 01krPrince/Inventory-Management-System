@@ -22,12 +22,14 @@ import {
   Filter,
   GripVertical,
 } from "lucide-react";
+// Import the Tab Context hook
+import { useTabs } from "../../../context/TabContext";
 
-// --- Types ---
 interface ReportItem {
   label: string;
   type: "folder" | "link";
   date?: string;
+  path?: string;
 }
 
 interface ReportSection {
@@ -38,29 +40,50 @@ interface ReportSection {
   isFavourite?: boolean;
 }
 
-// --- Initial Data ---
+// --- Initial Data with Paths Mapped to AppLayout ---
 const INITIAL_DATA: ReportSection[] = [
   {
     id: "fav",
     title: "Favourite Report",
     icon: <Star size={18} className="text-yellow-400 fill-current" />,
     isFavourite: true,
-    items: [
-      // We keep the logic to show the "Drop Here" placeholder in the UI code,
-      // but strictly speaking, we store actual fav items here.
-    ],
+    items: [],
   },
   {
     id: "mis",
     title: "MIS Reports",
     icon: <PieChart size={18} />,
     items: [
-      { label: "Financial Statements", type: "folder" },
-      { label: "Financial Analysis", type: "folder" },
-      { label: "Stock Analysis", type: "folder" },
-      { label: "Sales Analysis", type: "folder" },
-      { label: "Purchase Analysis", type: "folder" },
-      { label: "Enterprise Analysis", type: "folder" },
+      {
+        label: "Financial Statements",
+        type: "folder",
+        path: "/report/financial-statements",
+      },
+      {
+        label: "Financial Analysis",
+        type: "folder",
+        path: "/report/financial-analysis",
+      },
+      {
+        label: "Stock Analysis",
+        type: "folder",
+        path: "/report/stock-analysis",
+      },
+      {
+        label: "Sales Analysis",
+        type: "folder",
+        path: "/report/sales-analysis",
+      },
+      {
+        label: "Purchase Analysis",
+        type: "folder",
+        path: "/report/purchase-analysis",
+      },
+      {
+        label: "Enterprise Analysis",
+        type: "folder",
+        path: "/report/enterprise-analysis",
+      },
     ],
   },
   {
@@ -68,11 +91,23 @@ const INITIAL_DATA: ReportSection[] = [
     title: "Finance",
     icon: <BarChart3 size={18} />,
     items: [
-      { label: "Primary Books", type: "folder" },
-      { label: "Ledgers", type: "folder" },
-      { label: "Trial Balance", type: "folder" },
-      { label: "Attribute Reports", type: "folder" },
-      { label: "Loan-Bank Interest, A/C Confirmations", type: "folder" },
+      { label: "Primary Books", type: "folder", path: "/report/primary-books" },
+      { label: "Ledgers", type: "folder", path: "/report/ledgers" },
+      {
+        label: "Trial Balance",
+        type: "folder",
+        path: "/report/trial-balance-finance",
+      },
+      {
+        label: "Attribute Reports",
+        type: "folder",
+        path: "/report/attribute-reports",
+      },
+      {
+        label: "Loan-Bank Interest",
+        type: "folder",
+        path: "/report/loan-bank-interest",
+      },
     ],
   },
   {
@@ -80,10 +115,15 @@ const INITIAL_DATA: ReportSection[] = [
     title: "Customer/Sales",
     icon: <Users size={18} />,
     items: [
-      { label: "Sales Report", type: "folder" },
-      { label: "Ledgers & Trials", type: "folder" },
-      { label: "Bills O/S and Ageing", type: "folder" },
-      { label: "Linkage Reports", type: "folder" },
+      { label: "Customers Report", type: "folder", path: "/report/customers" },
+      { label: "Sales Report", type: "folder", path: "/report/sales-report" },
+      { label: "Sales Ledgers", type: "folder", path: "/report/sales-ledgers" },
+      {
+        label: "Sales Bills O/S",
+        type: "folder",
+        path: "/report/sales-bills-os",
+      },
+      { label: "Sales Linkage", type: "folder", path: "/report/sales-linkage" },
     ],
   },
   {
@@ -91,10 +131,32 @@ const INITIAL_DATA: ReportSection[] = [
     title: "Vendor/Purchase",
     icon: <ShoppingCart size={18} />,
     items: [
-      { label: "Purchase Registers", type: "folder" },
-      { label: "Trial/Ledgers", type: "folder" },
-      { label: "Vendor Bills O/S and Ageing", type: "folder" },
-      { label: "Linkage Reports", type: "folder" },
+      { label: "Vendors Report", type: "folder", path: "/report/vendors" },
+      {
+        label: "Purchase Bill Report",
+        type: "folder",
+        path: "/report/purchase-bill",
+      },
+      {
+        label: "Purchase Registers",
+        type: "folder",
+        path: "/report/purchase-registers",
+      },
+      {
+        label: "Purchase Trial/Ledgers",
+        type: "folder",
+        path: "/report/purchase-trial-ledgers",
+      },
+      {
+        label: "Vendor Bills O/S",
+        type: "folder",
+        path: "/report/vendor-bills-os",
+      },
+      {
+        label: "Purchase Linkage",
+        type: "folder",
+        path: "/report/purchase-linkage",
+      },
     ],
   },
   {
@@ -102,12 +164,41 @@ const INITIAL_DATA: ReportSection[] = [
     title: "Inventory Reports",
     icon: <Package size={18} />,
     items: [
-      { label: "Primary Stock Reports", type: "folder" },
-      { label: "Store Transfer", type: "folder" },
-      { label: "JobCard/JobWork Inward and outward", type: "folder" },
-      { label: "Serial/IMEI/Tag Based Reports", type: "folder" },
-      { label: "Attributes/Barcode Reports", type: "folder" },
-      { label: "Pharma/Batch Reports", type: "folder" },
+      {
+        label: "Primary Stock Reports",
+        type: "folder",
+        path: "/report/primary-stock",
+      },
+      {
+        label: "Stock Adjustment",
+        type: "folder",
+        path: "/report/stock-adjustment",
+      },
+      {
+        label: "Store Transfer",
+        type: "folder",
+        path: "/report/store-transfer",
+      },
+      {
+        label: "Job Work Reports",
+        type: "folder",
+        path: "/report/job-work-reports",
+      },
+      {
+        label: "Serial/IMEI Reports",
+        type: "folder",
+        path: "/report/serial-imei",
+      },
+      {
+        label: "Barcode Reports",
+        type: "folder",
+        path: "/report/barcode-reports",
+      },
+      {
+        label: "Pharma/Batch Reports",
+        type: "folder",
+        path: "/report/pharma-batch",
+      },
     ],
   },
   {
@@ -115,11 +206,23 @@ const INITIAL_DATA: ReportSection[] = [
     title: "GST/VAT Reports",
     icon: <FileText size={18} />,
     items: [
-      { label: "GST Returns", type: "folder" },
-      { label: "GSTR 2A/2B Reconciliation", type: "folder" },
-      { label: "UAE VAT Returns", type: "folder" },
-      { label: "Tax Register Sales", type: "link" },
-      { label: "Tax Register Purchase", type: "link" },
+      { label: "GST Returns", type: "folder", path: "/report/gst-returns" },
+      {
+        label: "GSTR 2A/2B Reconciliation",
+        type: "folder",
+        path: "/report/gstr-reco",
+      },
+      { label: "UAE VAT Returns", type: "folder", path: "/report/uae-vat" },
+      {
+        label: "Tax Register Sales",
+        type: "link",
+        path: "/report/tax-register-sales",
+      },
+      {
+        label: "Tax Register Purchase",
+        type: "link",
+        path: "/report/tax-register-purchase",
+      },
     ],
   },
   {
@@ -127,10 +230,22 @@ const INITIAL_DATA: ReportSection[] = [
     title: "Employee",
     icon: <Briefcase size={18} />,
     items: [
-      { label: "Employee Register", type: "link" },
-      { label: "Attendance/Leave", type: "folder" },
-      { label: "Salary/TimeSheet/Expense Claim", type: "folder" },
-      { label: "ESI/PF", type: "folder" },
+      {
+        label: "Employee Register",
+        type: "link",
+        path: "/report/employee-register",
+      },
+      {
+        label: "Attendance/Leave",
+        type: "folder",
+        path: "/report/attendance-leave",
+      },
+      {
+        label: "Salary/TimeSheet",
+        type: "folder",
+        path: "/report/salary-timesheet",
+      },
+      { label: "ESI/PF", type: "folder", path: "/report/esi-pf" },
     ],
   },
   {
@@ -138,11 +253,31 @@ const INITIAL_DATA: ReportSection[] = [
     title: "Point of Sales",
     icon: <CreditCard size={18} />,
     items: [
-      { label: "POS Customer List", type: "link" },
-      { label: "POS Order Register", type: "link" },
-      { label: "POS Sales Register", type: "link" },
-      { label: "POS Sales Summary", type: "link" },
-      { label: "POS Sales Register Tender Wise", type: "link" },
+      {
+        label: "POS Customer List",
+        type: "link",
+        path: "/report/pos-customer-list",
+      },
+      {
+        label: "POS Order Register",
+        type: "link",
+        path: "/report/pos-order-register",
+      },
+      {
+        label: "POS Sales Register",
+        type: "link",
+        path: "/report/pos-sales-register",
+      },
+      {
+        label: "POS Sales Summary",
+        type: "link",
+        path: "/report/pos-sales-summary",
+      },
+      {
+        label: "POS Sales Tender Wise",
+        type: "link",
+        path: "/report/pos-tender-wise",
+      },
     ],
   },
   {
@@ -150,11 +285,31 @@ const INITIAL_DATA: ReportSection[] = [
     title: "Production",
     icon: <Settings size={18} />,
     items: [
-      { label: "Production Register", type: "link" },
-      { label: "Bill of Material Register", type: "link" },
-      { label: "Production De-Assembling Register", type: "link" },
-      { label: "Material Issue Request Register", type: "link" },
-      { label: "Material Issue Request Summary", type: "link" },
+      {
+        label: "Production Register",
+        type: "link",
+        path: "/report/production-register",
+      },
+      {
+        label: "Bill of Material Register",
+        type: "link",
+        path: "/report/bom-register",
+      },
+      {
+        label: "Production De-Assembling",
+        type: "link",
+        path: "/report/de-assembling",
+      },
+      {
+        label: "Material Issue Request",
+        type: "link",
+        path: "/report/issue-request",
+      },
+      {
+        label: "Material Issue Summary",
+        type: "link",
+        path: "/report/issue-summary",
+      },
     ],
   },
   {
@@ -162,10 +317,18 @@ const INITIAL_DATA: ReportSection[] = [
     title: "Assets",
     icon: <Box size={18} />,
     items: [
-      { label: "Asset Register", type: "link" },
-      { label: "Asset Transfer Register", type: "link" },
-      { label: "Asset Depreciation Register", type: "link" },
-      { label: "Asset On Hand Register", type: "link" },
+      { label: "Asset Register", type: "link", path: "/report/asset-register" },
+      {
+        label: "Asset Transfer Register",
+        type: "link",
+        path: "/report/asset-transfer",
+      },
+      {
+        label: "Asset Depreciation",
+        type: "link",
+        path: "/report/asset-depreciation",
+      },
+      { label: "Asset On Hand", type: "link", path: "/report/asset-on-hand" },
     ],
   },
   {
@@ -173,11 +336,23 @@ const INITIAL_DATA: ReportSection[] = [
     title: "Audit / Logs",
     icon: <FileSearch size={18} />,
     items: [
-      { label: "Price List Sales - Change Track", type: "link" },
-      { label: "Physical Stock Taking v/s Actual", type: "link" },
-      { label: "Mismatch Report", type: "link" },
-      { label: "User Geo Tracking", type: "link" },
-      { label: "Logs", type: "folder" },
+      {
+        label: "Price List Change Track",
+        type: "link",
+        path: "/report/price-list-change",
+      },
+      {
+        label: "Physical Stock vs Actual",
+        type: "link",
+        path: "/report/physical-stock",
+      },
+      {
+        label: "Mismatch Report",
+        type: "link",
+        path: "/report/mismatch-report",
+      },
+      { label: "User Geo Tracking", type: "link", path: "/report/user-geo" },
+      { label: "Logs", type: "folder", path: "/report/logs" },
     ],
   },
 ];
@@ -201,6 +376,9 @@ const useGridColumns = () => {
 };
 
 const ReportDashboard: React.FC = () => {
+  // Use the Tab Context
+  const { addTab } = useTabs();
+
   // Main State for Reports (allows adding to favs)
   const [reportsData, setReportsData] = useState<ReportSection[]>(INITIAL_DATA);
 
@@ -340,9 +518,14 @@ const ReportDashboard: React.FC = () => {
     setActiveRow(Math.floor(index / columns));
   };
 
+  const handleReportClick = (item: ReportItem) => {
+    if (item.path) {
+      addTab({ name: item.label, path: item.path });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6 font-sans">
-      {/* --- Top Header & Search --- */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">
@@ -510,6 +693,7 @@ const ReportDashboard: React.FC = () => {
                       key={idx}
                       draggable={!section.isFavourite} // Only allow dragging FROM other sections, not OUT of Favs (optional choice)
                       onDragStart={(e) => handleDragStart(e, item)}
+                      onClick={() => handleReportClick(item)} // ADDED CLICK HANDLER
                       className={`flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-50 text-slate-600 hover:text-blue-700 cursor-pointer transition-colors group/item text-sm ${!section.isFavourite ? "cursor-grab active:cursor-grabbing" : ""}`}
                     >
                       {/* Drag Handle Indicator */}

@@ -85,15 +85,15 @@ const stockUnitColumns: ColumnDef<StockUnitData>[] = [
 ];
 
 const underGroupColumns: ColumnDef<UnderGroupData>[] = [
-  { header: "Under Group", key: "under_group", width: "w-1/3" },
-  { header: "Item Name", key: "item_name", width: "w-1/3" },
   { header: "Code", key: "code", width: "w-20" },
+  { header: "Item Name", key: "item_name", width: "w-1/3" },
 ];
 
 const gstColumns: ColumnDef<GstClassificationData>[] = [
-  { header: "Type", key: "type", width: "w-24" },
-  { header: "HSN/SAC", key: "hsn_sac_code", width: "w-32" },
   { header: "Code", key: "code", width: "w-20" },
+  { header: "HSN/SAC", key: "hsn_sac_code", width: "w-32" },
+  { header: "Type", key: "type", width: "w-24" },
+  { header: "Description", key: "hsn_description", width: "w-20" },
 ];
 
 const categoryColumns: ColumnDef<CategoryData>[] = [
@@ -283,7 +283,7 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
 
   const isEditMode = !!initialData && (!!initialData._id || !!initialData.id);
   const [brandToEdit, setBrandToEdit] = useState<BrandData | undefined>(
-    undefined
+    undefined,
   );
 
   const handleBrandEditClick = (e: React.MouseEvent) => {
@@ -305,7 +305,7 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
     e.preventDefault();
     if (formData.category) {
       const selectedCategory = categories.find(
-        (c) => c._id === formData.category
+        (c) => c._id === formData.category,
       );
       setCategoryToEdit(selectedCategory);
     } else {
@@ -435,7 +435,7 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
         Array.isArray(initialData.suggested_cat)
       ) {
         const extractedIds = initialData.suggested_cat.map(
-          (item: any) => item.itemId
+          (item: any) => item.itemId,
         );
         setSelectedItemIds(extractedIds);
       }
@@ -445,7 +445,7 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
   }, [initialData]);
 
   const handleInputChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
@@ -468,149 +468,156 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
   };
 
   // --- 3. SUBMIT LOGIC (Send IDs directly) ---
- const handleNext = async () => {
-  if (activeStep < STEPS.length - 1) {
-    setActiveStep((prev) => prev + 1);
-  } else {
-    setIsSubmitting(true);
-    try {
-      // Helper function to extract ID regardless of whether the state is an object or string
-      const getID = (val: any) => (val && typeof val === "object" ? val._id : val || null);
+  const handleNext = async () => {
+    if (activeStep < STEPS.length - 1) {
+      setActiveStep((prev) => prev + 1);
+    } else {
+      setIsSubmitting(true);
+      try {
+        // Helper function to extract ID regardless of whether the state is an object or string
+        const getID = (val: any) =>
+          val && typeof val === "object" ? val._id : val || null;
 
-      const payload = {
-        item_mode: formData.itemMode,
-        name: formData.item_name,
+        const payload = {
+          item_mode: formData.itemMode,
+          name: formData.item_name,
 
-        // Ensure these send IDs, not objects or descriptions
-        under_group: getID(formData.underGroup),
-        stock_unit: getID(formData.stockUnit),
-        category: getID(formData.category),
-        brand: getID(formData.brand),
-        
-        // FIXED: Corrected spelling and ensured ID is sent
-        gst_classification: getID(formData.gstClassification), 
+          // Ensure these send IDs, not objects or descriptions
+          under_group: getID(formData.underGroup),
+          stock_unit: getID(formData.stockUnit),
+          category: getID(formData.category),
+          brand: getID(formData.brand),
 
-        // Boolean and Numeric Logic
-        gst_applicable: !formData.gstInputNotApplicable,
-        warranty: formData.warrantyEnabled,
-        firstyearwarranty: formData.warranty1YearPrice, // Ensure this is the string desc if required
-        customWarranty: formData.customWarranties || [],
+          // FIXED: Corrected spelling and ensured ID is sent
+          gst_classification: getID(formData.gstClassification),
 
-        unit_option: formData.unitOption,
-        barcode: formData.barCode,
-        print_barcode: formData.printBarcode,
+          // Boolean and Numeric Logic
+          gst_applicable: !formData.gstInputNotApplicable,
+          warranty: formData.warrantyEnabled,
+          firstyearwarranty: formData.warranty1YearPrice, // Ensure this is the string desc if required
+          customWarranty: formData.customWarranties || [],
 
-        mrp: Number(formData.mrp) || 0,
-        sales_rate: Number(formData.salesRate) || 0,
-        purchase_rate: Number(formData.purchaseRate) || 0,
+          unit_option: formData.unitOption,
+          barcode: formData.barCode,
+          print_barcode: formData.printBarcode,
 
-        minimum_level: Number(formData.minLevel) || 0,
-        maximum_level: Number(formData.maxLevel) || 0,
+          mrp: Number(formData.mrp) || 0,
+          sales_rate: Number(formData.salesRate) || 0,
+          purchase_rate: Number(formData.purchaseRate) || 0,
 
-        track_inventory: formData.itemMode === "Inventory" || formData.itemMode === "Product" || formData.itemMode === "Goods",
-        batch_wise_inventory: !!formData.batchWiseInventory,
-        batch_wise_rate: !!formData.batchWiseRate,
+          minimum_level: Number(formData.minLevel) || 0,
+          maximum_level: Number(formData.maxLevel) || 0,
 
-        rackbin_no: formData.rackBinNo,
-        
-        // Additional fields from your original code
-        attachment: formData.profileImage,
-        suggested_cat: selectedItemIds.map((id) => ({ itemId: id })),
+          track_inventory:
+            formData.itemMode === "Inventory" ||
+            formData.itemMode === "Product" ||
+            formData.itemMode === "Goods",
+          batch_wise_inventory: !!formData.batchWiseInventory,
+          batch_wise_rate: !!formData.batchWiseRate,
+
+          rackbin_no: formData.rackBinNo,
+
+          // Additional fields from your original code
+          attachment: formData.profileImage,
+          suggested_cat: selectedItemIds.map((id) => ({ itemId: id })),
+        };
+
+        console.log(
+          "DEBUG: Final Verified Payload:",
+          JSON.stringify(payload, null, 2),
+        );
+
+        let response;
+        if (isEditMode && initialData?._id) {
+          response = await updateItem(initialData._id, payload);
+        } else {
+          response = await createItem(payload);
+        }
+
+        if (response.success) {
+          alert(isEditMode ? "Updated!" : "Created!");
+          if (onSuccess) onSuccess(response.data);
+          onClose();
+        } else {
+          alert(`Error: ${response.message}`);
+        }
+      } catch (error) {
+        console.error(error);
+        alert("Submission failed.");
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
+  };
+
+  const handleGstEditClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const currentId = formData.gstClassification; // Now holds the ID string
+
+    const selectedItem = gstList.find((item) => item._id === currentId);
+
+    if (selectedItem) {
+      setGstInitialData({
+        _id: selectedItem._id,
+        type: selectedItem.type,
+        code: selectedItem.code,
+        hsn_sac_code: selectedItem.hsn_sac_code,
+        hsnSacDescription: selectedItem.hsn_description,
+        gstRate: selectedItem.gstRate,
+        cgst: selectedItem.cgst,
+        sgst: selectedItem.sgst,
+        igst: selectedItem.igst,
+      });
+    } else {
+      setGstInitialData(undefined);
+    }
+    setIsGstModalOpen(true);
+  };
+
+  const handleGstSave = (savedData: any) => {
+    // 1. Extract the actual database ID
+    const actualId = savedData._id || savedData.id;
+
+    // 2. Save the ID to the main form state (required for handleNext API payload)
+    setFormData((prev) => ({
+      ...prev,
+      gstClassification: actualId,
+    }));
+
+    // 3. Update the list so the dropdown recognizes the new/edited record
+    setGstList((prev) => {
+      const existingIndex = prev.findIndex((item) => item._id === actualId);
+
+      const updatedItem = {
+        ...savedData,
+        _id: actualId,
+        // Normalize keys to match what your columns use
+        hsn_description:
+          savedData.hsn_description || savedData.hsnSacDescription,
+        hsn_sac_code: savedData.hsn_sac_code || savedData.hsnSacCode,
+        gstRate: Number(savedData.gstRate),
+        cgst: Number(savedData.cgst),
+        sgst: Number(savedData.sgst),
+        igst: Number(savedData.igst),
       };
 
-      console.log("DEBUG: Final Verified Payload:", JSON.stringify(payload, null, 2));
-
-      let response;
-      if (isEditMode && initialData?._id) {
-        response = await updateItem(initialData._id, payload);
+      if (existingIndex >= 0) {
+        const newList = [...prev];
+        newList[existingIndex] = updatedItem;
+        return newList;
       } else {
-        response = await createItem(payload);
+        return [updatedItem, ...prev];
       }
-
-      if (response.success) {
-        alert(isEditMode ? "Updated!" : "Created!");
-        if (onSuccess) onSuccess(response.data);
-        onClose();
-      } else {
-        alert(`Error: ${response.message}`);
-      }
-    } catch (error) {
-      console.error(error);
-      alert("Submission failed.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-};
-
-const handleGstEditClick = (e: React.MouseEvent) => {
-  e.preventDefault();
-  const currentId = formData.gstClassification; // Now holds the ID string
-  
-  const selectedItem = gstList.find((item) => item._id === currentId);
-
-  if (selectedItem) {
-    setGstInitialData({
-      _id: selectedItem._id,
-      type: selectedItem.type,
-      code: selectedItem.code,
-      hsn_sac_code: selectedItem.hsn_sac_code,
-      hsnSacDescription: selectedItem.hsn_description,
-      gstRate: selectedItem.gstRate,
-      cgst: selectedItem.cgst,
-      sgst: selectedItem.sgst,
-      igst: selectedItem.igst,
     });
-  } else {
-    setGstInitialData(undefined);
-  }
-  setIsGstModalOpen(true);
-};
 
-
-const handleGstSave = (savedData: any) => {
-  // 1. Extract the actual database ID
-  const actualId = savedData._id || savedData.id;
-
-  // 2. Save the ID to the main form state (required for handleNext API payload)
-  setFormData((prev) => ({
-    ...prev,
-    gstClassification: actualId, 
-  }));
-
-  // 3. Update the list so the dropdown recognizes the new/edited record
-  setGstList((prev) => {
-    const existingIndex = prev.findIndex((item) => item._id === actualId);
-    
-    const updatedItem = {
-      ...savedData,
-      _id: actualId,
-      // Normalize keys to match what your columns use
-      hsn_description: savedData.hsn_description || savedData.hsnSacDescription,
-      hsn_sac_code: savedData.hsn_sac_code || savedData.hsnSacCode,
-      gstRate: Number(savedData.gstRate),
-      cgst: Number(savedData.cgst),
-      sgst: Number(savedData.sgst),
-      igst: Number(savedData.igst),
-    };
-
-    if (existingIndex >= 0) {
-      const newList = [...prev];
-      newList[existingIndex] = updatedItem;
-      return newList;
-    } else {
-      return [updatedItem, ...prev];
-    }
-  });
-
-  setIsGstModalOpen(false);
-};
+    setIsGstModalOpen(false);
+  };
 
   const handleUnderGroupEditClick = (e: React.MouseEvent) => {
     e.preventDefault();
     // Use ID to find
     const selectedItem = underGroup.find(
-      (item) => item._id === formData.underGroup
+      (item) => item._id === formData.underGroup,
     );
     setUnderGroupInitialData(selectedItem || undefined);
     setShowItemGroupModal(true);
@@ -624,7 +631,7 @@ const handleGstSave = (savedData: any) => {
 
     setUnderGroup((prev: UnderGroupData[]) => {
       const existingIndex = prev.findIndex(
-        (item) => savedData._id && item._id === savedData._id
+        (item) => savedData._id && item._id === savedData._id,
       );
 
       if (existingIndex >= 0) {
@@ -643,7 +650,7 @@ const handleGstSave = (savedData: any) => {
     e.preventDefault();
     // Use ID to find
     const selectedItem = stockUnitList.find(
-      (item) => item._id === formData.stockUnit
+      (item) => item._id === formData.stockUnit,
     );
     setStockUnitInitialData(selectedItem || undefined);
     setShowStockUnit(true);
@@ -749,14 +756,16 @@ const handleGstSave = (savedData: any) => {
             <div className="col-span-8 md:col-span-9 flex">
               <div className="flex-1 min-w-0">
                 {/* GST usually uses description/code as value, keeping as is but ensuring mapping */}
-               <Dropdown
-  data={gstList}
-  columns={gstColumns} // Ensure this column set uses "hsn_description" or "hsn_sac_code"
-  value={formData.gstClassification}
-  valueKey="_id" // This must match the property in your list
-  onChange={(item) => handleDropdownChange("gstClassification", item?._id || "")}
-  placeholder="Select..."
-/>
+                <Dropdown
+                  data={gstList}
+                  columns={gstColumns} // Ensure this column set uses "hsn_description" or "hsn_sac_code"
+                  value={formData.gstClassification}
+                  valueKey="_id" // This must match the property in your list
+                  onChange={(item) =>
+                    handleDropdownChange("gstClassification", item?._id || "")
+                  }
+                  placeholder="Select..."
+                />
               </div>
               <button
                 type="button"
@@ -808,21 +817,24 @@ const handleGstSave = (savedData: any) => {
         <div className="space-y-4">
           <div className="grid grid-cols-3 gap-4">
             <InputField
-              label="1 Year Warranty Price"
+              label="1 Year Warranty"
               name="warranty1YearPrice"
               value={formData.warranty1YearPrice}
+              placeholder="Enter warrenty description..."
               onChange={handleInputChange}
             />
             <InputField
-              label="2 Year Warranty Price"
+              label="2 Year Warranty"
               name="warranty2YearPrice"
               value={formData.warranty2YearPrice}
+              placeholder="Enter warrenty description..."
               onChange={handleInputChange}
             />
             <InputField
-              label="3 Year Warranty Price"
+              label="3 Year Warranty"
               name="warranty3YearPrice"
               value={formData.warranty3YearPrice}
+              placeholder="Enter warrenty description..."
               onChange={handleInputChange}
             />
           </div>
@@ -835,7 +847,7 @@ const handleGstSave = (savedData: any) => {
                 <div key={idx} className="grid grid-cols-3 gap-3 mb-2">
                   <input
                     type="text"
-                    placeholder="Duration (e.g. 18 Months)"
+                    placeholder="Duration (e.g. 05 Year)"
                     value={cw.duration}
                     onChange={(e) => {
                       const updated = [...formData.customWarranties];
@@ -867,7 +879,7 @@ const handleGstSave = (savedData: any) => {
                       setFormData((prev) => ({
                         ...prev,
                         customWarranties: prev.customWarranties.filter(
-                          (_, i) => i !== idx
+                          (_, i) => i !== idx,
                         ),
                       }));
                     }}
@@ -876,7 +888,7 @@ const handleGstSave = (savedData: any) => {
                     Remove
                   </button>
                 </div>
-              )
+              ),
             )}
 
             <button

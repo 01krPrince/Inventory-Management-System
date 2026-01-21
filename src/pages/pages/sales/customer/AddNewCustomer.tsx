@@ -29,6 +29,13 @@ import chartOfAccountService, {
 } from "../../../../services/chartOfAccountService";
 import ChartOfAccounts from "../../../../components/ChartOfAccount";
 
+// --- UPDATED IMPORTS ---
+import {
+  fetchSalesExecutives,
+  SalesExecutiveData,
+} from "../../../../components/addItemMaster/api/salesExecutiveService";
+import SalesExecutiveMaster from "../../../../components/SalesExecutiveMaster";
+
 interface ContactData {
   name: string;
   email: string;
@@ -124,6 +131,8 @@ const STEPS = [
   { id: 6, label: "Contact Person" },
   { id: 7, label: "Attachments" },
 ];
+
+// --- Components ---
 
 const FormLabel = ({
   required,
@@ -243,9 +252,17 @@ const SocialInput = ({
   </div>
 );
 
+// --- Column Definitions ---
+
 const underLedger: ColumnDef<ChartOfAccount>[] = [
   { header: "Code", key: "code", width: "w-24" },
   { header: "Name", key: "name", width: "w-full" },
+];
+
+const salesExecutiveColumns: ColumnDef<SalesExecutiveData>[] = [
+  { header: "Code", key: "code", width: "w-24" },
+  { header: "Name", key: "name", width: "w-48" },
+  { header: "Type", key: "amountType", width: "w-24" },
 ];
 
 interface AddNewCustomerProps {
@@ -268,11 +285,21 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
   const [activeStep, setActiveStep] = useState(0);
   const [formData, setFormData] = useState<FormData>(INITIAL_DATA);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Ledger/COA States
   const [coaFormData, setCoaFormData] = useState<ChartOfAccount | null>(null);
   const [glDataFull, setGlDataFull] = useState<ChartOfAccount[]>([]);
   const [showChartOfAccounts, setShowChartOfAccounts] = useState(false);
 
-  // --- Contact Modal States ---
+  // Sales Executive States
+  const [salesExecutiveList, setSalesExecutiveList] = useState<
+    SalesExecutiveData[]
+  >([]);
+  const [showSalesExecutiveModal, setShowSalesExecutiveModal] = useState(false);
+  const [selectedExecutiveObj, setSelectedExecutiveObj] =
+    useState<SalesExecutiveData | null>(null);
+
+  // Contact Modal States
   const [showContactModal, setShowContactModal] = useState(false);
   const [editingContactIndex, setEditingContactIndex] = useState<number | null>(
     null,
@@ -286,14 +313,30 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
 
   const isEditMode = !!initialData && !!initialData._id;
 
-  // --- Load Ledger Data ---
+  // --- API Loaders ---
+
+  const loadSalesExecutives = async () => {
+    try {
+      const data = await fetchSalesExecutives();
+      if (data && Array.isArray(data)) {
+        setSalesExecutiveList(data);
+      }
+    } catch (error) {
+      console.error("Failed to load sales executives", error);
+    }
+  };
+
   useEffect(() => {
     const loadData = async () => {
       try {
-        const response = await chartOfAccountService.getAllChartOfAccounts();
-        if (response.data && response.data.success) {
-          setGlDataFull(response.data.data);
+        // Load Chart of Accounts
+        const coaResponse = await chartOfAccountService.getAllChartOfAccounts();
+        if (coaResponse.data && coaResponse.data.success) {
+          setGlDataFull(coaResponse.data.data);
         }
+
+        // Load Sales Executives using new Service
+        await loadSalesExecutives();
       } catch (error) {
         console.error("Failed to load dropdown data", error);
       }
@@ -301,12 +344,11 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
     loadData();
   }, []);
 
-  // --- Populate Initial Data ---
   useEffect(() => {
     if (initialData) {
       const val = (v: any) => (v !== null && v !== undefined ? String(v) : "");
 
-      // Fix for under_ledger: if it comes as ID, we need to find the name for display
+      // Handle Ledger mapping
       let ledgerName = val(initialData.under_ledger);
       let selectedLedgerObj = null;
 
@@ -321,8 +363,13 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
       }
       if (selectedLedgerObj) setCoaFormData(selectedLedgerObj);
 
+      // Handle Sales Executive mapping
+      let executiveName = val(initialData.sales_executive);
+      // We don't strictly need to find the object for the Form Data (string name),
+      // but if we wanted to pre-select for editing, we could do it here.
+
       setFormData({
-        ...INITIAL_DATA, // Start with defaults
+        ...INITIAL_DATA,
         gst_no: val(initialData.gst_no),
         cust_name: val(initialData.cust_name || initialData.name),
         print_name: val(initialData.print_name),
@@ -377,7 +424,7 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
         payment_term: val(initialData.payment_term),
         price_category: val(initialData.price_category),
         batch_rate_category: val(initialData.batch_rate_category) || "Standard",
-        sales_executive: val(initialData.sales_executive),
+        sales_executive: executiveName,
         transporter: val(initialData.transporter),
         credit_limit: val(initialData.credit_limit),
         max_credit_days: val(initialData.max_credit_days),
@@ -398,7 +445,9 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
         contact: Array.isArray(initialData.contact) ? initialData.contact : [],
       });
     }
-  }, [initialData, glDataFull]);
+  }, [initialData, glDataFull, salesExecutiveList]);
+
+  // --- Handlers ---
 
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
@@ -415,11 +464,28 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
   const handleDropdownChange = (fieldName: string, value: any) => {
     setFormData((prev) => ({ ...prev, [fieldName]: value }));
 
-    // Logic: If UnderLedger changes, update the COA Form Data so edit works
     if (fieldName === "under_ledger") {
       const selected = glDataFull.find((item) => item.name === value);
       setCoaFormData(selected || null);
     }
+
+    if (fieldName === "sales_executive") {
+      const selected = salesExecutiveList.find((item) => item.name === value);
+      setSelectedExecutiveObj(selected || null);
+    }
+  };
+
+  const handleEditSalesExecutive = () => {
+    // Determine if we are editing an existing selection or creating new
+    if (formData.sales_executive) {
+      const found = salesExecutiveList.find(
+        (x) => x.name === formData.sales_executive,
+      );
+      setSelectedExecutiveObj(found || null);
+    } else {
+      setSelectedExecutiveObj(null); // Create mode
+    }
+    setShowSalesExecutiveModal(true);
   };
 
   const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
@@ -454,7 +520,6 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
     }
   };
 
-  // --- Contact Modal Logic ---
   const openAddContact = () => {
     setContactForm({ name: "", email: "", phone: "", designation: "" });
     setEditingContactIndex(null);
@@ -496,7 +561,6 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
     }
   };
 
-  // --- Submit Logic (Corrected for ID and Type Safety) ---
   const handleNext = async () => {
     if (activeStep < STEPS.length - 1) {
       setActiveStep((prev) => prev + 1);
@@ -583,13 +647,12 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
         }
         return [...prev, savedData];
       });
-      // Auto select the new one
       setFormData((prev) => ({ ...prev, under_ledger: savedData.name }));
     }
     setShowChartOfAccounts(false);
   };
 
-  // --- Renders ---
+  // --- Render Steps ---
 
   const renderBasicDetails = () => (
     <div className="grid grid-cols-12 gap-6">
@@ -1057,13 +1120,36 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
           onChange={handleInputChange}
           options={["Retail", "Wholesale", "Distributor"]}
         />
-        <SelectField
-          label="Sales Executive"
-          name="sales_executive"
-          value={formData.sales_executive}
-          onChange={handleInputChange}
-          options={["Select...", "John Doe", "Jane Smith"]}
-        />
+
+        {/* Dynamic Sales Executive Dropdown with Edit Button */}
+        <div className="mb-3">
+          <FormLabel>Sales Executive</FormLabel>
+          <div className="flex w-full">
+            <div className="flex-1 min-w-0">
+              <Dropdown
+                data={salesExecutiveList}
+                columns={salesExecutiveColumns}
+                value={formData.sales_executive}
+                valueKey="name"
+                onChange={(item) =>
+                  handleDropdownChange("sales_executive", item?.name || "")
+                }
+                placeholder="Select..."
+                zIndex={dropdownZIndex}
+              />
+            </div>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                handleEditSalesExecutive();
+              }}
+              className="bg-[#0c5888] text-white px-2 rounded-r hover:bg-[#0a4a70] ml-[1px]"
+            >
+              <Edit className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
         <SelectField
           label="Transporter"
           name="transporter"
@@ -1357,7 +1443,6 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
         </div>
       </div>
 
-      {/* COA Modal */}
       {showChartOfAccounts && (
         <div
           className="fixed inset-0 flex items-center justify-center bg-black/50 p-4"
@@ -1375,7 +1460,18 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
         </div>
       )}
 
-      {/* Contact Add/Edit Modal */}
+      {/* SALES EXECUTIVE MODAL */}
+      {showSalesExecutiveModal && (
+        <SalesExecutiveMaster
+          onClose={() => setShowSalesExecutiveModal(false)}
+          initialData={selectedExecutiveObj || undefined}
+          onSuccess={() => {
+            loadSalesExecutives(); // Refresh the dropdown
+          }}
+          index={nestedModalZIndex}
+        />
+      )}
+
       {showContactModal && (
         <div
           className="fixed inset-0 flex items-center justify-center bg-black/50 p-4"

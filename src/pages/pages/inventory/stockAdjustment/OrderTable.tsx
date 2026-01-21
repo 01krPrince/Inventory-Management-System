@@ -23,7 +23,10 @@ import { COLORS } from "../../../../constants/colors";
 
 import AddNewItem from "../../../../components/addItemMaster/AddNewItem";
 
-import { fetchItems } from "../itemMaster/api/itemService";
+import {
+  fetchItems,
+  getItemByCodeAndBarcode,
+} from "../itemMaster/api/itemService";
 import { StockUnitData } from "../../../../components/addItemMaster/api/types";
 import { fetchStockUnits } from "../../../../components/addItemMaster/api/stockunitservice";
 import AttributePanel from "../../../../components/AttributePanel";
@@ -36,6 +39,7 @@ interface CustomWarranty {
   _id: string;
 }
 
+// LOCAL INTERFACE DEFINITION
 interface ItemApiData {
   _id: string;
   code: string;
@@ -43,7 +47,8 @@ interface ItemApiData {
   stock_unit: { _id: string; code: string; name: string } | null;
   brand: { _id: string; name: string; code: string } | null;
   category: { _id: string; name: string; code: string } | null;
-  gst_classification: string;
+  // Updated: Made optional to prevent build errors if missing from API model
+  gst_classification?: string;
   sales_rate: number;
   mrp: number;
   barcode: string;
@@ -447,6 +452,11 @@ const OrderTable: React.FC<OrderTableProps> = ({
     activeRowId: string | null;
   }>({ visible: false, top: 0, left: 0, activeRowId: null });
 
+  // Add state for popup search
+  const [popupSearchTerm, setPopupSearchTerm] = useState("");
+  // Add state for top bar Scan input
+  const [scanQuery, setScanQuery] = useState("");
+
   const [warrantyPopup, setWarrantyPopup] = useState<{
     visible: boolean;
     top: number;
@@ -608,6 +618,80 @@ const OrderTable: React.FC<OrderTableProps> = ({
     setTableData((prev) => ({ ...prev, [targetRowId!]: { ...sourceData } }));
   };
 
+  // --- SCAN LOGIC START ---
+  const handleScanKeyDown = async (
+    e: React.KeyboardEvent<HTMLInputElement>,
+  ) => {
+    if (e.key === "Enter" && scanQuery.trim()) {
+      try {
+        const response = await getItemByCodeAndBarcode(scanQuery.trim());
+        const data = response?.data;
+
+        let foundItem: ItemApiData | null = null;
+
+        if (Array.isArray(data)) {
+          // Cast to ItemApiData to satisfy local type requirement
+          if (data.length > 0) foundItem = data[0] as unknown as ItemApiData;
+        } else if (data && typeof data === "object") {
+          // Cast to ItemApiData to satisfy local type requirement
+          foundItem = data as unknown as ItemApiData;
+        }
+
+        if (foundItem) {
+          addScannedItemToTable(foundItem);
+          setScanQuery("");
+        } else {
+          alert("Item not found!");
+        }
+      } catch (err) {
+        console.error("Scan error:", err);
+        alert("Error fetching item by scan");
+      }
+    }
+  };
+
+  const addScannedItemToTable = (item: ItemApiData) => {
+    const baseData: RowData = {
+      reciss: "RECEIPT",
+      select: item.code || "",
+      desc: item.name || "",
+      unit: getStringValue(item.stock_unit),
+      brand: getStringValue(item.brand),
+      hsn: item.gst_classification || "",
+      rate: String(item.sales_rate || 0),
+      mrp: String(item.mrp || 0),
+      barcode: item.barcode || "",
+      printdesc: item.name || "",
+      qty: "1",
+    };
+    const qty = 1;
+    const rate = parseFloat(String(item.sales_rate || 0));
+    baseData.amount = (qty * rate).toFixed(2);
+
+    // Find first empty row
+    let targetRowId: string | null = null;
+    for (const rId of rows) {
+      const rData = tableData[rId];
+      if (!rData || !rData.select) {
+        targetRowId = rId;
+        break;
+      }
+    }
+
+    if (targetRowId) {
+      setTableData((prev) => ({
+        ...prev,
+        [targetRowId!]: { ...prev[targetRowId!], ...baseData },
+      }));
+    } else {
+      // Append new row
+      const newId = generateRowId();
+      setRows((prev) => [...prev, newId]);
+      setTableData((prev) => ({ ...prev, [newId]: baseData }));
+    }
+  };
+  // --- SCAN LOGIC END ---
+
   const toggleColumnVisibility = (colId: string) => {
     setColumns((prev) =>
       prev.map((col) =>
@@ -622,6 +706,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
   ) => {
     e.stopPropagation();
     const rect = e.currentTarget.getBoundingClientRect();
+    setPopupSearchTerm(""); // Reset search on open
     setPopupState({
       visible: true,
       top: rect.bottom,
@@ -644,6 +729,18 @@ const OrderTable: React.FC<OrderTableProps> = ({
       setPopupState((prev) => ({ ...prev, visible: false, activeRowId: null }));
     }
   };
+
+  // Filter items based on popupSearchTerm
+  const filteredItems = useMemo(() => {
+    if (!popupSearchTerm) return items;
+    const lower = popupSearchTerm.toLowerCase();
+    return items.filter(
+      (item) =>
+        item.code?.toLowerCase().includes(lower) ||
+        item.name?.toLowerCase().includes(lower) ||
+        item.barcode?.toLowerCase().includes(lower),
+    );
+  }, [items, popupSearchTerm]);
 
   const handleWarrantyClick = (
     e: React.MouseEvent<HTMLDivElement>,
@@ -904,6 +1001,9 @@ const OrderTable: React.FC<OrderTableProps> = ({
               type="text"
               placeholder="Scan"
               className="px-2 outline-none text-sm w-full"
+              value={scanQuery}
+              onChange={(e) => setScanQuery(e.target.value)}
+              onKeyDown={handleScanKeyDown}
             />
           </div>
         </div>
@@ -1411,9 +1511,9 @@ const OrderTable: React.FC<OrderTableProps> = ({
                 left: popupState.left,
                 borderColor: COLORS.borderDark,
                 width: "500px",
-                maxHeight: "300px",
+                maxHeight: "350px", // Increased height to accommodate search
                 transform:
-                  popupState.top + 300 > window.innerHeight
+                  popupState.top + 350 > window.innerHeight
                     ? "translateY(-100%)"
                     : "none",
               }}
@@ -1427,25 +1527,67 @@ const OrderTable: React.FC<OrderTableProps> = ({
                   <X size={14} />
                 </button>
               </div>
-              <div className="flex-1 overflow-auto p-0">
+
+              {/* Added Search Box */}
+              <div className="p-2 border-b bg-gray-50 sticky top-0 z-10">
+                <div className="flex items-center border rounded bg-white px-2 py-1">
+                  <Search size={14} className="text-gray-400 mr-2" />
+                  <input
+                    type="text"
+                    autoFocus
+                    placeholder="Search by Code, Name, or Barcode..."
+                    className="w-full text-xs outline-none"
+                    value={popupSearchTerm}
+                    onChange={(e) => setPopupSearchTerm(e.target.value)}
+                  />
+                  {popupSearchTerm && (
+                    <X
+                      size={14}
+                      className="text-gray-400 cursor-pointer hover:text-red-500"
+                      onClick={() => setPopupSearchTerm("")}
+                    />
+                  )}
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-auto p-0 custom-scrollbar">
                 <table className="w-full text-xs text-left border-collapse">
                   <thead>
-                    <tr>
-                      <th className="p-1.5 border">Code</th>
-                      <th className="p-1.5 border">Name</th>
+                    <tr className="bg-gray-100 sticky top-0">
+                      <th className="p-1.5 border font-semibold text-gray-600">
+                        Code
+                      </th>
+                      <th className="p-1.5 border font-semibold text-gray-600">
+                        Name
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {items.map((item, idx) => (
-                      <tr
-                        key={item._id || idx}
-                        className="border-b hover:bg-blue-50 cursor-pointer"
-                        onClick={() => handleItemSelect(item)}
-                      >
-                        <td className="p-1.5 border">{item.code}</td>
-                        <td className="p-1.5 border">{item.name}</td>
+                    {filteredItems.length > 0 ? (
+                      filteredItems.map((item, idx) => (
+                        <tr
+                          key={item._id || idx}
+                          className="border-b hover:bg-blue-50 cursor-pointer transition-colors"
+                          onClick={() => handleItemSelect(item)}
+                        >
+                          <td className="p-1.5 border text-gray-700">
+                            {item.code}
+                          </td>
+                          <td className="p-1.5 border text-gray-700">
+                            {item.name}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={2}
+                          className="p-4 text-center text-gray-400 italic"
+                        >
+                          No items found matching "{popupSearchTerm}"
+                        </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>

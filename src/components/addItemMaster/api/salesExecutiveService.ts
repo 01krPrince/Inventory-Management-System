@@ -12,11 +12,13 @@ export interface SalesExecutiveData {
   _id: string;
   name: string;
   code: string;
-  commisionRate: string; // Note: Matches API spelling
+  commisionRate: string; 
   rateOn: string;
   amountType: string;
   email: string;
   phone: string;
+  reporting_to?: string | null; // Added based on Postman
+  underStore?: string | null;   // Added based on Postman
   createdAt?: string;
   updatedAt?: string;
   __v?: number;
@@ -30,6 +32,8 @@ export interface CreateSalesExecutivePayload {
   amountType: string;
   email: string;
   phone: string;
+  reporting_to?: string | null; // Added
+  underStore?: string | null;   // Added
 }
 
 // --- API Functions ---
@@ -85,11 +89,11 @@ export const createSalesExecutive = async (payload: CreateSalesExecutivePayload)
 
 /**
  * Update an existing Sales Executive
- * Assumed Endpoint: /salesexecutive/update/:id (Adjust if your backend differs)
+ * FIX: Endpoint changed to /updatebyid/ to match Postman
  */
 export const updateSalesExecutive = async (id: string, payload: CreateSalesExecutivePayload): Promise<ApiResponse> => {
   try {
-    const response = await api.put<ApiResponse>(`/salesexecutive/update/${id}`, payload);
+    const response = await api.put<ApiResponse>(`/salesexecutive/updatebyid/${id}`, payload);
     return response.data;
   } catch (error: any) {
     return {

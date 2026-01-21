@@ -162,7 +162,7 @@ export const updateUnderGroup = async (
  */
 export const deleteUnderGroup = async (id: string): Promise<ApiResponse> => {
   try {
-    const response = await api.delete<ApiResponse>(`/item/delete/${id}`);
+    const response = await api.delete<ApiResponse>(`/item/delete_by/${id}`);
     return response.data;
   } catch (error: any) {
     return {

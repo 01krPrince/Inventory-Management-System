@@ -36,6 +36,7 @@ const GROUP_MODE_OPTIONS = [
   { label: "Non-Inventory", value: "Non-Inventory" },
   { label: "Service", value: "Service" },
   { label: "Bundle", value: "Bundle" },
+  { label: "Common", value: "Common" },
 ];
 
 const stockUnitColumns: ColumnDef<StockUnitData>[] = [
@@ -180,9 +181,10 @@ const labelColumns: ColumnDef<DropdownItem>[] = [
 ];
 
 const gstColumns: ColumnDef<GstClassificationData>[] = [
+  { header: "Code", key: "code", width: "w-20" },
   { header: "Type", key: "type", width: "w-24" },
   { header: "HSN/SAC", key: "hsn_sac_code", width: "w-32" },
-  { header: "Code", key: "code", width: "w-20" },
+  { header: "Description", key: "hsn_description", width: "w-20" },
 ];
 
 // --- Main Component ---
@@ -203,10 +205,10 @@ export default function UnderGroup({
   const [gstList, setGstList] = useState<GstClassificationData[]>([]);
   const [glDataFull, setGlDataFull] = useState<SalesAndPurchaseGL[]>([]);
   const [activeGLType, setActiveGLType] = useState<"sales" | "purchase" | null>(
-    null
+    null,
   );
   const [coaFormData, setCoaFormData] = useState<SalesAndPurchaseGL | null>(
-    null
+    null,
   );
   const [showChartOfAccounts, setShowChartOfAccounts] = useState(false);
 
@@ -286,7 +288,7 @@ export default function UnderGroup({
 
     setGstList((prev) => {
       const existingIndex = prev.findIndex(
-        (item) => item.hsn_description === savedData.hsnSacDescription
+        (item) => item.hsn_description === savedData.hsnSacDescription,
       );
       const newItem: GstClassificationData = {
         _id: `temp_${Date.now()}`,
@@ -363,7 +365,7 @@ export default function UnderGroup({
         const exists = prev.find((item) => item.name === savedName);
         if (exists) {
           return prev.map((item) =>
-            item.name === savedName ? savedData : item
+            item.name === savedName ? savedData : item,
           );
         }
         return [...prev, savedData];
@@ -383,7 +385,7 @@ export default function UnderGroup({
     e.preventDefault();
     const currentSelection = formData.gstClassification;
     const selectedItem = gstList.find(
-      (item) => item.hsn_description === currentSelection
+      (item) => item.hsn_description === currentSelection,
     );
 
     if (selectedItem) {
@@ -489,7 +491,7 @@ export default function UnderGroup({
     e.preventDefault();
     if (formData.stockUnit) {
       const selectedItem = stockUnitList.find(
-        (item) => item.name === formData.stockUnit
+        (item) => item.name === formData.stockUnit,
       );
       setSelectedStockUnitForEdit(selectedItem);
     } else {
@@ -507,7 +509,7 @@ export default function UnderGroup({
 
     if (currentValue && currentValue.trim() !== "") {
       const selectedItem = glDataFull.find(
-        (item) => item.name === currentValue
+        (item) => item.name === currentValue,
       );
 
       if (selectedItem) {
@@ -727,7 +729,7 @@ export default function UnderGroup({
                         onChange={(item) =>
                           handleChange(
                             "gstClassification",
-                            item?.hsn_description || ""
+                            item?.hsn_description || "",
                           )
                         }
                         placeholder="Select..."

@@ -115,9 +115,10 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
   const [editingRow, setEditingRow] = useState<Customer | null>(null);
 
   const [categoryList, setCategoryList] = useState<DocumentCategoryInventory[]>(
-    []
+    [],
   );
-  const [locationList, setLocationList] = useState<LocationMasterType[]>([]);
+  // Use 'any' here temporarily to handle the populated 'party' object flexible structure
+  const [locationList, setLocationList] = useState<any[]>([]);
   const [customerList, setCustomerList] = useState<Customer[]>([]);
 
   const categoryColumns: ColumnDef<DocumentCategoryInventory>[] = [
@@ -173,7 +174,7 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
   // --- HELPER: Update Parent State ---
   const handleFieldChange = (
     field: keyof StockAdjustmentHeaderData,
-    value: string
+    value: string,
   ) => {
     onDataChange({
       ...data,
@@ -185,8 +186,22 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
   const getSelectedCategoryObject = () =>
     categoryList.find((cat) => cat._id === data.category) || null;
 
-  const getSelectedLocationObject = () =>
-    locationList.find((loc) => loc._id === data.store) || null;
+  // IMPORTANT: This function now flattens the 'party' object if it exists
+  const getSelectedLocationObject = () => {
+    const selected = locationList.find((loc) => loc._id === data.store);
+    if (!selected) return null;
+
+    // Check if 'party' is a populated object (containing keys like cust_name, etc.)
+    // If so, we replace it with just the _id string to prevent React "Object invalid child" errors
+    if (selected.party && typeof selected.party === "object") {
+      return {
+        ...selected,
+        party: selected.party._id || "", // Flatten object to ID string
+      };
+    }
+
+    return selected;
+  };
 
   const getSelectedCustomerObject = () =>
     customerList.find((cust) => cust._id === data.party) || null;
@@ -359,6 +374,7 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
             <div className="shadow-lg overflow-hidden relative">
               <LocationMaster
                 onClose={() => setLocationMasterModal(false)}
+                // Updated: using the flattened data here
                 initialData={getSelectedLocationObject()}
                 onSuccess={() => loadLocations()}
               />

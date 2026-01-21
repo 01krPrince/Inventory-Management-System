@@ -41,6 +41,48 @@ export interface PurchaseBillPayload {
   */
 }
 
+// --- Report Interfaces ---
+
+export interface PurchaseBillReportSummary {
+  totalQty: number;
+  totalPurchaseAmount: number;
+  totalLogistics: number;
+  netAmount: number;
+}
+
+export interface PurchaseBillReportItem {
+  billId: string;
+  billNo: string;
+  billDate: string;
+  storeId: string;
+  storeName: string;
+  storeCode: string;
+  vendorId: string;
+  vendorName: string;
+  vendorCode: string;
+  itemId: string;
+  itemCode: string;
+  itemName: string;
+  quantity: number;
+  rate: number;
+  amount: number;
+  freight: number;
+  loadingUnloading: number;
+  insurance: number;
+  otherCharges: number;
+  logisticsTotal: number;
+  billTotal: number;
+  netTotal: number;
+  remarks: string;
+}
+
+export interface PurchaseBillReportResponse {
+  success: boolean;
+  total: number;
+  summary: PurchaseBillReportSummary;
+  data: PurchaseBillReportItem[];
+}
+
 // --- Service Functions ---
 
 const createPurchaseBill = async (data: PurchaseBillPayload) => {
@@ -52,8 +94,18 @@ const createPurchaseBill = async (data: PurchaseBillPayload) => {
   }
 };
 
+const getPurchaseBillReport = async (): Promise<PurchaseBillReportResponse> => {
+  try {
+    const response = await api.get("/purchasebill/purchasebillreport");
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
 const purchaseBillService = {
   createPurchaseBill,
+  getPurchaseBillReport,
 };
 
 export default purchaseBillService;

@@ -20,6 +20,17 @@ export const fetchItems = async (): Promise<ItemApiData[]> => {
   }
 };
 
+
+export const getItemByCodeAndBarcode = async (
+  code: string
+): Promise<ItemResponse> => {
+  const response = await api.get(
+    `${ENDPOINT}/get_by_code/${code}`
+  );
+  return response.data;
+};
+
+
 export const deleteItemApi = async (id: string): Promise<ItemResponse> => {
   try {
     const response = await api.delete<ItemResponse>(`${ENDPOINT}/delete_item/${id}`);
