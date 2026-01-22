@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import {
   FileText,
-  Search,
   Edit3,
   Trash2,
   Printer,

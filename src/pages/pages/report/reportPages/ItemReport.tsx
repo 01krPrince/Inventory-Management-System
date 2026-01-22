@@ -1,13 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
 import {
   Package,
-  Search,
   Edit3,
   Trash2,
   Printer,
   Download,
-  ChevronLeft,
-  ChevronRight,
   Loader2,
 } from "lucide-react";
 import AddNewItem from "../../../../components/addItemMaster/AddNewItem";
@@ -85,7 +82,7 @@ const ItemReport = () => {
     );
   }, [items, searchTerm]);
 
-  const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+  // const totalPages = Math.ceil(filteredData.length / rowsPerPage);
   const paginatedData = useMemo(() => {
     const start = (currentPage - 1) * rowsPerPage;
     return filteredData.slice(start, start + rowsPerPage);

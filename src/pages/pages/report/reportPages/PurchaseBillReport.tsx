@@ -1,13 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import {
-  FileText,
-  Search,
-  Printer,
-  Download,
-  ChevronLeft,
-  ChevronRight,
-  Loader2,
-} from "lucide-react";
+import { FileText, Printer, Download, Loader2 } from "lucide-react";
 import purchaseBillService, {
   PurchaseBillReportItem,
 } from "../../../../services/purchase/purchaseBill";
@@ -27,7 +19,7 @@ const ReportColumns = [
 ];
 
 const PurchaseBillReport = () => {
-  const [bills, setBills] = useState<PurchaseBillReportItem[]>([]); // Typed state
+  const [bills, setBills] = useState<PurchaseBillReportItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);

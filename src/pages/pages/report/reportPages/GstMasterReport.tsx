@@ -1,25 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
-import {
-  ShieldCheck,
-  Search,
-  Edit3,
-  Trash2,
-  Printer,
-  Download,
-  ChevronLeft,
-  ChevronRight,
-  Loader2,
-  Plus,
-} from "lucide-react";
+import { ShieldCheck, Edit3, Trash2, Printer, Plus } from "lucide-react";
 import { GstClassificationForm } from "../../../../components/GstClassificationForm";
 import {
   fetchGstClassifications,
   deleteGstClassification,
 } from "../../../../components/addItemMaster/api/gstservice";
-import {
-  handlePrint,
-  handleExport,
-} from "../../../../components/function/functions";
+import { handlePrint } from "../../../../components/function/functions";
 
 interface GstData {
   _id: string;
@@ -33,17 +19,17 @@ interface GstData {
   igst: number;
 }
 
-const ReportColumns = [
-  { key: "type", label: "Type" },
-  { key: "code", label: "Internal Code" },
-  { key: "hsn_sac_code", label: "HSN/SAC Code" },
-  { key: "hsn_description", label: "Description" },
-  { key: "gstRate", label: "GST %" },
-];
+// const ReportColumns = [
+//   { key: "type", label: "Type" },
+//   { key: "code", label: "Internal Code" },
+//   { key: "hsn_sac_code", label: "HSN/SAC Code" },
+//   { key: "hsn_description", label: "Description" },
+//   { key: "gstRate", label: "GST %" },
+// ];
 
 const GstMasterReport = () => {
   const [data, setData] = useState<GstData[]>([]); // Typed state
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -79,7 +65,7 @@ const GstMasterReport = () => {
     );
   }, [data, searchTerm]);
 
-  const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+  // const totalPages = Math.ceil(filteredData.length / rowsPerPage);
   const paginatedData = useMemo(() => {
     const start = (currentPage - 1) * rowsPerPage;
     return filteredData.slice(start, start + rowsPerPage);
