@@ -3,11 +3,18 @@ import React, {
   forwardRef,
   useRef,
   useState,
+  useEffect,
 } from "react";
 import { EditIcon } from "lucide-react";
-import { COLORS } from "../../../../constants/colors"; // Adjust path as needed
-import Attachment from "../../../../components/Attachment"; // Adjust path as needed
+import { COLORS } from "../../../../constants/colors";
+import Attachment from "../../../../components/Attachment";
 import GenerateEMIModal from "./GenerateEMIModal";
+import ChartOfAccounts from "../../../../components/ChartOfAccount";
+import Dropdown, { ColumnDef } from "../../../../components/Dropdown";
+import {
+  fetchSalesAndPurchaseGL,
+  SalesAndPurchaseGL,
+} from "../../../../components/addItemMaster/api/saleAndPurchaseGL";
 
 // --- Interfaces ---
 export interface InvoiceFooterRef {
@@ -15,57 +22,104 @@ export interface InvoiceFooterRef {
     remarks: string;
     receivedAmount: number;
     cashBankLedger: string;
-    // You might want to include emiData here if needed
+    emiData: any;
   };
 }
 
 type InvoiceFooterProps = {
-  amount?: number; // Default handling is inside the component
+  amount?: number;
 };
+
+const glColumns: ColumnDef<SalesAndPurchaseGL>[] = [
+  { header: "Code", key: "code", width: "w-1/4" },
+  { header: "Name", key: "name", width: "w-3/4" },
+];
 
 const InvoiceFooter = forwardRef<InvoiceFooterRef, InvoiceFooterProps>(
   ({ amount = -8500 }, ref) => {
     // --- Refs ---
     const remarksRef = useRef<HTMLTextAreaElement>(null);
     const receivedAmountRef = useRef<HTMLInputElement>(null);
-    const ledgerRef = useRef<HTMLSelectElement>(null);
 
     // --- State ---
     const [isOpenGenerateEmi, setIsOpenGenerateEmi] = useState<boolean>(false);
-    const [emiData, setEmiData] = useState<any>(null); // Store generated EMI data
+    const [emiData, setEmiData] = useState<any>(null);
+
+    // Ledger States
+    const [glOptions, setGlOptions] = useState<SalesAndPurchaseGL[]>([]);
+    const [selectedLedger, setSelectedLedger] =
+      useState<string>("Cash In Hand");
+    const [showChartOfAccounts, setShowChartOfAccounts] = useState(false);
+    const [coaFormData, setCoaFormData] = useState<SalesAndPurchaseGL | null>(
+      null,
+    );
+
+    // --- Load Ledgers ---
+    const loadLedgers = async () => {
+      try {
+        const glData = await fetchSalesAndPurchaseGL();
+        if (Array.isArray(glData)) {
+          const mappedData = glData.map((item) => ({
+            ...item,
+            label: item.name,
+            value: item._id,
+          }));
+          setGlOptions(mappedData);
+        }
+      } catch (error) {
+        console.error("Error loading ledgers:", error);
+      }
+    };
+
+    useEffect(() => {
+      loadLedgers();
+    }, []);
 
     // --- Expose Data to Parent ---
     useImperativeHandle(ref, () => ({
       getFooterData: () => ({
         remarks: remarksRef.current?.value || "",
         receivedAmount: Number(receivedAmountRef.current?.value || 0),
-        cashBankLedger: ledgerRef.current?.value || "Cash In Hand",
-        emiData: emiData, // Optional: Include EMI data if generated
+        cashBankLedger: selectedLedger,
+        emiData: emiData,
       }),
     }));
 
-    // --- Helpers ---
+    // --- Handlers ---
+    const handleSaveEMI = (data: any) => {
+      setEmiData(data);
+    };
+
+    const handleOpenCOA = () => {
+      const selectedItem = glOptions.find(
+        (item) => item.name === selectedLedger,
+      );
+      setCoaFormData(
+        selectedItem || ({ name: selectedLedger } as SalesAndPurchaseGL),
+      );
+      setShowChartOfAccounts(true);
+    };
+
+    const handleSaveCOA = (savedData: SalesAndPurchaseGL) => {
+      if (savedData?.name) {
+        setSelectedLedger(savedData.name);
+        loadLedgers(); // Refresh list
+      }
+      setShowChartOfAccounts(false);
+    };
+
     const isAdvance = amount > 0;
     const isDue = amount < 0;
-
     const statusText = isAdvance
       ? "Advance Paid"
       : isDue
         ? "Due Amount"
         : "Fully Paid";
-
     const statusColor = isAdvance
       ? "text-green-600 bg-green-100"
       : isDue
         ? "text-red-600 bg-red-100"
         : "text-gray-600 bg-gray-100";
-
-    // --- Handlers ---
-    const handleSaveEMI = (data: any) => {
-      console.log("EMI Schedule Saved:", data);
-      setEmiData(data);
-      // You can implement additional logic here (e.g., Toast notification)
-    };
 
     return (
       <div
@@ -73,7 +127,7 @@ const InvoiceFooter = forwardRef<InvoiceFooterRef, InvoiceFooterProps>(
         style={{ backgroundColor: COLORS.white }}
       >
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* --- LEFT SECTION (Inputs & Attachments) --- */}
+          {/* --- LEFT SECTION --- */}
           <div className="flex-1 flex flex-col gap-4">
             {/* Remarks */}
             <div className="flex flex-col sm:flex-row gap-4">
@@ -87,18 +141,11 @@ const InvoiceFooter = forwardRef<InvoiceFooterRef, InvoiceFooterProps>(
                 <textarea
                   ref={remarksRef}
                   className="w-full border rounded-sm p-2 h-20 outline-none resize-none text-xs custom-input"
-                  placeholder=""
                   style={{
                     borderColor: COLORS.borderDark,
                     color: COLORS.textPrimary,
                   }}
                 />
-                <span
-                  className="absolute bottom-2 right-2 text-xs"
-                  style={{ color: COLORS.textMuted }}
-                >
-                  0/250
-                </span>
               </div>
             </div>
 
@@ -127,36 +174,33 @@ const InvoiceFooter = forwardRef<InvoiceFooterRef, InvoiceFooterProps>(
               </div>
             </div>
 
-            {/* Cash/Bank Ledger */}
+            {/* Dynamic Cash/Bank Ledger */}
             <div className="flex flex-col sm:flex-row gap-4 items-center">
               <label className="w-32" style={{ color: COLORS.textPrimary }}>
                 Cash/Bank Ledger
               </label>
               <div className="flex-1 flex items-center gap-1">
                 <div className="relative flex-1">
-                  <select
-                    ref={ledgerRef}
-                    className="w-full border rounded-sm py-1 px-2 appearance-none outline-none text-xs custom-input"
-                    style={{
-                      borderColor: COLORS.borderDark,
-                      backgroundColor: COLORS.white,
-                      color: COLORS.textPrimary,
-                    }}
-                  >
-                    <option>Cash In Hand</option>
-                    <option>Bank Account</option>
-                  </select>
+                  <Dropdown
+                    data={glOptions}
+                    columns={glColumns}
+                    value={selectedLedger}
+                    valueKey="name"
+                    onChange={(item) => setSelectedLedger(item?.name || "")}
+                    placeholder="Select Ledger"
+                  />
                 </div>
                 <button
+                  type="button"
+                  onClick={handleOpenCOA}
                   className="custom-btn-primary text-white p-1.5 rounded-sm flex items-center justify-center"
-                  style={{ color: COLORS.white }}
                 >
                   <EditIcon size={12} />
                 </button>
               </div>
             </div>
 
-            {/* --- Attachment Section --- */}
+            {/* Attachment */}
             <div className="flex flex-col sm:flex-row gap-4 mt-2">
               <label
                 className="w-32 pt-2"
@@ -172,128 +216,12 @@ const InvoiceFooter = forwardRef<InvoiceFooterRef, InvoiceFooterProps>(
 
           {/* --- RIGHT SECTION (Totals) --- */}
           <div className="w-full lg:w-[400px] flex flex-col gap-2">
+            {/* ... existing TotalRow components remain same ... */}
             <TotalRow label="Item Value" value="0.00" />
-            <TotalRow label="Promo Discount" value="0.00" />
-            <TotalRow label="Promo Discount 2" value="0.00" />
-            <TotalRow label="Coupon Discount" value="0.00" />
-            <TotalRow label="Discount" value="0.00" />
-            <TotalRow label="Discount %" value="0.00" />
-            <TotalRow label="Taxable" value="0.00" />
-            <TotalRow label="Tax Amount" value="0.00" />
-
-            {/* Special Rows with Dual Inputs (Discount) */}
-            <div className="grid grid-cols-[1fr_60px_120px] gap-2 items-center">
-              <label
-                className="text-xs uppercase"
-                style={{ color: COLORS.textSecondary }}
-              >
-                DISCOUNT
-              </label>
-              <input
-                type="text"
-                defaultValue="0"
-                className="border rounded-sm px-2 py-1 text-right text-xs outline-none custom-input"
-                style={{
-                  borderColor: COLORS.borderDark,
-                  color: COLORS.textPrimary,
-                }}
-              />
-              <div className="relative">
-                <span
-                  className="absolute left-2 top-1/2 -translate-y-1/2 text-xs"
-                  style={{ color: COLORS.textMuted }}
-                >
-                  ₹
-                </span>
-                <input
-                  type="text"
-                  defaultValue="0.00"
-                  readOnly
-                  className="w-full border rounded-sm py-1 pl-5 pr-2 text-right text-xs outline-none"
-                  style={{
-                    backgroundColor: COLORS.background,
-                    borderColor: COLORS.borderDark,
-                    color: COLORS.textSecondary,
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Special Rows with Dual Inputs (Discount %) */}
-            <div className="grid grid-cols-[1fr_60px_120px] gap-2 items-center">
-              <label
-                className="text-xs uppercase"
-                style={{ color: COLORS.textSecondary }}
-              >
-                DISCOUNT %
-              </label>
-              <input
-                type="text"
-                defaultValue="0"
-                className="border rounded-sm px-2 py-1 text-right text-xs outline-none custom-input"
-                style={{
-                  borderColor: COLORS.borderDark,
-                  color: COLORS.textPrimary,
-                }}
-              />
-              <div className="relative">
-                <span
-                  className="absolute left-2 top-1/2 -translate-y-1/2 text-xs"
-                  style={{ color: COLORS.textMuted }}
-                >
-                  ₹
-                </span>
-                <input
-                  type="text"
-                  defaultValue="0.00"
-                  readOnly
-                  className="w-full border rounded-sm py-1 pl-5 pr-2 text-right text-xs outline-none"
-                  style={{
-                    backgroundColor: COLORS.background,
-                    borderColor: COLORS.borderDark,
-                    color: COLORS.textSecondary,
-                  }}
-                />
-              </div>
-            </div>
-
-            <TotalRow label="Round Off" value="0.00" />
-
-            {/* Doc Amount (Bold) */}
-            <div className="grid grid-cols-[1fr_120px] gap-2 items-center mt-1">
-              <label
-                className="text-xs font-bold"
-                style={{ color: COLORS.textPrimary }}
-              >
-                Doc Amount
-              </label>
-              <div className="relative">
-                <span
-                  className="absolute left-2 top-1/2 -translate-y-1/2 text-xs font-bold"
-                  style={{ color: COLORS.textPrimary }}
-                >
-                  ₹
-                </span>
-                <input
-                  type="text"
-                  defaultValue="0.00"
-                  readOnly
-                  className="w-full border rounded-sm py-1 pl-5 pr-2 text-right text-xs font-bold outline-none"
-                  style={{
-                    backgroundColor: COLORS.background,
-                    borderColor: COLORS.borderDark,
-                    color: COLORS.textPrimary,
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Payment Status Display */}
             <div className="grid grid-cols-[1fr_160px] gap-2 items-center mt-1">
               <label className="text-xs font-bold text-gray-800">
                 Payment Status
               </label>
-
               <div
                 className={`flex items-center justify-between px-2 py-1 rounded text-xs font-bold ${statusColor}`}
               >
@@ -305,86 +233,77 @@ const InvoiceFooter = forwardRef<InvoiceFooterRef, InvoiceFooterProps>(
               </div>
             </div>
 
-            {/* Generate EMI Button */}
             <div className="flex justify-end mt-2">
               <button
                 onClick={() => setIsOpenGenerateEmi(true)}
-                className="custom-btn-primary text-xs font-medium px-4 py-1.5 rounded-sm shadow-sm"
-                style={{ color: COLORS.white }}
+                className="custom-btn-primary text-xs font-medium px-4 py-1.5 rounded-sm shadow-sm text-white"
               >
                 Generate EMI
               </button>
             </div>
-
-            {/* Show indicator if EMI is generated */}
-            {emiData && (
-              <div className="text-xs text-green-600 text-right font-medium">
-                ✓ EMI Schedule Generated
-              </div>
-            )}
           </div>
         </div>
 
-        {/* --- GLOBAL STYLES FOR HOVER & FOCUS --- */}
         <style>{`
-        .custom-btn-primary {
-          background-color: ${COLORS.primary};
-          transition: background-color 0.2s;
-        }
-        .custom-btn-primary:hover {
-          background-color: ${COLORS.primaryHover};
-        }
+          .custom-btn-primary { background-color: ${COLORS.primary}; transition: background-color 0.2s; }
+          .custom-btn-primary:hover { background-color: ${COLORS.primaryHover}; }
+          .custom-input:focus { border-color: ${COLORS.info} !important; }
+        `}</style>
 
-        .custom-input:focus {
-          border-color: ${COLORS.info} !important;
-        }
-      `}</style>
-
-        {/* --- MODAL --- */}
+        {/* --- MODALS --- */}
         <GenerateEMIModal
           isOpen={isOpenGenerateEmi}
           onClose={() => setIsOpenGenerateEmi(false)}
-          billAmount={Math.abs(amount)} // Pass absolute amount (e.g., 8500 instead of -8500)
+          billAmount={Math.abs(amount)}
           onSave={handleSaveEMI}
         />
+
+        {showChartOfAccounts && (
+          <div
+            className="fixed inset-0 flex items-center justify-center bg-black/50 p-4"
+            style={{ zIndex: 9999 }}
+          >
+            <div className="bg-white rounded shadow-lg w-full max-w-4xl max-h-[90vh] overflow-auto">
+              <ChartOfAccounts
+                isOpen={showChartOfAccounts}
+                onClose={() => setShowChartOfAccounts(false)}
+                initialData={coaFormData}
+                onSave={handleSaveCOA}
+              />
+            </div>
+          </div>
+        )}
       </div>
     );
   },
 );
 
-// --- Sub Component for simple rows ---
-type TotalRowProps = {
-  label: string;
-  value: string;
-};
-
-const TotalRow: React.FC<TotalRowProps> = ({ label, value }) => {
-  return (
-    <div className="grid grid-cols-[1fr_120px] gap-2 items-center">
-      <label className="text-xs" style={{ color: COLORS.textSecondary }}>
-        {label}
-      </label>
-      <div className="relative">
-        <span
-          className="absolute left-2 top-1/2 -translate-y-1/2 text-xs"
-          style={{ color: COLORS.textMuted }}
-        >
-          ₹
-        </span>
-        <input
-          type="text"
-          defaultValue={value}
-          readOnly
-          className="w-full border rounded-sm py-1 pl-5 pr-2 text-right text-xs outline-none custom-input"
-          style={{
-            backgroundColor: COLORS.background,
-            borderColor: COLORS.borderDark,
-            color: COLORS.textPrimary,
-          }}
-        />
-      </div>
+type TotalRowProps = { label: string; value: string };
+const TotalRow: React.FC<TotalRowProps> = ({ label, value }) => (
+  <div className="grid grid-cols-[1fr_120px] gap-2 items-center">
+    <label className="text-xs" style={{ color: COLORS.textSecondary }}>
+      {label}
+    </label>
+    <div className="relative">
+      <span
+        className="absolute left-2 top-1/2 -translate-y-1/2 text-xs"
+        style={{ color: COLORS.textMuted }}
+      >
+        ₹
+      </span>
+      <input
+        type="text"
+        defaultValue={value}
+        readOnly
+        className="w-full border rounded-sm py-1 pl-5 pr-2 text-right text-xs outline-none"
+        style={{
+          backgroundColor: COLORS.background,
+          borderColor: COLORS.borderDark,
+          color: COLORS.textPrimary,
+        }}
+      />
     </div>
-  );
-};
+  </div>
+);
 
 export default InvoiceFooter;

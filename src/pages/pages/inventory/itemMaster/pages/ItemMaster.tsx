@@ -25,26 +25,19 @@ import { ItemApiData } from "../models/ItemModel";
 import { fetchItems, deleteItemApi } from "../api/itemService";
 import { handlePrint } from "../../../../../components/function/functions";
 
-// --- HELPER: Extract Display Value (CRITICAL FIX) ---
-// Handles 'name' (Brand/Category) and 'item_name' (Under Group)
 const getDisplayValue = (value: any): string => {
   if (value === null || value === undefined) return "";
 
   if (typeof value === "object") {
-    // 1. Handle "Under Group" which uses 'item_name'
     if (value.item_name) return String(value.item_name);
-    // 2. Handle "Brand/Category" which uses 'name'
     if (value.name) return String(value.name);
-    // 3. Fallback to code if names are missing
     if (value.code) return String(value.code);
-
-    return ""; // Empty object or unrecognized structure
+    return "";
   }
 
   return String(value);
 };
 
-// --- EXPORT FUNCTION ---
 const handleExport = (data: any[], columns: Column[], fileName: string) => {
   const headers = columns
     .filter((col) => col.key !== "actions" && col.key !== "checkbox")
@@ -56,11 +49,10 @@ const handleExport = (data: any[], columns: Column[], fileName: string) => {
         .filter((col) => col.key !== "actions" && col.key !== "checkbox")
         .map((col) => {
           const val = row[col.key];
-          // Use helper to ensure objects are exported as strings
           const cleanVal = getDisplayValue(val).replace(/"/g, '""');
           return `"${cleanVal}"`;
         })
-        .join(",")
+        .join(","),
     )
     .join("\n");
 
@@ -74,7 +66,6 @@ const handleExport = (data: any[], columns: Column[], fileName: string) => {
   document.body.removeChild(link);
 };
 
-// --- TYPE DEFINITIONS ---
 export interface DataItem extends ItemApiData {
   widget?: boolean;
   inactive?: boolean;
@@ -95,7 +86,6 @@ interface SortConfig {
   direction: "ascending" | "descending";
 }
 
-// --- COLUMN DEFINITIONS ---
 const ItemColumns: Column[] = [
   {
     key: "inactive",
@@ -116,7 +106,6 @@ const ItemColumns: Column[] = [
   { key: "name", label: "Name", sortable: true },
   { key: "code", label: "Code", sortable: true },
 
-  // BRAND: Object with .name
   {
     key: "brand",
     label: "Brand",
@@ -128,19 +117,10 @@ const ItemColumns: Column[] = [
     ),
   },
 
-  { key: "gst_classification", label: "HSN Code", sortable: true },
+  { key: "hsn_code", label: "HSN Code", sortable: true },
 
-  // CATEGORY: Object with .name
   {
-    key: "category",
-    label: "Category",
-    sortable: true,
-    render: (value: any) => <span>{getDisplayValue(value)}</span>,
-  },
-
-  // UNDER GROUP: Object with .item_name (Handled by getDisplayValue)
-  {
-    key: "under_group",
+    key: "group",
     label: "Group",
     sortable: true,
     render: (value: any) => <span>{getDisplayValue(value)}</span>,
@@ -148,7 +128,7 @@ const ItemColumns: Column[] = [
 
   { key: "type", label: "Type", sortable: true },
   { key: "barcode", label: "Bar Code", sortable: true },
-  { key: "rackbin_no", label: "Rack Box", sortable: true },
+  { key: "category_name", label: "Category", sortable: true },
 ];
 
 const pageSizeOptions = [5, 10, 20, 50];
@@ -186,7 +166,7 @@ const useItemTableLogic = (initialData: DataItem[], initialSize: number) => {
         return getDisplayValue(val)
           .toLowerCase()
           .includes(searchTerm.toLowerCase());
-      })
+      }),
     );
 
     // SORT LOGIC: Uses getDisplayValue to sort based on the name text
@@ -223,7 +203,7 @@ const useItemTableLogic = (initialData: DataItem[], initialSize: number) => {
 
   const startEntry = Math.min(
     sortedDataLength,
-    (currentPage - 1) * pageSize + 1
+    (currentPage - 1) * pageSize + 1,
   );
   const endEntry = Math.min(sortedDataLength, currentPage * pageSize);
 
@@ -327,7 +307,7 @@ const ResizableHeader = ({
       const doResizing = (mouseMoveEvent: MouseEvent) => {
         const newWidth = Math.max(
           initialWidth + (mouseMoveEvent.clientX - startX),
-          30
+          30,
         );
         setColumnWidths((prev: Record<string, number | undefined>) => ({
           ...prev,
@@ -341,7 +321,7 @@ const ResizableHeader = ({
       window.addEventListener("mousemove", doResizing);
       window.addEventListener("mouseup", stopResizing);
     },
-    [keyString, setColumnWidths]
+    [keyString, setColumnWidths],
   );
 
   const handleHeaderClick = () => {
@@ -497,10 +477,10 @@ export default function ItemMaster() {
       if (!draggedKey || !droppedOverKey) return;
 
       const draggedColIndex = currentColumns.findIndex(
-        (col) => col.key === draggedKey
+        (col) => col.key === draggedKey,
       );
       const droppedOverIndex = currentColumns.findIndex(
-        (col) => col.key === droppedOverKey
+        (col) => col.key === droppedOverKey,
       );
 
       if (
@@ -517,7 +497,7 @@ export default function ItemMaster() {
 
       setCurrentColumns(newColumns);
     },
-    [currentColumns]
+    [currentColumns],
   );
 
   // --- Data Handlers ---
@@ -527,21 +507,21 @@ export default function ItemMaster() {
     setSelectedRows((prev: string[]) =>
       isSelected(row)
         ? prev.filter((id: string) => id !== row._id)
-        : [...prev, row._id as string]
+        : [...prev, row._id as string],
     );
   };
 
   const handleSelectAll = () => {
     const allIdsOnPage = paginatedData.map(
-      (row: DataItem) => row._id as string
+      (row: DataItem) => row._id as string,
     );
     const areAllSelected = allIdsOnPage.every((id: string) =>
-      selectedRows.includes(id)
+      selectedRows.includes(id),
     );
 
     if (areAllSelected) {
       setSelectedRows((prev: string[]) =>
-        prev.filter((id: string) => !allIdsOnPage.includes(id))
+        prev.filter((id: string) => !allIdsOnPage.includes(id)),
       );
     } else {
       setSelectedRows((prev: string[]) => [
@@ -562,17 +542,17 @@ export default function ItemMaster() {
       window.confirm(
         `Are you sure you want to delete Item: ${item.name} (${
           item.code || "No Code"
-        })?`
+        })?`,
       )
     ) {
       try {
         const response = await deleteItemApi(item._id);
 
         setData((prev: DataItem[]) =>
-          prev.filter((u: DataItem) => u._id !== item._id)
+          prev.filter((u: DataItem) => u._id !== item._id),
         );
         setSelectedRows((prev: string[]) =>
-          prev.filter((id: string) => id !== item._id)
+          prev.filter((id: string) => id !== item._id),
         );
 
         if (!response.success && response.message !== "Item not found") {
@@ -592,7 +572,7 @@ export default function ItemMaster() {
 
     if (
       window.confirm(
-        `Are you sure you want to delete ${selectedRows.length} selected row(s)?`
+        `Are you sure you want to delete ${selectedRows.length} selected row(s)?`,
       )
     ) {
       try {
@@ -622,7 +602,7 @@ export default function ItemMaster() {
   const areAllOnPageSelected =
     paginatedData.length > 0 &&
     paginatedData.every((row: DataItem) =>
-      selectedRows.includes(row._id as string)
+      selectedRows.includes(row._id as string),
     );
 
   if (isLoading) {

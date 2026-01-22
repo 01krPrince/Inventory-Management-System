@@ -78,15 +78,16 @@ interface ResizableHeaderProps {
   columnIndex: number;
 }
 
-// --- COLUMN DEFINITIONS ---
 const CustomerColumns: Column[] = [
   { key: "cust_name", label: "Customer Name", sortable: true },
-  { key: "print_name", label: "Print Name", sortable: true },
+  // { key: "print_name", label: "Print Name", sortable: true },
   { key: "code", label: "Code", sortable: true },
+  { key: "phone", label: "Phone", sortable: true },
   { key: "gst_no", label: "GST No", sortable: true },
-  { key: "identification", label: "Identification", sortable: false },
-  { key: "under_ledger", label: "Under Ledger", sortable: true },
-  { key: "gst", label: "GST Type", sortable: true },
+  { key: "city", label: "City", sortable: true },
+  // { key: "identification", label: "Identification", sortable: false },
+  // { key: "under_ledger", label: "Under Ledger", sortable: true },
+  // { key: "gst", label: "GST Type", sortable: true },
   { key: "registration_date", label: "Reg. Date", sortable: true },
 ];
 

@@ -1,4 +1,9 @@
-import React, { useState, useEffect, forwardRef, useImperativeHandle } from "react";
+import React, {
+  useState,
+  useEffect,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import {
   DocumentIcon,
   ChevronDownIcon,
@@ -21,6 +26,7 @@ import {
 
 export interface PurchaseBillFormData {
   gstType: string;
+  cashCredit: string;
   store: string;
   storeId?: string;
   vendor: string;
@@ -80,7 +86,18 @@ const toOptions = (arr: string[]): SimpleOption[] =>
   arr.map((s) => ({ name: s }));
 
 const mockData = {
-  gstTypes: toOptions(["TaxInvoice", "BillOfSupply", "Export"]),
+  gstTypes: toOptions([
+    "TaxInvoice",
+    "Import",
+    "ReverseCharges",
+    "BillOfSupply_Compounding",
+    "BillOfSupply_UnRegistered",
+    "BillOfSupply_Exempted",
+    "BillOfSupply_NilRated",
+    "BillOfSupply_NonGST",
+    "BranchTransfer",
+  ]),
+  cashCredit: toOptions(["Cash", "Credit"]),
   priceCategories: toOptions(["Wholesale", "Retail", "Distributor"]),
   taxOptions: toOptions(["Inclusive", "Exclusive"]),
   paymentTerms: toOptions(["Net 30", "Immediate", "Cash on Delivery"]),
@@ -159,6 +176,7 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
 
     const [formData, setFormData] = useState<PurchaseBillFormData>({
       gstType: "TaxInvoice",
+      cashCredit: "Credit",
       store: "",
       vendor: "",
       priceCategory: "Wholesale",
@@ -217,7 +235,7 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
         // 2. Vendors
         const vendorsData = await getAllVendors();
         setRawVendors(vendorsData); // Store raw data for auto-fill logic
-        
+
         // --- FIX: Map 'vend_name' from API to 'name' for Dropdown ---
         const mappedVendors = vendorsData.map((item: any) => ({
           name: item.vend_name, // Changed from item.name to item.vend_name
@@ -240,14 +258,12 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
       if (field === "store" && item) {
         setFormData((prev) => ({ ...prev, storeId: item.id }));
       }
-      
+
       if (field === "vendor" && item) {
         setFormData((prev) => ({ ...prev, vendorId: item.id }));
 
         // Find the full vendor object using the unique ID
-        const fullVendor = rawVendors.find(
-          (v) => v._id === item.id 
-        );
+        const fullVendor = rawVendors.find((v) => v._id === item.id);
 
         if (fullVendor) {
           // 1. Format Bill To Address
@@ -273,7 +289,10 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
       }
     };
 
-    const handleInputChange = (field: keyof PurchaseBillFormData, value: string) => {
+    const handleInputChange = (
+      field: keyof PurchaseBillFormData,
+      value: string,
+    ) => {
       setFormData((prev) => ({ ...prev, [field]: value }));
     };
 
@@ -309,6 +328,21 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                   value={formData.gstType}
                   valueKey="name"
                   onChange={(i) => handleDropdownChange("gstType", i)}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-12 gap-2">
+              <div className="col-span-4">
+                <Label>Cash/Credit</Label>
+              </div>
+              <div className="col-span-8">
+                <Dropdown
+                  data={mockData.cashCredit}
+                  columns={[{ header: "Name", key: "name", width: "flex-1" }]}
+                  value={formData.cashCredit}
+                  valueKey="name"
+                  onChange={(i) => handleDropdownChange("cashCredit", i)}
                 />
               </div>
             </div>
@@ -380,7 +414,9 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                     columns={[{ header: "Name", key: "name", width: "flex-1" }]}
                     value={formData.priceCategory}
                     valueKey="name"
-                    onChange={(item) => handleDropdownChange("priceCategory", item)}
+                    onChange={(item) =>
+                      handleDropdownChange("priceCategory", item)
+                    }
                   />
                   <ActionBtn
                     icon={<EditIcon size={16} />}
@@ -400,7 +436,9 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
               <div className="col-span-8">
                 <DateInput
                   value={formData.orderDate}
-                  onChange={(e) => handleInputChange("orderDate", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("orderDate", e.target.value)
+                  }
                 />
               </div>
             </div>
@@ -516,6 +554,19 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                     </InputGroup>
                   </div>
                 </div>
+                <div className="grid grid-cols-12 gap-2 items-center">
+                  <div className="col-span-4">
+                    <Label>eCommerce Inv No</Label>
+                  </div>
+                  <div className="col-span-8">
+                    <Input
+                      value={formData.contactPerson}
+                      onChange={(e) =>
+                        handleInputChange("contactPerson", e.target.value)
+                      }
+                    />
+                  </div>
+                </div>
               </div>
             </AccordionSection>
 
@@ -577,7 +628,9 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                 <div className="col-span-8">
                   <DateInput
                     value={formData.dueDate}
-                    onChange={(e) => handleInputChange("dueDate", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("dueDate", e.target.value)
+                    }
                   />
                 </div>
               </div>

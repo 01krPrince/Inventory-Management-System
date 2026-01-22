@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import {
-  FileText,
+  Package,
   Search,
   Edit3,
   Trash2,
@@ -10,38 +10,46 @@ import {
   ChevronRight,
   Loader2,
 } from "lucide-react";
-import CrudCustomer from "../../sales/customer/AddNewCustomer.tsx";
+import AddNewItem from "../../../../components/addItemMaster/AddNewItem";
 import {
-  getAllCustomers,
-  customerDeleteApi,
-} from "../../../../services/sales/customer/customerService.ts";
+  fetchItems,
+  deleteItemApi,
+} from "../../inventory/itemMaster/api/itemService";
 import {
   handlePrint,
   handleExport,
-} from "../../../../components/function/functions.tsx";
+} from "../../../../components/function/functions";
 
-interface Customer {
+interface Item {
   _id: string;
-  cust_name: string;
+  name: string;
   code: string;
-  gst_no?: string | null;
-  under_ledger?: any;
-  gst?: string | null;
+  brand?: any;
+  group?: any;
+  hsn_code?: string;
+  type?: string | null;
+  inactive?: boolean;
   registration_date?: string | null;
   [key: string]: any;
 }
 
 const ReportColumns = [
-  { key: "code", label: "Customer Code" },
-  { key: "cust_name", label: "Customer Name" },
-  { key: "gst_no", label: "GSTIN" },
-  { key: "gst", label: "GST Type" },
-  { key: "under_ledger", label: "Ledger Group" },
-  { key: "registration_date", label: "Reg. Date" },
+  { key: "code", label: "Item Code" },
+  { key: "name", label: "Item Name" },
+  { key: "brand", label: "Brand" },
+  { key: "group", label: "Group" },
+  { key: "hsn_code", label: "HSN" },
+  { key: "inactive", label: "Status" },
 ];
 
-const CustomerReport = () => {
-  const [customers, setCustomers] = useState<Customer[]>([]); // Typed fix
+const getDisplayValue = (value: any): string => {
+  if (!value) return "";
+  if (typeof value === "object") return value.name || value.item_name || "";
+  return String(value);
+};
+
+const ItemReport = () => {
+  const [items, setItems] = useState<Item[]>([]); // Typed fix
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -49,7 +57,7 @@ const CustomerReport = () => {
   const [isPrinting, setIsPrinting] = useState(false);
   const [prePrintRows, setPrePrintRows] = useState(10);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingRow, setEditingRow] = useState<Customer | null>(null);
+  const [editingRow, setEditingRow] = useState<Item | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -58,24 +66,24 @@ const CustomerReport = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const data = await getAllCustomers();
-      setCustomers(Array.isArray(data) ? (data as Customer[]) : []);
+      const data = await fetchItems();
+      setItems(Array.isArray(data) ? (data as Item[]) : []);
     } catch {
-      setCustomers([]);
+      setItems([]);
     } finally {
       setLoading(false);
     }
   };
 
   const filteredData = useMemo(() => {
-    return customers.filter((c) =>
-      [c.cust_name, c.code, c.gst_no].some((val) =>
+    return items.filter((i) =>
+      [i.name, i.code, i.hsn_code].some((val) =>
         String(val || "")
           .toLowerCase()
           .includes(searchTerm.toLowerCase()),
       ),
     );
-  }, [customers, searchTerm]);
+  }, [items, searchTerm]);
 
   const totalPages = Math.ceil(filteredData.length / rowsPerPage);
   const paginatedData = useMemo(() => {
@@ -86,7 +94,7 @@ const CustomerReport = () => {
   useEffect(() => {
     if (isPrinting && paginatedData.length === filteredData.length) {
       setTimeout(() => {
-        handlePrint("customer-report-table", "Customer Master Report");
+        handlePrint("item-report-table", "Item Inventory Report");
         setIsPrinting(false);
         setRowsPerPage(prePrintRows);
       }, 500);
@@ -115,9 +123,9 @@ const CustomerReport = () => {
 
   if (isFormOpen)
     return (
-      <CrudCustomer
+      <AddNewItem
         onClose={() => setIsFormOpen(false)}
-        initialData={editingRow}
+        initialData={editingRow ? (editingRow as any) : undefined}
         onSuccess={() => {
           fetchData();
           setIsFormOpen(false);
@@ -135,7 +143,7 @@ const CustomerReport = () => {
     <div className="bg-white shadow-sm border rounded-lg overflow-hidden flex flex-col h-full">
       <div className="p-3 border-b flex justify-between items-center">
         <h2 className="text-base font-bold flex items-center gap-2">
-          <FileText className="text-[#0c5888]" /> Customer Report
+          <Package className="text-[#0c5888]" /> Item Inventory
         </h2>
         <div className="flex gap-2">
           <input
@@ -153,7 +161,7 @@ const CustomerReport = () => {
           </button>
           <button
             onClick={() =>
-              handleExport(filteredData, ReportColumns, "Customer_Report")
+              handleExport(filteredData, ReportColumns, "Item_Report")
             }
             className="p-2 border rounded hover:bg-gray-50"
           >
@@ -164,15 +172,15 @@ const CustomerReport = () => {
       <div className="overflow-x-auto flex-1">
         <table
           className="w-full border-collapse text-left"
-          id="customer-report-table"
+          id="item-report-table"
         >
           <thead>
             <tr>
               <TableHeader label="Code" />
-              <TableHeader label="Name" />
-              <TableHeader label="GSTIN" />
-              <TableHeader label="Ledger" />
-              <TableHeader label="Date" />
+              <TableHeader label="Item Name" />
+              <TableHeader label="Brand" />
+              <TableHeader label="Group" />
+              <TableHeader label="Status" />
               <TableHeader label="Actions" className="no-print text-right" />
             </tr>
           </thead>
@@ -185,23 +193,19 @@ const CustomerReport = () => {
                 <td className="px-3 py-2 text-sm font-mono font-bold text-[#0c5888]">
                   {row.code || "---"}
                 </td>
-                <td className="px-3 py-2 text-sm font-medium">
-                  {row.cust_name}
+                <td className="px-3 py-2 text-sm font-medium">{row.name}</td>
+                <td className="px-3 py-2 text-sm text-gray-500">
+                  {getDisplayValue(row.brand)}
                 </td>
                 <td className="px-3 py-2 text-sm text-gray-500">
-                  {row.gst_no || "N/A"}
+                  {getDisplayValue(row.group)}
                 </td>
-                <td className="px-3 py-2 text-sm italic">
-                  {row.under_ledger?.name ||
-                    row.under_ledger ||
-                    "Sundry Debtors"}
-                </td>
-                <td className="px-3 py-2 text-sm">
-                  {row.registration_date
-                    ? new Date(row.registration_date).toLocaleDateString(
-                        "en-GB",
-                      )
-                    : "---"}
+                <td className="px-3 py-2 text-xs">
+                  <span
+                    className={`px-2 py-0.5 rounded-md font-bold text-[10px] border ${row.inactive ? "bg-green-50 text-green-700 border-green-100" : "bg-red-50 text-red-700 border-red-100"}`}
+                  >
+                    {row.inactive}
+                  </span>
                 </td>
                 <td className="px-3 py-2 text-right flex justify-end gap-1 no-print">
                   <button
@@ -216,7 +220,7 @@ const CustomerReport = () => {
                   <button
                     onClick={async () => {
                       if (window.confirm("Delete?")) {
-                        await customerDeleteApi(row._id);
+                        await deleteItemApi(row._id);
                         fetchData();
                       }
                     }}
@@ -231,44 +235,25 @@ const CustomerReport = () => {
         </table>
       </div>
       <div className="p-3 bg-gray-50 border-t flex justify-between items-center text-xs">
-        <span>Records: {filteredData.length}</span>
-        <div className="flex gap-2 items-center">
-          <button
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage((p) => p - 1)}
-            className="p-1 border rounded bg-white"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <div className="font-bold">
-            {currentPage} / {totalPages || 1}
-          </div>
-          <button
-            disabled={currentPage >= totalPages}
-            onClick={() => setCurrentPage((p) => p + 1)}
-            className="p-1 border rounded bg-white"
-          >
-            <ChevronRight size={16} />
-          </button>
-          <select
-            value={rowsPerPage}
-            onChange={(e) => {
-              setRowsPerPage(Number(e.target.value));
-              setCurrentPage(1);
-            }}
-            className="ml-2 border rounded px-1 py-1 font-bold"
-          >
-            {[10, 25, 50, 100].map((v) => (
-              <option key={v} value={v}>
-                Show {v}
-              </option>
-            ))}
-            <option value={filteredData.length}>Show All</option>
-          </select>
-        </div>
+        <span className="font-bold">Total: {filteredData.length}</span>
+        <select
+          value={rowsPerPage}
+          onChange={(e) => {
+            setRowsPerPage(Number(e.target.value));
+            setCurrentPage(1);
+          }}
+          className="ml-2 text-[11px] font-bold border rounded px-1 py-1 outline-none cursor-pointer"
+        >
+          {[10, 25, 50, 100].map((val) => (
+            <option key={val} value={val}>
+              Show {val}
+            </option>
+          ))}
+          <option value={filteredData.length}>Show All</option>
+        </select>
       </div>
     </div>
   );
 };
 
-export default CustomerReport;
+export default ItemReport;

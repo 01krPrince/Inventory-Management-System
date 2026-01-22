@@ -7,6 +7,9 @@ import {
   Lock,
   Layers,
   CheckCircle2,
+  ArrowUpDown,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import Dropdown from "../../../../components/Dropdown";
 import { LocationMaster } from "../../../../components/LocationMaster";
@@ -20,10 +23,15 @@ import {
 } from "../../../../services/header/openingTransaction/openingStockService";
 import { fetchItems } from "../../inventory/itemMaster/api/itemService";
 
+type SortConfig = {
+  key: string;
+  direction: "asc" | "desc" | null;
+};
+
 const OpeningStock: React.FC = () => {
   const [formData, setFormData] = useState({
     storeName: "",
-    storeId: "",
+    code: "",
     voucherDate: new Date().toISOString().split("T")[0],
     remarks: "Initial stock entry",
   });
@@ -34,6 +42,12 @@ const OpeningStock: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [tableSearch, setTableSearch] = useState("");
   const [isAlreadyCreated, setIsAlreadyCreated] = useState(false);
+
+  // --- Sorting State ---
+  const [sortConfig, setSortConfig] = useState<SortConfig>({
+    key: "",
+    direction: null,
+  });
 
   // --- Statistics Calculation ---
   const stats = useMemo(() => {
@@ -53,6 +67,52 @@ const OpeningStock: React.FC = () => {
     return { count: filtered.length, totalQty, totalValue };
   }, [tableItems, tableSearch]);
 
+  // --- Sorting Logic ---
+  const handleSort = (key: string) => {
+    let direction: "asc" | "desc" | null = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    } else if (sortConfig.key === key && sortConfig.direction === "desc") {
+      direction = null; // Reset sort
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedItems = useMemo(() => {
+    // First, apply Search Filter
+    let filtered = tableItems.filter(
+      (i) =>
+        i.item_name.toLowerCase().includes(tableSearch.toLowerCase()) ||
+        i.code.toLowerCase().includes(tableSearch.toLowerCase()),
+    );
+
+    // Second, apply Sorting
+    if (sortConfig.direction !== null) {
+      filtered.sort((a, b) => {
+        const aValue = a[sortConfig.key];
+        const bValue = b[sortConfig.key];
+
+        // Numeric Sorting
+        if (typeof aValue === "number" && typeof bValue === "number") {
+          return sortConfig.direction === "asc"
+            ? aValue - bValue
+            : bValue - aValue;
+        }
+
+        // String Sorting
+        const aStr = String(aValue || "").toLowerCase();
+        const bStr = String(bValue || "").toLowerCase();
+
+        if (sortConfig.direction === "asc") {
+          return aStr.localeCompare(bStr);
+        } else {
+          return bStr.localeCompare(aStr);
+        }
+      });
+    }
+    return filtered;
+  }, [tableItems, tableSearch, sortConfig]);
+
   // --- Data Loading ---
   const loadStoreData = async () => {
     try {
@@ -68,34 +128,31 @@ const OpeningStock: React.FC = () => {
   }, [isLocationMasterOpen]);
 
   const handleLoadItems = async () => {
-    if (!formData.storeId)
-      return alert("Please select a store location first.");
+    if (!formData.code) return alert("Please select a store location first.");
     setIsLoading(true);
     try {
-      const res = await openingStockService.getOpeningStockByStore(
-        formData.storeId,
-      );
+      const res = await openingStockService.getStockByStoreCode(formData.code);
 
-      if (res.success && res.items?.length > 0) {
+      if (res.success && res.data?.length > 0) {
         setIsAlreadyCreated(true);
         setTableItems(
-          res.items.map((apiItem: any) => ({
-            _id: apiItem.item?._id,
-            item_name: apiItem.item?.name || apiItem.description,
+          res.data.map((apiItem: any) => ({
+            _id: apiItem._id,
+            item_name: apiItem.description,
             sub_item: "NA",
-            code: apiItem.itemcode || apiItem.item?.code,
-            barcode: apiItem.item?.barcode || "NA",
-            unit: apiItem.item?.stock_unit?.name || "Unit",
+            code: apiItem.itemcode,
+            barcode: apiItem.barcode || "NA",
+            unit: apiItem.unit || "Unit",
             batch_no: apiItem.batchNo || "NA",
             pack_qty: apiItem.packQty || 1,
             quantity: apiItem.quantity || 0,
             rate: apiItem.rate || 0,
             amount: apiItem.amount || 0,
-            category_name: apiItem.item?.category?.name || "General",
+            category_name: "General",
             mrp: apiItem.mrp || 0,
-            sale_rate: apiItem.sale_rate || 0,
-            wholesale_rate: "NA",
-            dealer_rate: "NA",
+            sale_rate: apiItem.sales_rate || 0,
+            wholesale_rate: apiItem.wholesale_rate || 0,
+            dealer_rate: apiItem.dealer_rate || 0,
           })),
         );
       } else {
@@ -117,19 +174,18 @@ const OpeningStock: React.FC = () => {
             category_name: item.category?.name || "General",
             mrp: item.mrp || 0,
             sale_rate: item.sales_rate || 0,
-            wholesale_rate: item.wholesale_rate || "NA",
-            dealer_rate: item.dealer_rate || "NA",
+            wholesale_rate: item.wholesale_rate || 0,
+            dealer_rate: item.dealer_rate || 0,
           })),
         );
       }
     } catch (e) {
-      alert("Failed to fetch store data.");
+      alert("Error loading records.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // --- Handlers ---
   const handleRowChange = (code: string, field: string, value: any) => {
     if (isAlreadyCreated) return;
     setTableItems((prev) =>
@@ -150,10 +206,10 @@ const OpeningStock: React.FC = () => {
   const handleSave = async () => {
     const activeItems = tableItems.filter((i) => Number(i.quantity) > 0);
     if (activeItems.length === 0) return alert("No items to save.");
-    if (!formData.storeId) return alert("Store information missing.");
+    if (!formData.code) return alert("Store information missing.");
 
     const payload: OpeningStockPayload = {
-      store: formData.storeId,
+      store: formData.code,
       voucherDate: formData.voucherDate,
       remarks: formData.remarks,
       items: activeItems.map((i) => ({
@@ -175,37 +231,40 @@ const OpeningStock: React.FC = () => {
     try {
       const res = await openingStockService.createOpeningStock(payload);
       if (res.success || res._id) {
-        alert("Success! Opening stock has been recorded.");
+        alert("Opening stock saved successfully.");
         await handleLoadItems();
       }
     } catch (error: any) {
-      alert("Server Error while saving stock.");
+      alert("Failed to save stock.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const filteredItems = tableItems.filter(
-    (i) =>
-      i.item_name.toLowerCase().includes(tableSearch.toLowerCase()) ||
-      i.code.toLowerCase().includes(tableSearch.toLowerCase()),
-  );
+  // Helper to render sort icon
+  const SortIcon = ({ columnKey }: { columnKey: string }) => {
+    if (sortConfig.key !== columnKey)
+      return (
+        <ArrowUpDown size={12} className="opacity-30 group-hover:opacity-100" />
+      );
+    if (sortConfig.direction === "asc")
+      return <ChevronUp size={14} className="text-blue-500" />;
+    if (sortConfig.direction === "desc")
+      return <ChevronDown size={14} className="text-blue-500" />;
+    return <ArrowUpDown size={12} className="opacity-30" />;
+  };
 
   return (
     <div className="w-full min-h-screen bg-[#f8fafc] flex flex-col font-sans relative">
+      {/* Header & Filter Bar */}
       <div className="bg-[#0f3c63] shadow-xl sticky top-0 z-20">
-        {/* Header Content */}
         <div className="px-4 md:px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-white/10 gap-4">
           <div className="flex flex-wrap items-center gap-4 md:gap-6">
             <h1 className="text-white font-black text-xl md:text-2xl tracking-tighter uppercase">
               Opening Stock
             </h1>
             <div
-              className={`px-4 py-1.5 rounded-full text-[10px] font-black flex items-center gap-2 shadow-inner ${
-                isAlreadyCreated
-                  ? "bg-red-500/20 text-red-300 border border-red-500/50"
-                  : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/50"
-              }`}
+              className={`px-4 py-1.5 rounded-full text-[10px] font-black flex items-center gap-2 shadow-inner ${isAlreadyCreated ? "bg-red-500/20 text-red-300 border border-red-500/50" : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/50"}`}
             >
               {isAlreadyCreated ? (
                 <Lock size={12} />
@@ -219,7 +278,6 @@ const OpeningStock: React.FC = () => {
           </div>
 
           <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4">
-            {/* Stats */}
             <div className="flex items-center justify-between md:justify-start gap-4 md:gap-10 bg-black/30 px-6 py-2.5 rounded-2xl border border-white/5 shadow-2xl overflow-x-auto">
               <div className="text-center border-r border-white/10 pr-4 md:pr-10">
                 <p className="text-[9px] text-sky-300 font-bold uppercase tracking-[0.2em] mb-1">
@@ -247,7 +305,6 @@ const OpeningStock: React.FC = () => {
               </div>
             </div>
 
-            {/* Save Button */}
             {!isAlreadyCreated && tableItems.length > 0 && (
               <button
                 onClick={handleSave}
@@ -265,7 +322,6 @@ const OpeningStock: React.FC = () => {
           </div>
         </div>
 
-        {/* Filter Bar */}
         <div className="px-4 md:px-6 py-3 bg-[#164e7d] flex flex-col lg:flex-row items-stretch lg:items-center gap-4">
           <div className="flex items-center gap-2 w-full lg:w-auto">
             <div className="w-full lg:w-80">
@@ -280,7 +336,7 @@ const OpeningStock: React.FC = () => {
                   setFormData((p) => ({
                     ...p,
                     storeName: item?.name || "",
-                    storeId: (item as any)?._id || "",
+                    code: (item as any)?.code || "",
                   }))
                 }
                 placeholder="Select Warehouse / Store"
@@ -309,7 +365,7 @@ const OpeningStock: React.FC = () => {
           </div>
           <button
             onClick={handleLoadItems}
-            disabled={isLoading || !formData.storeId}
+            disabled={isLoading || !formData.code}
             className="bg-white text-[#0f3c63] px-8 py-2 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-sky-50 transition-all disabled:opacity-50 w-full lg:w-auto"
           >
             {isLoading ? "Fetching..." : "Fetch Records"}
@@ -328,58 +384,112 @@ const OpeningStock: React.FC = () => {
                     <th className="px-4 py-4 w-12 text-center whitespace-nowrap">
                       #
                     </th>
-                    {/* Increased Item Name Width */}
-                    <th className="px-4 py-4 min-w-[300px] whitespace-nowrap">
-                      Item Name
-                    </th>
-                    <th className="px-4 py-4 w-24 whitespace-nowrap">
-                      Sub Item
-                    </th>
-                    <th className="px-4 py-4 w-24 whitespace-nowrap">Code</th>
-                    <th className="px-4 py-4 w-32 whitespace-nowrap">
-                      Barcode
-                    </th>
-                    <th className="px-4 py-4 w-32 whitespace-nowrap">Unit</th>
-                    <th className="px-4 py-4 w-32 whitespace-nowrap">
-                      Batch No.
-                    </th>
-                    <th className="px-4 py-4 w-24 whitespace-nowrap">
-                      Pack Qty
-                    </th>
-                    {/* Fixed Quantity Width with min-w */}
-                    <th className="px-4 py-4 min-w-[120px] text-center whitespace-nowrap">
-                      Quantity
-                    </th>
-                    {/* Fixed Rate Width with min-w */}
-                    <th className="px-4 py-4 min-w-[120px] text-right whitespace-nowrap">
-                      Rate
-                    </th>
-                    <th className="px-4 py-4 min-w-[140px] text-right bg-slate-100/50 whitespace-nowrap">
-                      Amount
-                    </th>
-                    <th className="px-4 py-4 w-28 text-right whitespace-nowrap">
-                      Sales Rate
-                    </th>
-                    <th className="px-4 py-4 w-28 text-right whitespace-nowrap">
-                      Wholesale
-                    </th>
-                    <th className="px-4 py-4 w-28 text-right whitespace-nowrap">
-                      Dealer Rate
-                    </th>
-                    <th className="px-4 py-4 w-28 text-right whitespace-nowrap">
-                      MRP
-                    </th>
+                    {[
+                      {
+                        label: "Item Name",
+                        key: "item_name",
+                        width: "min-w-[300px]",
+                        align: "text-left",
+                      },
+                      {
+                        label: "Sub Item",
+                        key: "sub_item",
+                        width: "w-24",
+                        align: "text-left",
+                      },
+                      {
+                        label: "Code",
+                        key: "code",
+                        width: "w-24",
+                        align: "text-left",
+                      },
+                      {
+                        label: "Barcode",
+                        key: "barcode",
+                        width: "w-32",
+                        align: "text-left",
+                      },
+                      {
+                        label: "Unit",
+                        key: "unit",
+                        width: "w-32",
+                        align: "text-left",
+                      },
+                      {
+                        label: "Batch No.",
+                        key: "batch_no",
+                        width: "w-32",
+                        align: "text-left",
+                      },
+                      {
+                        label: "Pack Qty",
+                        key: "pack_qty",
+                        width: "w-24",
+                        align: "text-center",
+                      },
+                      {
+                        label: "Quantity",
+                        key: "quantity",
+                        width: "min-w-[120px]",
+                        align: "text-center",
+                      },
+                      {
+                        label: "Rate",
+                        key: "rate",
+                        width: "min-w-[120px]",
+                        align: "text-right",
+                      },
+                      {
+                        label: "Amount",
+                        key: "amount",
+                        width: "min-w-[140px]",
+                        align: "text-right",
+                      },
+                      {
+                        label: "Sales Rate",
+                        key: "sale_rate",
+                        width: "w-28",
+                        align: "text-right",
+                      },
+                      {
+                        label: "Wholesale",
+                        key: "wholesale_rate",
+                        width: "w-28",
+                        align: "text-right",
+                      },
+                      {
+                        label: "Dealer Rate",
+                        key: "dealer_rate",
+                        width: "w-28",
+                        align: "text-right",
+                      },
+                      {
+                        label: "MRP",
+                        key: "mrp",
+                        width: "w-28",
+                        align: "text-right",
+                      },
+                    ].map((col) => (
+                      <th
+                        key={col.key}
+                        onClick={() => handleSort(col.key)}
+                        className={`px-4 py-4 ${col.width} ${col.align} whitespace-nowrap cursor-pointer hover:bg-slate-100 group transition-colors select-none`}
+                      >
+                        <div
+                          className={`flex items-center gap-2 ${col.align === "text-right" ? "justify-end" : col.align === "text-center" ? "justify-center" : "justify-start"}`}
+                        >
+                          {col.label}
+                          <SortIcon columnKey={col.key} />
+                        </div>
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {filteredItems.map((item, idx) => (
+                  {sortedItems.map((item, idx) => (
                     <tr
                       key={item.code}
-                      className={`group transition-all ${
-                        isAlreadyCreated
-                          ? "bg-gray-50/40"
-                          : "hover:bg-blue-50/50"
-                      }`}
+                      className={`group transition-all ${isAlreadyCreated ? "bg-gray-50/40" : "hover:bg-blue-50/50"}`}
                     >
                       <td className="px-4 py-2 text-center text-gray-300 text-[10px] font-bold italic whitespace-nowrap">
                         {idx + 1}
@@ -387,9 +497,6 @@ const OpeningStock: React.FC = () => {
                       <td className="px-4 py-2">
                         <div className="font-bold text-gray-800 text-sm leading-tight uppercase min-w-[250px]">
                           {item.item_name}
-                        </div>
-                        <div className="text-[10px] text-gray-400 font-bold mt-1 tracking-tighter">
-                          CAT: {item.category_name}
                         </div>
                       </td>
                       <td className="px-4 py-2 text-xs font-medium text-gray-500 whitespace-nowrap">
@@ -401,20 +508,14 @@ const OpeningStock: React.FC = () => {
                       <td className="px-4 py-2 text-xs text-gray-500 whitespace-nowrap">
                         {item.barcode}
                       </td>
-                      {/* Unit Column - Added max-w and truncate */}
                       <td className="px-4 py-2 text-xs font-bold text-gray-500 whitespace-nowrap">
-                        <div
-                          className="max-w-[120px] truncate"
-                          title={item.unit}
-                        >
-                          <span className="bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
-                            {item.unit}
-                          </span>
-                        </div>
+                        <span className="bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
+                          {item.unit}
+                        </span>
                       </td>
                       <td className="px-4 py-2 whitespace-nowrap">
                         <input
-                          className="w-full bg-transparent border-b border-transparent group-hover:border-gray-300 py-1 text-xs font-medium outline-none focus:border-blue-400 disabled:text-gray-400"
+                          className="w-full bg-transparent border-b border-transparent py-1 text-xs font-medium outline-none"
                           value={item.batch_no}
                           disabled={isAlreadyCreated}
                           onChange={(e) =>
@@ -429,19 +530,10 @@ const OpeningStock: React.FC = () => {
                       <td className="px-4 py-2 text-xs text-center text-gray-600 whitespace-nowrap">
                         {item.pack_qty}
                       </td>
-                      {/* Quantity Input - Guaranteed Width */}
                       <td className="px-4 py-2 whitespace-nowrap">
                         <input
                           type="number"
-                          className={`w-full text-center py-1.5 rounded-lg text-sm font-black border outline-none transition-all ${
-                            isAlreadyCreated
-                              ? "bg-transparent border-transparent"
-                              : "border-gray-200 bg-white focus:border-blue-500"
-                          } ${
-                            Number(item.quantity) > 0 && !isAlreadyCreated
-                              ? "text-blue-600 border-blue-400 bg-blue-50"
-                              : "text-gray-600"
-                          }`}
+                          className={`w-full text-center py-1.5 rounded-lg text-sm font-black border outline-none ${isAlreadyCreated ? "bg-transparent border-transparent" : "border-gray-200 bg-white"}`}
                           value={item.quantity}
                           disabled={isAlreadyCreated}
                           onChange={(e) =>
@@ -453,11 +545,10 @@ const OpeningStock: React.FC = () => {
                           }
                         />
                       </td>
-                      {/* Rate Input - Guaranteed Width */}
                       <td className="px-4 py-2 whitespace-nowrap">
                         <input
                           type="number"
-                          className="w-full text-right bg-transparent border-b border-transparent group-hover:border-gray-300 py-1 text-xs font-bold outline-none focus:border-blue-400 disabled:text-gray-400"
+                          className="w-full text-right bg-transparent border-b border-transparent py-1 text-xs font-bold outline-none"
                           value={item.rate}
                           disabled={isAlreadyCreated}
                           onChange={(e) =>
@@ -507,7 +598,7 @@ const OpeningStock: React.FC = () => {
 
       {isLocationMasterOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className=" rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+          <div className="rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
             <LocationMaster
               onClose={() => setIsLocationMasterOpen(false)}
               onSuccess={() => {

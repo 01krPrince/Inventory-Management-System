@@ -165,6 +165,11 @@ const INITIAL_DATA: ReportSection[] = [
     icon: <Package size={18} />,
     items: [
       {
+        label: "Available Items",
+        type: "folder",
+        path: "/report/available-item",
+      },
+      {
         label: "Primary Stock Reports",
         type: "folder",
         path: "/report/primary-stock",
@@ -206,6 +211,7 @@ const INITIAL_DATA: ReportSection[] = [
     title: "GST/VAT Reports",
     icon: <FileText size={18} />,
     items: [
+      { label: "GST Master", type: "folder", path: "/report/gst-master" },
       { label: "GST Returns", type: "folder", path: "/report/gst-returns" },
       {
         label: "GSTR 2A/2B Reconciliation",

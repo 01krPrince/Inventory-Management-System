@@ -27,15 +27,27 @@ export const openingStockService = {
     return response.data;
   },
 
-  getOpeningStockByStore: async (storeId: string) => {
+  getOpeningStockByStore: async (code: string) => {
     try {
-      const response = await api.get(`/openingstock/opening-stock/store/${storeId}`);
-      return response.data; 
+      const response = await api.get(`/openingstock/opening-stock/store/${code}`);
+      return response.data;
     } catch (error: any) {
       if (error.response && error.response.status === 404) {
         return { success: false, message: "No opening stock found", items: [] };
       }
       throw error;
+    }
+  },
+
+  getStockByStoreCode: async (code: string) => {
+    try {
+      const response = await api.get(`/openingstock/opening-stock/by-store`, {
+        params: { store: code }
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error("Error fetching stock by store code:", error);
+      return { success: false, data: [] };
     }
   },
 

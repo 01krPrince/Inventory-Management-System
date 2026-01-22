@@ -194,7 +194,6 @@ export default function UnderGroup({
   onSave,
   zIndex = 50, // Default to 50 if not provided (Base Layer)
 }: UnderGroupProps) {
-  // Logic: Calculate Z-Index for nested components
   const overlayZIndex = zIndex + 10;
 
   const [showStockUnit, setShowStockUnit] = useState(false);

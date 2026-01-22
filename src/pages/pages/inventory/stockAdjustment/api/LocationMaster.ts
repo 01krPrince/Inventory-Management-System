@@ -49,7 +49,7 @@ export interface LocationMasterInput {
   pinCode: string;
   phone: string;
   email: string;
-  code?: string; // Optional on input, depends on if backend auto-generates
+  code?: string;
 }
 
 // API Response Wrappers

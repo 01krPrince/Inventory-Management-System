@@ -51,6 +51,8 @@ import PlaceholderPage from "../pages/pages/report/PlaceholderPage";
 import CustomerReport from "../pages/pages/report/reportPages/CustomerReport.tsx";
 import VendorReport from "../pages/pages/report/reportPages/VendorReport.tsx";
 import PurchaseBillReport from "../pages/pages/report/reportPages/PurchaseBillReport.tsx";
+import ItemReport from "../pages/pages/report/reportPages/ItemReport.tsx";
+import GstMasterReport from "../pages/pages/report/reportPages/GstMasterReport.tsx";
 
 const useSidebar = () => ({
   isExpanded: false,
@@ -116,6 +118,7 @@ const ReportPageRoutes: { [key: string]: React.FC } = {
   ),
 
   // Inventory
+  "/report/available-item": ItemReport,
   "/report/stock-adjustment": () => (
     <PlaceholderPage title="Stock Adjustment Report" />
   ),
@@ -133,6 +136,7 @@ const ReportPageRoutes: { [key: string]: React.FC } = {
   ),
 
   // GST
+  "/report/gst-master": GstMasterReport,
   "/report/gst-returns": () => <PlaceholderPage title="GST Returns" />,
   "/report/gstr-reco": () => (
     <PlaceholderPage title="GSTR 2A/2B Reconciliation" />

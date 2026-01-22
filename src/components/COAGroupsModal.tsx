@@ -164,38 +164,6 @@ const COAGroupsModal = ({
             </div>
           </div>
 
-          {/* Under Group Field */}
-          {/* <div className="grid grid-cols-12 gap-4 items-center">
-            <label className="col-span-3 text-sm text-gray-700">
-              Under Group
-            </label>
-            <div className="col-span-9 flex gap-1">
-              <div className="relative flex-1">
-                <select
-                  value={formData.underGroup}
-                  onChange={(e) =>
-                    setFormData({ ...formData, underGroup: e.target.value })
-                  }
-                  className="w-full border border-gray-300 rounded-sm px-3 py-1.5 text-sm text-gray-800 focus:outline-none focus:border-[#0f4c81] appearance-none bg-white"
-                >
-                  <option>Turnover (Goods & Services)</option>
-                  <option>Direct Incomes</option>
-                  <option>Indirect Incomes</option>
-                  <option>Liabilities</option>
-                  <option>Assets</option>
-                </select>
-                <ChevronDown
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
-                  size={14}
-                />
-              </div>
-              <button className="bg-[#0f4c81] text-white p-1.5 rounded-sm hover:bg-[#0a355c] transition-colors">
-                <EditIcon size={14} />
-              </button>
-            </div>
-          </div> */}
-
-          {/* Nature Field */}
           <div className="grid grid-cols-12 gap-4 items-center">
             <label className="col-span-3 text-sm text-gray-700">Nature</label>
             <div className="col-span-9 relative">
@@ -206,12 +174,9 @@ const COAGroupsModal = ({
                 }
                 className="w-full border border-gray-300 rounded-sm px-3 py-1.5 text-sm text-gray-800 focus:outline-none focus:border-[#0f4c81] appearance-none bg-white"
               >
-                <option>Sales</option>
-                <option>Purchases</option>
-                <option>Expenses</option>
-                <option>Income</option>
-                <option>Liabilities</option>
-                <option>Assets</option>
+                <option>CurrentAsset</option>
+                <option>AccountsReceivable</option>
+                <option>Cashbank</option>
               </select>
               <ChevronDown
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
