@@ -108,18 +108,18 @@ const InvoiceFooter = forwardRef<InvoiceFooterRef, InvoiceFooterProps>(
       setShowChartOfAccounts(false);
     };
 
-    const isAdvance = amount > 0;
-    const isDue = amount < 0;
-    const statusText = isAdvance
-      ? "Advance Paid"
-      : isDue
-        ? "Due Amount"
-        : "Fully Paid";
-    const statusColor = isAdvance
-      ? "text-green-600 bg-green-100"
-      : isDue
-        ? "text-red-600 bg-red-100"
-        : "text-gray-600 bg-gray-100";
+    // const isAdvance = amount > 0;
+    // const isDue = amount < 0;
+    // const statusText = isAdvance
+    //   ? "Advance Paid"
+    //   : isDue
+    //     ? "Due Amount"
+    //     : "Fully Paid";
+    // const statusColor = isAdvance
+    //   ? "text-green-600 bg-green-100"
+    //   : isDue
+    //     ? "text-red-600 bg-red-100"
+    //     : "text-gray-600 bg-gray-100";
 
     return (
       <div
@@ -218,7 +218,7 @@ const InvoiceFooter = forwardRef<InvoiceFooterRef, InvoiceFooterProps>(
           <div className="w-full lg:w-[400px] flex flex-col gap-2">
             {/* ... existing TotalRow components remain same ... */}
             <TotalRow label="Item Value" value="0.00" />
-            <div className="grid grid-cols-[1fr_160px] gap-2 items-center mt-1">
+            {/* <div className="grid grid-cols-[1fr_160px] gap-2 items-center mt-1">
               <label className="text-xs font-bold text-gray-800">
                 Payment Status
               </label>
@@ -231,7 +231,7 @@ const InvoiceFooter = forwardRef<InvoiceFooterRef, InvoiceFooterProps>(
                   {isDue && "-"} ₹{Math.abs(amount).toFixed(2)}
                 </span>
               </div>
-            </div>
+            </div> */}
 
             <div className="flex justify-end mt-2">
               <button

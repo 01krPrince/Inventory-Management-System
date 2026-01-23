@@ -1,7 +1,5 @@
 import api from "../api";
 
-// --- Strict Interface based on your JSON payload ---
-
 export interface PurchaseBillItem {
   itemcode: string;
   quantity: number;
@@ -82,8 +80,6 @@ export interface PurchaseBillReportResponse {
   summary: PurchaseBillReportSummary;
   data: PurchaseBillReportItem[];
 }
-
-// --- Service Functions ---
 
 const createPurchaseBill = async (data: PurchaseBillPayload) => {
   try {

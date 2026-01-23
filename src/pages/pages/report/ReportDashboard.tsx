@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   PieChart,
   FileText,
@@ -13,16 +13,11 @@ import {
   FileSearch,
   PlusCircle,
   Folder,
-  ChevronRight,
   Search,
   Star,
-  ChevronDown,
-  ChevronUp,
-  Calendar,
   Filter,
   GripVertical,
 } from "lucide-react";
-// Import the Tab Context hook
 import { useTabs } from "../../../context/TabContext";
 
 interface ReportItem {
@@ -40,19 +35,18 @@ interface ReportSection {
   isFavourite?: boolean;
 }
 
-// --- Initial Data with Paths Mapped to AppLayout ---
 const INITIAL_DATA: ReportSection[] = [
   {
     id: "fav",
     title: "Favourite Report",
-    icon: <Star size={18} className="text-yellow-400 fill-current" />,
+    icon: <Star size={18} className="text-white fill-current" />,
     isFavourite: true,
     items: [],
   },
   {
     id: "mis",
     title: "MIS Reports",
-    icon: <PieChart size={18} />,
+    icon: <PieChart size={18} className="text-white" />,
     items: [
       {
         label: "Financial Statements",
@@ -84,12 +78,17 @@ const INITIAL_DATA: ReportSection[] = [
         type: "folder",
         path: "/report/enterprise-analysis",
       },
+      {
+        label: "Buisness Insight",
+        type: "folder",
+        path: "/report/business-insight",
+      },
     ],
   },
   {
     id: "finance",
     title: "Finance",
-    icon: <BarChart3 size={18} />,
+    icon: <BarChart3 size={18} className="text-white" />,
     items: [
       { label: "Primary Books", type: "folder", path: "/report/primary-books" },
       { label: "Ledgers", type: "folder", path: "/report/ledgers" },
@@ -104,7 +103,7 @@ const INITIAL_DATA: ReportSection[] = [
         path: "/report/attribute-reports",
       },
       {
-        label: "Loan-Bank Interest",
+        label: "Loan-Bank Interest, A/C Confirmations, Investments",
         type: "folder",
         path: "/report/loan-bank-interest",
       },
@@ -113,23 +112,31 @@ const INITIAL_DATA: ReportSection[] = [
   {
     id: "sales",
     title: "Customer/Sales",
-    icon: <Users size={18} />,
+    icon: <Users size={18} className="text-white" />,
     items: [
       { label: "Customers Report", type: "folder", path: "/report/customers" },
       { label: "Sales Report", type: "folder", path: "/report/sales-report" },
-      { label: "Sales Ledgers", type: "folder", path: "/report/sales-ledgers" },
       {
-        label: "Sales Bills O/S",
+        label: "Ledgers & Trials",
         type: "folder",
-        path: "/report/sales-bills-os",
+        path: "/report/ledgers-trials",
       },
-      { label: "Sales Linkage", type: "folder", path: "/report/sales-linkage" },
+      {
+        label: "Bills O/S and Ageing",
+        type: "folder",
+        path: "/report/bills-os-ageing",
+      },
+      {
+        label: "Linkage reports",
+        type: "folder",
+        path: "/report/linkage-reports",
+      },
     ],
   },
   {
     id: "purchase",
     title: "Vendor/Purchase",
-    icon: <ShoppingCart size={18} />,
+    icon: <ShoppingCart size={18} className="text-white" />,
     items: [
       { label: "Vendors Report", type: "folder", path: "/report/vendors" },
       {
@@ -143,31 +150,31 @@ const INITIAL_DATA: ReportSection[] = [
         path: "/report/purchase-registers",
       },
       {
-        label: "Purchase Trial/Ledgers",
+        label: "Trial/Ledgers",
         type: "folder",
-        path: "/report/purchase-trial-ledgers",
+        path: "/report/trial-ledgers",
       },
       {
-        label: "Vendor Bills O/S",
+        label: "Vendor Bills O/S and Ageing",
         type: "folder",
-        path: "/report/vendor-bills-os",
+        path: "/report/vendor-bills-os-ageing",
       },
       {
-        label: "Purchase Linkage",
+        label: "Linkage Reports",
         type: "folder",
-        path: "/report/purchase-linkage",
+        path: "/report/linkage-reports",
       },
     ],
   },
   {
     id: "inventory",
     title: "Inventory Reports",
-    icon: <Package size={18} />,
+    icon: <Package size={18} className="text-white" />,
     items: [
       {
-        label: "Available Items",
+        label: "Item Master",
         type: "folder",
-        path: "/report/available-item",
+        path: "/report/item-master",
       },
       {
         label: "Primary Stock Reports",
@@ -185,31 +192,41 @@ const INITIAL_DATA: ReportSection[] = [
         path: "/report/store-transfer",
       },
       {
-        label: "Job Work Reports",
+        label: "JobCard/JobWork Inward and outward",
         type: "folder",
-        path: "/report/job-work-reports",
+        path: "/report/job-card-work-inward-outward",
       },
       {
-        label: "Serial/IMEI Reports",
+        label: " Serial/IMEI/Tag Based Reports",
         type: "folder",
-        path: "/report/serial-imei",
+        path: "/report/serial-imei-tag",
       },
       {
-        label: "Barcode Reports",
+        label: "Attributes/Barcode Reports",
         type: "folder",
-        path: "/report/barcode-reports",
+        path: "/report/attribute-barcode-reports",
       },
       {
         label: "Pharma/Batch Reports",
         type: "folder",
         path: "/report/pharma-batch",
       },
+      {
+        label: "Imention/Jwellery/Rental",
+        type: "folder",
+        path: "/report/imitation-jewellery-rental",
+      },
+      {
+        label: "Matrial Requisition Planning",
+        type: "folder",
+        path: "/report/material-requisition-planning",
+      },
     ],
   },
   {
     id: "gst",
     title: "GST/VAT Reports",
-    icon: <FileText size={18} />,
+    icon: <FileText size={18} className="text-white" />,
     items: [
       { label: "GST Master", type: "folder", path: "/report/gst-master" },
       { label: "GST Returns", type: "folder", path: "/report/gst-returns" },
@@ -229,12 +246,27 @@ const INITIAL_DATA: ReportSection[] = [
         type: "link",
         path: "/report/tax-register-purchase",
       },
+      {
+        label: "Tax Summary",
+        type: "link",
+        path: "/report/tax-summary",
+      },
+      {
+        label: "GST ITC Reversal Register",
+        type: "link",
+        path: "/report/gst-itc-reversal-register",
+      },
+      {
+        label: "HSN Tax Rate Vs Invoice Tax Rate Mismatch",
+        type: "link",
+        path: "/report/hsn-tax-rate-vs-invoice-tax-rate-mismatch",
+      },
     ],
   },
   {
     id: "employee",
     title: "Employee",
-    icon: <Briefcase size={18} />,
+    icon: <Briefcase size={18} className="text-white" />,
     items: [
       {
         label: "Employee Register",
@@ -247,9 +279,9 @@ const INITIAL_DATA: ReportSection[] = [
         path: "/report/attendance-leave",
       },
       {
-        label: "Salary/TimeSheet",
+        label: "Salary/TimeSheet/Expence Claim",
         type: "folder",
-        path: "/report/salary-timesheet",
+        path: "/report/salary-timesheet-expense-claim",
       },
       { label: "ESI/PF", type: "folder", path: "/report/esi-pf" },
     ],
@@ -257,7 +289,7 @@ const INITIAL_DATA: ReportSection[] = [
   {
     id: "pos",
     title: "Point of Sales",
-    icon: <CreditCard size={18} />,
+    icon: <CreditCard size={18} className="text-white" />,
     items: [
       {
         label: "POS Customer List",
@@ -284,12 +316,77 @@ const INITIAL_DATA: ReportSection[] = [
         type: "link",
         path: "/report/pos-tender-wise",
       },
+      {
+        label: "POS Sales Tender Wise With Item",
+        type: "link",
+        path: "/report/pos-tender-wise-with-item",
+      },
+      {
+        label: "Tender Settelment Report",
+        type: "link",
+        path: "/report/tender-settlement-report",
+      },
+      {
+        label: "POS Day Wise Tender Summary",
+        type: "link",
+        path: "/report/pos-daywise-tender-summary",
+      },
+      {
+        label: "Tender wise summary",
+        type: "link",
+        path: "/report/tender-wise-summary",
+      },
+      {
+        label: "POS Sales Analysis",
+        type: "link",
+        path: "/report/pos-sales-analysis",
+      },
+      {
+        label: "POS Party Trial",
+        type: "link",
+        path: "/report/pos-party-trial",
+      },
+      {
+        label: "POS Party Ledger",
+        type: "link",
+        path: "/report/pos-party-ledger",
+      },
+      {
+        label: "POS Party Ledger With Item detail",
+        type: "link",
+        path: "/report/pos-party-ledger-with-item-detail",
+      },
+      {
+        label: "POS Day Start/Close Register",
+        type: "link",
+        path: "/report/pos-day-start-close-register",
+      },
+      {
+        label: "Loyality Point Ledger",
+        type: "link",
+        path: "/report/loyalty-point-ledger",
+      },
+      {
+        label: "Loyality Point Summary",
+        type: "link",
+        path: "/report/loyalty-point-summary",
+      },
+      {
+        label: "POS Order v/s Invoice",
+        type: "link",
+        path: "/report/pos-order-vs-invoice",
+      },
+      {
+        label: "POS Customer Reciept/Payment Register",
+        type: "link",
+        path: "/report/pos-customer-receipt-payment-register",
+      },
     ],
   },
   {
     id: "production",
     title: "Production",
-    icon: <Settings size={18} />,
+    icon: <Settings size={18} className="text-white" />,
     items: [
       {
         label: "Production Register",
@@ -302,26 +399,56 @@ const INITIAL_DATA: ReportSection[] = [
         path: "/report/bom-register",
       },
       {
-        label: "Production De-Assembling",
+        label: "Production De-Assembling Register",
         type: "link",
         path: "/report/de-assembling",
       },
       {
-        label: "Material Issue Request",
+        label: "Material Issue Request Register",
         type: "link",
         path: "/report/issue-request",
       },
       {
-        label: "Material Issue Summary",
+        label: "Material Issue Request Summary",
         type: "link",
         path: "/report/issue-summary",
+      },
+      {
+        label: "Material Issue To Production",
+        type: "link",
+        path: "/report/material-issue-to-production",
+      },
+      {
+        label: "Material Received From Production",
+        type: "link",
+        path: "/report/material-received-from-production",
+      },
+      {
+        label: "Issue To Production Floor v/s Reciept - Linkage Based",
+        type: "link",
+        path: "/report/issue-to-production-floor-vs-receipt-linkage-based",
+      },
+      {
+        label: "Issue To Production Floor v/s Reciept - Voucher Based",
+        type: "link",
+        path: "/report/issue-to-production-floor-vs-receipt-voucher-based",
+      },
+      {
+        label: "WIP Stock Balance",
+        type: "link",
+        path: "/report/wip-stock-balance",
+      },
+      {
+        label: "Cashew Production",
+        type: "link",
+        path: "/report/cashew-production",
       },
     ],
   },
   {
     id: "assets",
     title: "Assets",
-    icon: <Box size={18} />,
+    icon: <Box size={18} className="text-white" />,
     items: [
       { label: "Asset Register", type: "link", path: "/report/asset-register" },
       {
@@ -330,7 +457,7 @@ const INITIAL_DATA: ReportSection[] = [
         path: "/report/asset-transfer",
       },
       {
-        label: "Asset Depreciation",
+        label: "Asset Depreciation Register",
         type: "link",
         path: "/report/asset-depreciation",
       },
@@ -340,7 +467,7 @@ const INITIAL_DATA: ReportSection[] = [
   {
     id: "audit",
     title: "Audit / Logs",
-    icon: <FileSearch size={18} />,
+    icon: <FileSearch size={18} className="text-white" />,
     items: [
       {
         label: "Price List Change Track",
@@ -358,43 +485,124 @@ const INITIAL_DATA: ReportSection[] = [
         path: "/report/mismatch-report",
       },
       { label: "User Geo Tracking", type: "link", path: "/report/user-geo" },
-      { label: "Logs", type: "folder", path: "/report/logs" },
+      {
+        label: "Payment Link Status",
+        type: "folder",
+        path: "/report/payment-link-status",
+      },
+      {
+        label: "Document Change Track",
+        type: "folder",
+        path: "/report/document-change-track",
+      },
+      {
+        label: "Attachment Register",
+        type: "folder",
+        path: "/report/attachment-register",
+      },
+      {
+        label: "Zero Sales Analyses",
+        type: "folder",
+        path: "/report/zero-sales-analyses",
+      },
+      {
+        label: "Authorization Status",
+        type: "folder",
+        path: "/report/authorization-status",
+      },
+      {
+        label: "Force Close Log",
+        type: "folder",
+        path: "/report/force-close-log",
+      },
+      {
+        label: "SMS Log",
+        type: "folder",
+        path: "/report/sms-log",
+      },
+      {
+        label: "Notification Template Register",
+        type: "folder",
+        path: "/report/notification-template-register",
+      },
+      {
+        label: "Authorization Matrix Register",
+        type: "folder",
+        path: "/report/authorization-matrix-register",
+      },
     ],
+  },
+  {
+    id: "crm-reports",
+    title: "CRM Reports",
+    icon: <FileSearch size={18} className="text-white" />,
+    items: [
+      {
+        label: "Prospect Master",
+        type: "link",
+        path: "/report/prospect-master",
+      },
+    ],
+  },
+  {
+    id: "project-management",
+    title: "Project Management",
+    icon: <FileSearch size={18} className="text-white" />,
+    items: [
+      {
+        label: "Project Trials and Analyses",
+        type: "link",
+        path: "/project/project-trials-analyses",
+      },
+      {
+        label: "Project Based Ledgers / OS",
+        type: "link",
+        path: "/project/project-based-ledgers-os",
+      },
+      {
+        label: "Stock-Issue-Receipts",
+        type: "link",
+        path: "/project/stock-issue-receipts",
+      },
+      {
+        label: "Project Material Requisition",
+        type: "link",
+        path: "/project/project-material-requisition",
+      },
+      {
+        label: "CostSheet-Project-Contract",
+        type: "link",
+        path: "/project/costsheet-project-contract",
+      },
+    ],
+  },
+
+  {
+    id: "country-specification-reports",
+    title: "Country Specification Reports",
+    icon: <FileSearch size={18} className="text-white" />,
+    items: [
+      {
+        label: "Nepal",
+        type: "link",
+        path: "/report/nepal",
+      },
+    ],
+  },
+  {
+    id: "custom-report",
+    title: "Custom Report",
+    icon: <FileSearch size={18} className="text-white" />,
+    items: [],
   },
 ];
 
-// --- Hook to determine grid columns ---
-const useGridColumns = () => {
-  const [columns, setColumns] = useState(3);
-
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 768) setColumns(1);
-      else if (window.innerWidth < 1024) setColumns(2);
-      else setColumns(3);
-    };
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  return columns;
-};
-
 const ReportDashboard: React.FC = () => {
-  // Use the Tab Context
   const { addTab } = useTabs();
-
-  // Main State for Reports (allows adding to favs)
   const [reportsData, setReportsData] = useState<ReportSection[]>(INITIAL_DATA);
-
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeRow, setActiveRow] = useState(0);
-  const [showAll, setShowAll] = useState(false);
-  const columns = useGridColumns();
   const [isDragOverFav, setIsDragOverFav] = useState(false);
 
-  // --- Date Filter States ---
   const [datePreset, setDatePreset] = useState("all");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -451,16 +659,13 @@ const ReportDashboard: React.FC = () => {
     setEndDate(end);
   };
 
-  // --- DRAG AND DROP HANDLERS ---
-
   const handleDragStart = (e: React.DragEvent, item: ReportItem) => {
-    // Store the item data in the drag event
     e.dataTransfer.setData("reportItem", JSON.stringify(item));
     e.dataTransfer.effectAllowed = "copy";
   };
 
   const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault(); // Necessary to allow dropping
+    e.preventDefault();
     e.dataTransfer.dropEffect = "copy";
     setIsDragOverFav(true);
   };
@@ -479,23 +684,17 @@ const ReportDashboard: React.FC = () => {
     const droppedItem: ReportItem = JSON.parse(data);
 
     setReportsData((prevData) => {
-      // Find the Favourite section index
       const favIndex = prevData.findIndex((section) => section.id === "fav");
       if (favIndex === -1) return prevData;
 
       const favSection = prevData[favIndex];
-
-      // Check for duplicates
       const exists = favSection.items.some(
         (item) => item.label === droppedItem.label,
       );
 
-      if (exists) return prevData; // Item already in favorites
+      if (exists) return prevData;
 
-      // Create new favorites array
       const updatedFavItems = [...favSection.items, droppedItem];
-
-      // Create new sections array
       const newData = [...prevData];
       newData[favIndex] = { ...favSection, items: updatedFavItems };
 
@@ -503,7 +702,6 @@ const ReportDashboard: React.FC = () => {
     });
   };
 
-  // Logic to filter data
   const filteredData = reportsData
     .map((section) => ({
       ...section,
@@ -513,17 +711,6 @@ const ReportDashboard: React.FC = () => {
     }))
     .filter((section) => section.items.length > 0 || section.isFavourite);
 
-  const isSearching = searchTerm.length > 0 || datePreset !== "all";
-  const VISIBLE_ROWS_COUNT = 2;
-  const itemsToShow =
-    showAll || isSearching
-      ? filteredData
-      : filteredData.slice(0, VISIBLE_ROWS_COUNT * columns);
-
-  const handleCardClick = (index: number) => {
-    setActiveRow(Math.floor(index / columns));
-  };
-
   const handleReportClick = (item: ReportItem) => {
     if (item.path) {
       addTab({ name: item.label, path: item.path });
@@ -531,18 +718,46 @@ const ReportDashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6 font-sans">
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">
-            Reports Dashboard
-          </h1>
-          <p className="text-slate-500 text-sm mt-1">
-            Access all your financial and operational reports.
-          </p>
+    <div className="min-h-screen bg-white p-4 font-sans">
+      <div className="bg-gray-100 p-3 rounded-md mb-6 flex flex-wrap items-center gap-4 text-sm border border-gray-200">
+        <div className="flex items-center gap-2 font-medium text-slate-700">
+          <Filter size={16} />
+          <span>Filter By Date:</span>
         </div>
 
-        <div className="relative w-full lg:w-96">
+        <select
+          value={datePreset}
+          onChange={handlePresetChange}
+          className="px-3 py-1.5 rounded border border-gray-300 bg-white text-slate-700 focus:outline-none focus:border-blue-500"
+        >
+          <option value="all">All Time</option>
+          <option value="today">Today</option>
+          <option value="yesterday">Yesterday</option>
+          <option value="this_week">This Week</option>
+          <option value="this_month">This Month</option>
+          <option value="this_year">This Year</option>
+          <option value="custom">Custom Range</option>
+        </select>
+
+        {datePreset === "custom" && (
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="px-2 py-1.5 rounded border border-gray-300 focus:outline-none"
+            />
+            <span>to</span>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="px-2 py-1.5 rounded border border-gray-300 focus:outline-none"
+            />
+          </div>
+        )}
+
+        <div className="relative w-full lg:w-96 ml-auto">
           <Search
             className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
             size={18}
@@ -550,82 +765,15 @@ const ReportDashboard: React.FC = () => {
           <input
             type="text"
             placeholder="Search reports..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all bg-white shadow-sm text-sm"
+            className="w-full pl-10 pr-4 py-2 rounded-md border border-slate-300 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm bg-gray-50"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
       </div>
 
-      {/* --- Date Filters Bar --- */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-8 flex flex-col md:flex-row items-start md:items-center gap-4">
-        <div className="flex items-center gap-2 text-slate-700 font-semibold text-sm min-w-fit">
-          <Filter size={18} className="text-blue-600" />
-          <span>Filter By Date:</span>
-        </div>
-
-        <div className="flex flex-col md:flex-row gap-3 w-full">
-          <div className="relative w-full md:w-48">
-            <select
-              value={datePreset}
-              onChange={handlePresetChange}
-              className="w-full pl-3 pr-8 py-2 rounded-lg border border-slate-300 bg-slate-50 text-slate-700 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none appearance-none cursor-pointer"
-            >
-              <option value="all">All Time</option>
-              <option value="today">Today</option>
-              <option value="yesterday">Yesterday</option>
-              <option value="this_week">This Week</option>
-              <option value="this_month">This Month</option>
-              <option value="this_year">This Year</option>
-              <option value="custom">Custom Range</option>
-            </select>
-            <ChevronDown
-              size={16}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none"
-            />
-          </div>
-
-          <div className="flex items-center gap-2 w-full md:w-auto">
-            <div className="relative w-full md:w-auto">
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-                <Calendar size={14} />
-              </div>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => {
-                  setStartDate(e.target.value);
-                  setDatePreset("custom");
-                }}
-                className="pl-9 pr-3 py-2 w-full md:w-40 rounded-lg border border-slate-300 text-slate-600 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
-              />
-            </div>
-            <span className="text-slate-400 text-sm">to</span>
-            <div className="relative w-full md:w-auto">
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-                <Calendar size={14} />
-              </div>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => {
-                  setEndDate(e.target.value);
-                  setDatePreset("custom");
-                }}
-                className="pl-9 pr-3 py-2 w-full md:w-40 rounded-lg border border-slate-300 text-slate-600 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* --- Grid Layout --- */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        {itemsToShow.map((section, index) => {
-          const currentRow = Math.floor(index / columns);
-          const isExpanded = isSearching ? true : currentRow === activeRow;
-
-          // Props specifically for the Favorites Drop Zone
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filteredData.map((section) => {
           const dropZoneProps = section.isFavourite
             ? {
                 onDragOver: handleDragOver,
@@ -634,59 +782,43 @@ const ReportDashboard: React.FC = () => {
               }
             : {};
 
-          // Styling based on drag state
-          const cardBorderClass =
-            section.isFavourite && isDragOverFav
-              ? "ring-2 ring-blue-500 border-blue-500 shadow-xl scale-[1.02] z-10"
-              : "border-slate-200";
-
           return (
             <div
               key={section.id}
               {...dropZoneProps}
-              className={`bg-white rounded-xl shadow-sm border overflow-hidden flex flex-col transition-all duration-300 ${cardBorderClass} ${
-                isExpanded
-                  ? "h-[320px] shadow-md ring-1 ring-blue-100"
-                  : "h-[54px] hover:shadow"
+              className={`rounded-lg overflow-hidden flex flex-col shadow-sm border border-slate-200 bg-white ${
+                section.isFavourite && isDragOverFav
+                  ? "ring-2 ring-blue-500"
+                  : ""
               }`}
             >
-              <div
-                onClick={() => handleCardClick(index)}
-                className="bg-[#3e5b7b] px-4 py-3 flex items-center justify-between text-white border-b border-[#344d68] cursor-pointer hover:bg-[#344d68] transition-colors shrink-0"
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className="p-1.5 bg-white/10 rounded-lg">
+              <div className="bg-[#2c4c70] px-3 py-2 flex items-center justify-between text-white shrink-0">
+                <div className="flex items-center gap-2">
+                  <div className="bg-white/20 p-1 rounded-full">
                     {section.icon}
                   </div>
                   <h3 className="font-semibold text-sm tracking-wide">
                     {section.title}
                   </h3>
-                </div>
-                <div className="flex items-center gap-2">
-                  {!isExpanded && (
-                    <div className="w-2 h-2 rounded-full bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.6)]" />
+                  {!section.isFavourite && (
+                    <div className="w-3 h-3 bg-red-600 rounded-sm ml-1 shadow-sm"></div>
                   )}
-                  {isExpanded ? (
-                    <ChevronUp size={16} className="text-white/70" />
-                  ) : (
-                    <ChevronDown size={16} className="text-white/70" />
+                  {section.isFavourite && (
+                    <div className="w-3 h-3 bg-red-600 rounded-sm ml-1 shadow-sm opacity-0"></div>
                   )}
                 </div>
               </div>
 
-              <div
-                className={`p-2 overflow-y-auto flex-1 custom-scrollbar transition-opacity duration-300 ${isExpanded ? "opacity-100" : "opacity-0 invisible"}`}
-              >
-                {/* Drop Here Placeholder (Only in Fav section) */}
+              <div className="h-[250px] overflow-y-auto custom-scrollbar p-1 relative bg-white">
                 {section.isFavourite && (
                   <div
-                    className={`mb-2 p-2 border-2 border-dashed rounded-lg flex items-center justify-center text-xs font-medium cursor-pointer transition-all duration-300 ${
+                    className={`m-2 p-3 border-2 border-dashed rounded flex flex-col items-center justify-center text-xs font-medium cursor-pointer transition-colors ${
                       isDragOverFav
-                        ? "bg-blue-100 border-blue-500 text-blue-700 scale-105"
-                        : "border-blue-100 bg-blue-50/50 text-blue-400 hover:bg-blue-50 hover:border-blue-200"
+                        ? "bg-blue-50 border-blue-500 text-blue-600"
+                        : "bg-[#e2e8f0] border-slate-300 text-slate-500"
                     }`}
                   >
-                    <PlusCircle size={14} className="mr-2" />
+                    <PlusCircle size={16} className="mb-1 text-red-500" />
                     {isDragOverFav
                       ? "Drop Report Here!"
                       : "Drop Here To Add To Favourite"}
@@ -697,37 +829,33 @@ const ReportDashboard: React.FC = () => {
                   {section.items.map((item, idx) => (
                     <li
                       key={idx}
-                      draggable={!section.isFavourite} // Only allow dragging FROM other sections, not OUT of Favs (optional choice)
+                      draggable={!section.isFavourite}
                       onDragStart={(e) => handleDragStart(e, item)}
-                      onClick={() => handleReportClick(item)} // ADDED CLICK HANDLER
-                      className={`flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-50 text-slate-600 hover:text-blue-700 cursor-pointer transition-colors group/item text-sm ${!section.isFavourite ? "cursor-grab active:cursor-grabbing" : ""}`}
+                      onClick={() => handleReportClick(item)}
+                      className={`flex items-start gap-2 px-2 py-1.5 rounded hover:bg-blue-50 text-slate-700 cursor-pointer group/item text-[13px] ${
+                        !section.isFavourite
+                          ? "cursor-grab active:cursor-grabbing"
+                          : ""
+                      }`}
                     >
-                      {/* Drag Handle Indicator */}
                       {!section.isFavourite && (
                         <GripVertical
                           size={14}
-                          className="text-slate-300 opacity-0 group-hover/item:opacity-100 transition-opacity"
+                          className="text-slate-300 opacity-0 group-hover/item:opacity-100 mt-0.5"
                         />
                       )}
 
-                      {item.type === "folder" ? (
-                        <Folder
-                          size={16}
-                          className="text-amber-400 fill-amber-100 shrink-0"
-                        />
-                      ) : (
-                        <ChevronRight
-                          size={14}
-                          className="text-slate-300 group-hover/item:text-blue-500 shrink-0"
-                        />
-                      )}
-                      <span className="truncate flex-1">{item.label}</span>
+                      <div className="mt-0.5 text-[#2c4c70]">
+                        <Folder size={16} strokeWidth={1.5} />
+                      </div>
+
+                      <span className="leading-5">{item.label}</span>
                     </li>
                   ))}
 
                   {section.items.length === 0 && !section.isFavourite && (
-                    <div className="flex flex-col items-center justify-center h-full text-slate-400 text-xs pt-10">
-                      <Search size={24} className="mb-2 opacity-20" />
+                    <div className="flex flex-col items-center justify-center h-full text-slate-400 text-xs mt-10">
+                      <Search size={20} className="mb-1 opacity-20" />
                       No reports found
                     </div>
                   )}
@@ -738,31 +866,10 @@ const ReportDashboard: React.FC = () => {
         })}
       </div>
 
-      {/* --- View More Button --- */}
-      {!isSearching && filteredData.length > VISIBLE_ROWS_COUNT * columns && (
-        <div className="flex justify-center pb-10">
-          <button
-            onClick={() => setShowAll(!showAll)}
-            className="flex items-center gap-2 px-6 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-full font-medium text-sm shadow-sm hover:bg-slate-50 hover:text-blue-600 hover:border-blue-200 transition-all active:scale-95"
-          >
-            {showAll ? (
-              <>
-                Show Less <ChevronUp size={16} />
-              </>
-            ) : (
-              <>
-                View More Reports <ChevronDown size={16} />
-              </>
-            )}
-          </button>
-        </div>
-      )}
-
-      {/* --- Styles --- */}
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
         .custom-scrollbar:hover::-webkit-scrollbar-thumb { background-color: #94a3b8; }
       `}</style>
     </div>

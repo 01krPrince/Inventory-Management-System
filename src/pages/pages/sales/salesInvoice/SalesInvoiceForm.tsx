@@ -6,7 +6,6 @@ import React, {
 } from "react";
 import {
   ChartIcon,
-  CalenderIcon,
   DocumentIcon,
   ChevronDownIcon,
   ChevronUpIcon,
@@ -21,26 +20,36 @@ import SalesExecutiveMaster from "../../../../components/SalesExecutiveMaster";
 import { getAllCustomers } from "../../../../services/sales/customer/customerService";
 import { fetchAllLocations } from "../../inventory/stockAdjustment/api/LocationMaster";
 import { fetchSalesExecutives } from "../../../../components/addItemMaster/api/salesExecutiveService";
+
 // --- Types ---
 export interface InvoiceFormData {
   gstType: string;
   cashCredit: string;
+
+  // Store Info
   store: string;
   storeId?: string;
+  storeCode?: string; // <--- Added for API Request
+
+  // Customer Info
   customer: string;
   customerId?: string;
+  customerCode?: string; // <--- Added for API Request
+
+  date: string; // YYYY-MM-DD
+
   priceCategory: string;
   salesman: string;
   tax: string;
   placeOfSupply: string;
-  shipTo: string; // This is the Dropdown value (e.g. "Warehouse A")
+  shipTo: string;
   paymentTerms: string;
   paymentLink: string;
   email?: string;
   invoiceNo?: string;
   refNo?: string;
 
-  // --- NEW FIELDS FOR AUTO-FILL ---
+  // Auto-fill fields
   billToText?: string;
   shipToText?: string;
   gstNo?: string;
@@ -49,7 +58,7 @@ export interface InvoiceFormData {
 
 interface SimpleOption {
   name: string;
-  id?: string; // Added ID for better matching
+  id?: string;
 }
 
 interface ActionBtnProps {
@@ -64,7 +73,7 @@ interface SalesInvoiceFormProps {
 
 export interface SalesInvoiceFormRef {
   triggerSubmit: () => void;
-  getFormData: () => InvoiceFormData; // <--- ADD THIS
+  getFormData: () => InvoiceFormData;
 }
 
 // --- Helper Components ---
@@ -81,17 +90,8 @@ const toOptions = (arr: string[]): SimpleOption[] =>
   arr.map((s) => ({ name: s }));
 
 const mockData = {
-  gstTypes: toOptions(["BillOfSupply", "GST Invoice", "Export"]),
-  creditTypes: toOptions(["Credit", "Cash"]),
-  stores: toOptions(["SPORTS HUB", "TECH WORLD", "FASHION POINT"]),
-  customers: toOptions(["John Doe", "Jane Smith", "Acme Corp"]),
-  priceCategories: toOptions(["Default"]),
-  salesmen: toOptions(["Alice", "Bob", "Charlie"]),
-  taxOptions: toOptions(["Inclusive", "Exclusive"]),
-  shipToOptions: toOptions(["Warehouse A", "Warehouse B", "Store Front"]),
   paymentTerms: toOptions(["Immediate", "Net 15", "Net 30"]),
   paymentLinks: toOptions(["PayTM", "Razorpay", "Stripe", "Direct Transfer"]),
-  placeOfSupply: toOptions(["Bihar", "Delhi", "Maharashtra", "Uttar Pradesh"]),
 };
 
 const InputGroup: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -109,23 +109,25 @@ const Input: React.FC<{
     className={`w-full h-[30px] bg-white border border-gray-300 rounded-sm px-2 text-[13px] text-gray-700 focus:outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)] ${
       readOnly ? "bg-gray-50" : ""
     }`}
-    value={value || ""} // Changed defaultValue to value for control
+    value={value || ""}
     onChange={onChange}
     placeholder={placeholder}
     readOnly={readOnly}
   />
 );
 
-const DateField: React.FC<{ value: string }> = ({ value }) => (
+// UPDATED: DateField now supports interaction and correct type
+const DateField: React.FC<{
+  value: string;
+  onChange: (val: string) => void;
+}> = ({ value, onChange }) => (
   <div className="relative w-full">
     <input
-      type="text"
-      className="w-full h-[30px] bg-white border border-gray-300 rounded-sm px-2 text-[13px] text-gray-700 focus:outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)]"
-      defaultValue={value}
+      type="date"
+      className="w-full h-[30px] bg-white border border-gray-300 rounded-sm px-2 text-[13px] text-gray-700 focus:outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)] uppercase"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
     />
-    <div className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none">
-      <CalenderIcon className="w-4 h-4" />
-    </div>
   </div>
 );
 
@@ -174,18 +176,27 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
     const [customerOptions, setCustomerOptions] = useState<SimpleOption[]>([]);
     const [salesmanOptions, setSalesmanOptions] = useState<SimpleOption[]>([]);
 
-    // NEW: Store raw customer objects to access details later
+    // RAW DATA HOLDERS (To look up codes)
     const [rawCustomers, setRawCustomers] = useState<any[]>([]);
+    const [rawStores, setRawStores] = useState<any[]>([]); // <--- Added
 
-    const [isBillToOpen, setBillToOpen] = useState<boolean>(false); // Default open to show effect
+    const [isBillToOpen, setBillToOpen] = useState<boolean>(false);
     const [isShipToOpen, setShipToOpen] = useState<boolean>(false);
     const [activeModal, setActiveModal] = useState<string | null>(null);
+
+    // Initial Date: Today in YYYY-MM-DD
+    const getToday = () => new Date().toISOString().split("T")[0];
 
     const [formData, setFormData] = useState<InvoiceFormData>({
       gstType: "BillOfSupply",
       cashCredit: "Credit",
       store: "",
+      storeId: "",
+      storeCode: "",
       customer: "",
+      customerId: "",
+      customerCode: "",
+      date: getToday(),
       priceCategory: "Default",
       salesman: "",
       tax: "Inclusive",
@@ -196,7 +207,6 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
       email: "",
       invoiceNo: "00046",
       refNo: "",
-      // Initialize new fields
       billToText: "",
       shipToText: "",
       gstNo: "",
@@ -204,11 +214,7 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
     });
 
     const simpleColumns: ColumnDef<SimpleOption>[] = [
-      {
-        header: "Name",
-        key: "name",
-        width: "flex-1",
-      },
+      { header: "Name", key: "name", width: "flex-1" },
     ];
 
     const themeStyles = {
@@ -222,28 +228,38 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
       loadDropdownData();
     }, []);
 
-const loadDropdownData = async () => {
+    const loadDropdownData = async () => {
       try {
         // 1. Stores
         const storesData = await fetchAllLocations();
+        setRawStores(storesData); // <--- Save Raw Stores
+
         const mappedStores = storesData.map((item: any) => ({
           name: item.name || item.storeName,
           id: item._id,
         }));
         setStoreOptions(mappedStores);
+
+        // Auto-select first store
         if (mappedStores.length > 0) {
+          const firstStore = storesData[0];
+          // Try to find the code field (adjust key "code"/"storeCode" based on your actual API object)
+          const storeCode = firstStore.code || "";
+
           setFormData((prev) => ({
             ...prev,
             store: mappedStores[0].name,
-            storeId: mappedStores[0].id, // <--- THIS IS CRITICAL
+            storeId: mappedStores[0].id,
+            storeCode: storeCode,
           }));
         }
 
         // 2. Customers
         const customersData = await getAllCustomers();
-        setRawCustomers(customersData); // <--- Save RAW data
+        setRawCustomers(customersData); // Save Raw Customers
+
         const mappedCustomers = customersData.map((item: any) => ({
-          name: item.cust_name || item.name, // Handle your specific API field names
+          name: item.cust_name || item.name,
           id: item._id,
         }));
         setCustomerOptions(mappedCustomers);
@@ -267,31 +283,47 @@ const loadDropdownData = async () => {
     ) => {
       setFormData((prev) => ({ ...prev, [field]: item?.name || "" }));
 
-      // === AUTO FILL LOGIC ===
-      if (field === 'store' && item) {
-          setFormData(prev => ({ ...prev, storeId: item.id })); 
+      // === STORE SELECTION ===
+      if (field === "store" && item) {
+        const fullStore = rawStores.find((s) => s._id === item.id);
+        const storeCode = fullStore?.code || fullStore?.storeCode || "";
+
+        setFormData((prev) => ({
+          ...prev,
+          storeId: item.id,
+          storeCode: storeCode,
+        }));
       }
+
+      // === CUSTOMER SELECTION ===
       if (field === "customer" && item) {
-        setFormData(prev => ({ ...prev, customerId: item.id }));
+        setFormData((prev) => ({ ...prev, customerId: item.id }));
+
         const fullCustomer = rawCustomers.find(
           (c) => c._id === item.id || c.cust_name === item.name,
         );
 
         if (fullCustomer) {
-          // 1. Format Bill To Address
+          // Extract Code (Adjust key "code"/"cust_code"/"customerCode")
+          const cCode =
+            fullCustomer.code ||
+            fullCustomer.cust_code ||
+            fullCustomer.customerCode ||
+            "";
+
+          // Format Addresses
           const billTo = `${fullCustomer.cust_name}\n${fullCustomer.address || ""}\n${fullCustomer.city || ""}, ${fullCustomer.state || ""} - ${fullCustomer.pin_code || ""}\nPhone: ${fullCustomer.phone || ""}`;
 
-          // 2. Format Ship To Address
           const shipTo = `${fullCustomer.cust_name}\n${fullCustomer.address_ship || fullCustomer.address || ""}\n${fullCustomer.city_ship || fullCustomer.city || ""}, ${fullCustomer.state_ship || fullCustomer.state || ""} - ${fullCustomer.pin_code_ship || fullCustomer.pin_code || ""}\nPhone: ${fullCustomer.phone_ship || fullCustomer.phone || ""}`;
 
           setFormData((prev) => ({
             ...prev,
+            customerCode: cCode,
             email: fullCustomer.email || "",
             priceCategory: fullCustomer.price_category || prev.priceCategory,
             salesman: fullCustomer.sales_executive || prev.salesman,
-            placeOfSupply: fullCustomer.state || "", // Auto-fill POS
+            placeOfSupply: fullCustomer.state || "",
 
-            // Auto-fill new fields
             billToText: billTo,
             shipToText: shipTo,
             gstNo: fullCustomer.gst_no || "",
@@ -315,7 +347,7 @@ const loadDropdownData = async () => {
           onSubmit(formData);
         }
       },
-      getFormData: () => formData
+      getFormData: () => formData,
     }));
 
     return (
@@ -326,15 +358,19 @@ const loadDropdownData = async () => {
         <div className="grid grid-cols-12 gap-8">
           {/* LEFT COLUMN */}
           <div className="col-span-4 space-y-1">
-            {/* GST Type & Cash/Credit (Static) */}
             <div className="grid grid-cols-12 gap-2">
               <div className="col-span-4">
                 <Label>GST Type</Label>
               </div>
               <div className="col-span-8">
                 <Dropdown
-                  data={[{ name: "BillOfSupply" }, { name: "GST Invoice" }]}
-                  columns={[{ header: "Name", key: "name", width: "flex-1" }]}
+                  data={[
+                    { name: "BillOfSupply" },
+                    { name: "GST Invoice" },
+                    { name: "Intra" },
+                    { name: "Inter" },
+                  ]}
+                  columns={simpleColumns}
                   value={formData.gstType}
                   valueKey="name"
                   onChange={(i) => handleDropdownChange("gstType", i)}
@@ -348,7 +384,7 @@ const loadDropdownData = async () => {
               <div className="col-span-8">
                 <Dropdown
                   data={[{ name: "Credit" }, { name: "Cash" }]}
-                  columns={[{ header: "Name", key: "name", width: "flex-1" }]}
+                  columns={simpleColumns}
                   value={formData.cashCredit}
                   valueKey="name"
                   onChange={(i) => handleDropdownChange("cashCredit", i)}
@@ -364,7 +400,7 @@ const loadDropdownData = async () => {
                 <InputGroup>
                   <Dropdown
                     data={storeOptions}
-                    columns={[{ header: "Name", key: "name", width: "flex-1" }]}
+                    columns={simpleColumns}
                     value={formData.store}
                     valueKey="name"
                     onChange={(item) => handleDropdownChange("store", item)}
@@ -385,7 +421,7 @@ const loadDropdownData = async () => {
                 <InputGroup>
                   <Dropdown
                     data={customerOptions}
-                    columns={[{ header: "Name", key: "name", width: "flex-1" }]}
+                    columns={simpleColumns}
                     value={formData.customer}
                     valueKey="name"
                     placeholder="Select Customer..."
@@ -418,14 +454,13 @@ const loadDropdownData = async () => {
               </div>
               <div className="col-span-8">
                 <InputGroup>
-                  {/* If price categories are dynamic, load them similarly. Using mock for now */}
                   <Dropdown
                     data={[
                       { name: "Wholesale" },
                       { name: "Retail" },
                       { name: "Default" },
                     ]}
-                    columns={[{ header: "Name", key: "name", width: "flex-1" }]}
+                    columns={simpleColumns}
                     value={formData.priceCategory}
                     valueKey="name"
                     onChange={(item) =>
@@ -444,7 +479,11 @@ const loadDropdownData = async () => {
                 <Label required>Date</Label>
               </div>
               <div className="col-span-8">
-                <DateField value="20/11/2025" />
+                {/* Updated Interactive Date Field */}
+                <DateField
+                  value={formData.date}
+                  onChange={(val) => handleInputChange("date", val)}
+                />
               </div>
             </div>
             <div className="grid grid-cols-12 gap-2">
@@ -475,7 +514,7 @@ const loadDropdownData = async () => {
                 <InputGroup>
                   <Dropdown
                     data={salesmanOptions}
-                    columns={[{ header: "Name", key: "name", width: "flex-1" }]}
+                    columns={simpleColumns}
                     value={formData.salesman}
                     valueKey="name"
                     onChange={(item) => handleDropdownChange("salesman", item)}
@@ -487,7 +526,6 @@ const loadDropdownData = async () => {
                 </InputGroup>
               </div>
             </div>
-            {/* Tax */}
             <div className="grid grid-cols-12 gap-2">
               <div className="col-span-4">
                 <Label>Tax</Label>
@@ -495,7 +533,7 @@ const loadDropdownData = async () => {
               <div className="col-span-8">
                 <Dropdown
                   data={[{ name: "Inclusive" }, { name: "Exclusive" }]}
-                  columns={[{ header: "Name", key: "name", width: "flex-1" }]}
+                  columns={simpleColumns}
                   value={formData.tax}
                   valueKey="name"
                   onChange={(i) => handleDropdownChange("tax", i)}
@@ -513,7 +551,6 @@ const loadDropdownData = async () => {
             >
               <div className="space-y-2">
                 <div className="relative">
-                  {/* BIND VALUE HERE */}
                   <textarea
                     className="w-full h-20 border border-gray-300 rounded text-[13px] p-2 resize-none focus:outline-none"
                     value={formData.billToText}
@@ -529,7 +566,6 @@ const loadDropdownData = async () => {
                   <div className="col-span-4">
                     <Label>GST No</Label>
                   </div>
-                  {/* BIND VALUE HERE */}
                   <div className="col-span-8">
                     <Input
                       value={formData.gstNo}
@@ -543,7 +579,6 @@ const loadDropdownData = async () => {
                   <div className="col-span-4">
                     <Label>Contact Person</Label>
                   </div>
-                  {/* BIND VALUE HERE */}
                   <div className="col-span-8">
                     <Input
                       value={formData.contactPerson}
@@ -559,7 +594,6 @@ const loadDropdownData = async () => {
                   </div>
                   <div className="col-span-8">
                     <InputGroup>
-                      {/* Using simple input for now since state is text in customer obj. Can be dropdown if needed */}
                       <Input
                         value={formData.placeOfSupply}
                         onChange={(e) =>
@@ -585,9 +619,7 @@ const loadDropdownData = async () => {
                   <InputGroup>
                     <Dropdown
                       data={[{ name: "Warehouse" }, { name: "Store Front" }]}
-                      columns={[
-                        { header: "Name", key: "name", width: "flex-1" },
-                      ]}
+                      columns={simpleColumns}
                       value={formData.shipTo}
                       valueKey="name"
                       onChange={(item) => handleDropdownChange("shipTo", item)}
@@ -599,7 +631,6 @@ const loadDropdownData = async () => {
                   </InputGroup>
                 </div>
               </div>
-              {/* BIND VALUE HERE */}
               <textarea
                 className="w-full h-24 border border-gray-300 rounded text-[13px] p-2 resize-none focus:outline-none"
                 value={formData.shipToText}
@@ -628,14 +659,7 @@ const loadDropdownData = async () => {
                   </InputGroup>
                 </div>
               </div>
-              <div className="grid grid-cols-12 gap-2 items-center">
-                <div className="col-span-4">
-                  <Label>Due Date</Label>
-                </div>
-                <div className="col-span-8">
-                  <DateField value="20/11/2025" />
-                </div>
-              </div>
+
               <div className="grid grid-cols-12 gap-2 items-center">
                 <div className="col-span-4">
                   <Label>Payment Link</Label>

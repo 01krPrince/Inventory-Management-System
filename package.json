@@ -45,6 +45,7 @@
     "swiper": "^11.2.3",
     "tailwind-merge": "^3.0.1",
     "tailwind-scrollbar": "^4.0.2",
+    "to-words": "^4.10.0",
     "uuid": "^13.0.0",
     "xlsx": "^0.18.5"
   },

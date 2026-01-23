@@ -5,7 +5,6 @@ import AppFooter from "./AppFooter";
 import { TabBar } from "./TabBar";
 import { AppSidebar } from "./AppSidebar";
 import Welcome from "../pages/pages/Welcome";
-// ... (Keep all your existing imports) ...
 import PriceList from "../pages/pages/sales/salesPriceList/PriceList";
 import PartySalesDiscountRate from "../pages/pages/sales/salesPriceList/PartySalesDiscountRate";
 import BrandwiseDiscountCharges from "../pages/pages/sales/salesPriceList/BrandwiseDiscountCharges";
@@ -62,7 +61,7 @@ const useSidebar = () => ({
 const Backdrop = () => null;
 
 const ReportPageRoutes: { [key: string]: React.FC } = {
-  // MIS
+  // --- MIS Reports ---
   "/report/financial-statements": () => (
     <PlaceholderPage title="Financial Statements" />
   ),
@@ -77,8 +76,11 @@ const ReportPageRoutes: { [key: string]: React.FC } = {
   "/report/enterprise-analysis": () => (
     <PlaceholderPage title="Enterprise Analysis" />
   ),
+  "/report/business-insight": () => (
+    <PlaceholderPage title="Business Insight" />
+  ),
 
-  // Finance
+  // --- Finance ---
   "/report/primary-books": () => <PlaceholderPage title="Primary Books" />,
   "/report/ledgers": () => <PlaceholderPage title="Ledgers" />,
   "/report/trial-balance-finance": () => (
@@ -91,51 +93,58 @@ const ReportPageRoutes: { [key: string]: React.FC } = {
     <PlaceholderPage title="Loan-Bank Interest" />
   ),
 
-  // Sales
+  // --- Customer/Sales ---
   "/report/customers": CustomerReport,
-  "/report/sale-invoice": () => <PlaceholderPage title="Sale Invoice Report" />,
   "/report/sales-report": () => <PlaceholderPage title="Sales Report" />,
-  "/report/sales-ledgers": () => (
+  "/report/ledgers-trials": () => (
     <PlaceholderPage title="Sales Ledgers & Trials" />
   ),
-  "/report/sales-bills-os": () => <PlaceholderPage title="Sales Bills O/S" />,
-  "/report/sales-linkage": () => (
-    <PlaceholderPage title="Sales Linkage Reports" />
-  ),
+  "/report/bills-os-ageing": () => <PlaceholderPage title="Sales Bills O/S" />,
+  // Note: Linkage reports path is used in both Sales and Purchase
+  "/report/linkage-reports": () => <PlaceholderPage title="Linkage Reports" />,
 
-  // Purchase
+  // --- Vendor/Purchase ---
   "/report/vendors": VendorReport,
   "/report/purchase-bill": PurchaseBillReport,
   "/report/purchase-registers": () => (
     <PlaceholderPage title="Purchase Registers" />
   ),
-  "/report/purchase-trial-ledgers": () => (
+  "/report/trial-ledgers": () => (
     <PlaceholderPage title="Purchase Trial/Ledgers" />
   ),
-  "/report/vendor-bills-os": () => <PlaceholderPage title="Vendor Bills O/S" />,
-  "/report/purchase-linkage": () => (
-    <PlaceholderPage title="Purchase Linkage Reports" />
+  "/report/vendor-bills-os-ageing": () => (
+    <PlaceholderPage title="Vendor Bills O/S" />
   ),
 
-  // Inventory
-  "/report/available-item": ItemReport,
-  "/report/stock-adjustment": () => (
-    <PlaceholderPage title="Stock Adjustment Report" />
-  ),
+  // --- Inventory ---
+  "/report/item-master": ItemReport,
   "/report/primary-stock": () => (
     <PlaceholderPage title="Primary Stock Reports" />
   ),
-  "/report/store-transfer": () => <PlaceholderPage title="Store Transfer" />,
-  "/report/job-work-reports": () => (
-    <PlaceholderPage title="Job Work Reports" />
+  "/report/stock-adjustment": () => (
+    <PlaceholderPage title="Stock Adjustment" />
   ),
-  "/report/serial-imei": () => <PlaceholderPage title="Serial/IMEI Reports" />,
-  "/report/barcode-reports": () => <PlaceholderPage title="Barcode Reports" />,
+  "/report/store-transfer": () => <PlaceholderPage title="Store Transfer" />,
+  "/report/job-card-work-inward-outward": () => (
+    <PlaceholderPage title="JobWork Inward/Outward" />
+  ),
+  "/report/serial-imei-tag": () => (
+    <PlaceholderPage title="Serial/IMEI/Tag Reports" />
+  ),
+  "/report/attribute-barcode-reports": () => (
+    <PlaceholderPage title="Attribute/Barcode Reports" />
+  ),
   "/report/pharma-batch": () => (
     <PlaceholderPage title="Pharma/Batch Reports" />
   ),
+  "/report/imitation-jewellery-rental": () => (
+    <PlaceholderPage title="Imitation/Jewellery/Rental" />
+  ),
+  "/report/material-requisition-planning": () => (
+    <PlaceholderPage title="Material Requisition Planning" />
+  ),
 
-  // GST
+  // --- GST/VAT ---
   "/report/gst-master": GstMasterReport,
   "/report/gst-returns": () => <PlaceholderPage title="GST Returns" />,
   "/report/gstr-reco": () => (
@@ -148,20 +157,27 @@ const ReportPageRoutes: { [key: string]: React.FC } = {
   "/report/tax-register-purchase": () => (
     <PlaceholderPage title="Tax Register Purchase" />
   ),
+  "/report/tax-summary": () => <PlaceholderPage title="Tax Summary" />,
+  "/report/gst-itc-reversal-register": () => (
+    <PlaceholderPage title="GST ITC Reversal" />
+  ),
+  "/report/hsn-tax-rate-vs-invoice-tax-rate-mismatch": () => (
+    <PlaceholderPage title="HSN vs Invoice Tax Mismatch" />
+  ),
 
-  // Employee
+  // --- Employee ---
   "/report/employee-register": () => (
     <PlaceholderPage title="Employee Register" />
   ),
   "/report/attendance-leave": () => (
-    <PlaceholderPage title="Attendance/Leave Reports" />
+    <PlaceholderPage title="Attendance/Leave" />
   ),
-  "/report/salary-timesheet": () => (
-    <PlaceholderPage title="Salary/Timesheet Reports" />
+  "/report/salary-timesheet-expense-claim": () => (
+    <PlaceholderPage title="Salary/Timesheet/Expense" />
   ),
-  "/report/esi-pf": () => <PlaceholderPage title="ESI/PF Reports" />,
+  "/report/esi-pf": () => <PlaceholderPage title="ESI/PF" />,
 
-  // POS
+  // --- Point of Sales (POS) ---
   "/report/pos-customer-list": () => (
     <PlaceholderPage title="POS Customer List" />
   ),
@@ -177,8 +193,45 @@ const ReportPageRoutes: { [key: string]: React.FC } = {
   "/report/pos-tender-wise": () => (
     <PlaceholderPage title="POS Sales Tender Wise" />
   ),
+  "/report/pos-tender-wise-with-item": () => (
+    <PlaceholderPage title="POS Sales Tender Wise (Item)" />
+  ),
+  "/report/tender-settlement-report": () => (
+    <PlaceholderPage title="Tender Settlement Report" />
+  ),
+  "/report/pos-daywise-tender-summary": () => (
+    <PlaceholderPage title="POS Day Wise Tender Summary" />
+  ),
+  "/report/tender-wise-summary": () => (
+    <PlaceholderPage title="Tender Wise Summary" />
+  ),
+  "/report/pos-sales-analysis": () => (
+    <PlaceholderPage title="POS Sales Analysis" />
+  ),
+  "/report/pos-party-trial": () => <PlaceholderPage title="POS Party Trial" />,
+  "/report/pos-party-ledger": () => (
+    <PlaceholderPage title="POS Party Ledger" />
+  ),
+  "/report/pos-party-ledger-with-item-detail": () => (
+    <PlaceholderPage title="POS Party Ledger (Item Detail)" />
+  ),
+  "/report/pos-day-start-close-register": () => (
+    <PlaceholderPage title="POS Day Start/Close" />
+  ),
+  "/report/loyalty-point-ledger": () => (
+    <PlaceholderPage title="Loyalty Point Ledger" />
+  ),
+  "/report/loyalty-point-summary": () => (
+    <PlaceholderPage title="Loyalty Point Summary" />
+  ),
+  "/report/pos-order-vs-invoice": () => (
+    <PlaceholderPage title="POS Order vs Invoice" />
+  ),
+  "/report/pos-customer-receipt-payment-register": () => (
+    <PlaceholderPage title="POS Customer Receipt/Payment" />
+  ),
 
-  // Production
+  // --- Production ---
   "/report/production-register": () => (
     <PlaceholderPage title="Production Register" />
   ),
@@ -194,8 +247,26 @@ const ReportPageRoutes: { [key: string]: React.FC } = {
   "/report/issue-summary": () => (
     <PlaceholderPage title="Material Issue Summary" />
   ),
+  "/report/material-issue-to-production": () => (
+    <PlaceholderPage title="Material Issue To Production" />
+  ),
+  "/report/material-received-from-production": () => (
+    <PlaceholderPage title="Material Received From Production" />
+  ),
+  "/report/issue-to-production-floor-vs-receipt-linkage-based": () => (
+    <PlaceholderPage title="Issue vs Receipt (Linkage)" />
+  ),
+  "/report/issue-to-production-floor-vs-receipt-voucher-based": () => (
+    <PlaceholderPage title="Issue vs Receipt (Voucher)" />
+  ),
+  "/report/wip-stock-balance": () => (
+    <PlaceholderPage title="WIP Stock Balance" />
+  ),
+  "/report/cashew-production": () => (
+    <PlaceholderPage title="Cashew Production" />
+  ),
 
-  // Assets
+  // --- Assets ---
   "/report/asset-register": () => <PlaceholderPage title="Asset Register" />,
   "/report/asset-transfer": () => (
     <PlaceholderPage title="Asset Transfer Register" />
@@ -205,7 +276,7 @@ const ReportPageRoutes: { [key: string]: React.FC } = {
   ),
   "/report/asset-on-hand": () => <PlaceholderPage title="Asset On Hand" />,
 
-  // Audit
+  // --- Audit / Logs ---
   "/report/price-list-change": () => (
     <PlaceholderPage title="Price List Change Track" />
   ),
@@ -214,7 +285,52 @@ const ReportPageRoutes: { [key: string]: React.FC } = {
   ),
   "/report/mismatch-report": () => <PlaceholderPage title="Mismatch Report" />,
   "/report/user-geo": () => <PlaceholderPage title="User Geo Tracking" />,
-  "/report/logs": () => <PlaceholderPage title="System Logs" />,
+  "/report/payment-link-status": () => (
+    <PlaceholderPage title="Payment Link Status" />
+  ),
+  "/report/document-change-track": () => (
+    <PlaceholderPage title="Document Change Track" />
+  ),
+  "/report/attachment-register": () => (
+    <PlaceholderPage title="Attachment Register" />
+  ),
+  "/report/zero-sales-analyses": () => (
+    <PlaceholderPage title="Zero Sales Analyses" />
+  ),
+  "/report/authorization-status": () => (
+    <PlaceholderPage title="Authorization Status" />
+  ),
+  "/report/force-close-log": () => <PlaceholderPage title="Force Close Log" />,
+  "/report/sms-log": () => <PlaceholderPage title="SMS Log" />,
+  "/report/notification-template-register": () => (
+    <PlaceholderPage title="Notification Template Register" />
+  ),
+  "/report/authorization-matrix-register": () => (
+    <PlaceholderPage title="Authorization Matrix Register" />
+  ),
+
+  // --- CRM Reports ---
+  "/report/prospect-master": () => <PlaceholderPage title="Prospect Master" />,
+
+  // --- Project Management ---
+  "/project/project-trials-analyses": () => (
+    <PlaceholderPage title="Project Trials & Analyses" />
+  ),
+  "/project/project-based-ledgers-os": () => (
+    <PlaceholderPage title="Project Ledgers / OS" />
+  ),
+  "/project/stock-issue-receipts": () => (
+    <PlaceholderPage title="Stock Issue/Receipts" />
+  ),
+  "/project/project-material-requisition": () => (
+    <PlaceholderPage title="Project Material Requisition" />
+  ),
+  "/project/costsheet-project-contract": () => (
+    <PlaceholderPage title="Cost Sheet Project Contract" />
+  ),
+
+  // --- Country Specification ---
+  "/report/nepal": () => <PlaceholderPage title="Nepal Reports" />,
 };
 
 const ComponentMap: { [key: string]: React.FC } = {

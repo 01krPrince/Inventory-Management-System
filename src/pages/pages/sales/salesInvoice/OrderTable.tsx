@@ -31,7 +31,10 @@ import { COLORS } from "../../../../constants/colors";
 
 import AddNewItem from "../../../../components/addItemMaster/AddNewItem";
 
-import { fetchItems } from "../../inventory/itemMaster/api/itemService";
+import {
+  fetchItems,
+  getItemByCodeAndBarcode,
+} from "../../inventory/itemMaster/api/itemService";
 import { StockUnitData } from "../../../../components/addItemMaster/api/types";
 import { fetchStockUnits } from "../../../../components/addItemMaster/api/stockunitservice";
 import AttributePanel from "../../../../components/AttributePanel";
@@ -393,7 +396,7 @@ const getStandardWarranties = (itemText: string): WarrantyOption[] => {
 };
 
 const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
-    const generateRowId = () =>
+  const generateRowId = () =>
     `row-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
   const [rows, setRows] = useState<string[]>([]);
@@ -428,6 +431,7 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
   }>({ visible: false, top: 0, left: 0, activeRowId: null, options: [] });
 
   const [newWarranty, setNewWarranty] = useState({ duration: "", price: "" });
+  const [scanQuery, setScanQuery] = useState("");
 
   const [attributePanelState, setAttributePanelState] = useState<{
     visible: boolean;
@@ -436,6 +440,86 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
   }>({ visible: false, activeRowId: null, tempItemData: null });
 
   const [addNewItemForm, setAddNewItemForm] = useState(false);
+
+  const handleScanKeyDown = async (
+    e: React.KeyboardEvent<HTMLInputElement>,
+  ) => {
+    if (e.key === "Enter" && scanQuery.trim()) {
+      try {
+        const response = await getItemByCodeAndBarcode(scanQuery.trim());
+        const data = response?.data;
+
+        let foundItem: ItemApiData | null = null;
+
+        if (Array.isArray(data)) {
+          // Cast to ItemApiData to satisfy local type requirement
+          if (data.length > 0) foundItem = data[0] as unknown as ItemApiData;
+        } else if (data && typeof data === "object") {
+          // Cast to ItemApiData to satisfy local type requirement
+          foundItem = data as unknown as ItemApiData;
+        }
+
+        if (foundItem) {
+          addScannedItemToTable(foundItem);
+          setScanQuery("");
+        } else {
+          alert("Item not found!");
+        }
+      } catch (err) {
+        console.error("Scan error:", err);
+        alert("Error fetching item by scan");
+      }
+    }
+  };
+
+  const getStringValue = (val: any): string => {
+    if (val === null || val === undefined) return "";
+    if (typeof val === "object") {
+      return val.name || val.item_name || val.code || "";
+    }
+    return String(val);
+  };
+
+  const addScannedItemToTable = (item: ItemApiData) => {
+    const baseData: RowData = {
+      reciss: "RECEIPT",
+      select: item.code || "",
+      desc: item.name || "",
+      unit: getStringValue(item.stock_unit),
+      brand: getStringValue(item.brand),
+      hsn: item.gst_classification || "",
+      rate: String(item.sales_rate || 0),
+      mrp: String(item.mrp || 0),
+      barcode: item.barcode || "",
+      printdesc: item.name || "",
+      qty: "1",
+    };
+    const qty = 1;
+    const rate = parseFloat(String(item.sales_rate || 0));
+    baseData.amount = (qty * rate).toFixed(2);
+
+    // Find first empty row
+    let targetRowId: string | null = null;
+    for (const rId of rows) {
+      const rData = tableData[rId];
+      if (!rData || !rData.select) {
+        targetRowId = rId;
+        break;
+      }
+    }
+
+    if (targetRowId) {
+      setTableData((prev) => ({
+        ...prev,
+        [targetRowId!]: { ...prev[targetRowId!], ...baseData },
+      }));
+    } else {
+      // Append new row
+      const newId = generateRowId();
+      setRows((prev) => [...prev, newId]);
+      setTableData((prev) => ({ ...prev, [newId]: baseData }));
+    }
+  };
 
   useEffect(() => {
     if (rows.length === 0) {
@@ -480,20 +564,20 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
   );
 
   const getTableData = () => {
-  const visibleRows = rows
-    .filter((id) => {
-      const d = tableData[id];
-      // Check if row has data (Item selected OR Description OR Qty > 0)
-      return d && (d.select || d.desc || Number(d.qty) > 0);
-    })
-    .map((id) => ({ id, data: tableData[id] || {} }));
+    const visibleRows = rows
+      .filter((id) => {
+        const d = tableData[id];
+        // Check if row has data (Item selected OR Description OR Qty > 0)
+        return d && (d.select || d.desc || Number(d.qty) > 0);
+      })
+      .map((id) => ({ id, data: tableData[id] || {} }));
 
-  return {
-    rows,
-    tableData,
-    visibleRows,
+    return {
+      rows,
+      tableData,
+      visibleRows,
+    };
   };
-};
 
   // ─── Expose data to parent ────────────────────────────────
   useImperativeHandle(ref, () => ({
@@ -954,6 +1038,7 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
         className="flex-none flex justify-between items-center p-2 border-b z-10 relative bg-white"
         style={{ borderColor: COLORS.border }}
       >
+        {/* ... existing code ... */}
         <div className="flex items-center gap-4">
           <div
             className="flex items-center border h-9 w-72 rounded-sm bg-white"
@@ -966,9 +1051,16 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
               type="text"
               placeholder="Scan"
               className="px-2 outline-none text-sm w-full"
+              // --- FIXED LOGIC START ---
+              value={scanQuery}
+              onChange={(e) => setScanQuery(e.target.value)}
+              onKeyDown={handleScanKeyDown}
+              autoFocus
+              // --- FIXED LOGIC END ---
             />
           </div>
         </div>
+        {/* ... existing code ... */}
 
         <div className="flex items-center gap-2">
           <button
@@ -981,16 +1073,16 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
 
           {props.onAnalyze && (
             <button
-                className="px-6 py-1.5 rounded text-xs font-bold text-white shadow-sm flex items-center gap-2 hover:brightness-110 transition-all"
-                style={{ backgroundColor: COLORS.primary }}
-                onClick={() => {
-                    // Extract current visible rows and send to parent
-                    const currentData = getTableData(); 
-                    props.onAnalyze!(currentData.visibleRows);
-                }}
+              className="px-6 py-1.5 rounded text-xs font-bold text-white shadow-sm flex items-center gap-2 hover:brightness-110 transition-all"
+              style={{ backgroundColor: COLORS.primary }}
+              onClick={() => {
+                // Extract current visible rows and send to parent
+                const currentData = getTableData();
+                props.onAnalyze!(currentData.visibleRows);
+              }}
             >
-                <BarChart2 size={14} />
-                Analyze Profit
+              <BarChart2 size={14} />
+              Analyze Profit
             </button>
           )}
         </div>

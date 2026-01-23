@@ -17,11 +17,14 @@ import {
   handleExport,
 } from "../../../../components/function/functions";
 
+// --- FIX: Updated Interface ---
 interface Item {
   _id: string;
   name: string;
   code: string;
+  barcode: string;
   brand?: any;
+  category: any; // Changed from 'string' to 'any' to match API object response
   group?: any;
   hsn_code?: string;
   type?: string | null;
@@ -33,9 +36,12 @@ interface Item {
 const ReportColumns = [
   { key: "code", label: "Item Code" },
   { key: "name", label: "Item Name" },
+  { key: "barcode", label: "Barcode" },
   { key: "brand", label: "Brand" },
+  { key: "category_name", label: "Category" },
   { key: "group", label: "Group" },
   { key: "hsn_code", label: "HSN" },
+  { key: "type", label: "Type" },
   { key: "inactive", label: "Status" },
 ];
 
@@ -46,7 +52,7 @@ const getDisplayValue = (value: any): string => {
 };
 
 const ItemReport = () => {
-  const [items, setItems] = useState<Item[]>([]); // Typed fix
+  const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -64,6 +70,7 @@ const ItemReport = () => {
     setLoading(true);
     try {
       const data = await fetchItems();
+      // The cast to Item[] will now work because 'category' accepts the object structure
       setItems(Array.isArray(data) ? (data as Item[]) : []);
     } catch {
       setItems([]);
@@ -82,7 +89,6 @@ const ItemReport = () => {
     );
   }, [items, searchTerm]);
 
-  // const totalPages = Math.ceil(filteredData.length / rowsPerPage);
   const paginatedData = useMemo(() => {
     const start = (currentPage - 1) * rowsPerPage;
     return filteredData.slice(start, start + rowsPerPage);
@@ -175,7 +181,11 @@ const ItemReport = () => {
             <tr>
               <TableHeader label="Code" />
               <TableHeader label="Item Name" />
+              <TableHeader label="Barcode" />
               <TableHeader label="Brand" />
+              <TableHeader label="Category" />
+              <TableHeader label="HSN Code" />
+              <TableHeader label="Type" />
               <TableHeader label="Group" />
               <TableHeader label="Status" />
               <TableHeader label="Actions" className="no-print text-right" />
@@ -191,9 +201,18 @@ const ItemReport = () => {
                   {row.code || "---"}
                 </td>
                 <td className="px-3 py-2 text-sm font-medium">{row.name}</td>
+                <td className="px-3 py-2 text-sm font-medium">{row.barcode}</td>
                 <td className="px-3 py-2 text-sm text-gray-500">
                   {getDisplayValue(row.brand)}
                 </td>
+                <td className="px-3 py-2 text-sm font-medium">
+                  {/* Ensure category_name exists or fallback to accessing category object if needed */}
+                  {row.category_name || getDisplayValue(row.category)}
+                </td>
+                <td className="px-3 py-2 text-sm font-medium">
+                  {row.hsn_code}
+                </td>
+                <td className="px-3 py-2 text-sm font-medium">{row.type}</td>
                 <td className="px-3 py-2 text-sm text-gray-500">
                   {getDisplayValue(row.group)}
                 </td>

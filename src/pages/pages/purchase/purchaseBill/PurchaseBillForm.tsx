@@ -11,26 +11,29 @@ import {
 } from "../../../../components/icons";
 import { EditIcon, BarChart2 } from "lucide-react";
 import Dropdown, { ColumnDef } from "../../../../components/Dropdown";
-import DateInput from "../../../../components/DateInput";
 import { LocationMaster } from "../../../../components/LocationMaster";
 import CrudVendor from "../vendor/pages/AddNewVendor";
 import NameAndCodeMaster from "../../../../components/NameAndCodeComponent";
 
 import { getAllVendors } from "../vendor/api/vendorService";
-import {
-  fetchAllLocations,
-  LocationMaster as LocationMasterType,
-} from "../../inventory/stockAdjustment/api/LocationMaster";
+import { fetchAllLocations } from "../../inventory/stockAdjustment/api/LocationMaster";
 
 // --- Types & Interfaces ---
 
 export interface PurchaseBillFormData {
   gstType: string;
   cashCredit: string;
+
+  // Store Info
   store: string;
   storeId?: string;
+  storeCode?: string; // <--- Added for API
+
+  // Vendor Info
   vendor: string;
   vendorId?: string;
+  vendorCode?: string; // <--- Added for API
+
   priceCategory: string;
   tax: string;
   placeOfSupply: string;
@@ -39,11 +42,13 @@ export interface PurchaseBillFormData {
   email?: string;
   orderNo?: string;
   refNo?: string;
+
+  // Dates (YYYY-MM-DD)
   orderDate: string;
   refDate: string;
   dueDate: string;
 
-  // --- NEW FIELDS FOR AUTO-FILL ---
+  // Auto-fill fields
   billToText?: string;
   shipToText?: string;
   gstNo?: string;
@@ -125,6 +130,21 @@ const Input: React.FC<{
   />
 );
 
+// Local DateField to ensure YYYY-MM-DD string format
+const DateField: React.FC<{
+  value: string;
+  onChange: (val: string) => void;
+}> = ({ value, onChange }) => (
+  <div className="relative w-full">
+    <input
+      type="date"
+      className="w-full h-[30px] bg-white border border-gray-300 rounded-sm px-2 text-[13px] text-gray-700 focus:outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)] uppercase"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  </div>
+);
+
 const ActionBtn: React.FC<ActionBtnProps> = ({ icon, onClick }) => (
   <button
     onClick={onClick}
@@ -168,17 +188,27 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
     // --- State ---
     const [storeOptions, setStoreOptions] = useState<SimpleOption[]>([]);
     const [vendorOptions, setVendorOptions] = useState<SimpleOption[]>([]);
+
+    // RAW DATA HOLDERS
     const [rawVendors, setRawVendors] = useState<any[]>([]);
+    const [rawStores, setRawStores] = useState<any[]>([]); // <--- Added
 
     const [isBillToOpen, setBillToOpen] = useState<boolean>(false);
     const [isShipToOpen, setShipToOpen] = useState<boolean>(false);
     const [activeModal, setActiveModal] = useState<string | null>(null);
 
+    // Initial Date: YYYY-MM-DD
+    const getToday = () => new Date().toISOString().split("T")[0];
+
     const [formData, setFormData] = useState<PurchaseBillFormData>({
       gstType: "TaxInvoice",
       cashCredit: "Credit",
       store: "",
+      storeId: "",
+      storeCode: "",
       vendor: "",
+      vendorId: "",
+      vendorCode: "",
       priceCategory: "Wholesale",
       tax: "Inclusive",
       placeOfSupply: "",
@@ -187,9 +217,9 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
       email: "",
       orderNo: "",
       refNo: "",
-      orderDate: "",
-      refDate: "",
-      dueDate: "",
+      orderDate: getToday(),
+      refDate: getToday(),
+      dueDate: getToday(),
       billToText: "",
       shipToText: "",
       gstNo: "",
@@ -217,28 +247,36 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
 
     const loadDropdownData = async () => {
       try {
-        // 1. Stores (used for store and shipTo)
+        // 1. Stores
         const storesData = await fetchAllLocations();
-        const mappedStores = storesData.map((item: LocationMasterType) => ({
-          name: item.name,
+        setRawStores(storesData); // Save Raw Stores
+
+        const mappedStores = storesData.map((item: any) => ({
+          name: item.name || item.storeName,
           id: item._id,
         }));
         setStoreOptions(mappedStores);
+
+        // Auto-select first store
         if (mappedStores.length > 0) {
+          const firstStore = storesData[0];
+          // Try to find the code field
+          const sCode = firstStore.code || "";
+
           setFormData((prev) => ({
             ...prev,
             store: mappedStores[0].name,
             storeId: mappedStores[0].id,
+            storeCode: sCode,
           }));
         }
 
         // 2. Vendors
         const vendorsData = await getAllVendors();
-        setRawVendors(vendorsData); // Store raw data for auto-fill logic
+        setRawVendors(vendorsData); // Store raw data
 
-        // --- FIX: Map 'vend_name' from API to 'name' for Dropdown ---
         const mappedVendors = vendorsData.map((item: any) => ({
-          name: item.vend_name, // Changed from item.name to item.vend_name
+          name: item.vend_name || item.name,
           id: item._id,
         }));
         setVendorOptions(mappedVendors);
@@ -254,18 +292,28 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
     ) => {
       setFormData((prev) => ({ ...prev, [field]: item?.name || "" }));
 
-      // === AUTO FILL LOGIC ===
+      // === STORE SELECTION ===
       if (field === "store" && item) {
-        setFormData((prev) => ({ ...prev, storeId: item.id }));
+        const fullStore = rawStores.find((s) => s._id === item.id);
+        const sCode = fullStore?.code || fullStore?.storeCode || "";
+
+        setFormData((prev) => ({
+          ...prev,
+          storeId: item.id,
+          storeCode: sCode,
+        }));
       }
 
+      // === VENDOR SELECTION ===
       if (field === "vendor" && item) {
         setFormData((prev) => ({ ...prev, vendorId: item.id }));
 
-        // Find the full vendor object using the unique ID
         const fullVendor = rawVendors.find((v) => v._id === item.id);
 
         if (fullVendor) {
+          // Extract Code
+          const vCode = fullVendor.code || fullVendor.vend_code || "";
+
           // 1. Format Bill To Address
           const billTo = `${fullVendor.vend_name || fullVendor.name || ""}\n${fullVendor.address || ""}\n${fullVendor.city || ""}, ${fullVendor.state || ""} - ${fullVendor.pin_code || ""}\nPhone: ${fullVendor.phone || ""}`;
 
@@ -274,12 +322,13 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
 
           setFormData((prev) => ({
             ...prev,
+            vendorCode: vCode,
             email: fullVendor.email || "",
             priceCategory: fullVendor.price_category || prev.priceCategory,
-            paymentTerms: fullVendor.payment_term || prev.paymentTerms, // Note: check if API uses payment_term or payment_terms
+            paymentTerms: fullVendor.payment_term || prev.paymentTerms,
             placeOfSupply: fullVendor.state || "",
 
-            // Auto-fill new fields
+            // Auto-fill fields
             billToText: billTo,
             shipToText: shipTo,
             gstNo: fullVendor.gst_no || "",
@@ -434,11 +483,10 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                 <Label required>Date</Label>
               </div>
               <div className="col-span-8">
-                <DateInput
+                {/* Replaced with standard Date Field */}
+                <DateField
                   value={formData.orderDate}
-                  onChange={(e) =>
-                    handleInputChange("orderDate", e.target.value)
-                  }
+                  onChange={(val) => handleInputChange("orderDate", val)}
                 />
               </div>
             </div>
@@ -470,9 +518,9 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                 <Label>Supplier Inv Date</Label>
               </div>
               <div className="col-span-8">
-                <DateInput
+                <DateField
                   value={formData.refDate}
-                  onChange={(e) => handleInputChange("refDate", e.target.value)}
+                  onChange={(val) => handleInputChange("refDate", val)}
                 />
               </div>
             </div>
@@ -560,7 +608,7 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                   </div>
                   <div className="col-span-8">
                     <Input
-                      value={formData.contactPerson}
+                      value={formData.contactPerson} // Note: Keeping contactPerson binding as per original, ensure this is intended
                       onChange={(e) =>
                         handleInputChange("contactPerson", e.target.value)
                       }
@@ -626,11 +674,9 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                   <Label>Due Date</Label>
                 </div>
                 <div className="col-span-8">
-                  <DateInput
+                  <DateField
                     value={formData.dueDate}
-                    onChange={(e) =>
-                      handleInputChange("dueDate", e.target.value)
-                    }
+                    onChange={(val) => handleInputChange("dueDate", val)}
                   />
                 </div>
               </div>
