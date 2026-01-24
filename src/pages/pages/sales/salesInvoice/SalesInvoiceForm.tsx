@@ -27,16 +27,14 @@ export interface InvoiceFormData {
   cashCredit: string;
 
   // Store Info
-  store: string;
-  storeId?: string;
-  storeCode?: string; // <--- Added for API Request
+  store: string; // Holds Store Name (for UI)
+  storeCode?: string; // Holds Store Code (for API)
 
   // Customer Info
-  customer: string;
   customerId?: string;
-  customerCode?: string; // <--- Added for API Request
+  customer?: string; // Holds Customer Code
 
-  date: string; // YYYY-MM-DD
+  date: string;
 
   priceCategory: string;
   salesman: string;
@@ -69,6 +67,8 @@ interface ActionBtnProps {
 interface SalesInvoiceFormProps {
   themeColor?: string;
   onSubmit?: (data: InvoiceFormData) => void;
+  // NEW: Callback to notify parent of changes
+  onFormChange?: (data: InvoiceFormData) => void;
 }
 
 export interface SalesInvoiceFormRef {
@@ -116,7 +116,6 @@ const Input: React.FC<{
   />
 );
 
-// UPDATED: DateField now supports interaction and correct type
 const DateField: React.FC<{
   value: string;
   onChange: (val: string) => void;
@@ -170,32 +169,28 @@ const AccordionSection: React.FC<{
 
 // --- MAIN COMPONENT ---
 const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
-  ({ themeColor = "#0f3c63", onSubmit }, ref) => {
+  ({ themeColor = "#0f3c63", onSubmit, onFormChange }, ref) => {
     // --- State ---
     const [storeOptions, setStoreOptions] = useState<SimpleOption[]>([]);
     const [customerOptions, setCustomerOptions] = useState<SimpleOption[]>([]);
     const [salesmanOptions, setSalesmanOptions] = useState<SimpleOption[]>([]);
 
-    // RAW DATA HOLDERS (To look up codes)
     const [rawCustomers, setRawCustomers] = useState<any[]>([]);
-    const [rawStores, setRawStores] = useState<any[]>([]); // <--- Added
+    const [rawStores, setRawStores] = useState<any[]>([]);
 
     const [isBillToOpen, setBillToOpen] = useState<boolean>(false);
     const [isShipToOpen, setShipToOpen] = useState<boolean>(false);
     const [activeModal, setActiveModal] = useState<string | null>(null);
 
-    // Initial Date: Today in YYYY-MM-DD
     const getToday = () => new Date().toISOString().split("T")[0];
 
     const [formData, setFormData] = useState<InvoiceFormData>({
       gstType: "BillOfSupply",
       cashCredit: "Credit",
       store: "",
-      storeId: "",
       storeCode: "",
       customer: "",
       customerId: "",
-      customerCode: "",
       date: getToday(),
       priceCategory: "Default",
       salesman: "",
@@ -230,9 +225,8 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
 
     const loadDropdownData = async () => {
       try {
-        // 1. Stores
         const storesData = await fetchAllLocations();
-        setRawStores(storesData); // <--- Save Raw Stores
+        setRawStores(storesData);
 
         const mappedStores = storesData.map((item: any) => ({
           name: item.name || item.storeName,
@@ -240,31 +234,24 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
         }));
         setStoreOptions(mappedStores);
 
-        // Auto-select first store
         if (mappedStores.length > 0) {
           const firstStore = storesData[0];
-          // Try to find the code field (adjust key "code"/"storeCode" based on your actual API object)
-          const storeCode = firstStore.code || "";
 
-          setFormData((prev) => ({
-            ...prev,
+          updateFormState({
             store: mappedStores[0].name,
-            storeId: mappedStores[0].id,
-            storeCode: storeCode,
-          }));
+            storeCode:
+              (firstStore as any).code || (firstStore as any).storeCode || "",
+          });
         }
 
-        // 2. Customers
         const customersData = await getAllCustomers();
-        setRawCustomers(customersData); // Save Raw Customers
-
+        setRawCustomers(customersData);
         const mappedCustomers = customersData.map((item: any) => ({
           name: item.cust_name || item.name,
           id: item._id,
         }));
         setCustomerOptions(mappedCustomers);
 
-        // 3. Salesmen
         const salesData = await fetchSalesExecutives();
         const mappedSalesmen = salesData.map((item: any) => ({
           name: item.name,
@@ -276,65 +263,75 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
       }
     };
 
+    // Helper to update state AND notify parent
+    const updateFormState = (updates: Partial<InvoiceFormData>) => {
+      setFormData((prev) => {
+        const newData = { ...prev, ...updates };
+        if (onFormChange) {
+          onFormChange(newData);
+        }
+        return newData;
+      });
+    };
+
     // --- Dynamic Handler ---
     const handleDropdownChange = (
       field: keyof InvoiceFormData,
       item: SimpleOption | null,
     ) => {
-      setFormData((prev) => ({ ...prev, [field]: item?.name || "" }));
+      const value = item?.name || "";
+      let extraUpdates: Partial<InvoiceFormData> = {};
 
       // === STORE SELECTION ===
       if (field === "store" && item) {
         const fullStore = rawStores.find((s) => s._id === item.id);
-        const storeCode = fullStore?.code || fullStore?.storeCode || "";
+        const sCode = fullStore?.code || fullStore?.storeCode || "";
 
-        setFormData((prev) => ({
-          ...prev,
-          storeId: item.id,
-          storeCode: storeCode,
-        }));
+        extraUpdates = {
+          store: value, // Name (for UI)
+          storeCode: sCode, // Code (for API)
+        };
       }
 
       // === CUSTOMER SELECTION ===
       if (field === "customer" && item) {
-        setFormData((prev) => ({ ...prev, customerId: item.id }));
-
         const fullCustomer = rawCustomers.find(
           (c) => c._id === item.id || c.cust_name === item.name,
         );
 
         if (fullCustomer) {
-          // Extract Code (Adjust key "code"/"cust_code"/"customerCode")
           const cCode =
             fullCustomer.code ||
             fullCustomer.cust_code ||
-            fullCustomer.customerCode ||
+            fullCustomer.customer ||
             "";
 
-          // Format Addresses
           const billTo = `${fullCustomer.cust_name}\n${fullCustomer.address || ""}\n${fullCustomer.city || ""}, ${fullCustomer.state || ""} - ${fullCustomer.pin_code || ""}\nPhone: ${fullCustomer.phone || ""}`;
-
           const shipTo = `${fullCustomer.cust_name}\n${fullCustomer.address_ship || fullCustomer.address || ""}\n${fullCustomer.city_ship || fullCustomer.city || ""}, ${fullCustomer.state_ship || fullCustomer.state || ""} - ${fullCustomer.pin_code_ship || fullCustomer.pin_code || ""}\nPhone: ${fullCustomer.phone_ship || fullCustomer.phone || ""}`;
 
-          setFormData((prev) => ({
-            ...prev,
-            customerCode: cCode,
+          extraUpdates = {
+            customerId: item.id,
+            customer: cCode,
             email: fullCustomer.email || "",
-            priceCategory: fullCustomer.price_category || prev.priceCategory,
-            salesman: fullCustomer.sales_executive || prev.salesman,
+            priceCategory:
+              fullCustomer.price_category || formData.priceCategory,
+            salesman: fullCustomer.sales_executive || formData.salesman,
             placeOfSupply: fullCustomer.state || "",
-
             billToText: billTo,
             shipToText: shipTo,
             gstNo: fullCustomer.gst_no || "",
             contactPerson: fullCustomer.contact_person || "",
-          }));
+          };
+        } else {
+          extraUpdates = { customerId: item.id };
         }
       }
+
+      updateFormState({ [field]: value, ...extraUpdates });
     };
 
     const handleInputChange = (field: keyof InvoiceFormData, value: string) => {
-      setFormData((prev) => ({ ...prev, [field]: value }));
+      updateFormState({ [field]: value });
     };
 
     useImperativeHandle(ref, () => ({
@@ -402,7 +399,7 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
                     data={storeOptions}
                     columns={simpleColumns}
                     value={formData.store}
-                    valueKey="name"
+                    valueKey="name" // <--- FIXED: Changed from "store" to "name"
                     onChange={(item) => handleDropdownChange("store", item)}
                   />
                   <ActionBtn
@@ -479,7 +476,6 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
                 <Label required>Date</Label>
               </div>
               <div className="col-span-8">
-                {/* Updated Interactive Date Field */}
                 <DateField
                   value={formData.date}
                   onChange={(val) => handleInputChange("date", val)}

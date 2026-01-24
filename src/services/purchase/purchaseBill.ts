@@ -1,5 +1,7 @@
 import api from "../api";
 
+// --- Create Payload Interfaces ---
+
 export interface PurchaseBillItem {
   itemcode: string;
   quantity: number;
@@ -18,7 +20,7 @@ export interface PurchaseBillPayload {
     insurance: number;
     otherCharges: number;
   };
-
+  
   // --- Extra fields (Commented out until backend is ready) ---
   /*
   gstType?: string;
@@ -37,6 +39,45 @@ export interface PurchaseBillPayload {
   gstNo?: string;
   contactPerson?: string;
   */
+}
+
+// --- Get All Purchase Bills Interfaces (Matches your JSON response) ---
+
+export interface PurchaseBillDetailItem {
+  itemcode: string;
+  description: string;
+  quantity: number;
+  rate: number;
+  amount: number;
+  itemBalance: number;
+  hsn_code: string;
+  unit: string;
+  tax_code: string;
+  pack_qty: number;
+  taxable_amount: number;
+  tax_rate: number;
+  tax_amount: number;
+  cgst_amount: number;
+  sgst_amount: number;
+  igst_amount: number;
+  cess_amount: number;
+  pack_unit_name: string;
+  round_off: number;
+}
+
+export interface PurchaseBillData {
+  _id: string;
+  billNo: string;
+  billDate: string;
+  store: string;
+  vendor: string;
+  items: PurchaseBillDetailItem[];
+}
+
+export interface GetAllPurchaseBillsResponse {
+  success: boolean;
+  total: number;
+  data: PurchaseBillData[];
 }
 
 // --- Report Interfaces ---
@@ -81,9 +122,20 @@ export interface PurchaseBillReportResponse {
   data: PurchaseBillReportItem[];
 }
 
+// --- API Functions ---
+
 const createPurchaseBill = async (data: PurchaseBillPayload) => {
   try {
     const response = await api.post("/purchasebill/create", data);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const getAllPurchaseBills = async (): Promise<GetAllPurchaseBillsResponse> => {
+  try {
+    const response = await api.get("/purchasebill/getallpurchasebill");
     return response.data;
   } catch (error) {
     throw error;
@@ -101,6 +153,7 @@ const getPurchaseBillReport = async (): Promise<PurchaseBillReportResponse> => {
 
 const purchaseBillService = {
   createPurchaseBill,
+  getAllPurchaseBills,
   getPurchaseBillReport,
 };
 

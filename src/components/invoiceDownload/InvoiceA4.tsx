@@ -154,7 +154,7 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
   );
 
   return (
-    <div className="w-auto bg-gray-100 flex flex-col items-center min-h-screen font-sans pb-10">
+    <div className="w-auto bg-gray-100 flex flex-col items-center min-h-screen font-sans pb-7">
       <button
         onClick={handlePrint}
         className="p-2 mt-4 mb-4 text-gray-600 dark:text-gray-300 border border-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"

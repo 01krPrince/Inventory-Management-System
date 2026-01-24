@@ -17,14 +17,21 @@ import {
   Star,
   Filter,
   GripVertical,
+  ChevronRight,
+  ChevronDown,
+  File,
 } from "lucide-react";
 import { useTabs } from "../../../context/TabContext";
+
+// --- Types ---
 
 interface ReportItem {
   label: string;
   type: "folder" | "link";
   date?: string;
   path?: string;
+  // New: Allow nesting
+  children?: ReportItem[];
 }
 
 interface ReportSection {
@@ -34,6 +41,8 @@ interface ReportSection {
   items: ReportItem[];
   isFavourite?: boolean;
 }
+
+// --- Initial Data (Updated with Nesting) ---
 
 const INITIAL_DATA: ReportSection[] = [
   {
@@ -58,10 +67,23 @@ const INITIAL_DATA: ReportSection[] = [
         type: "folder",
         path: "/report/financial-analysis",
       },
+      // SCENARIO: Folder with Multiple Files
+      // This will render as a collapsible folder
       {
         label: "Stock Analysis",
         type: "folder",
-        path: "/report/stock-analysis",
+        children: [
+          {
+            label: "Stock Summary",
+            type: "link",
+            path: "/report/stock-analysis/summary",
+          },
+          {
+            label: "Stock In/Out Analyses",
+            type: "link",
+            path: "/report/stock-analysis/in-out",
+          },
+        ],
       },
       {
         label: "Sales Analysis",
@@ -91,7 +113,19 @@ const INITIAL_DATA: ReportSection[] = [
     icon: <BarChart3 size={18} className="text-white" />,
     items: [
       { label: "Primary Books", type: "folder", path: "/report/primary-books" },
-      { label: "Ledgers", type: "folder", path: "/report/ledgers" },
+      // SCENARIO: Folder with ONLY ONE file (Flattening Test)
+      // The "Ledgers Folder" wrapper will be ignored, and "Main Ledger" will show directly.
+      {
+        label: "Ledgers Folder",
+        type: "folder",
+        children: [
+          {
+            label: "Main Ledger (Flattened)",
+            type: "link",
+            path: "/report/ledgers",
+          },
+        ],
+      },
       {
         label: "Trial Balance",
         type: "folder",
@@ -597,12 +631,125 @@ const INITIAL_DATA: ReportSection[] = [
   },
 ];
 
+// --- Sub-Component: Recursive Item Renderer ---
+
+interface ReportItemViewProps {
+  item: ReportItem;
+  isFavouriteSection: boolean;
+  onDragStart: (e: React.DragEvent, item: ReportItem) => void;
+  onClick: (item: ReportItem) => void;
+  level?: number; // To handle indentation for nested items
+}
+
+const ReportItemView: React.FC<ReportItemViewProps> = ({
+  item,
+  isFavouriteSection,
+  onDragStart,
+  onClick,
+  level = 0,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  // LOGIC: If children exist and length == 1, Flatten (Recursively render the child directly)
+  if (item.children && item.children.length === 1) {
+    return (
+      <ReportItemView
+        item={item.children[0]}
+        isFavouriteSection={isFavouriteSection}
+        onDragStart={onDragStart}
+        onClick={onClick}
+        level={level} // Keep same level as parent since we are replacing it
+      />
+    );
+  }
+
+  // LOGIC: If children exist and length > 1, Render as Folder (Accordion)
+  if (item.children && item.children.length > 1) {
+    return (
+      <div className="select-none">
+        <div
+          onClick={() => setIsOpen(!isOpen)}
+          className={`flex items-center gap-2 px-2 py-1.5 rounded hover:bg-blue-50 text-slate-700 cursor-pointer text-[13px] transition-colors`}
+          style={{ paddingLeft: `${level * 12 + 8}px` }} // Indentation
+        >
+          {/* Chevron for expansion */}
+          <div className="text-slate-400">
+            {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          </div>
+
+          <div className="text-[#2c4c70]">
+            <Folder
+              size={16}
+              strokeWidth={1.5}
+              fill={isOpen ? "#e0f2fe" : "none"}
+            />
+          </div>
+
+          <span className="leading-5 font-medium">{item.label}</span>
+        </div>
+
+        {/* Recursive Children */}
+        {isOpen && (
+          <div className="border-l border-slate-200 ml-[19px]">
+            {item.children.map((child, idx) => (
+              <ReportItemView
+                key={idx}
+                item={child}
+                isFavouriteSection={isFavouriteSection}
+                onDragStart={onDragStart}
+                onClick={onClick}
+                level={level + 1}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // LOGIC: Standard Link/File Item (No Children or flattened leaf)
+  return (
+    <li
+      draggable={!isFavouriteSection}
+      onDragStart={(e) => onDragStart(e, item)}
+      onClick={() => onClick(item)}
+      className={`flex items-start gap-2 px-2 py-1.5 rounded hover:bg-blue-50 text-slate-700 cursor-pointer group/item text-[13px] ${
+        !isFavouriteSection ? "cursor-grab active:cursor-grabbing" : ""
+      }`}
+      style={{ paddingLeft: `${level * 12 + 8}px` }}
+    >
+      {!isFavouriteSection && (
+        <GripVertical
+          size={14}
+          className="text-slate-300 opacity-0 group-hover/item:opacity-100 mt-0.5 shrink-0"
+        />
+      )}
+
+      <div className="mt-0.5 text-[#2c4c70] shrink-0">
+        {/* Use different icon for leaf nodes if desired, currently staying consistent with UI */}
+        {item.type === "folder" ? (
+          <Folder size={16} strokeWidth={1.5} />
+        ) : level > 0 ? (
+          <File size={15} strokeWidth={1.5} className="text-slate-500" />
+        ) : (
+          <Folder size={16} strokeWidth={1.5} />
+        )}
+      </div>
+
+      <span className="leading-5">{item.label}</span>
+    </li>
+  );
+};
+
+// --- Main Component ---
+
 const ReportDashboard: React.FC = () => {
   const { addTab } = useTabs();
   const [reportsData, setReportsData] = useState<ReportSection[]>(INITIAL_DATA);
   const [searchTerm, setSearchTerm] = useState("");
   const [isDragOverFav, setIsDragOverFav] = useState(false);
 
+  // Date Filter States
   const [datePreset, setDatePreset] = useState("all");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -612,7 +759,6 @@ const ReportDashboard: React.FC = () => {
   const handlePresetChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const preset = e.target.value;
     setDatePreset(preset);
-
     const today = new Date();
     let start = "";
     let end = "";
@@ -653,7 +799,6 @@ const ReportDashboard: React.FC = () => {
       default:
         start = "";
         end = "";
-        break;
     }
     setStartDate(start);
     setEndDate(end);
@@ -688,6 +833,7 @@ const ReportDashboard: React.FC = () => {
       if (favIndex === -1) return prevData;
 
       const favSection = prevData[favIndex];
+      // Simple duplicate check based on label
       const exists = favSection.items.some(
         (item) => item.label === droppedItem.label,
       );
@@ -702,23 +848,45 @@ const ReportDashboard: React.FC = () => {
     });
   };
 
-  const filteredData = reportsData
-    .map((section) => ({
-      ...section,
-      items: section.items.filter((item) => {
-        return item.label.toLowerCase().includes(searchTerm.toLowerCase());
-      }),
-    }))
-    .filter((section) => section.items.length > 0 || section.isFavourite);
-
   const handleReportClick = (item: ReportItem) => {
     if (item.path) {
       addTab({ name: item.label, path: item.path });
     }
   };
 
+  // Filter Logic: Recursively check items
+  const filterItems = (items: ReportItem[], term: string): ReportItem[] => {
+    if (!term) return items;
+    return items.reduce<ReportItem[]>((acc, item) => {
+      // Check if current item matches
+      const matches = item.label.toLowerCase().includes(term.toLowerCase());
+
+      // Check children
+      const childMatches = item.children
+        ? filterItems(item.children, term)
+        : [];
+
+      if (matches || childMatches.length > 0) {
+        // Keeping structure but ensuring parent shows if child matches.
+        acc.push({
+          ...item,
+          children: childMatches.length > 0 ? childMatches : item.children,
+        });
+      }
+      return acc;
+    }, []);
+  };
+
+  const filteredData = reportsData
+    .map((section) => ({
+      ...section,
+      items: filterItems(section.items, searchTerm),
+    }))
+    .filter((section) => section.items.length > 0 || section.isFavourite);
+
   return (
     <div className="min-h-screen bg-white p-4 font-sans">
+      {/* --- Filter Header --- */}
       <div className="bg-gray-100 p-3 rounded-md mb-6 flex flex-wrap items-center gap-4 text-sm border border-gray-200">
         <div className="flex items-center gap-2 font-medium text-slate-700">
           <Filter size={16} />
@@ -772,6 +940,7 @@ const ReportDashboard: React.FC = () => {
         </div>
       </div>
 
+      {/* --- Grid Layout --- */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredData.map((section) => {
           const dropZoneProps = section.isFavourite
@@ -792,6 +961,7 @@ const ReportDashboard: React.FC = () => {
                   : ""
               }`}
             >
+              {/* Card Header */}
               <div className="bg-[#2c4c70] px-3 py-2 flex items-center justify-between text-white shrink-0">
                 <div className="flex items-center gap-2">
                   <div className="bg-white/20 p-1 rounded-full">
@@ -800,15 +970,15 @@ const ReportDashboard: React.FC = () => {
                   <h3 className="font-semibold text-sm tracking-wide">
                     {section.title}
                   </h3>
-                  {!section.isFavourite && (
-                    <div className="w-3 h-3 bg-red-600 rounded-sm ml-1 shadow-sm"></div>
-                  )}
-                  {section.isFavourite && (
+                  {section.isFavourite ? (
                     <div className="w-3 h-3 bg-red-600 rounded-sm ml-1 shadow-sm opacity-0"></div>
+                  ) : (
+                    <div className="w-3 h-3 bg-red-600 rounded-sm ml-1 shadow-sm"></div>
                   )}
                 </div>
               </div>
 
+              {/* Card Body */}
               <div className="h-[250px] overflow-y-auto custom-scrollbar p-1 relative bg-white">
                 {section.isFavourite && (
                   <div
@@ -827,30 +997,13 @@ const ReportDashboard: React.FC = () => {
 
                 <ul className="space-y-0.5">
                   {section.items.map((item, idx) => (
-                    <li
+                    <ReportItemView
                       key={idx}
-                      draggable={!section.isFavourite}
-                      onDragStart={(e) => handleDragStart(e, item)}
-                      onClick={() => handleReportClick(item)}
-                      className={`flex items-start gap-2 px-2 py-1.5 rounded hover:bg-blue-50 text-slate-700 cursor-pointer group/item text-[13px] ${
-                        !section.isFavourite
-                          ? "cursor-grab active:cursor-grabbing"
-                          : ""
-                      }`}
-                    >
-                      {!section.isFavourite && (
-                        <GripVertical
-                          size={14}
-                          className="text-slate-300 opacity-0 group-hover/item:opacity-100 mt-0.5"
-                        />
-                      )}
-
-                      <div className="mt-0.5 text-[#2c4c70]">
-                        <Folder size={16} strokeWidth={1.5} />
-                      </div>
-
-                      <span className="leading-5">{item.label}</span>
-                    </li>
+                      item={item}
+                      isFavouriteSection={!!section.isFavourite}
+                      onDragStart={handleDragStart}
+                      onClick={handleReportClick}
+                    />
                   ))}
 
                   {section.items.length === 0 && !section.isFavourite && (

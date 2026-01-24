@@ -27,12 +27,12 @@ export interface PurchaseBillFormData {
   // Store Info
   store: string;
   storeId?: string;
-  storeCode?: string; // <--- Added for API
+  storeCode?: string;
 
   // Vendor Info
   vendor: string;
   vendorId?: string;
-  vendorCode?: string; // <--- Added for API
+  vendorCode?: string;
 
   priceCategory: string;
   tax: string;
@@ -69,6 +69,8 @@ interface ActionBtnProps {
 interface PurchaseBillFormProps {
   themeColor?: string;
   onSubmit?: (data: PurchaseBillFormData) => void;
+  // NEW: Callback to notify parent of changes
+  onFormChange?: (data: PurchaseBillFormData) => void;
 }
 
 export interface PurchaseBillFormRef {
@@ -184,14 +186,14 @@ const AccordionSection: React.FC<{
 
 // --- MAIN COMPONENT ---
 const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
-  ({ themeColor = "#0f3c63", onSubmit }, ref) => {
+  ({ themeColor = "#0f3c63", onSubmit, onFormChange }, ref) => {
     // --- State ---
     const [storeOptions, setStoreOptions] = useState<SimpleOption[]>([]);
     const [vendorOptions, setVendorOptions] = useState<SimpleOption[]>([]);
 
     // RAW DATA HOLDERS
     const [rawVendors, setRawVendors] = useState<any[]>([]);
-    const [rawStores, setRawStores] = useState<any[]>([]); // <--- Added
+    const [rawStores, setRawStores] = useState<any[]>([]);
 
     const [isBillToOpen, setBillToOpen] = useState<boolean>(false);
     const [isShipToOpen, setShipToOpen] = useState<boolean>(false);
@@ -240,6 +242,17 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
       "--theme-focus": "#60a5fa",
     } as React.CSSProperties;
 
+    // --- Helper to update state AND notify parent ---
+    const updateFormState = (updates: Partial<PurchaseBillFormData>) => {
+      setFormData((prev) => {
+        const newData = { ...prev, ...updates };
+        if (onFormChange) {
+          onFormChange(newData);
+        }
+        return newData;
+      });
+    };
+
     // --- Load Data ---
     useEffect(() => {
       loadDropdownData();
@@ -249,7 +262,7 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
       try {
         // 1. Stores
         const storesData = await fetchAllLocations();
-        setRawStores(storesData); // Save Raw Stores
+        setRawStores(storesData);
 
         const mappedStores = storesData.map((item: any) => ({
           name: item.name || item.storeName,
@@ -260,20 +273,19 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
         // Auto-select first store
         if (mappedStores.length > 0) {
           const firstStore = storesData[0];
-          // Try to find the code field
           const sCode = firstStore.code || "";
 
-          setFormData((prev) => ({
-            ...prev,
+          // Use updateFormState to sync with parent initially
+          updateFormState({
             store: mappedStores[0].name,
             storeId: mappedStores[0].id,
             storeCode: sCode,
-          }));
+          });
         }
 
         // 2. Vendors
         const vendorsData = await getAllVendors();
-        setRawVendors(vendorsData); // Store raw data
+        setRawVendors(vendorsData);
 
         const mappedVendors = vendorsData.map((item: any) => ({
           name: item.vend_name || item.name,
@@ -290,28 +302,26 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
       field: keyof PurchaseBillFormData,
       item: SimpleOption | null,
     ) => {
-      setFormData((prev) => ({ ...prev, [field]: item?.name || "" }));
+      const value = item?.name || "";
+      let updates: Partial<PurchaseBillFormData> = { [field]: value };
 
       // === STORE SELECTION ===
       if (field === "store" && item) {
         const fullStore = rawStores.find((s) => s._id === item.id);
         const sCode = fullStore?.code || fullStore?.storeCode || "";
 
-        setFormData((prev) => ({
-          ...prev,
+        updates = {
+          ...updates,
           storeId: item.id,
           storeCode: sCode,
-        }));
+        };
       }
 
       // === VENDOR SELECTION ===
       if (field === "vendor" && item) {
-        setFormData((prev) => ({ ...prev, vendorId: item.id }));
-
         const fullVendor = rawVendors.find((v) => v._id === item.id);
 
         if (fullVendor) {
-          // Extract Code
           const vCode = fullVendor.code || fullVendor.vend_code || "";
 
           // 1. Format Bill To Address
@@ -320,29 +330,32 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
           // 2. Format Ship To Address
           const shipTo = `${fullVendor.vend_name || fullVendor.name || ""}\n${fullVendor.address_ship || fullVendor.address || ""}\n${fullVendor.city_ship || fullVendor.city || ""}, ${fullVendor.state_ship || fullVendor.state || ""} - ${fullVendor.pin_code_ship || fullVendor.pin_code || ""}\nPhone: ${fullVendor.phone_ship || fullVendor.phone || ""}`;
 
-          setFormData((prev) => ({
-            ...prev,
+          updates = {
+            ...updates,
+            vendorId: item.id,
             vendorCode: vCode,
             email: fullVendor.email || "",
-            priceCategory: fullVendor.price_category || prev.priceCategory,
-            paymentTerms: fullVendor.payment_term || prev.paymentTerms,
+            priceCategory: fullVendor.price_category || formData.priceCategory,
+            paymentTerms: fullVendor.payment_term || formData.paymentTerms,
             placeOfSupply: fullVendor.state || "",
-
-            // Auto-fill fields
             billToText: billTo,
             shipToText: shipTo,
             gstNo: fullVendor.gst_no || "",
             contactPerson: fullVendor.contact_person || "",
-          }));
+          };
+        } else {
+          updates.vendorId = item.id;
         }
       }
+
+      updateFormState(updates);
     };
 
     const handleInputChange = (
       field: keyof PurchaseBillFormData,
       value: string,
     ) => {
-      setFormData((prev) => ({ ...prev, [field]: value }));
+      updateFormState({ [field]: value });
     };
 
     useImperativeHandle(ref, () => ({
@@ -608,7 +621,7 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                   </div>
                   <div className="col-span-8">
                     <Input
-                      value={formData.contactPerson} // Note: Keeping contactPerson binding as per original, ensure this is intended
+                      value={formData.contactPerson} // Keeping as is per request, though likely a copy-paste error in original code
                       onChange={(e) =>
                         handleInputChange("contactPerson", e.target.value)
                       }

@@ -1,14 +1,18 @@
 import React, { useState, useRef } from "react";
-import { X } from "lucide-react"; // Added X for modal close
-import { ToWords } from "to-words"; // Import ToWords
+import { X, Save } from "lucide-react";
+import { ToWords } from "to-words";
 
 import PurchaseBillHeader from "./PurchaseBillHeader";
 import PurchaseBillForm, { PurchaseBillFormRef } from "./PurchaseBillForm";
 import OrderTable, { OrderTableRef } from "../../sales/salesInvoice/OrderTable";
-import PurchaseBillFooter from "./PurchaseBillFooter";
+import PurchaseBillFooter, {
+  PurchaseBillFooterRef,
+} from "./PurchaseBillFooter";
 import { COLORS } from "../../../../constants/colors";
 
 import purchaseBillService from "../../../../services/purchase/purchaseBill";
+import { fetchProfitAnalysis } from "../../../../services/analysis/profitService";
+import ProfitAnalysisModal from "../../../../components/ProfitAnalysisModal";
 
 import LedgerAttributes, {
   LedgerData,
@@ -18,14 +22,17 @@ import GoodsRecieptNoteLogistics, {
   LogisticsData,
 } from "../goodsRecieptNote/GoodsRecieptNoteLogistics";
 
-// Import the Invoice Component
 import PurchaseBillInvoice from "../../../../components/invoiceDownload/PurchaseBillInvoice";
 
 const PurchaseBill: React.FC = () => {
   const orderTableRef = useRef<OrderTableRef>(null);
   const formRef = useRef<PurchaseBillFormRef>(null);
+  const footerRef = useRef<PurchaseBillFooterRef>(null);
 
-  const [remarks, setRemarks] = useState("Testing logistics distribution");
+  const [cashCredit, setCashCredit] = useState<string>("Credit");
+
+  const [isAnalysisOpen, setAnalysisOpen] = useState(false);
+  const [analysisData, setAnalysisData] = useState<any>(null);
 
   const [ledgerData, setLedgerData] = useState<LedgerData>({
     employee: "",
@@ -83,12 +90,10 @@ const PurchaseBill: React.FC = () => {
     otherChargesTender: "",
   });
 
-  // --- UI State ---
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showBillPreview, setShowBillPreview] = useState(false);
   const [generatedBillData, setGeneratedBillData] = useState<any>(null);
 
-  // Number to Words Converter
   const toWords = new ToWords({
     localeCode: "en-IN",
     converterOptions: {
@@ -98,39 +103,90 @@ const PurchaseBill: React.FC = () => {
     },
   });
 
+  const handleFormChange = (data: any) => {
+    if (data.cashCredit) {
+      setCashCredit(data.cashCredit);
+    }
+  };
+
+  const handleAnalyzeProfit = async (tableRows: any[]) => {
+    if (!tableRows || tableRows.length === 0) {
+      alert("Please add items to the table first.");
+      return;
+    }
+
+    const formData = formRef.current?.getFormData();
+    const storeId = formData?.storeId;
+
+    if (!storeId) {
+      alert("Please select a Store in the form.");
+      return;
+    }
+
+    const itemsPayload = tableRows.map((row) => ({
+      item: row.data.itemId,
+      quantity: Number(row.data.qty),
+      sellingPrice: Number(row.data.rate),
+    }));
+
+    try {
+      const response = await fetchProfitAnalysis({
+        store: storeId,
+        items: itemsPayload,
+        totalExpenses: 0,
+      });
+
+      if (!response.success) throw new Error("Analysis failed");
+
+      const mergedItems = response.items.map((apiItem: any) => {
+        const originalRow = tableRows.find(
+          (r) => r.data.itemId === apiItem.item,
+        );
+        return {
+          ...apiItem,
+          itemName: originalRow?.data.desc || "Unknown Item",
+          itemCode: originalRow?.data.select || "N/A",
+        };
+      });
+
+      setAnalysisData({ ...response, items: mergedItems });
+      setAnalysisOpen(true);
+    } catch (error: any) {
+      console.error("Analysis Error:", error);
+      alert(error.message || "Failed to fetch profit analysis.");
+    }
+  };
+
   const handleFinalSubmit = async () => {
     setIsSubmitting(true);
 
     try {
       const formData = formRef.current?.getFormData();
+      const tableSource: any = orderTableRef.current?.getTableData?.();
+      const footerData = footerRef.current?.getFooterData();
 
       if (!formData) {
         alert("Form data is missing");
-        setIsSubmitting(false);
         return;
       }
-
-      if (!formData.storeCode) {
-        alert("Store Code is missing. Please re-select the Store.");
-        setIsSubmitting(false);
+      if (!formData.storeCode || !formData.vendorCode) {
+        alert("Store or Vendor Code is missing.");
         return;
       }
-      if (!formData.vendorCode) {
-        alert("Vendor Code is missing. Please re-select the Vendor.");
-        setIsSubmitting(false);
-        return;
-      }
-
-      const tableSource: any = orderTableRef.current?.getTableData?.();
       const rawRows = tableSource?.visibleRows || [];
+      if (rawRows.length === 0) {
+        alert("Please add at least one item.");
+        return;
+      }
 
-      // Map Items to API structure
+      // Prepare items for API
       const apiItems = rawRows.map((row: any) => {
         const item = row.data || row;
         return {
-          itemcode: item.select || item.itemCode || "",
+          itemCode: item.select || item.itemCode || "",
           quantity: Number(item.qty || 0),
           rate: Number(item.rate || 0),
+          amount: Number(item.amount || 0),
         };
       });
 
@@ -138,7 +194,20 @@ const PurchaseBill: React.FC = () => {
         billDate: formData.orderDate || new Date().toISOString().split("T")[0],
         storeCode: formData.storeCode,
         vendorCode: formData.vendorCode,
-        remarks: remarks,
+        cashCredit: cashCredit,
+        gstType: formData.gstType,
+
+        // Footer Data
+        remarks: footerData?.remarks || "Purchase Bill",
+        receivedAmount: footerData?.receivedAmount || 0,
+        cashBankLedger: footerData?.cashBankLedger || "",
+        itemValue: footerData?.itemValue || 0,
+        discount: footerData?.discount1 || 0,
+        taxable: footerData?.taxable || 0,
+        taxAmount: footerData?.taxAmount || 0,
+        roundOff: footerData?.roundOff || 0,
+        netAmount: footerData?.docAmount || 0,
+
         items: apiItems,
         logistics: {
           freight: Number(logisticsData.freight) || 0,
@@ -148,126 +217,109 @@ const PurchaseBill: React.FC = () => {
         },
       };
 
-      console.log("🚀 SENDING PAYLOAD:", JSON.stringify(payload, null, 2));
+      console.log("🚀 PAYLOAD:", JSON.stringify(payload, null, 2));
 
-      // Validation
-      if (apiItems.length > 0 && apiItems.some((i: any) => !i.itemcode)) {
-        console.warn("Missing itemcode detected in items:", apiItems);
-        alert(
-          "Warning: Some items do not have an Item Code. Please check the console.",
-        );
-        setIsSubmitting(false);
-        return;
-      }
-
+      // --- API CALL ---
       const response = await purchaseBillService.createPurchaseBill(
         payload as any,
       );
       console.log("✅ API SUCCESS:", response);
 
-      // --- GENERATE INVOICE DATA FOR PREVIEW ---
       const responseData = response.data;
-      const resItems = responseData.items || [];
-      const resLogistics = responseData.logistics || {};
+      // responseData has: billNo, store (name), vendor (name), items[], logistics{}
 
-      // 1. Calculate Totals
-      let subTotal = 0;
-      const mappedItems = resItems.map((item: any, index: number) => {
-        const amount = Number(item.amount || 0); // 4803430
-        subTotal += amount;
+      const grandTotal = footerData?.docAmount || 0;
 
-        return {
-          sNo: index + 1,
-          description: item.description,
-          hsnSac: "", // Not in response, leave empty or map if available
-          packQty: 0, // Not in response
-          qty: item.quantity,
-          uom: "NOS", // Default
-          rate: item.rate,
-          discountPercent: 0,
-          amount: amount,
-        };
-      });
-
-      // Logistics Totals
-      const freight = Number(resLogistics.freight || 0);
-      const loading = Number(resLogistics.loadingUnloading || 0);
-      const insurance = Number(resLogistics.insurance || 0);
-      const other = Number(resLogistics.otherCharges || 0);
-      const totalLogistics = freight + loading + insurance + other;
-
-      // Tax Calculation (Assuming 0 for now as response doesn't provide it)
-      // If you want to calculate tax from taxable value, add logic here.
-      const totalTax = 0;
-      const grandTotal = subTotal + totalLogistics + totalTax;
-
-      // 2. Map to InvoiceData Interface
+      // === GENERATE INVOICE DATA BASED ON RESPONSE ===
       const invoicePreviewData = {
         header: {
           title: "PURCHASE BILL",
           subTitle: "Internal Copy",
           originalFor: "Original",
-          logoUrl: "", // Add logo URL if needed
         },
+        // SELLER = VENDOR (From Response)
         seller: {
-          // In a Purchase Bill, the "Seller" is the Vendor
-          name: responseData.vendor, // "A.K. TRADING COMPANY"
-          addressLine1: formData.billToText?.split("\n")[1] || "", // Extracting from form text
-          addressLine2: formData.billToText?.split("\n")[2] || "",
-          cityStateZip: "",
+          name: responseData.vendor, // e.g., "M/S VIJENDRA SPORTS"
+          addressLine1: formData.billToText?.split("\n")[1] || "",
           gstin: formData.gstNo || "",
-          pan: "",
+          phone: "",
+          email: "",
         },
-        invoiceDetails: {
-          invoiceNo: responseData.billNo, // "PB0101"
-          invoiceDate: new Date(responseData.billDate).toLocaleDateString(
-            "en-GB",
-          ),
-          reverseCharge: "No",
-          placeOfSupply: formData.placeOfSupply || "",
-          station: "",
-          vehicleNo: logisticsData.vehicleNo,
-          grRrNo: "",
-          distance: logisticsData.distance,
-          shippingCompany: logisticsData.shippingCompany,
-        },
+        // BILLING = STORE (From Response)
         billing: {
-          // "Bill To" is Us (The Store)
-          name: responseData.store, // "CHANDAN KHEL GHAR"
+          name: responseData.store, // e.g., "CHANDAN KHEL GHAR"
           addressLine1: formData.shipToText?.split("\n")[1] || "",
-          addressLine2: "",
           cityStateZip: "",
           gstin: "",
+          pan: "",
         },
+        // SHIPPING (Same as Billing/Store usually)
         shipping: {
-          // "Ship To" is Us (The Store)
           name: responseData.store,
           addressLine1: formData.shipToText?.split("\n")[1] || "",
-          addressLine2: formData.shipToText?.split("\n")[2] || "",
           cityStateZip: "",
           phone: "",
         },
-        items: mappedItems,
+        invoiceDetails: {
+          invoiceNo: responseData.billNo, // e.g., "PB0103"
+          invoiceDate: new Date(responseData.billDate).toLocaleDateString(
+            "en-GB",
+          ),
+          placeOfSupply: formData.placeOfSupply || "",
+          vehicleNo: logisticsData.vehicleNo,
+        },
+
+        // Map Items directly from Response to ensure descriptions match backend
+        items: responseData.items.map((item: any, idx: number) => ({
+          sNo: idx + 1,
+          description: item.description || "Item", // e.g., "Swimming Tube 80"
+          hsnSac: "",
+          packQty: 0,
+          qty: item.quantity,
+          uom: "PCS",
+          rate: item.rate,
+          discountPercent: 0,
+          amount: item.amount,
+        })),
+
         totals: {
-          subTotal: subTotal,
-          discount: 0,
-          taxableAmount: subTotal, // Assuming subTotal is taxable
-          cgst: 0,
+          subTotal: footerData?.itemValue || 0,
+          discount: footerData?.discount1 || 0,
+          taxableAmount: footerData?.taxable || 0,
+          cgst: 0, // Not returned in response, using defaults or logic if needed
           sgst: 0,
           cess: 0,
-          roundOff: 0,
+          roundOff: footerData?.roundOff || 0,
           grandTotal: grandTotal,
           amountInWords: toWords.convert(grandTotal),
-          taxAmountInWords: "Zero Only",
+          taxAmountInWords: "",
         },
-        taxTable: [], // Empty if no tax details provided
+
+        // Construct Tax Table (Using Footer Data as Response lacks breakdown)
+        taxTable: [
+          {
+            rate: "Tax",
+            taxableValue: footerData?.taxable || 0,
+            cgst: 0,
+            sgst: 0,
+            igst: 0,
+            totalTax: footerData?.taxAmount || 0,
+          },
+        ],
+
+        // Map Logistics from Response
         logistics: {
-          mode: logisticsData.shippingMode,
-          weight: logisticsData.weight,
-          bundles: logisticsData.noOfPackets,
-          chargesPaid: totalLogistics.toFixed(2),
+          mode: logisticsData.shippingMode || "Road",
+          weight: logisticsData.weight || "0",
+          bundles: logisticsData.noOfPackets || "0",
+          chargesPaid: (
+            (Number(responseData.logistics?.freight) || 0) +
+            (Number(responseData.logistics?.loadingUnloading) || 0) +
+            (Number(responseData.logistics?.insurance) || 0) +
+            (Number(responseData.logistics?.otherCharges) || 0)
+          ).toFixed(2),
           docExtraInfo: "",
-          remarks: responseData.remarks,
+          remarks: responseData.remarks || "",
         },
         signatory: {
           companyName: responseData.store,
@@ -292,11 +344,11 @@ const PurchaseBill: React.FC = () => {
       <PurchaseBillHeader />
 
       <div className="flex-1 overflow-auto p-4 space-y-4">
-        <PurchaseBillForm ref={formRef} />
+        <PurchaseBillForm ref={formRef} onFormChange={handleFormChange} />
 
-        <OrderTable ref={orderTableRef} />
+        <OrderTable ref={orderTableRef} onAnalyze={handleAnalyzeProfit} />
 
-        <PurchaseBillFooter remarks={remarks} onRemarksChange={setRemarks} />
+        <PurchaseBillFooter ref={footerRef} cashCredit={cashCredit} />
 
         <LedgerAttributes data={ledgerData} onChange={setLedgerData} />
 
@@ -317,16 +369,21 @@ const PurchaseBill: React.FC = () => {
             disabled={isSubmitting}
             className="px-10 py-2 bg-[#0f3c63] text-white rounded font-bold hover:bg-[#1a4a75] transition-colors disabled:bg-gray-400"
           >
+            <Save size={18} className="inline mr-2" />
             {isSubmitting ? "Saving..." : "Save Purchase Bill"}
           </button>
         </div>
       </div>
 
-      {/* --- INVOICE PREVIEW MODAL --- */}
+      <ProfitAnalysisModal
+        isOpen={isAnalysisOpen}
+        onClose={() => setAnalysisOpen(false)}
+        data={analysisData}
+      />
+
       {showBillPreview && generatedBillData && (
         <div className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="relative bg-white w-full max-w-4xl h-[90vh] rounded shadow-2xl flex flex-col">
-            {/* Modal Header */}
             <div className="flex justify-between items-center bg-gray-100 px-4 py-3 border-b">
               <h3 className="font-bold text-gray-700">
                 Purchase Bill Generated
@@ -338,8 +395,6 @@ const PurchaseBill: React.FC = () => {
                 <X size={18} />
               </button>
             </div>
-
-            {/* Modal Content (The Invoice) */}
             <div className="flex-1 overflow-auto bg-gray-50 p-6 custom-scrollbar">
               <PurchaseBillInvoice data={generatedBillData} />
             </div>

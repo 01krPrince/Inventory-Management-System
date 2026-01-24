@@ -16,8 +16,6 @@ import InvoiceA4 from "../../../../components/invoiceDownload/InvoiceA4";
 
 import { COLORS } from "../../../../constants/colors";
 import { createSalesInvoice } from "./salesInvoiceService";
-// We don't strictly need the adapter if we build the payload manually below to be safe
-// import { prepareInvoicePayload } from "./invoiceAdapter";
 
 const SalesInvoice: React.FC = () => {
   const [showBillPreview, setShowBillPreview] = useState(false);
@@ -27,6 +25,9 @@ const SalesInvoice: React.FC = () => {
   // Profit Analysis State
   const [isAnalysisOpen, setAnalysisOpen] = useState(false);
   const [analysisData, setAnalysisData] = useState<any>(null);
+
+  // New State for Cash/Credit (Lifted from form)
+  const [cashCredit, setCashCredit] = useState<string>("Credit");
 
   // Refs
   const formRef = useRef<SalesInvoiceFormRef>(null);
@@ -43,21 +44,17 @@ const SalesInvoice: React.FC = () => {
     },
   });
 
+  // Handler to sync form state with parent
+  const handleFormChange = (data: InvoiceFormData) => {
+    setCashCredit(data.cashCredit);
+  };
+
   /* =========================
       HANDLE PROFIT ANALYSIS
    ========================== */
   const handleAnalyzeProfit = async (tableRows: any[]) => {
     if (!tableRows || tableRows.length === 0) {
       alert("Please add items to the table first.");
-      return;
-    }
-
-    const formData = formRef.current?.getFormData();
-    // Use storeId for analysis (backend usually expects ID for lookups here)
-    const storeId = formData?.storeId;
-
-    if (!storeId) {
-      alert("Please select a Store in the form.");
       return;
     }
 
@@ -78,9 +75,14 @@ const SalesInvoice: React.FC = () => {
       });
     }
 
+    // Note: Assuming 'store' is available in scope or derived from formRef.
+    // If 'store' variable is missing in this scope, fetch it from formRef:
+    const currentFormData = formRef.current?.getFormData();
+    const currentStore = currentFormData?.store || "";
+
     try {
       const response = await fetchProfitAnalysis({
-        store: storeId,
+        store: currentStore,
         items: itemsPayload,
         totalExpenses: 0,
       });
@@ -124,49 +126,40 @@ const SalesInvoice: React.FC = () => {
         return;
       }
 
-      // 2. Get Footer Data (Discounts, Round off, etc.)
+      // 2. Get Footer Data
       const footerData = footerRef.current?.getFooterData();
       if (!footerData) return;
 
       // --- CALCULATE GRAND TOTAL ---
-      // We need this for 'receivedAmount' in request body
       let currentGrandTotal = 0;
       const mappedItems = tableData.visibleRows.map((row) => {
         const qty = Number(row.data.qty || 0);
         const rate = Number(row.data.rate || 0);
 
-        // Assuming your backend handles tax calc, but for 'receivedAmount'
-        // we might need a rough total. If footer has logic, use footerData.
-        // For now, let's sum line amounts.
         currentGrandTotal += qty * rate;
 
-        // Return the exact item structure for API
         return {
-          itemCode: row.data.select, // Assuming 'select' holds the Item Code (e.g. "000376")
+          itemCode: row.data.select, // Assuming 'select' holds the item code (e.g. "000377")
           quantity: qty,
           rate: rate,
         };
       });
 
       // --- 3. CONSTRUCT PAYLOAD MANUALLY ---
-      // This ensures we match your REQUIRED format exactly
+      // UPDATED: Now using formData.storeCode for the 'store' field in API
       const apiPayload = {
-        storeCode: formData.storeCode, // "00001"
-        customerCode: formData.customerCode, // "000005"
-        date: formData.date, // "2026-01-17"
-        gstType: formData.gstType, // "Intra"
-        cashCredit: formData.cashCredit, // "Cash"
-
-        // Using form data or calculating total if not provided
-        receivedAmount: currentGrandTotal, // 1002998 (Example)
-
-        cashBankLedger: "Cash", // Hardcoded per your request/example
+        store: formData.storeCode || formData.store, // Use Code first, fallback to name (safeguard)
+        customer: formData.customer, // Holds Customer Code based on form logic
+        date: formData.date,
+        gstType: formData.gstType,
+        cashCredit: formData.cashCredit,
+        receivedAmount: currentGrandTotal,
+        cashBankLedger: "Cash",
         remarks: formData.refNo || "Sales Invoice",
         items: mappedItems,
       };
 
-      // Validation Check
-      if (!apiPayload.storeCode || !apiPayload.customerCode) {
+      if (!apiPayload.store || !apiPayload.customer) {
         alert(
           "Error: Missing Store Code or Customer Code. Please re-select them in the form.",
         );
@@ -191,7 +184,6 @@ const SalesInvoice: React.FC = () => {
       const responseData = result.data;
       const resItems = responseData.items || [];
 
-      // Calculate Totals for Preview
       let calculatedGrandTotal = 0;
       let calculatedTotalTax = 0;
       let calculatedTaxable = 0;
@@ -288,7 +280,7 @@ const SalesInvoice: React.FC = () => {
    ========================== */
   return (
     <div
-      className="flex flex-col h-screen overflow-hidden"
+      className="flex flex-col overflow-hidden"
       style={{ backgroundColor: COLORS.background }}
     >
       {/* HEADER */}
@@ -297,9 +289,14 @@ const SalesInvoice: React.FC = () => {
       {/* CONTENT AREA */}
       <div className="flex-1 overflow-auto px-4 py-3 pb-24 custom-scrollbar">
         <div className="max-w-[1400px] mx-auto flex flex-col gap-4">
-          <SalesInvoiceForm ref={formRef} onSubmit={handleFormSubmit} />
+          <SalesInvoiceForm
+            ref={formRef}
+            onSubmit={handleFormSubmit}
+            onFormChange={handleFormChange}
+          />
           <OrderTable ref={orderTableRef} onAnalyze={handleAnalyzeProfit} />
-          <InvoiceFooter ref={footerRef} />
+          {/* Passed the live state value here */}
+          <InvoiceFooter ref={footerRef} cashCredit={cashCredit} />
           <LedgerAttributes />
         </div>
       </div>

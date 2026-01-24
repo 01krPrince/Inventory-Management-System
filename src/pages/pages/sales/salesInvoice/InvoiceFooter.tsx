@@ -11,10 +11,8 @@ import Attachment from "../../../../components/Attachment";
 import GenerateEMIModal from "./GenerateEMIModal";
 import ChartOfAccounts from "../../../../components/ChartOfAccount";
 import Dropdown, { ColumnDef } from "../../../../components/Dropdown";
-import {
-  fetchSalesAndPurchaseGL,
-  SalesAndPurchaseGL,
-} from "../../../../components/addItemMaster/api/saleAndPurchaseGL";
+import { SalesAndPurchaseGL } from "../../../../components/addItemMaster/api/saleAndPurchaseGL";
+import chartOfAccountService from "../../../../services/chartOfAccountService";
 
 // --- Interfaces ---
 export interface InvoiceFooterRef {
@@ -23,30 +21,70 @@ export interface InvoiceFooterRef {
     receivedAmount: number;
     cashBankLedger: string;
     emiData: any;
+
+    // New Specific Footer Fields
+    itemValue: number;
+    promoDiscount: number;
+    promoDiscount2: number;
+    couponDiscount: number;
+    discount1: number;
+    discount2: number;
+    taxable: number;
+    taxAmount: number;
+
+    // Split Fields
+    splitDiscountVal: number;
+    splitDiscountAmt: number;
+    splitDiscountPercentVal: number;
+    splitDiscountPercentAmt: number;
+
+    roundOff: number;
+    docAmount: number;
   };
 }
 
 type InvoiceFooterProps = {
   amount?: number;
+  cashCredit?: string;
 };
 
-const glColumns: ColumnDef<SalesAndPurchaseGL>[] = [
+// Updated columns to match mapped data
+const glColumns: ColumnDef<any>[] = [
   { header: "Code", key: "code", width: "w-1/4" },
   { header: "Name", key: "name", width: "w-3/4" },
 ];
 
 const InvoiceFooter = forwardRef<InvoiceFooterRef, InvoiceFooterProps>(
-  ({ amount = -8500 }, ref) => {
-    // --- Refs ---
+  ({ amount = 0, cashCredit }, ref) => {
+    // --- Refs for Basic Fields ---
     const remarksRef = useRef<HTMLTextAreaElement>(null);
     const receivedAmountRef = useRef<HTMLInputElement>(null);
+
+    // --- Refs for Calculation Fields (Right Side) ---
+    const itemValueRef = useRef<HTMLInputElement>(null);
+    const promoDiscountRef = useRef<HTMLInputElement>(null);
+    const promoDiscount2Ref = useRef<HTMLInputElement>(null);
+    const couponDiscountRef = useRef<HTMLInputElement>(null);
+    const discount1Ref = useRef<HTMLInputElement>(null);
+    const discount2Ref = useRef<HTMLInputElement>(null);
+    const taxableRef = useRef<HTMLInputElement>(null);
+    const taxAmountRef = useRef<HTMLInputElement>(null);
+
+    // Split Fields (Value + Amount)
+    const splitDiscountValRef = useRef<HTMLInputElement>(null);
+    const splitDiscountAmtRef = useRef<HTMLInputElement>(null);
+    const splitDiscountPercentValRef = useRef<HTMLInputElement>(null);
+    const splitDiscountPercentAmtRef = useRef<HTMLInputElement>(null);
+
+    const roundOffRef = useRef<HTMLInputElement>(null);
+    const docAmountRef = useRef<HTMLInputElement>(null);
 
     // --- State ---
     const [isOpenGenerateEmi, setIsOpenGenerateEmi] = useState<boolean>(false);
     const [emiData, setEmiData] = useState<any>(null);
 
     // Ledger States
-    const [glOptions, setGlOptions] = useState<SalesAndPurchaseGL[]>([]);
+    const [glOptions, setGlOptions] = useState<any[]>([]);
     const [selectedLedger, setSelectedLedger] =
       useState<string>("Cash In Hand");
     const [showChartOfAccounts, setShowChartOfAccounts] = useState(false);
@@ -54,25 +92,33 @@ const InvoiceFooter = forwardRef<InvoiceFooterRef, InvoiceFooterProps>(
       null,
     );
 
-    // --- Load Ledgers ---
-    const loadLedgers = async () => {
-      try {
-        const glData = await fetchSalesAndPurchaseGL();
-        if (Array.isArray(glData)) {
-          const mappedData = glData.map((item) => ({
-            ...item,
-            label: item.name,
-            value: item._id,
-          }));
-          setGlOptions(mappedData);
-        }
-      } catch (error) {
-        console.error("Error loading ledgers:", error);
-      }
-    };
-
+    // --- Load Ledgers (Chart of Accounts) ---
     useEffect(() => {
-      loadLedgers();
+      const loadData = async () => {
+        try {
+          const coaResponse =
+            await chartOfAccountService.getAllChartOfAccounts();
+
+          if (coaResponse.data && coaResponse.data.success) {
+            const rawData = coaResponse.data.data;
+
+            // Map data for Dropdown
+            const mappedOptions = rawData.map((item: any) => ({
+              ...item,
+              name: item.name,
+              code: item.code || item.accountCode || "",
+              label: item.name, // Required for some dropdowns
+              value: item._id, // Required for some dropdowns
+            }));
+
+            setGlOptions(mappedOptions);
+          }
+        } catch (error) {
+          console.error("Failed to load dropdown data", error);
+        }
+      };
+
+      loadData();
     }, []);
 
     // --- Expose Data to Parent ---
@@ -82,6 +128,28 @@ const InvoiceFooter = forwardRef<InvoiceFooterRef, InvoiceFooterProps>(
         receivedAmount: Number(receivedAmountRef.current?.value || 0),
         cashBankLedger: selectedLedger,
         emiData: emiData,
+
+        // Right Section Data
+        itemValue: Number(itemValueRef.current?.value || 0),
+        promoDiscount: Number(promoDiscountRef.current?.value || 0),
+        promoDiscount2: Number(promoDiscount2Ref.current?.value || 0),
+        couponDiscount: Number(couponDiscountRef.current?.value || 0),
+        discount1: Number(discount1Ref.current?.value || 0),
+        discount2: Number(discount2Ref.current?.value || 0),
+        taxable: Number(taxableRef.current?.value || 0),
+        taxAmount: Number(taxAmountRef.current?.value || 0),
+
+        splitDiscountVal: Number(splitDiscountValRef.current?.value || 0),
+        splitDiscountAmt: Number(splitDiscountAmtRef.current?.value || 0),
+        splitDiscountPercentVal: Number(
+          splitDiscountPercentValRef.current?.value || 0,
+        ),
+        splitDiscountPercentAmt: Number(
+          splitDiscountPercentAmtRef.current?.value || 0,
+        ),
+
+        roundOff: Number(roundOffRef.current?.value || 0),
+        docAmount: Number(docAmountRef.current?.value || 0),
       }),
     }));
 
@@ -94,6 +162,7 @@ const InvoiceFooter = forwardRef<InvoiceFooterRef, InvoiceFooterProps>(
       const selectedItem = glOptions.find(
         (item) => item.name === selectedLedger,
       );
+      // Cast to SalesAndPurchaseGL to satisfy type requirements if strictly typed
       setCoaFormData(
         selectedItem || ({ name: selectedLedger } as SalesAndPurchaseGL),
       );
@@ -103,23 +172,10 @@ const InvoiceFooter = forwardRef<InvoiceFooterRef, InvoiceFooterProps>(
     const handleSaveCOA = (savedData: SalesAndPurchaseGL) => {
       if (savedData?.name) {
         setSelectedLedger(savedData.name);
-        loadLedgers(); // Refresh list
+        window.location.reload();
       }
       setShowChartOfAccounts(false);
     };
-
-    // const isAdvance = amount > 0;
-    // const isDue = amount < 0;
-    // const statusText = isAdvance
-    //   ? "Advance Paid"
-    //   : isDue
-    //     ? "Due Amount"
-    //     : "Fully Paid";
-    // const statusColor = isAdvance
-    //   ? "text-green-600 bg-green-100"
-    //   : isDue
-    //     ? "text-red-600 bg-red-100"
-    //     : "text-gray-600 bg-gray-100";
 
     return (
       <div
@@ -174,31 +230,33 @@ const InvoiceFooter = forwardRef<InvoiceFooterRef, InvoiceFooterProps>(
               </div>
             </div>
 
-            {/* Dynamic Cash/Bank Ledger */}
-            <div className="flex flex-col sm:flex-row gap-4 items-center">
-              <label className="w-32" style={{ color: COLORS.textPrimary }}>
-                Cash/Bank Ledger
-              </label>
-              <div className="flex-1 flex items-center gap-1">
-                <div className="relative flex-1">
-                  <Dropdown
-                    data={glOptions}
-                    columns={glColumns}
-                    value={selectedLedger}
-                    valueKey="name"
-                    onChange={(item) => setSelectedLedger(item?.name || "")}
-                    placeholder="Select Ledger"
-                  />
+            {/* Dynamic Cash/Bank Ledger - VISIBLE ONLY IF CASH */}
+            {cashCredit === "Credit" && (
+              <div className="flex flex-col sm:flex-row gap-4 items-center">
+                <label className="w-32" style={{ color: COLORS.textPrimary }}>
+                  Cash/Bank Ledger
+                </label>
+                <div className="flex-1 flex items-center gap-1">
+                  <div className="relative flex-1">
+                    <Dropdown
+                      data={glOptions}
+                      columns={glColumns}
+                      value={selectedLedger}
+                      valueKey="name"
+                      onChange={(item) => setSelectedLedger(item?.name || "")}
+                      placeholder="Select Ledger"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleOpenCOA}
+                    className="custom-btn-primary text-white p-1.5 rounded-sm flex items-center justify-center"
+                  >
+                    <EditIcon size={12} />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleOpenCOA}
-                  className="custom-btn-primary text-white p-1.5 rounded-sm flex items-center justify-center"
-                >
-                  <EditIcon size={12} />
-                </button>
               </div>
-            </div>
+            )}
 
             {/* Attachment */}
             <div className="flex flex-col sm:flex-row gap-4 mt-2">
@@ -215,25 +273,73 @@ const InvoiceFooter = forwardRef<InvoiceFooterRef, InvoiceFooterProps>(
           </div>
 
           {/* --- RIGHT SECTION (Totals) --- */}
-          <div className="w-full lg:w-[400px] flex flex-col gap-2">
-            {/* ... existing TotalRow components remain same ... */}
-            <TotalRow label="Item Value" value="0.00" />
-            {/* <div className="grid grid-cols-[1fr_160px] gap-2 items-center mt-1">
-              <label className="text-xs font-bold text-gray-800">
-                Payment Status
-              </label>
-              <div
-                className={`flex items-center justify-between px-2 py-1 rounded text-xs font-bold ${statusColor}`}
-              >
-                <span>{statusText}</span>
-                <span>
-                  {isAdvance && "+"}
-                  {isDue && "-"} ₹{Math.abs(amount).toFixed(2)}
-                </span>
-              </div>
-            </div> */}
+          <div className="w-full lg:w-[400px] flex flex-col gap-1">
+            <TotalRow
+              label="Item Value"
+              inputRef={itemValueRef}
+              defaultValue="0.00"
+            />
+            <TotalRow
+              label="Promo Discount"
+              inputRef={promoDiscountRef}
+              defaultValue="0.00"
+            />
+            <TotalRow
+              label="Promo Discount 2"
+              inputRef={promoDiscount2Ref}
+              defaultValue="0.00"
+            />
+            <TotalRow
+              label="Coupon Discount"
+              inputRef={couponDiscountRef}
+              defaultValue="0.00"
+            />
+            <TotalRow
+              label="Discount"
+              inputRef={discount1Ref}
+              defaultValue="0.00"
+            />
+            <TotalRow
+              label="Discount"
+              inputRef={discount2Ref}
+              defaultValue="0.00"
+            />
+            <TotalRow
+              label="Taxable"
+              inputRef={taxableRef}
+              defaultValue="0.00"
+            />
+            <TotalRow
+              label="Tax Amount"
+              inputRef={taxAmountRef}
+              defaultValue="0.00"
+            />
 
-            <div className="flex justify-end mt-2">
+            {/* Split Rows (Input + Total) */}
+            <SplitTotalRow
+              label="DISCOUNT"
+              valRef={splitDiscountValRef}
+              amtRef={splitDiscountAmtRef}
+            />
+            <SplitTotalRow
+              label="DISCOUNT %"
+              valRef={splitDiscountPercentValRef}
+              amtRef={splitDiscountPercentAmtRef}
+            />
+
+            <TotalRow
+              label="Round Off"
+              inputRef={roundOffRef}
+              defaultValue="0.00"
+            />
+            <TotalRow
+              label="Doc Amount"
+              inputRef={docAmountRef}
+              defaultValue="0.00"
+              isBold
+            />
+
+            <div className="flex justify-end mt-4">
               <button
                 onClick={() => setIsOpenGenerateEmi(true)}
                 className="custom-btn-primary text-xs font-medium px-4 py-1.5 rounded-sm shadow-sm text-white"
@@ -278,10 +384,28 @@ const InvoiceFooter = forwardRef<InvoiceFooterRef, InvoiceFooterProps>(
   },
 );
 
-type TotalRowProps = { label: string; value: string };
-const TotalRow: React.FC<TotalRowProps> = ({ label, value }) => (
+/* --- Sub-Components --- */
+
+type TotalRowProps = {
+  label: string;
+  defaultValue?: string;
+  readOnly?: boolean;
+  isBold?: boolean;
+  inputRef?: React.Ref<HTMLInputElement>;
+};
+
+const TotalRow: React.FC<TotalRowProps> = ({
+  label,
+  defaultValue,
+  readOnly,
+  isBold,
+  inputRef,
+}) => (
   <div className="grid grid-cols-[1fr_120px] gap-2 items-center">
-    <label className="text-xs" style={{ color: COLORS.textSecondary }}>
+    <label
+      className={`text-xs ${isBold ? "font-bold text-black" : ""}`}
+      style={{ color: isBold ? "#000" : COLORS.textSecondary }}
+    >
       {label}
     </label>
     <div className="relative">
@@ -292,12 +416,64 @@ const TotalRow: React.FC<TotalRowProps> = ({ label, value }) => (
         ₹
       </span>
       <input
+        ref={inputRef}
         type="text"
-        defaultValue={value}
-        readOnly
+        defaultValue={defaultValue}
+        readOnly={readOnly}
         className="w-full border rounded-sm py-1 pl-5 pr-2 text-right text-xs outline-none"
         style={{
-          backgroundColor: COLORS.background,
+          backgroundColor: readOnly ? "#f9fafb" : COLORS.background,
+          borderColor: COLORS.borderDark,
+          color: COLORS.textPrimary,
+          fontWeight: isBold ? "bold" : "normal",
+        }}
+      />
+    </div>
+  </div>
+);
+
+type SplitTotalRowProps = {
+  label: string;
+  valRef: React.Ref<HTMLInputElement>;
+  amtRef: React.Ref<HTMLInputElement>;
+};
+
+const SplitTotalRow: React.FC<SplitTotalRowProps> = ({
+  label,
+  valRef,
+  amtRef,
+}) => (
+  <div className="grid grid-cols-[1fr_50px_120px] gap-2 items-center">
+    <label className="text-xs" style={{ color: COLORS.textSecondary }}>
+      {label}
+    </label>
+
+    {/* Small Input Box (e.g. rate or count) */}
+    <input
+      ref={valRef}
+      type="text"
+      defaultValue="0"
+      className="w-full border rounded-sm py-1 px-1 text-center text-xs outline-none"
+      style={{
+        borderColor: COLORS.borderDark,
+        color: COLORS.textPrimary,
+      }}
+    />
+
+    {/* Amount Box */}
+    <div className="relative">
+      <span
+        className="absolute left-2 top-1/2 -translate-y-1/2 text-xs"
+        style={{ color: COLORS.textMuted }}
+      >
+        ₹
+      </span>
+      <input
+        ref={amtRef}
+        type="text"
+        defaultValue="0.00"
+        className="w-full border rounded-sm py-1 pl-5 pr-2 text-right text-xs outline-none"
+        style={{
           borderColor: COLORS.borderDark,
           color: COLORS.textPrimary,
         }}
