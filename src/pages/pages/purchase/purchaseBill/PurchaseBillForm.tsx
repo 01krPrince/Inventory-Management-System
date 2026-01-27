@@ -69,7 +69,7 @@ interface ActionBtnProps {
 interface PurchaseBillFormProps {
   themeColor?: string;
   onSubmit?: (data: PurchaseBillFormData) => void;
-  // NEW: Callback to notify parent of changes
+  // Callback to notify parent of changes for real-time sync
   onFormChange?: (data: PurchaseBillFormData) => void;
 }
 
@@ -132,7 +132,6 @@ const Input: React.FC<{
   />
 );
 
-// Local DateField to ensure YYYY-MM-DD string format
 const DateField: React.FC<{
   value: string;
   onChange: (val: string) => void;
@@ -191,7 +190,6 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
     const [storeOptions, setStoreOptions] = useState<SimpleOption[]>([]);
     const [vendorOptions, setVendorOptions] = useState<SimpleOption[]>([]);
 
-    // RAW DATA HOLDERS
     const [rawVendors, setRawVendors] = useState<any[]>([]);
     const [rawStores, setRawStores] = useState<any[]>([]);
 
@@ -199,7 +197,6 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
     const [isShipToOpen, setShipToOpen] = useState<boolean>(false);
     const [activeModal, setActiveModal] = useState<string | null>(null);
 
-    // Initial Date: YYYY-MM-DD
     const getToday = () => new Date().toISOString().split("T")[0];
 
     const [formData, setFormData] = useState<PurchaseBillFormData>({
@@ -229,11 +226,7 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
     });
 
     const simpleColumns: ColumnDef<SimpleOption>[] = [
-      {
-        header: "Name",
-        key: "name",
-        width: "flex-1",
-      },
+      { header: "Name", key: "name", width: "flex-1" },
     ];
 
     const themeStyles = {
@@ -242,10 +235,11 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
       "--theme-focus": "#60a5fa",
     } as React.CSSProperties;
 
-    // --- Helper to update state AND notify parent ---
+    // --- Master update handler for real-time sync ---
     const updateFormState = (updates: Partial<PurchaseBillFormData>) => {
       setFormData((prev) => {
         const newData = { ...prev, ...updates };
+        // This notifies the parent (PurchaseBill.tsx) on every single change
         if (onFormChange) {
           onFormChange(newData);
         }
@@ -253,7 +247,6 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
       });
     };
 
-    // --- Load Data ---
     useEffect(() => {
       loadDropdownData();
     }, []);
@@ -263,30 +256,25 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
         // 1. Stores
         const storesData = await fetchAllLocations();
         setRawStores(storesData);
-
         const mappedStores = storesData.map((item: any) => ({
           name: item.name || item.storeName,
           id: item._id,
         }));
         setStoreOptions(mappedStores);
 
-        // Auto-select first store
+        // Auto-select first store and sync with parent
         if (mappedStores.length > 0) {
           const firstStore = storesData[0];
-          const sCode = firstStore.code || "";
-
-          // Use updateFormState to sync with parent initially
           updateFormState({
             store: mappedStores[0].name,
             storeId: mappedStores[0].id,
-            storeCode: sCode,
+            storeCode: firstStore.code || "",
           });
         }
 
         // 2. Vendors
         const vendorsData = await getAllVendors();
         setRawVendors(vendorsData);
-
         const mappedVendors = vendorsData.map((item: any) => ({
           name: item.vend_name || item.name,
           id: item._id,
@@ -297,7 +285,6 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
       }
     };
 
-    // --- Dynamic Handler ---
     const handleDropdownChange = (
       field: keyof PurchaseBillFormData,
       item: SimpleOption | null,
@@ -305,30 +292,23 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
       const value = item?.name || "";
       let updates: Partial<PurchaseBillFormData> = { [field]: value };
 
-      // === STORE SELECTION ===
       if (field === "store" && item) {
         const fullStore = rawStores.find((s) => s._id === item.id);
-        const sCode = fullStore?.code || fullStore?.storeCode || "";
-
         updates = {
           ...updates,
           storeId: item.id,
-          storeCode: sCode,
+          storeCode: fullStore?.code || fullStore?.storeCode || "",
         };
       }
 
-      // === VENDOR SELECTION ===
       if (field === "vendor" && item) {
         const fullVendor = rawVendors.find((v) => v._id === item.id);
-
         if (fullVendor) {
+          // Extract vendorCode for syncing with OrderTable
           const vCode = fullVendor.code || fullVendor.vend_code || "";
 
-          // 1. Format Bill To Address
           const billTo = `${fullVendor.vend_name || fullVendor.name || ""}\n${fullVendor.address || ""}\n${fullVendor.city || ""}, ${fullVendor.state || ""} - ${fullVendor.pin_code || ""}\nPhone: ${fullVendor.phone || ""}`;
-
-          // 2. Format Ship To Address
-          const shipTo = `${fullVendor.vend_name || fullVendor.name || ""}\n${fullVendor.address_ship || fullVendor.address || ""}\n${fullVendor.city_ship || fullVendor.city || ""}, ${fullVendor.state_ship || fullVendor.state || ""} - ${fullVendor.pin_code_ship || fullVendor.pin_code || ""}\nPhone: ${fullVendor.phone_ship || fullVendor.phone || ""}`;
+          const shipToAddress = `${fullVendor.vend_name || fullVendor.name || ""}\n${fullVendor.address_ship || fullVendor.address || ""}\n${fullVendor.city_ship || fullVendor.city || ""}, ${fullVendor.state_ship || fullVendor.state || ""} - ${fullVendor.pin_code_ship || fullVendor.pin_code || ""}\nPhone: ${fullVendor.phone_ship || fullVendor.phone || ""}`;
 
           updates = {
             ...updates,
@@ -339,12 +319,10 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
             paymentTerms: fullVendor.payment_term || formData.paymentTerms,
             placeOfSupply: fullVendor.state || "",
             billToText: billTo,
-            shipToText: shipTo,
+            shipToText: shipToAddress,
             gstNo: fullVendor.gst_no || "",
             contactPerson: fullVendor.contact_person || "",
           };
-        } else {
-          updates.vendorId = item.id;
         }
       }
 
@@ -377,7 +355,6 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
         className="bg-white rounded border border-gray-200 p-5 relative"
       >
         <div className="grid grid-cols-12 gap-8">
-          {/* LEFT COLUMN */}
           <div className="col-span-4 space-y-1">
             <div className="grid grid-cols-12 gap-2">
               <div className="col-span-4">
@@ -386,7 +363,7 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
               <div className="col-span-8">
                 <Dropdown
                   data={mockData.gstTypes}
-                  columns={[{ header: "Name", key: "name", width: "flex-1" }]}
+                  columns={simpleColumns}
                   value={formData.gstType}
                   valueKey="name"
                   onChange={(i) => handleDropdownChange("gstType", i)}
@@ -401,7 +378,7 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
               <div className="col-span-8">
                 <Dropdown
                   data={mockData.cashCredit}
-                  columns={[{ header: "Name", key: "name", width: "flex-1" }]}
+                  columns={simpleColumns}
                   value={formData.cashCredit}
                   valueKey="name"
                   onChange={(i) => handleDropdownChange("cashCredit", i)}
@@ -417,7 +394,7 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                 <InputGroup>
                   <Dropdown
                     data={storeOptions}
-                    columns={[{ header: "Name", key: "name", width: "flex-1" }]}
+                    columns={simpleColumns}
                     value={formData.store}
                     valueKey="name"
                     onChange={(item) => handleDropdownChange("store", item)}
@@ -438,7 +415,7 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                 <InputGroup>
                   <Dropdown
                     data={vendorOptions}
-                    columns={[{ header: "Name", key: "name", width: "flex-1" }]}
+                    columns={simpleColumns}
                     value={formData.vendor}
                     valueKey="name"
                     placeholder="Select Vendor..."
@@ -473,7 +450,7 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                 <InputGroup>
                   <Dropdown
                     data={mockData.priceCategories}
-                    columns={[{ header: "Name", key: "name", width: "flex-1" }]}
+                    columns={simpleColumns}
                     value={formData.priceCategory}
                     valueKey="name"
                     onChange={(item) =>
@@ -489,14 +466,12 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
             </div>
           </div>
 
-          {/* MIDDLE COLUMN */}
           <div className="col-span-4 space-y-1">
             <div className="grid grid-cols-12 gap-2">
               <div className="col-span-4">
                 <Label required>Date</Label>
               </div>
               <div className="col-span-8">
-                {/* Replaced with standard Date Field */}
                 <DateField
                   value={formData.orderDate}
                   onChange={(val) => handleInputChange("orderDate", val)}
@@ -537,7 +512,6 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                 />
               </div>
             </div>
-            {/* Tax */}
             <div className="grid grid-cols-12 gap-2">
               <div className="col-span-4">
                 <Label>Tax</Label>
@@ -545,7 +519,7 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
               <div className="col-span-8">
                 <Dropdown
                   data={mockData.taxOptions}
-                  columns={[{ header: "Name", key: "name", width: "flex-1" }]}
+                  columns={simpleColumns}
                   value={formData.tax}
                   valueKey="name"
                   onChange={(i) => handleDropdownChange("tax", i)}
@@ -554,7 +528,6 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
             </div>
           </div>
 
-          {/* RIGHT COLUMN */}
           <div className="col-span-4 flex flex-col min-h-full">
             <AccordionSection
               title="Billing Address"
@@ -562,18 +535,13 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
               onToggle={() => setBillToOpen(!isBillToOpen)}
             >
               <div className="space-y-2">
-                <div className="relative">
-                  <textarea
-                    className="w-full h-20 border border-gray-300 rounded text-[13px] p-2 resize-none focus:outline-none"
-                    value={formData.billToText}
-                    onChange={(e) =>
-                      handleInputChange("billToText", e.target.value)
-                    }
-                  />
-                  <span className="absolute bottom-1 right-2 text-[10px] text-gray-400">
-                    0/200
-                  </span>
-                </div>
+                <textarea
+                  className="w-full h-20 border border-gray-300 rounded text-[13px] p-2 resize-none focus:outline-none"
+                  value={formData.billToText}
+                  onChange={(e) =>
+                    handleInputChange("billToText", e.target.value)
+                  }
+                />
                 <div className="grid grid-cols-12 gap-2 items-center">
                   <div className="col-span-4">
                     <Label>GST No</Label>
@@ -589,41 +557,13 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                 </div>
                 <div className="grid grid-cols-12 gap-2 items-center">
                   <div className="col-span-4">
-                    <Label>Contact Person</Label>
-                  </div>
-                  <div className="col-span-8">
-                    <Input
-                      value={formData.contactPerson}
-                      onChange={(e) =>
-                        handleInputChange("contactPerson", e.target.value)
-                      }
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-12 gap-2 items-center">
-                  <div className="col-span-4">
                     <Label>Place of Supply</Label>
                   </div>
                   <div className="col-span-8">
-                    <InputGroup>
-                      <Input
-                        value={formData.placeOfSupply}
-                        onChange={(e) =>
-                          handleInputChange("placeOfSupply", e.target.value)
-                        }
-                      />
-                    </InputGroup>
-                  </div>
-                </div>
-                <div className="grid grid-cols-12 gap-2 items-center">
-                  <div className="col-span-4">
-                    <Label>eCommerce Inv No</Label>
-                  </div>
-                  <div className="col-span-8">
                     <Input
-                      value={formData.contactPerson} // Keeping as is per request, though likely a copy-paste error in original code
+                      value={formData.placeOfSupply}
                       onChange={(e) =>
-                        handleInputChange("contactPerson", e.target.value)
+                        handleInputChange("placeOfSupply", e.target.value)
                       }
                     />
                   </div>
@@ -640,19 +580,13 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                 <span className="w-16 text-[13px] text-gray-600 font-medium whitespace-nowrap">
                   Delivery At
                 </span>
-                <div className="flex-grow flex w-full relative">
-                  <InputGroup>
-                    <Dropdown
-                      data={storeOptions}
-                      columns={[
-                        { header: "Name", key: "name", width: "flex-1" },
-                      ]}
-                      value={formData.shipTo}
-                      valueKey="name"
-                      onChange={(item) => handleDropdownChange("shipTo", item)}
-                    />
-                  </InputGroup>
-                </div>
+                <Dropdown
+                  data={storeOptions}
+                  columns={simpleColumns}
+                  value={formData.shipTo}
+                  valueKey="name"
+                  onChange={(item) => handleDropdownChange("shipTo", item)}
+                />
               </div>
               <textarea
                 className="w-full h-24 border border-gray-300 rounded text-[13px] p-2 resize-none focus:outline-none"
@@ -660,7 +594,7 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                 onChange={(e) =>
                   handleInputChange("shipToText", e.target.value)
                 }
-              ></textarea>
+              />
             </AccordionSection>
 
             <div className="mt-auto pt-4 space-y-1">
@@ -669,17 +603,15 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                   <Label>Payment Terms</Label>
                 </div>
                 <div className="col-span-8">
-                  <InputGroup>
-                    <Dropdown
-                      data={mockData.paymentTerms}
-                      columns={simpleColumns}
-                      value={formData.paymentTerms}
-                      valueKey="name"
-                      onChange={(item) =>
-                        handleDropdownChange("paymentTerms", item)
-                      }
-                    />
-                  </InputGroup>
+                  <Dropdown
+                    data={mockData.paymentTerms}
+                    columns={simpleColumns}
+                    value={formData.paymentTerms}
+                    valueKey="name"
+                    onChange={(item) =>
+                      handleDropdownChange("paymentTerms", item)
+                    }
+                  />
                 </div>
               </div>
               <div className="grid grid-cols-12 gap-2 items-center">
@@ -697,39 +629,36 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
           </div>
         </div>
 
-        {/* OVERLAY SYSTEM */}
         {activeModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 backdrop-blur-[2px] p-4">
-            <div>
-              <div className="p-8">
-                {activeModal === "vendor" && (
-                  <CrudVendor
-                    onClose={() => setActiveModal(null)}
-                    onSuccess={() => {
-                      setActiveModal(null);
-                      loadDropdownData();
-                    }}
-                    initialData={null}
-                  />
-                )}
-                {activeModal === "store" && (
-                  <LocationMaster
-                    onClose={() => setActiveModal(null)}
-                    onSuccess={() => {
-                      setActiveModal(null);
-                      loadDropdownData();
-                    }}
-                    initialData={null}
-                  />
-                )}
-                {activeModal === "priceCategory" && (
-                  <NameAndCodeMaster
-                    title="Price Category"
-                    onClose={() => setActiveModal(null)}
-                    index={1200}
-                  />
-                )}
-              </div>
+            <div className="p-8">
+              {activeModal === "vendor" && (
+                <CrudVendor
+                  onClose={() => setActiveModal(null)}
+                  onSuccess={() => {
+                    setActiveModal(null);
+                    loadDropdownData();
+                  }}
+                  initialData={null}
+                />
+              )}
+              {activeModal === "store" && (
+                <LocationMaster
+                  onClose={() => setActiveModal(null)}
+                  onSuccess={() => {
+                    setActiveModal(null);
+                    loadDropdownData();
+                  }}
+                  initialData={null}
+                />
+              )}
+              {activeModal === "priceCategory" && (
+                <NameAndCodeMaster
+                  title="Price Category"
+                  onClose={() => setActiveModal(null)}
+                  index={1200}
+                />
+              )}
             </div>
           </div>
         )}

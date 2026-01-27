@@ -29,7 +29,6 @@ import chartOfAccountService, {
 } from "../../../../services/chartOfAccountService";
 import ChartOfAccounts from "../../../../components/ChartOfAccount";
 
-// --- UPDATED IMPORTS ---
 import {
   fetchSalesExecutives,
   SalesExecutiveData,
@@ -131,8 +130,6 @@ const STEPS = [
   { id: 6, label: "Contact Person" },
   { id: 7, label: "Attachments" },
 ];
-
-// --- Components ---
 
 const FormLabel = ({
   required,
@@ -329,13 +326,11 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Load Chart of Accounts
         const coaResponse = await chartOfAccountService.getAllChartOfAccounts();
         if (coaResponse.data && coaResponse.data.success) {
           setGlDataFull(coaResponse.data.data);
         }
 
-        // Load Sales Executives using new Service
         await loadSalesExecutives();
       } catch (error) {
         console.error("Failed to load dropdown data", error);
@@ -590,10 +585,8 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
 
       const payload = {
         ...formData,
-        // Replace name with ID or NULL
         under_ledger: underLedgerId,
 
-        // Ensure bools and numbers are correct types
         cust_comman: !!formData.cust_comman,
         is_sub_customer: !!formData.is_sub_customer,
         gst_suspend: !!formData.gst_suspend,
@@ -601,14 +594,12 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
         distance: Number(formData.distance),
         customer_on_watch: formData.customer_on_watch ? "Yes" : "No",
 
-        // Ensure strings
         gst_no: val(formData.gst_no),
         cust_name: val(formData.cust_name),
       };
 
       const finalPayload = { ...payload, profile_photo: formData.profileImage };
 
-      // TS Fix: Cast to any to allow 'null' in under_ledger
       const apiPayload = finalPayload as any;
 
       let response;
@@ -651,8 +642,6 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
     }
     setShowChartOfAccounts(false);
   };
-
-  // --- Render Steps ---
 
   const renderBasicDetails = () => (
     <div className="grid grid-cols-12 gap-6">

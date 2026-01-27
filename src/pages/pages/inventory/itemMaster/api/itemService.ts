@@ -40,3 +40,23 @@ export const deleteItemApi = async (id: string): Promise<ItemResponse> => {
     throw error;
   }
 };
+
+
+export const fetchItemsByVendorCode = async (vendorCode: string): Promise<ItemApiData[]> => {
+  try {
+    const response = await api.get<ItemResponse>(
+      `/purchasebill/with-rates?vendorCode=${vendorCode}`
+    ); 
+    const result = response.data;
+    
+    if (result.success && result.data) {
+      return result.data as ItemApiData[]; 
+    } else {
+      console.error("API returned success: false", result.message);
+      return [];
+    }
+  } catch (error) {
+    console.error("Error fetching items with rates:", error);
+    throw error;
+  }
+};

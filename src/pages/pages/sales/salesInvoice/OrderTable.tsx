@@ -32,7 +32,7 @@ import { COLORS } from "../../../../constants/colors";
 import AddNewItem from "../../../../components/addItemMaster/AddNewItem";
 
 import {
-  fetchItems,
+  fetchItemsByVendorCode,
   getItemByCodeAndBarcode,
 } from "../../inventory/itemMaster/api/itemService";
 import { StockUnitData } from "../../../../components/addItemMaster/api/types";
@@ -56,6 +56,7 @@ interface Column {
 
 interface OrderTableProps {
   onAnalyze?: (items: any[]) => void;
+  vendorCode: string;
 }
 
 interface RowData {
@@ -73,6 +74,7 @@ export interface OrderTableRef {
     rows: string[];
     tableData: Record<string, RowData>;
     visibleRows: Array<{ id: string; data: RowData }>;
+    vendorCode: string;
   };
 }
 
@@ -237,6 +239,14 @@ const DEFAULT_COLUMNS: Column[] = [
     visible: true,
   },
   {
+    id: "last_purchase_rate",
+    label: "Last Purchase Rate",
+    width: 120,
+    align: "left",
+    resizable: true,
+    visible: true,
+  },
+  {
     id: "remark",
     label: "Remark",
     width: 120,
@@ -261,8 +271,16 @@ const DEFAULT_COLUMNS: Column[] = [
     visible: true,
   },
   {
-    id: "hsn",
-    label: "HSN Code",
+    id: "hsn_description",
+    label: "HSN",
+    width: 80,
+    align: "left",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "gstRate",
+    label: "GST",
     width: 80,
     align: "left",
     resizable: true,
@@ -303,14 +321,6 @@ const DEFAULT_COLUMNS: Column[] = [
   {
     id: "minrate",
     label: "Min Rate",
-    width: 80,
-    align: "right",
-    resizable: true,
-    visible: false,
-  },
-  {
-    id: "netrate",
-    label: "Net Rate",
     width: 80,
     align: "right",
     resizable: true,
@@ -396,6 +406,7 @@ const getStandardWarranties = (itemText: string): WarrantyOption[] => {
 };
 
 const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
+  const { vendorCode } = props;
   const generateRowId = () =>
     `row-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -488,11 +499,17 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
       unit: getStringValue(item.stock_unit),
       brand: getStringValue(item.brand),
       hsn: item.gst_classification || "",
-      rate: String(item.sales_rate || 0),
       mrp: String(item.mrp || 0),
       barcode: item.barcode || "",
+      tacCode: item.gst_classification || "",
       printdesc: item.name || "",
       qty: "1",
+      hsn_description: item.hsn_description || "",
+      netRate: item.netRate || "0",
+      gstRate: item.gstRate || "0",
+      taxRate: item.gstRate || "0",
+      last_purchase_rate: item.last_purchase_rate || "0",
+      rate: String(item.netRate || item.sales_rate || 0),
     };
     const qty = 1;
     const rate = parseFloat(String(item.sales_rate || 0));
@@ -541,11 +558,11 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
 
   useEffect(() => {
     loadMasterData();
-  }, []);
+  }, [vendorCode]);
 
   const loadMasterData = async () => {
     try {
-      const itemsData = await fetchItems();
+      const itemsData = await fetchItemsByVendorCode(vendorCode);
       if (Array.isArray(itemsData)) setItems(itemsData);
       const unitsData = await fetchStockUnits();
       if (Array.isArray(unitsData)) setStockUnits(unitsData);
@@ -593,6 +610,7 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
         rows,
         tableData,
         visibleRows,
+        vendorCode: vendorCode,
       };
     },
   }));
@@ -855,12 +873,20 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
       unit: getName(tempItemData.stock_unit),
       itemId: tempItemData._id || "",
       hsn: tempItemData.gst_classfication ?? "",
-      brand: getName(tempItemData.brand),
+      // brand: getName(tempItemData.brand),
       qty: "1",
       mrp: String(tempItemData.mrp ?? 0),
-      rate: String(tempItemData.sales_rate ?? 0),
+      // rate: String(tempItemData.sales_rate ?? 0),
       barcode: tempItemData.barcode ?? "",
       printdesc: tempItemData.name ?? "",
+
+      hsn_description: tempItemData.hsn_description || "",
+      brand: getStringValue(tempItemData.brand),
+      netRate: tempItemData.netRate || "0",
+      gstRate: tempItemData.gstRate || "0",
+      taxRate: tempItemData.hsn_description || "0",
+      last_purchase_rate: tempItemData.last_purchase_rate || "0",
+      rate: String((tempItemData.netRate || tempItemData.sales_rate) ?? 0),
     };
 
     /* ---------------- Amount Calculation ---------------- */
@@ -1546,7 +1572,7 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
                 top: popupState.top,
                 left: popupState.left,
                 borderColor: COLORS.borderDark,
-                width: "500px",
+                width: "600px", // Increased width to accommodate 4 columns
                 maxHeight: "300px",
                 transform:
                   popupState.top + 300 > window.innerHeight
@@ -1558,17 +1584,21 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
                 className="flex justify-between items-center p-2 border-b h-8"
                 style={{ backgroundColor: COLORS.primary, color: COLORS.white }}
               >
-                <span className="font-bold text-xs pl-1">Select Item</span>
+                <span className="font-bold text-xs pl-1">
+                  Select Item (Vendor: {vendorCode})
+                </span>
                 <button onClick={closePopup}>
                   <X size={14} />
                 </button>
               </div>
               <div className="flex-1 overflow-auto p-0">
                 <table className="w-full text-xs text-left border-collapse">
-                  <thead>
+                  <thead className="sticky top-0 bg-gray-100 z-10">
                     <tr>
                       <th className="p-1.5 border">Code</th>
                       <th className="p-1.5 border">Name</th>
+                      <th className="p-1.5 border text-right">Net Rate</th>
+                      <th className="p-1.5 border text-right">GST %</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1579,9 +1609,27 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
                         onClick={() => handleItemSelect(item)}
                       >
                         <td className="p-1.5 border">{item.code}</td>
-                        <td className="p-1.5 border">{item.name}</td>
+                        <td className="p-1.5 border font-medium">
+                          {item.name}
+                        </td>
+                        <td className="p-1.5 border text-right text-blue-600 font-bold">
+                          {item.netRate || "0.00"}
+                        </td>
+                        <td className="p-1.5 border text-right">
+                          {item.gstRate || "0"}%
+                        </td>
                       </tr>
                     ))}
+                    {items.length === 0 && (
+                      <tr>
+                        <td
+                          colSpan={4}
+                          className="p-4 text-center text-gray-400 italic"
+                        >
+                          No items found for this vendor.
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>

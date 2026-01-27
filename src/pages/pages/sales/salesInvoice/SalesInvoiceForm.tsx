@@ -27,15 +27,15 @@ export interface InvoiceFormData {
   cashCredit: string;
 
   // Store Info
-  store: string; // Holds Store Name (for UI)
-  storeCode?: string; // Holds Store Code (for API)
+  store: string; // Display Name
+  storeCode?: string; // Internal Code
 
   // Customer Info
-  customerId?: string;
-  customer?: string; // Holds Customer Code
+  customerId?: string; // Database ID
+  customer?: string; // Display Name (FIXED)
+  customerCode?: string; // Internal Code (NEW ADDITION)
 
   date: string;
-
   priceCategory: string;
   salesman: string;
   tax: string;
@@ -56,6 +56,7 @@ export interface InvoiceFormData {
 
 interface SimpleOption {
   name: string;
+  code?: string;
   id?: string;
 }
 
@@ -67,7 +68,6 @@ interface ActionBtnProps {
 interface SalesInvoiceFormProps {
   themeColor?: string;
   onSubmit?: (data: InvoiceFormData) => void;
-  // NEW: Callback to notify parent of changes
   onFormChange?: (data: InvoiceFormData) => void;
 }
 
@@ -87,7 +87,7 @@ const Label: React.FC<{ children: React.ReactNode; required?: boolean }> = ({
 );
 
 const toOptions = (arr: string[]): SimpleOption[] =>
-  arr.map((s) => ({ name: s }));
+  arr.map((s) => ({ name: s, code: "" }));
 
 const mockData = {
   paymentTerms: toOptions(["Immediate", "Net 15", "Net 30"]),
@@ -190,6 +190,7 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
       store: "",
       storeCode: "",
       customer: "",
+      customerCode: "", // Initialize new field
       customerId: "",
       date: getToday(),
       priceCategory: "Default",
@@ -208,7 +209,16 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
       contactPerson: "",
     });
 
-    const simpleColumns: ColumnDef<SimpleOption>[] = [
+    // --- Column Definitions ---
+
+    // 1. For Store & Customer (Show Code + Name)
+    const codeColumns: ColumnDef<SimpleOption>[] = [
+      { header: "Code", key: "code", width: "w-24" },
+      { header: "Name", key: "name", width: "flex-1" },
+    ];
+
+    // 2. For everything else (Name Only)
+    const nameColumns: ColumnDef<SimpleOption>[] = [
       { header: "Name", key: "name", width: "flex-1" },
     ];
 
@@ -225,18 +235,19 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
 
     const loadDropdownData = async () => {
       try {
+        // 1. STORES
         const storesData = await fetchAllLocations();
         setRawStores(storesData);
 
         const mappedStores = storesData.map((item: any) => ({
           name: item.name || item.storeName,
           id: item._id,
+          code: item.code || item.storeCode || "",
         }));
         setStoreOptions(mappedStores);
 
         if (mappedStores.length > 0) {
           const firstStore = storesData[0];
-
           updateFormState({
             store: mappedStores[0].name,
             storeCode:
@@ -244,18 +255,32 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
           });
         }
 
+        // 2. CUSTOMERS
         const customersData = await getAllCustomers();
         setRawCustomers(customersData);
-        const mappedCustomers = customersData.map((item: any) => ({
-          name: item.cust_name || item.name,
-          id: item._id,
-        }));
+
+        const mappedCustomers = customersData.map((item: any) => {
+          const codeVal =
+            item.code ||
+            item.cust_code ||
+            item.customer ||
+            item.identification ||
+            "";
+
+          return {
+            name: item.cust_name || item.name,
+            id: item._id,
+            code: codeVal,
+          };
+        });
         setCustomerOptions(mappedCustomers);
 
+        // 3. SALESMEN
         const salesData = await fetchSalesExecutives();
         const mappedSalesmen = salesData.map((item: any) => ({
           name: item.name,
           id: item._id,
+          code: item.code || "",
         }));
         setSalesmanOptions(mappedSalesmen);
       } catch (error) {
@@ -304,6 +329,7 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
             fullCustomer.code ||
             fullCustomer.cust_code ||
             fullCustomer.customer ||
+            fullCustomer.identification ||
             "";
 
           const billTo = `${fullCustomer.cust_name}\n${fullCustomer.address || ""}\n${fullCustomer.city || ""}, ${fullCustomer.state || ""} - ${fullCustomer.pin_code || ""}\nPhone: ${fullCustomer.phone || ""}`;
@@ -311,7 +337,8 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
 
           extraUpdates = {
             customerId: item.id,
-            customer: cCode,
+            customer: value, // <--- FIXED: Set to Name (value), not code
+            customerCode: cCode, // <--- FIXED: Save Code separately
             email: fullCustomer.email || "",
             priceCategory:
               fullCustomer.price_category || formData.priceCategory,
@@ -362,12 +389,12 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
               <div className="col-span-8">
                 <Dropdown
                   data={[
-                    { name: "BillOfSupply" },
-                    { name: "GST Invoice" },
-                    { name: "Intra" },
-                    { name: "Inter" },
+                    { name: "BillOfSupply", code: "" },
+                    { name: "GST Invoice", code: "" },
+                    { name: "Intra", code: "" },
+                    { name: "Inter", code: "" },
                   ]}
-                  columns={simpleColumns}
+                  columns={nameColumns}
                   value={formData.gstType}
                   valueKey="name"
                   onChange={(i) => handleDropdownChange("gstType", i)}
@@ -380,8 +407,11 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
               </div>
               <div className="col-span-8">
                 <Dropdown
-                  data={[{ name: "Credit" }, { name: "Cash" }]}
-                  columns={simpleColumns}
+                  data={[
+                    { name: "Credit", code: "CR" },
+                    { name: "Cash", code: "CS" },
+                  ]}
+                  columns={nameColumns}
                   value={formData.cashCredit}
                   valueKey="name"
                   onChange={(i) => handleDropdownChange("cashCredit", i)}
@@ -397,9 +427,9 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
                 <InputGroup>
                   <Dropdown
                     data={storeOptions}
-                    columns={simpleColumns}
+                    columns={codeColumns}
                     value={formData.store}
-                    valueKey="name" // <--- FIXED: Changed from "store" to "name"
+                    valueKey="name"
                     onChange={(item) => handleDropdownChange("store", item)}
                   />
                   <ActionBtn
@@ -418,7 +448,7 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
                 <InputGroup>
                   <Dropdown
                     data={customerOptions}
-                    columns={simpleColumns}
+                    columns={codeColumns}
                     value={formData.customer}
                     valueKey="name"
                     placeholder="Select Customer..."
@@ -453,11 +483,11 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
                 <InputGroup>
                   <Dropdown
                     data={[
-                      { name: "Wholesale" },
-                      { name: "Retail" },
-                      { name: "Default" },
+                      { name: "Wholesale", code: "" },
+                      { name: "Retail", code: "" },
+                      { name: "Default", code: "" },
                     ]}
-                    columns={simpleColumns}
+                    columns={nameColumns}
                     value={formData.priceCategory}
                     valueKey="name"
                     onChange={(item) =>
@@ -510,7 +540,7 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
                 <InputGroup>
                   <Dropdown
                     data={salesmanOptions}
-                    columns={simpleColumns}
+                    columns={nameColumns}
                     value={formData.salesman}
                     valueKey="name"
                     onChange={(item) => handleDropdownChange("salesman", item)}
@@ -528,8 +558,11 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
               </div>
               <div className="col-span-8">
                 <Dropdown
-                  data={[{ name: "Inclusive" }, { name: "Exclusive" }]}
-                  columns={simpleColumns}
+                  data={[
+                    { name: "Inclusive", code: "" },
+                    { name: "Exclusive", code: "" },
+                  ]}
+                  columns={nameColumns}
                   value={formData.tax}
                   valueKey="name"
                   onChange={(i) => handleDropdownChange("tax", i)}
@@ -614,8 +647,11 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
                 <div className="flex-grow flex w-full relative">
                   <InputGroup>
                     <Dropdown
-                      data={[{ name: "Warehouse" }, { name: "Store Front" }]}
-                      columns={simpleColumns}
+                      data={[
+                        { name: "Warehouse", code: "" },
+                        { name: "Store Front", code: "" },
+                      ]}
+                      columns={nameColumns}
                       value={formData.shipTo}
                       valueKey="name"
                       onChange={(item) => handleDropdownChange("shipTo", item)}
@@ -645,7 +681,7 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
                   <InputGroup>
                     <Dropdown
                       data={mockData.paymentTerms}
-                      columns={simpleColumns}
+                      columns={nameColumns}
                       value={formData.paymentTerms}
                       valueKey="name"
                       onChange={(item) =>
@@ -663,7 +699,7 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
                 <div className="col-span-8">
                   <Dropdown
                     data={mockData.paymentLinks}
-                    columns={simpleColumns}
+                    columns={nameColumns}
                     value={formData.paymentLink}
                     valueKey="name"
                     onChange={(item) =>

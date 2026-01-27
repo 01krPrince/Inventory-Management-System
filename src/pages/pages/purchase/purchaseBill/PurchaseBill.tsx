@@ -30,6 +30,8 @@ const PurchaseBill: React.FC = () => {
   const footerRef = useRef<PurchaseBillFooterRef>(null);
 
   const [cashCredit, setCashCredit] = useState<string>("Credit");
+  // CRITICAL: This state variable acts as the "Single Source of Truth" for vendor synchronization.
+  const [currentVendorCode, setCurrentVendorCode] = useState<string>("");
 
   const [isAnalysisOpen, setAnalysisOpen] = useState(false);
   const [analysisData, setAnalysisData] = useState<any>(null);
@@ -107,6 +109,11 @@ const PurchaseBill: React.FC = () => {
     if (data.cashCredit) {
       setCashCredit(data.cashCredit);
     }
+    // RECTIFICATION: Update currentVendorCode whenever the form's vendor selection changes.
+    // This prop update will trigger the useEffect inside OrderTable to fetch new items.
+    if (data.vendorCode !== undefined) {
+      setCurrentVendorCode(data.vendorCode);
+    }
   };
 
   const handleAnalyzeProfit = async (tableRows: any[]) => {
@@ -179,7 +186,6 @@ const PurchaseBill: React.FC = () => {
         return;
       }
 
-      // Prepare items for API
       const apiItems = rawRows.map((row: any) => {
         const item = row.data || row;
         return {
@@ -196,8 +202,6 @@ const PurchaseBill: React.FC = () => {
         vendorCode: formData.vendorCode,
         cashCredit: cashCredit,
         gstType: formData.gstType,
-
-        // Footer Data
         remarks: footerData?.remarks || "Purchase Bill",
         receivedAmount: footerData?.receivedAmount || 0,
         cashBankLedger: footerData?.cashBankLedger || "",
@@ -207,7 +211,6 @@ const PurchaseBill: React.FC = () => {
         taxAmount: footerData?.taxAmount || 0,
         roundOff: footerData?.roundOff || 0,
         netAmount: footerData?.docAmount || 0,
-
         items: apiItems,
         logistics: {
           freight: Number(logisticsData.freight) || 0,
@@ -217,43 +220,32 @@ const PurchaseBill: React.FC = () => {
         },
       };
 
-      console.log("🚀 PAYLOAD:", JSON.stringify(payload, null, 2));
-
-      // --- API CALL ---
       const response = await purchaseBillService.createPurchaseBill(
         payload as any,
       );
-      console.log("✅ API SUCCESS:", response);
-
       const responseData = response.data;
-      // responseData has: billNo, store (name), vendor (name), items[], logistics{}
-
       const grandTotal = footerData?.docAmount || 0;
 
-      // === GENERATE INVOICE DATA BASED ON RESPONSE ===
       const invoicePreviewData = {
         header: {
           title: "PURCHASE BILL",
           subTitle: "Internal Copy",
           originalFor: "Original",
         },
-        // SELLER = VENDOR (From Response)
         seller: {
-          name: responseData.vendor, // e.g., "M/S VIJENDRA SPORTS"
+          name: responseData.vendor,
           addressLine1: formData.billToText?.split("\n")[1] || "",
           gstin: formData.gstNo || "",
           phone: "",
           email: "",
         },
-        // BILLING = STORE (From Response)
         billing: {
-          name: responseData.store, // e.g., "CHANDAN KHEL GHAR"
+          name: responseData.store,
           addressLine1: formData.shipToText?.split("\n")[1] || "",
           cityStateZip: "",
           gstin: "",
           pan: "",
         },
-        // SHIPPING (Same as Billing/Store usually)
         shipping: {
           name: responseData.store,
           addressLine1: formData.shipToText?.split("\n")[1] || "",
@@ -261,18 +253,16 @@ const PurchaseBill: React.FC = () => {
           phone: "",
         },
         invoiceDetails: {
-          invoiceNo: responseData.billNo, // e.g., "PB0103"
+          invoiceNo: responseData.billNo,
           invoiceDate: new Date(responseData.billDate).toLocaleDateString(
             "en-GB",
           ),
           placeOfSupply: formData.placeOfSupply || "",
           vehicleNo: logisticsData.vehicleNo,
         },
-
-        // Map Items directly from Response to ensure descriptions match backend
         items: responseData.items.map((item: any, idx: number) => ({
           sNo: idx + 1,
-          description: item.description || "Item", // e.g., "Swimming Tube 80"
+          description: item.description || "Item",
           hsnSac: "",
           packQty: 0,
           qty: item.quantity,
@@ -281,12 +271,11 @@ const PurchaseBill: React.FC = () => {
           discountPercent: 0,
           amount: item.amount,
         })),
-
         totals: {
           subTotal: footerData?.itemValue || 0,
           discount: footerData?.discount1 || 0,
           taxableAmount: footerData?.taxable || 0,
-          cgst: 0, // Not returned in response, using defaults or logic if needed
+          cgst: 0,
           sgst: 0,
           cess: 0,
           roundOff: footerData?.roundOff || 0,
@@ -294,8 +283,6 @@ const PurchaseBill: React.FC = () => {
           amountInWords: toWords.convert(grandTotal),
           taxAmountInWords: "",
         },
-
-        // Construct Tax Table (Using Footer Data as Response lacks breakdown)
         taxTable: [
           {
             rate: "Tax",
@@ -306,8 +293,6 @@ const PurchaseBill: React.FC = () => {
             totalTax: footerData?.taxAmount || 0,
           },
         ],
-
-        // Map Logistics from Response
         logistics: {
           mode: logisticsData.shippingMode || "Road",
           weight: logisticsData.weight || "0",
@@ -344,9 +329,15 @@ const PurchaseBill: React.FC = () => {
       <PurchaseBillHeader />
 
       <div className="flex-1 overflow-auto p-4 space-y-4">
+        {/* Step 1: Form triggers handleFormChange on any selection */}
         <PurchaseBillForm ref={formRef} onFormChange={handleFormChange} />
 
-        <OrderTable ref={orderTableRef} onAnalyze={handleAnalyzeProfit} />
+        {/* Step 2: Table reacts to currentVendorCode prop updates */}
+        <OrderTable
+          ref={orderTableRef}
+          onAnalyze={handleAnalyzeProfit}
+          vendorCode={currentVendorCode}
+        />
 
         <PurchaseBillFooter ref={footerRef} cashCredit={cashCredit} />
 

@@ -576,7 +576,7 @@ export default function UnderGroup({
                 </div>
               </div>
 
-              <div className="grid grid-cols-12 gap-2 items-center">
+              {/* <div className="grid grid-cols-12 gap-2 items-center">
                 <div className="col-span-3 text-right md:text-left">
                   <Label required>Code</Label>
                 </div>
@@ -591,7 +591,7 @@ export default function UnderGroup({
                     onChange={(e) => handleChange("code", e.target.value)}
                   />
                 </div>
-              </div>
+              </div> */}
 
               <div className="grid grid-cols-12 gap-2 items-start">
                 <div className="col-span-3 text-right md:text-left pt-1">

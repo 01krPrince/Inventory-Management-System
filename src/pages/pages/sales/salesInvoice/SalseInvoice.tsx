@@ -8,8 +8,7 @@ import SalesInvoiceForm, {
   SalesInvoiceFormRef,
 } from "./SalesInvoiceForm";
 import ProfitAnalysisModal from "../../../../components/ProfitAnalysisModal";
-import { fetchProfitAnalysis } from "../../../../services/analysis/profitService";
-import OrderTable, { OrderTableRef } from "./OrderTable";
+import { OrderTableRef } from "./OrderTable";
 import InvoiceFooter, { InvoiceFooterRef } from "./InvoiceFooter";
 import LedgerAttributes from "../../../../components/LedgerAttributes";
 import InvoiceA4 from "../../../../components/invoiceDownload/InvoiceA4";
@@ -24,7 +23,7 @@ const SalesInvoice: React.FC = () => {
 
   // Profit Analysis State
   const [isAnalysisOpen, setAnalysisOpen] = useState(false);
-  const [analysisData, setAnalysisData] = useState<any>(null);
+  const [analysisData] = useState<any>(null);
 
   // New State for Cash/Credit (Lifted from form)
   const [cashCredit, setCashCredit] = useState<string>("Credit");
@@ -52,61 +51,61 @@ const SalesInvoice: React.FC = () => {
   /* =========================
       HANDLE PROFIT ANALYSIS
    ========================== */
-  const handleAnalyzeProfit = async (tableRows: any[]) => {
-    if (!tableRows || tableRows.length === 0) {
-      alert("Please add items to the table first.");
-      return;
-    }
+  // const handleAnalyzeProfit = async (tableRows: any[]) => {
+  //   if (!tableRows || tableRows.length === 0) {
+  //     alert("Please add items to the table first.");
+  //     return;
+  //   }
 
-    const itemsPayload = [];
-    for (const row of tableRows) {
-      const hiddenId = row.data.itemId;
+  //   const itemsPayload = [];
+  //   for (const row of tableRows) {
+  //     const hiddenId = row.data.itemId;
 
-      if (!hiddenId) {
-        console.error("Row Data:", row);
-        alert(`Error: Item '${row.data.desc}' is missing a valid System ID.`);
-        return;
-      }
+  //     if (!hiddenId) {
+  //       console.error("Row Data:", row);
+  //       alert(`Error: Item '${row.data.desc}' is missing a valid System ID.`);
+  //       return;
+  //     }
 
-      itemsPayload.push({
-        item: hiddenId,
-        quantity: Number(row.data.qty),
-        sellingPrice: Number(row.data.rate),
-      });
-    }
+  //     itemsPayload.push({
+  //       item: hiddenId,
+  //       quantity: Number(row.data.qty),
+  //       sellingPrice: Number(row.data.rate),
+  //     });
+  //   }
 
-    // Note: Assuming 'store' is available in scope or derived from formRef.
-    // If 'store' variable is missing in this scope, fetch it from formRef:
-    const currentFormData = formRef.current?.getFormData();
-    const currentStore = currentFormData?.store || "";
+  //   // Note: Assuming 'store' is available in scope or derived from formRef.
+  //   // If 'store' variable is missing in this scope, fetch it from formRef:
+  //   const currentFormData = formRef.current?.getFormData();
+  //   const currentStore = currentFormData?.store || "";
 
-    try {
-      const response = await fetchProfitAnalysis({
-        store: currentStore,
-        items: itemsPayload,
-        totalExpenses: 0,
-      });
+  //   try {
+  //     const response = await fetchProfitAnalysis({
+  //       store: currentStore,
+  //       items: itemsPayload,
+  //       totalExpenses: 0,
+  //     });
 
-      if (!response.success) throw new Error("Analysis failed");
+  //     if (!response.success) throw new Error("Analysis failed");
 
-      const mergedItems = response.items.map((apiItem: any) => {
-        const originalRow = tableRows.find(
-          (r) => r.data.itemId === apiItem.item,
-        );
-        return {
-          ...apiItem,
-          itemName: originalRow?.data.desc || "Unknown Item",
-          itemCode: originalRow?.data.select || "N/A",
-        };
-      });
+  //     const mergedItems = response.items.map((apiItem: any) => {
+  //       const originalRow = tableRows.find(
+  //         (r) => r.data.itemId === apiItem.item,
+  //       );
+  //       return {
+  //         ...apiItem,
+  //         itemName: originalRow?.data.desc || "Unknown Item",
+  //         itemCode: originalRow?.data.select || "N/A",
+  //       };
+  //     });
 
-      setAnalysisData({ ...response, items: mergedItems });
-      setAnalysisOpen(true);
-    } catch (error: any) {
-      console.error("Analysis Error:", error);
-      alert(error.message || "Failed to fetch profit analysis.");
-    }
-  };
+  //     setAnalysisData({ ...response, items: mergedItems });
+  //     setAnalysisOpen(true);
+  //   } catch (error: any) {
+  //     console.error("Analysis Error:", error);
+  //     alert(error.message || "Failed to fetch profit analysis.");
+  //   }
+  // };
 
   /* =========================
       MAIN SAVE / SUBMIT LOGIC
@@ -294,7 +293,7 @@ const SalesInvoice: React.FC = () => {
             onSubmit={handleFormSubmit}
             onFormChange={handleFormChange}
           />
-          <OrderTable ref={orderTableRef} onAnalyze={handleAnalyzeProfit} />
+          {/* <OrderTable ref={orderTableRef} onAnalyze={handleAnalyzeProfit} /> */}
           {/* Passed the live state value here */}
           <InvoiceFooter ref={footerRef} cashCredit={cashCredit} />
           <LedgerAttributes />

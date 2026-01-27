@@ -71,13 +71,17 @@ export interface CustomWarranty {
 
 export interface SuggestedCatEntry {
   itemId: string;
-  _id?: string; // MongoDB auto-generated ID for the array entry
+  _id?: string;
 }
 
 export interface ItemApiData {
   _id: string;
   code: string;
   name: string;
+  netRate: string;
+  gstRate: string;
+  hsn_description: string;
+  last_purchase_rate: string;
   stock_unit: { _id: string; code: string; name: string } | null;
   brand: { _id: string; name: string; code: string } | null;
   category: { _id: string; name: string; code: string } | null;

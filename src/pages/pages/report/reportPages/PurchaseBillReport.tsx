@@ -9,7 +9,6 @@ import {
   handlePrint,
 } from "../../../../components/function/functions";
 
-// Columns for Export
 const ReportColumns = [
   { key: "billNo", label: "Bill No" },
   { key: "billDate", label: "Date" },

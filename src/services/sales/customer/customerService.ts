@@ -58,7 +58,7 @@ export const addCustomer = async (
     return {
       success: false,
       message:
-        error?.response?.data?.message ||
+        error?.response?.data?.error ||
         error.message ||
         "Something went wrong",
     };

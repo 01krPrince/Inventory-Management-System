@@ -69,7 +69,7 @@ export default function StockUnit({
   }, [initialData]);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value, type } = e.target;
     setFormData((prev) => ({
@@ -116,7 +116,7 @@ export default function StockUnit({
     if (!formData._id) return;
 
     const confirmDelete = window.confirm(
-      "Are you sure you want to delete this Stock Unit?"
+      "Are you sure you want to delete this Stock Unit?",
     );
     if (!confirmDelete) return;
 
@@ -162,7 +162,7 @@ export default function StockUnit({
       <div className="p-4 bg-white">
         <div className="grid grid-cols-12 gap-y-3 gap-x-4 items-center">
           {/* Code Input */}
-          <div className="col-span-4">
+          {/* <div className="col-span-4">
             <label htmlFor="code" className={labelClass}>
               Code
             </label>
@@ -177,7 +177,7 @@ export default function StockUnit({
               onChange={handleChange}
               className={inputClass}
             />
-          </div>
+          </div> */}
 
           {/* Name Input */}
           <div className="col-span-4">

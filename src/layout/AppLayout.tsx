@@ -52,6 +52,8 @@ import VendorReport from "../pages/pages/report/reportPages/VendorReport.tsx";
 import PurchaseBillReport from "../pages/pages/report/reportPages/PurchaseBillReport.tsx";
 import ItemReport from "../pages/pages/report/reportPages/ItemReport.tsx";
 import GstMasterReport from "../pages/pages/report/reportPages/GstMasterReport.tsx";
+import SalesInvoiceReport from "../pages/pages/report/reportPages/SalesInvoiceReport.tsx";
+import StockSummary from "../pages/pages/report/reportPages/StockSummary.tsx";
 
 const useSidebar = () => ({
   isExpanded: false,
@@ -95,7 +97,7 @@ const ReportPageRoutes: { [key: string]: React.FC } = {
 
   // --- Customer/Sales ---
   "/report/customers": CustomerReport,
-  "/report/sales-report": () => <PlaceholderPage title="Sales Report" />,
+  "/report/sales-report": SalesInvoiceReport,
   "/report/ledgers-trials": () => (
     <PlaceholderPage title="Sales Ledgers & Trials" />
   ),
@@ -118,6 +120,7 @@ const ReportPageRoutes: { [key: string]: React.FC } = {
 
   // --- Inventory ---
   "/report/item-master": ItemReport,
+  "/report/stock-summary": StockSummary,
   "/report/primary-stock": () => (
     <PlaceholderPage title="Primary Stock Reports" />
   ),

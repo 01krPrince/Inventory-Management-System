@@ -10,8 +10,8 @@ export interface FormData {
   gst_no: string;
   cust_name: string;
   print_name: string;
-  identification: string;
   under_ledger: string;
+  identification: string;
   cust_comman: boolean;
   is_sub_customer: boolean;
   under_customer: boolean | string;
