@@ -1,10 +1,10 @@
 import React, { useState, useRef } from "react";
 import { X, Save } from "lucide-react";
-import { ToWords } from "to-words";
+// import { ToWords } from "to-words";
 
 import PurchaseBillHeader from "./PurchaseBillHeader";
 import PurchaseBillForm, { PurchaseBillFormRef } from "./PurchaseBillForm";
-import OrderTable, { OrderTableRef } from "../../sales/salesInvoice/OrderTable";
+import OrderTable, { OrderTableRef } from "./OrderTable";
 import PurchaseBillFooter, {
   PurchaseBillFooterRef,
 } from "./PurchaseBillFooter";
@@ -71,39 +71,40 @@ const PurchaseBill: React.FC = () => {
     billOfEntryNum: "",
     billOfEntryDate: "",
     customDuty: "0.00",
-    customDutyTender: "",
+    customDutyTender: "0.00",
     chaPayment: "0.00",
-    chaPaymentTender: "",
-    freight: "100",
-    freightTender: "",
-    insurance: "210",
-    insuranceTender: "",
+    chaPaymentTender: "0.00",
+    freight: "0.00",
+    freightTender: "0.00",
+    insurance: "0.00",
+    insuranceTender: "0.00",
     handling: "0.00",
-    handlingTender: "",
+    handlingTender: "0.00",
     documentationCharges: "0.00",
-    documentationChargesTender: "",
+    documentationChargesTender: "0.00",
     bankCharges: "0.00",
-    bankChargesTender: "",
+    bankChargesTender: "0.00",
     customExpenses: "0.00",
-    customExpensesTender: "",
-    loadingUnloading: "1000",
-    loadingUnloadingTender: "",
-    otherCharges: "1220",
-    otherChargesTender: "",
+    customExpensesTender: "0.00",
+    loadingUnloading: "0.00",
+    loadingUnloadingTender: "0.00",
+    otherCharges: "0.00",
+    otherChargesTender: "0.00",
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showBillPreview, setShowBillPreview] = useState(false);
   const [generatedBillData, setGeneratedBillData] = useState<any>(null);
+  const [tableItems, setTableItems] = useState<any[]>([]);
 
-  const toWords = new ToWords({
-    localeCode: "en-IN",
-    converterOptions: {
-      currency: true,
-      ignoreDecimal: false,
-      ignoreZeroCurrency: false,
-    },
-  });
+  // const toWords = new ToWords({
+  //   localeCode: "en-IN",
+  //   converterOptions: {
+  //     currency: true,
+  //     ignoreDecimal: false,
+  //     ignoreZeroCurrency: false,
+  //   },
+  // });
 
   const handleFormChange = (data: any) => {
     if (data.cashCredit) {
@@ -206,7 +207,8 @@ const PurchaseBill: React.FC = () => {
         receivedAmount: footerData?.receivedAmount || 0,
         cashBankLedger: footerData?.cashBankLedger || "",
         itemValue: footerData?.itemValue || 0,
-        discount: footerData?.discount1 || 0,
+        // billDiscount: footerData?.discount1 || 0,
+        billDiscount: footerData?.otherDiscAmt || 0,
         taxable: footerData?.taxable || 0,
         taxAmount: footerData?.taxAmount || 0,
         roundOff: footerData?.roundOff || 0,
@@ -220,98 +222,16 @@ const PurchaseBill: React.FC = () => {
         },
       };
 
+      // ✅ LOG: Printing the request body to console
+      console.log("🚀 Request Payload:", payload);
+
       const response = await purchaseBillService.createPurchaseBill(
         payload as any,
       );
       const responseData = response.data;
-      const grandTotal = footerData?.docAmount || 0;
+      // const grandTotal = footerData?.docAmount || 0;
 
-      const invoicePreviewData = {
-        header: {
-          title: "PURCHASE BILL",
-          subTitle: "Internal Copy",
-          originalFor: "Original",
-        },
-        seller: {
-          name: responseData.vendor,
-          addressLine1: formData.billToText?.split("\n")[1] || "",
-          gstin: formData.gstNo || "",
-          phone: "",
-          email: "",
-        },
-        billing: {
-          name: responseData.store,
-          addressLine1: formData.shipToText?.split("\n")[1] || "",
-          cityStateZip: "",
-          gstin: "",
-          pan: "",
-        },
-        shipping: {
-          name: responseData.store,
-          addressLine1: formData.shipToText?.split("\n")[1] || "",
-          cityStateZip: "",
-          phone: "",
-        },
-        invoiceDetails: {
-          invoiceNo: responseData.billNo,
-          invoiceDate: new Date(responseData.billDate).toLocaleDateString(
-            "en-GB",
-          ),
-          placeOfSupply: formData.placeOfSupply || "",
-          vehicleNo: logisticsData.vehicleNo,
-        },
-        items: responseData.items.map((item: any, idx: number) => ({
-          sNo: idx + 1,
-          description: item.description || "Item",
-          hsnSac: "",
-          packQty: 0,
-          qty: item.quantity,
-          uom: "PCS",
-          rate: item.rate,
-          discountPercent: 0,
-          amount: item.amount,
-        })),
-        totals: {
-          subTotal: footerData?.itemValue || 0,
-          discount: footerData?.discount1 || 0,
-          taxableAmount: footerData?.taxable || 0,
-          cgst: 0,
-          sgst: 0,
-          cess: 0,
-          roundOff: footerData?.roundOff || 0,
-          grandTotal: grandTotal,
-          amountInWords: toWords.convert(grandTotal),
-          taxAmountInWords: "",
-        },
-        taxTable: [
-          {
-            rate: "Tax",
-            taxableValue: footerData?.taxable || 0,
-            cgst: 0,
-            sgst: 0,
-            igst: 0,
-            totalTax: footerData?.taxAmount || 0,
-          },
-        ],
-        logistics: {
-          mode: logisticsData.shippingMode || "Road",
-          weight: logisticsData.weight || "0",
-          bundles: logisticsData.noOfPackets || "0",
-          chargesPaid: (
-            (Number(responseData.logistics?.freight) || 0) +
-            (Number(responseData.logistics?.loadingUnloading) || 0) +
-            (Number(responseData.logistics?.insurance) || 0) +
-            (Number(responseData.logistics?.otherCharges) || 0)
-          ).toFixed(2),
-          docExtraInfo: "",
-          remarks: responseData.remarks || "",
-        },
-        signatory: {
-          companyName: responseData.store,
-        },
-      };
-
-      setGeneratedBillData(invoicePreviewData);
+      setGeneratedBillData(responseData);
       setShowBillPreview(true);
     } catch (error) {
       console.error("❌ API ERROR:", error);
@@ -337,9 +257,14 @@ const PurchaseBill: React.FC = () => {
           ref={orderTableRef}
           onAnalyze={handleAnalyzeProfit}
           vendorCode={currentVendorCode}
+          onItemsChange={setTableItems}
         />
 
-        <PurchaseBillFooter ref={footerRef} cashCredit={cashCredit} />
+        <PurchaseBillFooter
+          ref={footerRef}
+          cashCredit={cashCredit}
+          currentItems={tableItems}
+        />
 
         <LedgerAttributes data={ledgerData} onChange={setLedgerData} />
 

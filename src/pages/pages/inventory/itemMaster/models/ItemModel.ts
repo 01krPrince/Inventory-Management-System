@@ -80,12 +80,12 @@ export interface ItemApiData {
   name: string;
   netRate: string;
   gstRate: string;
+  taxCode: string;
   hsn_description: string;
   last_purchase_rate: string;
   stock_unit: { _id: string; code: string; name: string } | null;
   brand: { _id: string; name: string; code: string } | null;
   category: { _id: string; name: string; code: string } | null;
-  // Updated: Made optional to prevent build errors if missing from API model
   gst_classification?: string;
   sales_rate: number;
   mrp: number;

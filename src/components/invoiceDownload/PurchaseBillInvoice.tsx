@@ -1,8 +1,56 @@
-import React from "react";
+import React, { useMemo } from "react";
 // import { PrintIcon } from "../function/functions";
 import Logo from "./image.svg";
 
-// --- Types for Dynamic Data ---
+// --- 1. Interface for YOUR API Response ---
+interface VendorDetails {
+  vend_name: string;
+  address?: string;
+  city: string;
+  state: string;
+  country: string;
+  gst_no: string;
+  payment_term?: string;
+  phone?: string;
+  email?: string;
+  pan?: string;
+}
+
+interface ApiItem {
+  description: string;
+  quantity: number;
+  rate: number;
+  amount: number;
+  itemcode?: string;
+  hsn?: string;
+}
+
+interface LogisticsData {
+  freight: number;
+  loadingUnloading: number;
+  insurance: number;
+  otherCharges: number;
+}
+
+export interface ApiResponse {
+  billNo: string;
+  billDate: string;
+  storeName: string;
+  vendorDetails: VendorDetails;
+  items: ApiItem[];
+  logistics: LogisticsData;
+  itemValue: number;
+  taxableAmount: number;
+  taxAmount: number;
+  billDiscount: number;
+  billDiscountPercent: number;
+  roundOff: number;
+  docAmount: number;
+  remarks?: string;
+  transport?: number | string;
+}
+
+// --- 2. Interfaces for the UI ---
 
 interface AddressDetails {
   name: string;
@@ -25,6 +73,7 @@ interface LineItem {
   rate: number;
   discountPercent: number;
   amount: number;
+  billDiscount?: number;
 }
 
 interface TaxBreakdown {
@@ -61,7 +110,7 @@ interface InvoiceData {
   items: LineItem[];
   totals: {
     subTotal: number;
-    discount: number;
+    billDiscount: number;
     taxableAmount: number;
     cgst: number;
     sgst: number;
@@ -75,20 +124,221 @@ interface InvoiceData {
   logistics: {
     mode: string;
     weight: string;
-    bundles: string; // "No of Packets"
+    bundles: string;
     chargesPaid: string;
     docExtraInfo: string;
-    remarks: string; // Narration
+    remarks: string;
   };
   signatory: {
     companyName: string;
   };
 }
 
+// --- 3. Utilities ---
+
+const numberToWords = (num: number): string => {
+  const a = [
+    "",
+    "One ",
+    "Two ",
+    "Three ",
+    "Four ",
+    "Five ",
+    "Six ",
+    "Seven ",
+    "Eight ",
+    "Nine ",
+    "Ten ",
+    "Eleven ",
+    "Twelve ",
+    "Thirteen ",
+    "Fourteen ",
+    "Fifteen ",
+    "Sixteen ",
+    "Seventeen ",
+    "Eighteen ",
+    "Nineteen ",
+  ];
+  const b = [
+    "",
+    "",
+    "Twenty",
+    "Thirty",
+    "Forty",
+    "Fifty",
+    "Sixty",
+    "Seventy",
+    "Eighty",
+    "Ninety",
+  ];
+
+  if ((num = num.toString().length > 9 ? parseFloat("overflow") : num))
+    return "overflow";
+  const n = ("000000000" + num.toFixed(2))
+    .substr(-11)
+    .match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+  if (!n) return "";
+  let str = "";
+  str +=
+    Number(n[1]) !== 0
+      ? (a[Number(n[1])] || b[n[1][0] as any] + " " + a[n[1][1] as any]) +
+        "Crore "
+      : "";
+  str +=
+    Number(n[2]) !== 0
+      ? (a[Number(n[2])] || b[n[2][0] as any] + " " + a[n[2][1] as any]) +
+        "Lakh "
+      : "";
+  str +=
+    Number(n[3]) !== 0
+      ? (a[Number(n[3])] || b[n[3][0] as any] + " " + a[n[3][1] as any]) +
+        "Thousand "
+      : "";
+  str +=
+    Number(n[4]) !== 0
+      ? (a[Number(n[4])] || b[n[4][0] as any] + " " + a[n[4][1] as any]) +
+        "Hundred "
+      : "";
+  str +=
+    Number(n[5]) !== 0
+      ? (str !== "" ? "and " : "") +
+        (a[Number(n[5])] || b[n[5][0] as any] + " " + a[n[5][1] as any]) +
+        "Only "
+      : "";
+  return str;
+};
+
 // --- Component ---
 
-const PurchaseBillInvoice: React.FC<{ data?: InvoiceData }> = ({ data }) => {
-  const invoice = data || defaultAutomobileData;
+const PurchaseBillInvoice: React.FC<{ data?: ApiResponse }> = ({ data }) => {
+  // DEBUG: Print API response to console
+  if (data) {
+    console.log("🧾 Invoice Response Data:", data);
+  }
+
+  // --- Mapper: Convert API JSON -> Invoice UI Format ---
+  const invoice: InvoiceData = useMemo(() => {
+    if (!data) return defaultAutomobileData;
+
+    const billDateFormatted = new Date(data.billDate).toLocaleDateString(
+      "en-GB",
+    );
+
+    // Helpers to fix "null" issues
+    const safeStr = (val: any) =>
+      val && val !== "null" && val !== null ? String(val) : "";
+
+    const joinAddress = (parts: any[], separator: string = ", ") =>
+      parts
+        .filter((p) => p && String(p).trim() !== "" && String(p) !== "null")
+        .join(separator);
+
+    // Tax Split Logic
+    const totalTax = data.taxAmount || 0;
+    const cgst = totalTax / 2;
+    const sgst = totalTax / 2;
+
+    return {
+      header: {
+        title: "PURCHASE INVOICE",
+        subTitle: "",
+        originalFor: "Original For Recipient",
+        logoUrl: Logo,
+      },
+      // Seller = Vendor (Address Logic Updated)
+      seller: {
+        name: safeStr(data.vendorDetails.vend_name),
+        addressLine1:
+          safeStr(data.vendorDetails.address) ||
+          joinAddress(
+            [data.vendorDetails.city, data.vendorDetails.state],
+            ", ",
+          ),
+        addressLine2: safeStr(data.vendorDetails.country),
+        cityStateZip: joinAddress(
+          [data.vendorDetails.city, data.vendorDetails.state],
+          " - ",
+        ),
+        gstin: safeStr(data.vendorDetails.gst_no),
+        phone: safeStr(data.vendorDetails.phone),
+        email: safeStr(data.vendorDetails.email),
+        pan: safeStr(data.vendorDetails.pan),
+      },
+      invoiceDetails: {
+        invoiceNo: safeStr(data.billNo),
+        invoiceDate: billDateFormatted,
+        reverseCharge: "No",
+        placeOfSupply: safeStr(data.vendorDetails.state),
+        station: safeStr(data.vendorDetails.city),
+        ewayBillNo: "",
+        vehicleNo: String(data.transport || ""),
+        grRrNo: "",
+        distance: "",
+        shippingCompany: "",
+      },
+      // Billing = My Store (API missing address, using empty strings to avoid 'null')
+      billing: {
+        name: safeStr(data.storeName),
+        addressLine1: "",
+        addressLine2: "",
+        cityStateZip: "",
+        gstin: "",
+        pan: "",
+      },
+      // Shipping = My Store
+      shipping: {
+        name: safeStr(data.storeName),
+        addressLine1: "",
+        addressLine2: "",
+        cityStateZip: "",
+      },
+      items: data.items.map((item, index) => ({
+        sNo: index + 1,
+        description: safeStr(item.description),
+        hsnSac: safeStr(item.hsn),
+        packQty: 0,
+        qty: item.quantity,
+        uom: "NOS",
+        rate: item.rate,
+        discountPercent: data.billDiscountPercent || 0,
+        amount: item.amount,
+        billDiscount: 0,
+      })),
+      totals: {
+        subTotal: data.itemValue,
+        billDiscount: data.billDiscount || 0,
+        taxableAmount: data.taxableAmount,
+        cgst: cgst,
+        sgst: sgst,
+        cess: 0,
+        roundOff: data.roundOff,
+        grandTotal: data.docAmount,
+        amountInWords: `INR ${numberToWords(Math.round(data.docAmount))}`,
+        taxAmountInWords: `INR ${numberToWords(Math.round(data.taxAmount))}`,
+      },
+      taxTable: [
+        {
+          rate: "Tax (Derived)",
+          taxableValue: data.taxableAmount,
+          cgst: cgst,
+          sgst: sgst,
+          igst: 0,
+          totalTax: totalTax,
+        },
+      ],
+      logistics: {
+        mode: "Road",
+        weight: "0.00",
+        bundles: "0.00",
+        chargesPaid: String(data.logistics?.freight || "0.00"),
+        docExtraInfo: "",
+        remarks: safeStr(data.remarks),
+      },
+      signatory: {
+        companyName: safeStr(data.storeName),
+      },
+    };
+  }, [data]);
 
   const formatCurrency = (amount: number) =>
     amount.toLocaleString("en-IN", {
@@ -318,7 +568,7 @@ const PurchaseBillInvoice: React.FC<{ data?: InvoiceData }> = ({ data }) => {
                     <th className="border-r border-black w-10">Qty</th>
                     <th className="border-r border-black w-10">UOM</th>
                     <th className="border-r border-black w-20">Item Rate</th>
-                    <th className="border-r border-black w-12">Discount</th>
+                    {/* <th className="border-r border-black w-12">Discount</th> */}
                     <th className="w-24 px-2 text-right">Amount (INR)</th>
                   </tr>
                 </thead>
@@ -342,9 +592,9 @@ const PurchaseBillInvoice: React.FC<{ data?: InvoiceData }> = ({ data }) => {
                       <td className="border-r border-black py-2 text-right px-2">
                         {formatCurrency(item.rate)}
                       </td>
-                      <td className="border-r border-black py-2 text-right px-2">
-                        {item.discountPercent.toFixed(2)} %
-                      </td>
+                      {/* <td className="border-r border-black py-2 text-right px-2">
+                        {item.billDiscount}
+                      </td> */}
                       <td className="py-2 text-right px-2 font-bold">
                         {formatCurrency(item.amount)}
                       </td>
@@ -359,7 +609,7 @@ const PurchaseBillInvoice: React.FC<{ data?: InvoiceData }> = ({ data }) => {
                     <td className="border-r border-black"></td>
                     <td className="border-r border-black"></td>
                     <td className="border-r border-black"></td>
-                    <td className="border-r border-black"></td>
+                    {/* <td className="border-r border-black"></td> */}
                     <td className="border-r border-black"></td>
                     <td></td>
                   </tr>
@@ -381,7 +631,7 @@ const PurchaseBillInvoice: React.FC<{ data?: InvoiceData }> = ({ data }) => {
                     </td>
                     <td className="border-r border-black"></td>
                     <td className="border-r border-black"></td>
-                    <td className="border-r border-black"></td>
+                    {/* <td className="border-r border-black"></td> */}
                     <td className="text-right px-2 py-1">
                       {formatCurrency(invoice.totals.subTotal)}
                     </td>
@@ -503,8 +753,8 @@ const PurchaseBillInvoice: React.FC<{ data?: InvoiceData }> = ({ data }) => {
                 <div className="flex justify-between px-2 py-1">
                   <span>Discount</span>
                   <span>
-                    {invoice.totals.discount < 0 ? "" : "-"}
-                    {formatCurrency(Math.abs(invoice.totals.discount))}
+                    {invoice.totals.billDiscount > 0 ? "-" : ""}
+                    {formatCurrency(Math.abs(invoice.totals.billDiscount))}
                   </span>
                 </div>
                 <div className="flex justify-between px-2 py-1">
@@ -567,7 +817,7 @@ const PurchaseBillInvoice: React.FC<{ data?: InvoiceData }> = ({ data }) => {
   );
 };
 
-// --- Default Data ---
+// --- Default Data for Fallback (Mock) ---
 const defaultAutomobileData: InvoiceData = {
   header: {
     title: "PURCHASE INVOICE",
@@ -576,90 +826,56 @@ const defaultAutomobileData: InvoiceData = {
     logoUrl: Logo,
   },
   seller: {
-    name: "Sample Company - Automobile",
-    addressLine1:
-      "1209-1212, R.G. Trade Tower, 12th Floor, Netaji Subhash Place,",
-    addressLine2: "New Delhi, Delhi - 110034, India",
-    cityStateZip: "",
-    phone: "9169171616",
-    email: "support@alignbooks.com",
+    name: "Sample Vendor",
+    addressLine1: "123 Market Street",
+    addressLine2: "",
+    cityStateZip: "New Delhi - 110034",
     gstin: "07AAPPK4961R1ZR",
     pan: "AAPPK4961R",
   },
   invoiceDetails: {
-    invoiceNo: "01305/22-23",
-    invoiceDate: "31/03/2023",
+    invoiceNo: "00000",
+    invoiceDate: "01/01/2026",
     reverseCharge: "No",
-    placeOfSupply: "Maharashtra",
-    station: "PUNE",
-    ewayBillNo: "",
-    vehicleNo: "",
-    grRrNo: "",
-    distance: "",
-    shippingCompany: "",
+    placeOfSupply: "Delhi",
+    station: "Delhi",
   },
   billing: {
-    name: "R M ENTERPRISES (PANVEL)",
-    addressLine1: "SHIVJI MARKET VASHI NAVI MUMBAI SECTOR-19D OFFICE NO-",
-    addressLine2: "103/104",
-    cityStateZip: "Maharashtra 400705\nNAVIMUMBAI, Maharashtra - 400705, India",
-    gstin: "27AABPR7755E1ZH",
-    pan: "AABPR7755E",
+    name: "My Store",
+    addressLine1: "Store Address",
+    addressLine2: "",
+    cityStateZip: "State - Zip",
   },
   shipping: {
-    name: "Samsung Smart Cafe , Shop No-1,2 ,Sai Shanti Bhawan ,",
-    addressLine1: "Sector-19 , Plot No-17, New Panvel",
-    addressLine2: "NAVIMUMBAI, Maharashtra - 410206",
-    cityStateZip: "India",
-    phone: "9226978000",
+    name: "My Store",
+    addressLine1: "Store Address",
+    addressLine2: "",
+    cityStateZip: "State - Zip",
   },
-  items: [
-    {
-      sNo: 1,
-      description: "SAMSUNG S21 PHANTOM GRAY 8/128 GB",
-      hsnSac: "85171211",
-      packQty: 1,
-      qty: 1,
-      uom: "NOS",
-      rate: 58473.7,
-      discountPercent: 3.0,
-      amount: 58473.7,
-    },
-  ],
+  items: [],
   totals: {
-    subTotal: 485587.1,
-    discount: -14567.61,
-    taxableAmount: 471019.49,
-    cgst: 42391.76,
-    sgst: 42391.76,
-    cess: 0.0,
-    roundOff: -0.01,
-    grandTotal: 555803.0,
-    amountInWords: "INR Five Lakh Fifty Five Thousand Eight Hundred Three Only",
-    taxAmountInWords:
-      "INR Eighty Four Thousand Seven Hundred Eighty Three and Fifty Two Paisa Only",
+    subTotal: 0,
+    billDiscount: 0,
+    taxableAmount: 0,
+    cgst: 0,
+    sgst: 0,
+    cess: 0,
+    roundOff: 0,
+    grandTotal: 0,
+    amountInWords: "Zero Only",
+    taxAmountInWords: "Zero Only",
   },
-  taxTable: [
-    {
-      rate: "TAX@18%",
-      taxableValue: 471019.49,
-      cgst: 42391.76,
-      sgst: 42391.76,
-      igst: 0.0,
-      totalTax: 84783.52,
-    },
-  ],
+  taxTable: [],
   logistics: {
-    mode: "Road",
-    weight: "0.00",
-    bundles: "0.00",
-    chargesPaid: "0.00",
+    mode: "",
+    weight: "",
+    bundles: "",
+    chargesPaid: "",
     docExtraInfo: "",
-    remarks:
-      "Being Goods Purchase From R M ENTERPRISES (PANVEL) Ref No :: HS/29652 Ref Date :: 31/03/2023",
+    remarks: "",
   },
   signatory: {
-    companyName: "Sample Company - Automobile",
+    companyName: "My Store",
   },
 };
 

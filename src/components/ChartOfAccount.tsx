@@ -1,22 +1,15 @@
-import React, { useState, useEffect } from "react";
-import {
-  X,
-  ChevronDown,
-  ChevronUp,
-  Globe,
-  EditIcon,
-  Loader2,
-} from "lucide-react";
-
+import React, { useState, useEffect } from 'react';
+import { X, ChevronDown, ChevronUp, Globe, EditIcon, Loader2 } from 'lucide-react';
+import Dropdown, { ColumnDef } from './Dropdown';
 // --- Imports from the new Service ---
 import {
   createChartOfAccount,
   updateChartOfAccountById,
   ChartOfAccount,
-} from "../services/chartOfAccountService";
+} from '../services/chartOfAccountService';
 
-import { fetchCoaGroups, CoaGroup } from "./addItemMaster/api/chartOfAccount";
-import COAGroupsModal, { COAGroupData } from "./COAGroupsModal";
+import { fetchCoaGroups, CoaGroup } from './addItemMaster/api/chartOfAccount';
+import COAGroupsModal, { COAGroupData } from './COAGroupsModal';
 
 // --- Types ---
 export interface AccountFormData {
@@ -59,22 +52,22 @@ interface ChartOfAccountsProps {
 
 // --- Default State ---
 const defaultState: AccountFormData = {
-  name: "",
-  identification: "",
+  name: '',
+  identification: '',
   isSubledger: false,
-  salesGlUnderGroup: "",
+  salesGlUnderGroup: '',
   inactive: false,
-  type: "General",
-  accountNo: "",
-  rtgsIfscCode: "",
-  classification: "",
+  type: 'General',
+  accountNo: '',
+  rtgsIfscCode: '',
+  classification: '',
   isLoanAccount: false,
-  intrestRate: "",
-  calculationOn: "",
+  intrestRate: '',
+  calculationOn: '',
   tdsApplicable: false,
-  tdsSection: "",
-  address: "",
-  pan: "",
+  tdsSection: '',
+  address: '',
+  pan: '',
   employee: false,
   group: false,
 };
@@ -90,27 +83,24 @@ const ToggleSwitch = ({
   <button
     type="button"
     onClick={() => onChange(!value)}
-    className={`relative flex items-center w-16 h-6 rounded-sm transition-colors border ${
-      value ? "bg-blue-900 border-blue-900" : "bg-gray-200 border-gray-300"
-    }`}
-  >
+    className={`relative flex h-6 w-16 items-center rounded-sm border transition-colors ${
+      value ? 'border-blue-900 bg-blue-900' : 'border-gray-300 bg-gray-200'
+    }`}>
     <div
-      className={`flex items-center justify-center w-1/2 h-full text-[10px] font-bold ${
-        value ? "text-white" : "text-transparent"
-      }`}
-    >
+      className={`flex h-full w-1/2 items-center justify-center text-[10px] font-bold ${
+        value ? 'text-white' : 'text-transparent'
+      }`}>
       ON
     </div>
     <div
-      className={`flex items-center justify-center w-1/2 h-full text-[10px] font-bold ${
-        !value ? "text-gray-600" : "text-transparent"
-      }`}
-    >
+      className={`flex h-full w-1/2 items-center justify-center text-[10px] font-bold ${
+        !value ? 'text-gray-600' : 'text-transparent'
+      }`}>
       OFF
     </div>
     <div
-      className={`absolute top-[-1px] left-[-1px] w-8 h-6 bg-white shadow-sm border border-gray-300 rounded-sm transform transition-transform ${
-        value ? "translate-x-8" : "translate-x-0"
+      className={`absolute left-[-1px] top-[-1px] h-6 w-8 transform rounded-sm border border-gray-300 bg-white shadow-sm transition-transform ${
+        value ? 'translate-x-8' : 'translate-x-0'
       }`}
     />
   </button>
@@ -125,13 +115,18 @@ const FormRow = ({
   required?: boolean;
   children: React.ReactNode;
 }) => (
-  <div className="grid grid-cols-12 gap-4 items-center mb-2">
-    <label className="col-span-4 text-sm text-gray-700 font-medium">
+  <div className="mb-2 grid grid-cols-12 items-center gap-4">
+    <label className="col-span-4 text-sm font-medium text-gray-700">
       {label} {required && <span className="text-red-500">*</span>}
     </label>
     <div className="col-span-8">{children}</div>
   </div>
 );
+
+const salesGlUnderGroupColumns: ColumnDef<any>[] = [
+  { header: 'Code', key: 'code', width: 'w-1/4' },
+  { header: 'Name', key: 'name', width: 'w-3/4' },
+];
 
 // --- Main Component ---
 const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
@@ -152,9 +147,7 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
   // State for Dynamic COA Groups
   const [coaGroupOptions, setCoaGroupOptions] = useState<CoaGroup[]>([]);
   const [isCoaGroupModalOpen, setIsCoaGroupModalOpen] = useState(false);
-  const [selectedCoaGroup, setSelectedCoaGroup] = useState<COAGroupData | null>(
-    null
-  );
+  const [selectedCoaGroup, setSelectedCoaGroup] = useState<COAGroupData | null>(null);
 
   const isEditMode = !!initialData && !!initialData._id;
 
@@ -176,29 +169,26 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
   useEffect(() => {
     if (initialData) {
       // FIX: Extract ID if underGroup is an object, otherwise use the string
-      let groupId = "";
-      if (initialData.underGroup && typeof initialData.underGroup === "object") {
-        groupId = initialData.underGroup._id || "";
+      let groupId = '';
+      if (initialData.underGroup && typeof initialData.underGroup === 'object') {
+        groupId = initialData.underGroup._id || '';
       } else {
-        groupId = initialData.underGroup || initialData.salesGlUnderGroup || "";
+        groupId = initialData.underGroup || initialData.salesGlUnderGroup || '';
       }
 
       setFormData({
         ...defaultState,
         ...initialData,
         salesGlUnderGroup: groupId, // Store ID here
-        
-        rtgsIfscCode:
-          initialData.ifscRtgs ||
-          initialData.rtgsIfscCode ||
-          "",
-        
+
+        rtgsIfscCode: initialData.ifscRtgs || initialData.rtgsIfscCode || '',
+
         isSubledger: initialData.isSubleder || initialData.isSubledger || false,
-        calculationOn: initialData.calcultaionOn || initialData.calculationOn || "",
-        
+        calculationOn: initialData.calcultaionOn || initialData.calculationOn || '',
+
         employee: Boolean(initialData.employee),
         group: Boolean(initialData.group),
-        intrestRate: initialData.intrestRate ? String(initialData.intrestRate) : "",
+        intrestRate: initialData.intrestRate ? String(initialData.intrestRate) : '',
       });
     } else {
       setFormData(defaultState);
@@ -209,15 +199,13 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
   useEffect(() => {
     if (formData.salesGlUnderGroup && coaGroupOptions.length > 0) {
       // FIX: Find group by _id instead of name
-      const foundGroup = coaGroupOptions.find(
-        (g) => g._id === formData.salesGlUnderGroup
-      );
+      const foundGroup = coaGroupOptions.find((g) => g._id === formData.salesGlUnderGroup);
       if (foundGroup) {
         setSelectedCoaGroup({
           _id: foundGroup._id,
           name: foundGroup.name,
           inactive: foundGroup.inactive,
-          underGroup: foundGroup.underGroup || "",
+          underGroup: foundGroup.underGroup || '',
           nature: foundGroup.nature,
         });
       } else {
@@ -234,13 +222,13 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const toggleSection = (section: "basic" | "attribute") => {
+  const toggleSection = (section: 'basic' | 'attribute') => {
     setSections((prev) => ({ ...prev, [section]: !prev[section] }));
   };
 
   const handleSubmit = async () => {
     if (!formData.name || !formData.salesGlUnderGroup) {
-      alert("Please fill required fields (Name, Under Group)");
+      alert('Please fill required fields (Name, Under Group)');
       return;
     }
 
@@ -252,14 +240,14 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
         identification: formData.identification,
         isSubleder: formData.isSubledger,
         // FIX: Sending the ID stored in salesGlUnderGroup
-        underLedger: formData.salesGlUnderGroup, 
+        underLedger: formData.salesGlUnderGroup,
         underGroup: formData.salesGlUnderGroup,
         type: formData.type,
         accountNo: formData.accountNo,
         ifscRtgs: formData.rtgsIfscCode,
         classification: formData.classification,
         isLoanAccount: formData.isLoanAccount,
-        intrestRate: parseFloat(String(formData.intrestRate).replace("%", "")) || 0,
+        intrestRate: parseFloat(String(formData.intrestRate).replace('%', '')) || 0,
         calcultaionOn: formData.calculationOn,
         tdsApplicable: formData.tdsApplicable,
         tdsSection: formData.tdsSection,
@@ -281,16 +269,13 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
         onSave(response.data.data);
       } else {
         alert(
-          `Failed to ${isEditMode ? "update" : "create"} Chart of Account: ` +
-            (response?.data?.message || "Unknown Error")
+          `Failed to ${isEditMode ? 'update' : 'create'} Chart of Account: ` +
+            (response?.data?.message || 'Unknown Error')
         );
       }
     } catch (error: any) {
-      console.error("Error submitting form:", error);
-      alert(
-        "An error occurred while saving: " +
-          (error?.response?.data?.message || error.message)
-      );
+      console.error('Error submitting form:', error);
+      alert('An error occurred while saving: ' + (error?.response?.data?.message || error.message));
     } finally {
       setIsSubmitting(false);
     }
@@ -303,39 +288,33 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
   const handleCoaGroupSave = (savedGroup: CoaGroup) => {
     loadGroups();
     // FIX: Set the ID of the newly created group
-    handleChange("salesGlUnderGroup", savedGroup._id); 
+    handleChange('salesGlUnderGroup', savedGroup._id);
   };
 
   return (
     <div
       className="fixed inset-0 flex items-center justify-center bg-black/50 p-4"
-      style={{ zIndex: overlayZIndex }}
-    >
-      <div className="bg-white w-full max-w-2xl rounded-sm shadow-xl flex flex-col max-h-[90vh]">
+      style={{ zIndex: overlayZIndex }}>
+      <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-sm bg-white shadow-xl">
         {/* --- Header --- */}
-        <div className="bg-[#1e4e79] text-white px-4 py-2 flex justify-between items-center rounded-t-sm">
-          <h2 className="font-semibold text-sm">Chart of Accounts</h2>
-          <button onClick={onClose} className="hover:bg-blue-800 rounded p-1">
+        <div className="flex items-center justify-between rounded-t-sm bg-[#1e4e79] px-4 py-2 text-white">
+          <h2 className="text-sm font-semibold">Chart of Accounts</h2>
+          <button onClick={onClose} className="rounded p-1 hover:bg-blue-800">
             <X size={16} />
           </button>
         </div>
 
         {/* --- Scrollable Content --- */}
-        <div className="overflow-y-auto p-4 flex-1">
+        <div className="flex-1 overflow-y-auto p-4">
           {/* Section: Basic */}
           <div className="mb-4">
             <div
-              className="flex justify-between items-center cursor-pointer border-b border-gray-200 pb-1 mb-3"
-              onClick={() => toggleSection("basic")}
-            >
-              <div className="flex items-center gap-2 text-[#1e4e79] font-bold text-sm">
+              className="mb-3 flex cursor-pointer items-center justify-between border-b border-gray-200 pb-1"
+              onClick={() => toggleSection('basic')}>
+              <div className="flex items-center gap-2 text-sm font-bold text-[#1e4e79]">
                 <span className="text-lg">📄</span> Basic
               </div>
-              {sections.basic ? (
-                <ChevronDown size={16} />
-              ) : (
-                <ChevronUp size={16} />
-              )}
+              {sections.basic ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
             </div>
 
             {sections.basic && (
@@ -344,11 +323,11 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
                   <div className="flex">
                     <input
                       type="text"
-                      className="flex-1 border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-blue-500"
+                      className="flex-1 border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none"
                       value={formData.name}
-                      onChange={(e) => handleChange("name", e.target.value)}
+                      onChange={(e) => handleChange('name', e.target.value)}
                     />
-                    <button className="bg-[#1e4e79] text-white p-1 ml-1 rounded-sm">
+                    <button className="ml-1 rounded-sm bg-[#1e4e79] p-1 text-white">
                       <Globe size={14} />
                     </button>
                   </div>
@@ -357,44 +336,34 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
                 <FormRow label="Identification">
                   <input
                     type="text"
-                    className="w-full border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-blue-500"
+                    className="w-full border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none"
                     value={formData.identification}
-                    onChange={(e) =>
-                      handleChange("identification", e.target.value)
-                    }
+                    onChange={(e) => handleChange('identification', e.target.value)}
                   />
                 </FormRow>
 
                 <FormRow label="Is Subledger">
                   <ToggleSwitch
                     value={formData.isSubledger}
-                    onChange={(val) => handleChange("isSubledger", val)}
+                    onChange={(val) => handleChange('isSubledger', val)}
                   />
                 </FormRow>
 
                 {/* --- Under Group (Mapped from API) --- */}
                 <FormRow label="Under Group" required>
-                  <div className="flex relative w-full">
-                    <select
-                      className="w-full border border-gray-300 px-2 py-1 text-sm bg-white focus:outline-none focus:border-blue-500 appearance-none"
+                  <div className="relative flex w-full">
+                    <Dropdown
+                      data={coaGroupOptions}
+                      columns={salesGlUnderGroupColumns}
                       value={formData.salesGlUnderGroup}
-                      onChange={(e) =>
-                        handleChange("salesGlUnderGroup", e.target.value)
-                      }
-                    >
-                      <option value="">Select...</option>
-                      {coaGroupOptions.map((group) => (
-                        // FIX: Use group._id as the value
-                        <option key={group._id} value={group._id}>
-                          {group.name}
-                        </option>
-                      ))}
-                    </select>
+                      valueKey="_id"
+                      placeholder="Select Ledger..."
+                      onChange={(item) => handleChange('salesGlUnderGroup', item?._id || '')}
+                    />
                     {/* Edit Button for COA Groups */}
                     <button
                       onClick={() => setIsCoaGroupModalOpen(true)}
-                      className="bg-[#1e4e79] text-white p-1 ml-1 rounded-sm flex items-center justify-center w-8"
-                    >
+                      className="ml-1 flex w-8 items-center justify-center rounded-sm bg-[#1e4e79] p-1 text-white">
                       <EditIcon size={12} />
                     </button>
                   </div>
@@ -403,16 +372,15 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
                 <FormRow label="Inactive">
                   <ToggleSwitch
                     value={formData.inactive}
-                    onChange={(val) => handleChange("inactive", val)}
+                    onChange={(val) => handleChange('inactive', val)}
                   />
                 </FormRow>
 
                 <FormRow label="Type">
                   <select
-                    className="w-full border border-gray-300 px-2 py-1 text-sm bg-white focus:outline-none focus:border-blue-500"
+                    className="w-full border border-gray-300 bg-white px-2 py-1 text-sm focus:border-blue-500 focus:outline-none"
                     value={formData.type}
-                    onChange={(e) => handleChange("type", e.target.value)}
-                  >
+                    onChange={(e) => handleChange('type', e.target.value)}>
                     <option value="General">General</option>
                     <option value="Cash">Cash</option>
                     <option value="Bank">Bank</option>
@@ -422,38 +390,34 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
                 <FormRow label="AccountNo">
                   <input
                     type="text"
-                    className="w-full border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-blue-500"
+                    className="w-full border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none"
                     value={formData.accountNo}
-                    onChange={(e) => handleChange("accountNo", e.target.value)}
+                    onChange={(e) => handleChange('accountNo', e.target.value)}
                   />
                 </FormRow>
 
                 <FormRow label="RTGS/IFSC Code">
                   <input
                     type="text"
-                    className="w-full border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-blue-500"
+                    className="w-full border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none"
                     value={formData.rtgsIfscCode}
-                    onChange={(e) =>
-                      handleChange("rtgsIfscCode", e.target.value)
-                    }
+                    onChange={(e) => handleChange('rtgsIfscCode', e.target.value)}
                   />
                 </FormRow>
 
                 <FormRow label="Classification">
                   <input
                     type="text"
-                    className="w-full border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-blue-500"
+                    className="w-full border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none"
                     value={formData.classification}
-                    onChange={(e) =>
-                      handleChange("classification", e.target.value)
-                    }
+                    onChange={(e) => handleChange('classification', e.target.value)}
                   />
                 </FormRow>
 
                 <FormRow label="Is Loan Account">
                   <ToggleSwitch
                     value={formData.isLoanAccount}
-                    onChange={(val) => handleChange("isLoanAccount", val)}
+                    onChange={(val) => handleChange('isLoanAccount', val)}
                   />
                 </FormRow>
 
@@ -463,21 +427,16 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
                       <input
                         type="text"
                         placeholder="e.g. 9.5%"
-                        className="w-full border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-blue-500"
+                        className="w-full border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none"
                         value={formData.intrestRate}
-                        onChange={(e) =>
-                          handleChange("intrestRate", e.target.value)
-                        }
+                        onChange={(e) => handleChange('intrestRate', e.target.value)}
                       />
                     </FormRow>
                     <FormRow label="Calculation On">
                       <select
-                        className="w-full border border-gray-300 px-2 py-1 text-sm bg-white focus:outline-none focus:border-blue-500"
+                        className="w-full border border-gray-300 bg-white px-2 py-1 text-sm focus:border-blue-500 focus:outline-none"
                         value={formData.calculationOn}
-                        onChange={(e) =>
-                          handleChange("calculationOn", e.target.value)
-                        }
-                      >
+                        onChange={(e) => handleChange('calculationOn', e.target.value)}>
                         <option value="">Select...</option>
                         <option value="Monthly">Monthly</option>
                         <option value="Yearly">Yearly</option>
@@ -489,7 +448,7 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
                 <FormRow label="TDS Applicable">
                   <ToggleSwitch
                     value={formData.tdsApplicable}
-                    onChange={(val) => handleChange("tdsApplicable", val)}
+                    onChange={(val) => handleChange('tdsApplicable', val)}
                   />
                 </FormRow>
 
@@ -497,11 +456,9 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
                   <FormRow label="TDS Section">
                     <input
                       type="text"
-                      className="w-full border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-blue-500"
+                      className="w-full border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none"
                       value={formData.tdsSection}
-                      onChange={(e) =>
-                        handleChange("tdsSection", e.target.value)
-                      }
+                      onChange={(e) => handleChange('tdsSection', e.target.value)}
                     />
                   </FormRow>
                 )}
@@ -509,18 +466,18 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
                 <FormRow label="Address">
                   <textarea
                     rows={3}
-                    className="w-full border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-blue-500 resize-none"
+                    className="w-full resize-none border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none"
                     value={formData.address}
-                    onChange={(e) => handleChange("address", e.target.value)}
+                    onChange={(e) => handleChange('address', e.target.value)}
                   />
                 </FormRow>
 
                 <FormRow label="PAN">
                   <input
                     type="text"
-                    className="w-full border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-blue-500"
+                    className="w-full border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none"
                     value={formData.pan}
-                    onChange={(e) => handleChange("pan", e.target.value)}
+                    onChange={(e) => handleChange('pan', e.target.value)}
                   />
                 </FormRow>
               </div>
@@ -530,17 +487,12 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
           {/* Section: Attribute Applicable */}
           <div className="mb-4">
             <div
-              className="flex justify-between items-center cursor-pointer border-b border-gray-200 pb-1 mb-3"
-              onClick={() => toggleSection("attribute")}
-            >
-              <div className="flex items-center gap-2 text-[#1e4e79] font-bold text-sm">
+              className="mb-3 flex cursor-pointer items-center justify-between border-b border-gray-200 pb-1"
+              onClick={() => toggleSection('attribute')}>
+              <div className="flex items-center gap-2 text-sm font-bold text-[#1e4e79]">
                 <span className="text-lg">📄</span> Attribute Applicable
               </div>
-              {sections.attribute ? (
-                <ChevronDown size={16} />
-              ) : (
-                <ChevronUp size={16} />
-              )}
+              {sections.attribute ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
             </div>
 
             {sections.attribute && (
@@ -548,13 +500,13 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
                 <FormRow label="Employee">
                   <ToggleSwitch
                     value={formData.employee}
-                    onChange={(val) => handleChange("employee", val)}
+                    onChange={(val) => handleChange('employee', val)}
                   />
                 </FormRow>
                 <FormRow label="Group">
                   <ToggleSwitch
                     value={formData.group}
-                    onChange={(val) => handleChange("group", val)}
+                    onChange={(val) => handleChange('group', val)}
                   />
                 </FormRow>
               </div>
@@ -563,30 +515,26 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
         </div>
 
         {/* --- Footer --- */}
-        <div className="bg-[#1e4e79] px-4 py-2 flex gap-2 rounded-b-sm">
+        <div className="flex gap-2 rounded-b-sm bg-[#1e4e79] px-4 py-2">
           <button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className={`border border-white text-white px-4 py-1 text-sm rounded transition-colors flex items-center ${
-              isSubmitting
-                ? "bg-blue-800 opacity-70 cursor-not-allowed"
-                : "hover:bg-blue-800"
-            }`}
-          >
+            className={`flex items-center rounded border border-white px-4 py-1 text-sm text-white transition-colors ${
+              isSubmitting ? 'cursor-not-allowed bg-blue-800 opacity-70' : 'hover:bg-blue-800'
+            }`}>
             {isSubmitting ? (
               <>
-                <Loader2 className="animate-spin w-3 h-3 mr-2" /> Saving...
+                <Loader2 className="mr-2 h-3 w-3 animate-spin" /> Saving...
               </>
             ) : (
-              "Save"
+              'Save'
             )}
           </button>
 
           <button
             onClick={handleClear}
             disabled={isSubmitting}
-            className="border border-white text-white px-4 py-1 text-sm rounded hover:bg-blue-800 transition-colors"
-          >
+            className="rounded border border-white px-4 py-1 text-sm text-white transition-colors hover:bg-blue-800">
             Clear
           </button>
 
@@ -594,14 +542,13 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
             <button
               onClick={() => onDelete(formData._id!)}
               disabled={isSubmitting}
-              className="border border-white text-white px-4 py-1 text-sm rounded hover:bg-red-600 transition-colors ml-auto"
-            >
+              className="ml-auto rounded border border-white px-4 py-1 text-sm text-white transition-colors hover:bg-red-600">
               Delete
             </button>
           )}
 
           {!isEditMode && (
-            <button className="border border-white text-white px-4 py-1 text-sm rounded hover:bg-blue-800 transition-colors">
+            <button className="rounded border border-white px-4 py-1 text-sm text-white transition-colors hover:bg-blue-800">
               Delete
             </button>
           )}
@@ -610,10 +557,9 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
 
       {isCoaGroupModalOpen && (
         <div
-          className="fixed inset-0 flex items-center justify-center bg-transparent backdrop-blur-sm p-4"
+          className="fixed inset-0 flex items-center justify-center bg-transparent p-4 backdrop-blur-sm"
           // Use Dynamic Z-Index for Nested Modal
-          style={{ zIndex: nestedModalZIndex }}
-        >
+          style={{ zIndex: nestedModalZIndex }}>
           <COAGroupsModal
             isOpen={isCoaGroupModalOpen}
             onClose={() => setIsCoaGroupModalOpen(false)}

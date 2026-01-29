@@ -482,7 +482,6 @@ const StockSummary: React.FC = () => {
         </table>
       </div>
 
-      {/* NEW: Component rendered at the end to manage its own modal overlay */}
       <StockSummaryFilter
         isOpen={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}

@@ -8,11 +8,14 @@ import SalesInvoiceForm, {
   SalesInvoiceFormRef,
 } from "./SalesInvoiceForm";
 import ProfitAnalysisModal from "../../../../components/ProfitAnalysisModal";
-import { OrderTableRef } from "./OrderTable";
-import InvoiceFooter, { InvoiceFooterRef } from "./InvoiceFooter";
+import OrderTable, { OrderTableRef } from "./OrderTable2";
+// import InvoiceFooter, { InvoiceFooterRef } from "./InvoiceFooter";
+import PurchaseBillFooter, {
+  PurchaseBillFooterRef,
+} from "../../purchase/purchaseBill/PurchaseBillFooter";
 import LedgerAttributes from "../../../../components/LedgerAttributes";
 import InvoiceA4 from "../../../../components/invoiceDownload/InvoiceA4";
-
+import { fetchProfitAnalysis } from "../../../../services/analysis/profitService";
 import { COLORS } from "../../../../constants/colors";
 import { createSalesInvoice } from "./salesInvoiceService";
 
@@ -20,10 +23,11 @@ const SalesInvoice: React.FC = () => {
   const [showBillPreview, setShowBillPreview] = useState(false);
   const [generatedBillData, setGeneratedBillData] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [tableItems, setTableItems] = useState<any[]>([]);
 
   // Profit Analysis State
   const [isAnalysisOpen, setAnalysisOpen] = useState(false);
-  const [analysisData] = useState<any>(null);
+  const [analysisData, setAnalysisData] = useState<any>(null);
 
   // New State for Cash/Credit (Lifted from form)
   const [cashCredit, setCashCredit] = useState<string>("Credit");
@@ -31,7 +35,8 @@ const SalesInvoice: React.FC = () => {
   // Refs
   const formRef = useRef<SalesInvoiceFormRef>(null);
   const orderTableRef = useRef<OrderTableRef>(null);
-  const footerRef = useRef<InvoiceFooterRef>(null);
+  // const footerRef = useRef<InvoiceFooterRef>(null);
+  const footerRef = useRef<PurchaseBillFooterRef>(null);
 
   // Number to Words Converter
   const toWords = new ToWords({
@@ -50,66 +55,66 @@ const SalesInvoice: React.FC = () => {
 
   /* =========================
       HANDLE PROFIT ANALYSIS
-   ========================== */
-  // const handleAnalyzeProfit = async (tableRows: any[]) => {
-  //   if (!tableRows || tableRows.length === 0) {
-  //     alert("Please add items to the table first.");
-  //     return;
-  //   }
+    ========================== */
+  const handleAnalyzeProfit = async (tableRows: any[]) => {
+    if (!tableRows || tableRows.length === 0) {
+      alert("Please add items to the table first.");
+      return;
+    }
 
-  //   const itemsPayload = [];
-  //   for (const row of tableRows) {
-  //     const hiddenId = row.data.itemId;
+    const itemsPayload = [];
+    for (const row of tableRows) {
+      const hiddenId = row.data.itemId;
 
-  //     if (!hiddenId) {
-  //       console.error("Row Data:", row);
-  //       alert(`Error: Item '${row.data.desc}' is missing a valid System ID.`);
-  //       return;
-  //     }
+      if (!hiddenId) {
+        console.error("Row Data:", row);
+        alert(`Error: Item '${row.data.desc}' is missing a valid System ID.`);
+        return;
+      }
 
-  //     itemsPayload.push({
-  //       item: hiddenId,
-  //       quantity: Number(row.data.qty),
-  //       sellingPrice: Number(row.data.rate),
-  //     });
-  //   }
+      itemsPayload.push({
+        item: hiddenId,
+        quantity: Number(row.data.qty),
+        sellingPrice: Number(row.data.rate),
+      });
+    }
 
-  //   // Note: Assuming 'store' is available in scope or derived from formRef.
-  //   // If 'store' variable is missing in this scope, fetch it from formRef:
-  //   const currentFormData = formRef.current?.getFormData();
-  //   const currentStore = currentFormData?.store || "";
+    // Note: Assuming 'store' is available in scope or derived from formRef.
+    // If 'store' variable is missing in this scope, fetch it from formRef:
+    const currentFormData = formRef.current?.getFormData();
+    const currentStore = currentFormData?.store || "";
 
-  //   try {
-  //     const response = await fetchProfitAnalysis({
-  //       store: currentStore,
-  //       items: itemsPayload,
-  //       totalExpenses: 0,
-  //     });
+    try {
+      const response = await fetchProfitAnalysis({
+        store: currentStore,
+        items: itemsPayload,
+        totalExpenses: 0,
+      });
 
-  //     if (!response.success) throw new Error("Analysis failed");
+      if (!response.success) throw new Error("Analysis failed");
 
-  //     const mergedItems = response.items.map((apiItem: any) => {
-  //       const originalRow = tableRows.find(
-  //         (r) => r.data.itemId === apiItem.item,
-  //       );
-  //       return {
-  //         ...apiItem,
-  //         itemName: originalRow?.data.desc || "Unknown Item",
-  //         itemCode: originalRow?.data.select || "N/A",
-  //       };
-  //     });
+      const mergedItems = response.items.map((apiItem: any) => {
+        const originalRow = tableRows.find(
+          (r) => r.data.itemId === apiItem.item,
+        );
+        return {
+          ...apiItem,
+          itemName: originalRow?.data.desc || "Unknown Item",
+          itemCode: originalRow?.data.select || "N/A",
+        };
+      });
 
-  //     setAnalysisData({ ...response, items: mergedItems });
-  //     setAnalysisOpen(true);
-  //   } catch (error: any) {
-  //     console.error("Analysis Error:", error);
-  //     alert(error.message || "Failed to fetch profit analysis.");
-  //   }
-  // };
+      setAnalysisData({ ...response, items: mergedItems });
+      setAnalysisOpen(true);
+    } catch (error: any) {
+      console.error("Analysis Error:", error);
+      alert(error.message || "Failed to fetch profit analysis.");
+    }
+  };
 
   /* =========================
       MAIN SAVE / SUBMIT LOGIC
-   ========================== */
+    ========================== */
   const handleBottomSaveClick = () => {
     formRef.current?.triggerSubmit();
   };
@@ -145,14 +150,15 @@ const SalesInvoice: React.FC = () => {
       });
 
       // --- 3. CONSTRUCT PAYLOAD MANUALLY ---
-      // UPDATED: Now using formData.storeCode for the 'store' field in API
+      // UPDATED: Sending Customer CODE instead of Name
       const apiPayload = {
-        store: formData.storeCode || formData.store, // Use Code first, fallback to name (safeguard)
-        customer: formData.customer, // Holds Customer Code based on form logic
+        store: formData.storeCode || formData.store, // Use Code first, fallback to name
+        customer: formData.customerCode || formData.customer, // Use Code first, fallback to name
         date: formData.date,
         gstType: formData.gstType,
         cashCredit: formData.cashCredit,
-        receivedAmount: currentGrandTotal,
+        netAmount: currentGrandTotal,
+
         cashBankLedger: "Cash",
         remarks: formData.refNo || "Sales Invoice",
         items: mappedItems,
@@ -207,7 +213,7 @@ const SalesInvoice: React.FC = () => {
           cgst: item.cgst || 0,
           sgst: item.sgst || 0,
           igst: item.igst || 0,
-          amount: lineTotal,
+          amount: item.amount,
         };
       });
 
@@ -244,7 +250,11 @@ const SalesInvoice: React.FC = () => {
           roundOff: 0,
         },
 
-        amountInWords: toWords.convert(calculatedGrandTotal),
+        billDiscount: responseData.billDiscount || 0, // e.g. 10
+        grandTotal: responseData.netAmount, // ✅ Using 'netAmount' (840) for the final bold total
+
+        // Convert the NET AMOUNT (840) to words, not the gross
+        amountInWords: toWords.convert(responseData.netAmount),
 
         bankDetails: {
           bankName: "HDFC Bank",
@@ -276,7 +286,7 @@ const SalesInvoice: React.FC = () => {
 
   /* =========================
       UI RENDER
-   ========================== */
+    ========================== */
   return (
     <div
       className="flex flex-col overflow-hidden"
@@ -293,9 +303,23 @@ const SalesInvoice: React.FC = () => {
             onSubmit={handleFormSubmit}
             onFormChange={handleFormChange}
           />
-          {/* <OrderTable ref={orderTableRef} onAnalyze={handleAnalyzeProfit} /> */}
+          <OrderTable
+            ref={orderTableRef}
+            onAnalyze={handleAnalyzeProfit}
+            vendorCode={""}
+            onItemsChange={setTableItems}
+          />
           {/* Passed the live state value here */}
-          <InvoiceFooter ref={footerRef} cashCredit={cashCredit} />
+          {/* <InvoiceFooter
+            ref={footerRef}
+            cashCredit={cashCredit}
+            currentItems={tableItems}
+          /> */}
+          <PurchaseBillFooter
+            ref={footerRef}
+            cashCredit={cashCredit}
+            currentItems={tableItems}
+          />
           <LedgerAttributes />
         </div>
       </div>

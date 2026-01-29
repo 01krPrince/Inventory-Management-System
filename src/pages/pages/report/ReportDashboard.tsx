@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   PieChart,
   FileText,
@@ -20,14 +20,14 @@ import {
   ChevronRight,
   ChevronDown,
   File,
-} from "lucide-react";
-import { useTabs } from "../../../context/TabContext";
+} from 'lucide-react';
+import { useTabs } from '../../../context/TabContext';
 
 // --- Types ---
 
 interface ReportItem {
   label: string;
-  type: "folder" | "link";
+  type: 'folder' | 'link';
   date?: string;
   path?: string;
   // New: Allow nesting
@@ -46,590 +46,590 @@ interface ReportSection {
 
 const INITIAL_DATA: ReportSection[] = [
   {
-    id: "fav",
-    title: "Favourite Report",
-    icon: <Star size={18} className="text-white fill-current" />,
+    id: 'fav',
+    title: 'Favourite Report',
+    icon: <Star size={18} className="fill-current text-white" />,
     isFavourite: true,
     items: [],
   },
   {
-    id: "mis",
-    title: "MIS Reports",
+    id: 'mis',
+    title: 'MIS Reports',
     icon: <PieChart size={18} className="text-white" />,
     items: [
       {
-        label: "Financial Statements",
-        type: "folder",
-        path: "/report/financial-statements",
+        label: 'Financial Statements',
+        type: 'folder',
+        path: '/report/financial-statements',
       },
       {
-        label: "Financial Analysis",
-        type: "folder",
-        path: "/report/financial-analysis",
+        label: 'Financial Analysis',
+        type: 'folder',
+        path: '/report/financial-analysis',
       },
       // SCENARIO: Folder with Multiple Files
       // This will render as a collapsible folder
       {
-        label: "Stock Analysis",
-        type: "folder",
+        label: 'Stock Analysis',
+        type: 'folder',
         children: [
           {
-            label: "Stock Summary",
-            type: "link",
-            path: "/report/stock-analysis/summary",
+            label: 'Stock Summary',
+            type: 'link',
+            path: '/report/stock-analysis/stock-summary',
           },
           {
-            label: "Stock In/Out Analyses",
-            type: "link",
-            path: "/report/stock-analysis/in-out",
+            label: 'Stock In/Out Analyses',
+            type: 'link',
+            path: '/report/stock-analysis/in-out',
           },
         ],
       },
       {
-        label: "Sales Analysis",
-        type: "folder",
-        path: "/report/sales-analysis",
+        label: 'Sales Analysis',
+        type: 'folder',
+        path: '/report/sales-analysis',
       },
       {
-        label: "Purchase Analysis",
-        type: "folder",
-        path: "/report/purchase-analysis",
+        label: 'Purchase Analysis',
+        type: 'folder',
+        path: '/report/purchase-analysis',
       },
       {
-        label: "Enterprise Analysis",
-        type: "folder",
-        path: "/report/enterprise-analysis",
+        label: 'Enterprise Analysis',
+        type: 'folder',
+        path: '/report/enterprise-analysis',
       },
       {
-        label: "Buisness Insight",
-        type: "folder",
-        path: "/report/business-insight",
+        label: 'Buisness Insight',
+        type: 'folder',
+        path: '/report/business-insight',
       },
     ],
   },
   {
-    id: "finance",
-    title: "Finance",
+    id: 'finance',
+    title: 'Finance',
     icon: <BarChart3 size={18} className="text-white" />,
     items: [
-      { label: "Primary Books", type: "folder", path: "/report/primary-books" },
+      { label: 'Primary Books', type: 'folder', path: '/report/primary-books' },
       // SCENARIO: Folder with ONLY ONE file (Flattening Test)
       // The "Ledgers Folder" wrapper will be ignored, and "Main Ledger" will show directly.
       {
-        label: "Ledgers Folder",
-        type: "folder",
+        label: 'Ledgers Folder',
+        type: 'folder',
         children: [
           {
-            label: "Main Ledger (Flattened)",
-            type: "link",
-            path: "/report/ledgers",
+            label: 'Main Ledger (Flattened)',
+            type: 'link',
+            path: '/report/ledgers',
           },
         ],
       },
       {
-        label: "Trial Balance",
-        type: "folder",
-        path: "/report/trial-balance-finance",
+        label: 'Trial Balance',
+        type: 'folder',
+        path: '/report/trial-balance-finance',
       },
       {
-        label: "Attribute Reports",
-        type: "folder",
-        path: "/report/attribute-reports",
+        label: 'Attribute Reports',
+        type: 'folder',
+        path: '/report/attribute-reports',
       },
       {
-        label: "Loan-Bank Interest, A/C Confirmations, Investments",
-        type: "folder",
-        path: "/report/loan-bank-interest",
+        label: 'Loan-Bank Interest, A/C Confirmations, Investments',
+        type: 'folder',
+        path: '/report/loan-bank-interest',
       },
     ],
   },
   {
-    id: "sales",
-    title: "Customer/Sales",
+    id: 'sales',
+    title: 'Customer/Sales',
     icon: <Users size={18} className="text-white" />,
     items: [
-      { label: "Customers Report", type: "folder", path: "/report/customers" },
-      { label: "Sales Report", type: "folder", path: "/report/sales-report" },
+      { label: 'Customers Report', type: 'folder', path: '/report/customers' },
+      { label: 'Sales Report', type: 'folder', path: '/report/sales-report' },
       {
-        label: "Ledgers & Trials",
-        type: "folder",
-        path: "/report/ledgers-trials",
+        label: 'Ledgers & Trials',
+        type: 'folder',
+        path: '/report/ledgers-trials',
       },
       {
-        label: "Bills O/S and Ageing",
-        type: "folder",
-        path: "/report/bills-os-ageing",
+        label: 'Bills O/S and Ageing',
+        type: 'folder',
+        path: '/report/bills-os-ageing',
       },
       {
-        label: "Linkage reports",
-        type: "folder",
-        path: "/report/linkage-reports",
+        label: 'Linkage reports',
+        type: 'folder',
+        path: '/report/linkage-reports',
       },
     ],
   },
   {
-    id: "purchase",
-    title: "Vendor/Purchase",
+    id: 'purchase',
+    title: 'Vendor/Purchase',
     icon: <ShoppingCart size={18} className="text-white" />,
     items: [
-      { label: "Vendors Report", type: "folder", path: "/report/vendors" },
+      { label: 'Vendors Report', type: 'folder', path: '/report/vendors' },
       {
-        label: "Purchase Bill Report",
-        type: "folder",
-        path: "/report/purchase-bill",
+        label: 'Purchase Bill Report',
+        type: 'folder',
+        path: '/report/purchase-bill',
       },
       {
-        label: "Purchase Registers",
-        type: "folder",
-        path: "/report/purchase-registers",
+        label: 'Purchase Registers',
+        type: 'folder',
+        path: '/report/purchase-registers',
       },
       {
-        label: "Trial/Ledgers",
-        type: "folder",
-        path: "/report/trial-ledgers",
+        label: 'Trial/Ledgers',
+        type: 'folder',
+        path: '/report/trial-ledgers',
       },
       {
-        label: "Vendor Bills O/S and Ageing",
-        type: "folder",
-        path: "/report/vendor-bills-os-ageing",
+        label: 'Vendor Bills O/S and Ageing',
+        type: 'folder',
+        path: '/report/vendor-bills-os-ageing',
       },
       {
-        label: "Linkage Reports",
-        type: "folder",
-        path: "/report/linkage-reports",
+        label: 'Linkage Reports',
+        type: 'folder',
+        path: '/report/linkage-reports',
       },
     ],
   },
   {
-    id: "inventory",
-    title: "Inventory Reports",
+    id: 'inventory',
+    title: 'Inventory Reports',
     icon: <Package size={18} className="text-white" />,
     items: [
       {
-        label: "Item Master",
-        type: "folder",
-        path: "/report/item-master",
+        label: 'Item Master',
+        type: 'folder',
+        path: '/report/item-master',
       },
       {
-        label: "Stock Summary",
-        type: "folder",
-        path: "/report/stock-summary",
+        label: 'Stock Summary',
+        type: 'folder',
+        path: '/report/stock-summary',
       },
       {
-        label: "Primary Stock Reports",
-        type: "folder",
-        path: "/report/primary-stock",
+        label: 'Primary Stock Reports',
+        type: 'folder',
+        path: '/report/primary-stock',
       },
       {
-        label: "Stock Adjustment",
-        type: "folder",
-        path: "/report/stock-adjustment",
+        label: 'Stock Adjustment',
+        type: 'folder',
+        path: '/report/stock-adjustment',
       },
       {
-        label: "Store Transfer",
-        type: "folder",
-        path: "/report/store-transfer",
+        label: 'Store Transfer',
+        type: 'folder',
+        path: '/report/store-transfer',
       },
       {
-        label: "JobCard/JobWork Inward and outward",
-        type: "folder",
-        path: "/report/job-card-work-inward-outward",
+        label: 'JobCard/JobWork Inward and outward',
+        type: 'folder',
+        path: '/report/job-card-work-inward-outward',
       },
       {
-        label: " Serial/IMEI/Tag Based Reports",
-        type: "folder",
-        path: "/report/serial-imei-tag",
+        label: ' Serial/IMEI/Tag Based Reports',
+        type: 'folder',
+        path: '/report/serial-imei-tag',
       },
       {
-        label: "Attributes/Barcode Reports",
-        type: "folder",
-        path: "/report/attribute-barcode-reports",
+        label: 'Attributes/Barcode Reports',
+        type: 'folder',
+        path: '/report/attribute-barcode-reports',
       },
       {
-        label: "Pharma/Batch Reports",
-        type: "folder",
-        path: "/report/pharma-batch",
+        label: 'Pharma/Batch Reports',
+        type: 'folder',
+        path: '/report/pharma-batch',
       },
       {
-        label: "Imention/Jwellery/Rental",
-        type: "folder",
-        path: "/report/imitation-jewellery-rental",
+        label: 'Imention/Jwellery/Rental',
+        type: 'folder',
+        path: '/report/imitation-jewellery-rental',
       },
       {
-        label: "Matrial Requisition Planning",
-        type: "folder",
-        path: "/report/material-requisition-planning",
+        label: 'Matrial Requisition Planning',
+        type: 'folder',
+        path: '/report/material-requisition-planning',
       },
     ],
   },
   {
-    id: "gst",
-    title: "GST/VAT Reports",
+    id: 'gst',
+    title: 'GST/VAT Reports',
     icon: <FileText size={18} className="text-white" />,
     items: [
-      { label: "GST Master", type: "folder", path: "/report/gst-master" },
-      { label: "GST Returns", type: "folder", path: "/report/gst-returns" },
+      { label: 'GST Master', type: 'folder', path: '/report/gst-master' },
+      { label: 'GST Returns', type: 'folder', path: '/report/gst-returns' },
       {
-        label: "GSTR 2A/2B Reconciliation",
-        type: "folder",
-        path: "/report/gstr-reco",
+        label: 'GSTR 2A/2B Reconciliation',
+        type: 'folder',
+        path: '/report/gstr-reco',
       },
-      { label: "UAE VAT Returns", type: "folder", path: "/report/uae-vat" },
+      { label: 'UAE VAT Returns', type: 'folder', path: '/report/uae-vat' },
       {
-        label: "Tax Register Sales",
-        type: "link",
-        path: "/report/tax-register-sales",
-      },
-      {
-        label: "Tax Register Purchase",
-        type: "link",
-        path: "/report/tax-register-purchase",
+        label: 'Tax Register Sales',
+        type: 'link',
+        path: '/report/tax-register-sales',
       },
       {
-        label: "Tax Summary",
-        type: "link",
-        path: "/report/tax-summary",
+        label: 'Tax Register Purchase',
+        type: 'link',
+        path: '/report/tax-register-purchase',
       },
       {
-        label: "GST ITC Reversal Register",
-        type: "link",
-        path: "/report/gst-itc-reversal-register",
+        label: 'Tax Summary',
+        type: 'link',
+        path: '/report/tax-summary',
       },
       {
-        label: "HSN Tax Rate Vs Invoice Tax Rate Mismatch",
-        type: "link",
-        path: "/report/hsn-tax-rate-vs-invoice-tax-rate-mismatch",
+        label: 'GST ITC Reversal Register',
+        type: 'link',
+        path: '/report/gst-itc-reversal-register',
+      },
+      {
+        label: 'HSN Tax Rate Vs Invoice Tax Rate Mismatch',
+        type: 'link',
+        path: '/report/hsn-tax-rate-vs-invoice-tax-rate-mismatch',
       },
     ],
   },
   {
-    id: "employee",
-    title: "Employee",
+    id: 'employee',
+    title: 'Employee',
     icon: <Briefcase size={18} className="text-white" />,
     items: [
       {
-        label: "Employee Register",
-        type: "link",
-        path: "/report/employee-register",
+        label: 'Employee Register',
+        type: 'link',
+        path: '/report/employee-register',
       },
       {
-        label: "Attendance/Leave",
-        type: "folder",
-        path: "/report/attendance-leave",
+        label: 'Attendance/Leave',
+        type: 'folder',
+        path: '/report/attendance-leave',
       },
       {
-        label: "Salary/TimeSheet/Expence Claim",
-        type: "folder",
-        path: "/report/salary-timesheet-expense-claim",
+        label: 'Salary/TimeSheet/Expence Claim',
+        type: 'folder',
+        path: '/report/salary-timesheet-expense-claim',
       },
-      { label: "ESI/PF", type: "folder", path: "/report/esi-pf" },
+      { label: 'ESI/PF', type: 'folder', path: '/report/esi-pf' },
     ],
   },
   {
-    id: "pos",
-    title: "Point of Sales",
+    id: 'pos',
+    title: 'Point of Sales',
     icon: <CreditCard size={18} className="text-white" />,
     items: [
       {
-        label: "POS Customer List",
-        type: "link",
-        path: "/report/pos-customer-list",
+        label: 'POS Customer List',
+        type: 'link',
+        path: '/report/pos-customer-list',
       },
       {
-        label: "POS Order Register",
-        type: "link",
-        path: "/report/pos-order-register",
+        label: 'POS Order Register',
+        type: 'link',
+        path: '/report/pos-order-register',
       },
       {
-        label: "POS Sales Register",
-        type: "link",
-        path: "/report/pos-sales-register",
+        label: 'POS Sales Register',
+        type: 'link',
+        path: '/report/pos-sales-register',
       },
       {
-        label: "POS Sales Summary",
-        type: "link",
-        path: "/report/pos-sales-summary",
+        label: 'POS Sales Summary',
+        type: 'link',
+        path: '/report/pos-sales-summary',
       },
       {
-        label: "POS Sales Tender Wise",
-        type: "link",
-        path: "/report/pos-tender-wise",
+        label: 'POS Sales Tender Wise',
+        type: 'link',
+        path: '/report/pos-tender-wise',
       },
       {
-        label: "POS Sales Tender Wise With Item",
-        type: "link",
-        path: "/report/pos-tender-wise-with-item",
+        label: 'POS Sales Tender Wise With Item',
+        type: 'link',
+        path: '/report/pos-tender-wise-with-item',
       },
       {
-        label: "Tender Settelment Report",
-        type: "link",
-        path: "/report/tender-settlement-report",
+        label: 'Tender Settelment Report',
+        type: 'link',
+        path: '/report/tender-settlement-report',
       },
       {
-        label: "POS Day Wise Tender Summary",
-        type: "link",
-        path: "/report/pos-daywise-tender-summary",
+        label: 'POS Day Wise Tender Summary',
+        type: 'link',
+        path: '/report/pos-daywise-tender-summary',
       },
       {
-        label: "Tender wise summary",
-        type: "link",
-        path: "/report/tender-wise-summary",
+        label: 'Tender wise summary',
+        type: 'link',
+        path: '/report/tender-wise-summary',
       },
       {
-        label: "POS Sales Analysis",
-        type: "link",
-        path: "/report/pos-sales-analysis",
+        label: 'POS Sales Analysis',
+        type: 'link',
+        path: '/report/pos-sales-analysis',
       },
       {
-        label: "POS Party Trial",
-        type: "link",
-        path: "/report/pos-party-trial",
+        label: 'POS Party Trial',
+        type: 'link',
+        path: '/report/pos-party-trial',
       },
       {
-        label: "POS Party Ledger",
-        type: "link",
-        path: "/report/pos-party-ledger",
+        label: 'POS Party Ledger',
+        type: 'link',
+        path: '/report/pos-party-ledger',
       },
       {
-        label: "POS Party Ledger With Item detail",
-        type: "link",
-        path: "/report/pos-party-ledger-with-item-detail",
+        label: 'POS Party Ledger With Item detail',
+        type: 'link',
+        path: '/report/pos-party-ledger-with-item-detail',
       },
       {
-        label: "POS Day Start/Close Register",
-        type: "link",
-        path: "/report/pos-day-start-close-register",
+        label: 'POS Day Start/Close Register',
+        type: 'link',
+        path: '/report/pos-day-start-close-register',
       },
       {
-        label: "Loyality Point Ledger",
-        type: "link",
-        path: "/report/loyalty-point-ledger",
+        label: 'Loyality Point Ledger',
+        type: 'link',
+        path: '/report/loyalty-point-ledger',
       },
       {
-        label: "Loyality Point Summary",
-        type: "link",
-        path: "/report/loyalty-point-summary",
+        label: 'Loyality Point Summary',
+        type: 'link',
+        path: '/report/loyalty-point-summary',
       },
       {
-        label: "POS Order v/s Invoice",
-        type: "link",
-        path: "/report/pos-order-vs-invoice",
+        label: 'POS Order v/s Invoice',
+        type: 'link',
+        path: '/report/pos-order-vs-invoice',
       },
       {
-        label: "POS Customer Reciept/Payment Register",
-        type: "link",
-        path: "/report/pos-customer-receipt-payment-register",
+        label: 'POS Customer Reciept/Payment Register',
+        type: 'link',
+        path: '/report/pos-customer-receipt-payment-register',
       },
     ],
   },
   {
-    id: "production",
-    title: "Production",
+    id: 'production',
+    title: 'Production',
     icon: <Settings size={18} className="text-white" />,
     items: [
       {
-        label: "Production Register",
-        type: "link",
-        path: "/report/production-register",
+        label: 'Production Register',
+        type: 'link',
+        path: '/report/production-register',
       },
       {
-        label: "Bill of Material Register",
-        type: "link",
-        path: "/report/bom-register",
+        label: 'Bill of Material Register',
+        type: 'link',
+        path: '/report/bom-register',
       },
       {
-        label: "Production De-Assembling Register",
-        type: "link",
-        path: "/report/de-assembling",
+        label: 'Production De-Assembling Register',
+        type: 'link',
+        path: '/report/de-assembling',
       },
       {
-        label: "Material Issue Request Register",
-        type: "link",
-        path: "/report/issue-request",
+        label: 'Material Issue Request Register',
+        type: 'link',
+        path: '/report/issue-request',
       },
       {
-        label: "Material Issue Request Summary",
-        type: "link",
-        path: "/report/issue-summary",
+        label: 'Material Issue Request Summary',
+        type: 'link',
+        path: '/report/issue-summary',
       },
       {
-        label: "Material Issue To Production",
-        type: "link",
-        path: "/report/material-issue-to-production",
+        label: 'Material Issue To Production',
+        type: 'link',
+        path: '/report/material-issue-to-production',
       },
       {
-        label: "Material Received From Production",
-        type: "link",
-        path: "/report/material-received-from-production",
+        label: 'Material Received From Production',
+        type: 'link',
+        path: '/report/material-received-from-production',
       },
       {
-        label: "Issue To Production Floor v/s Reciept - Linkage Based",
-        type: "link",
-        path: "/report/issue-to-production-floor-vs-receipt-linkage-based",
+        label: 'Issue To Production Floor v/s Reciept - Linkage Based',
+        type: 'link',
+        path: '/report/issue-to-production-floor-vs-receipt-linkage-based',
       },
       {
-        label: "Issue To Production Floor v/s Reciept - Voucher Based",
-        type: "link",
-        path: "/report/issue-to-production-floor-vs-receipt-voucher-based",
+        label: 'Issue To Production Floor v/s Reciept - Voucher Based',
+        type: 'link',
+        path: '/report/issue-to-production-floor-vs-receipt-voucher-based',
       },
       {
-        label: "WIP Stock Balance",
-        type: "link",
-        path: "/report/wip-stock-balance",
+        label: 'WIP Stock Balance',
+        type: 'link',
+        path: '/report/wip-stock-balance',
       },
       {
-        label: "Cashew Production",
-        type: "link",
-        path: "/report/cashew-production",
+        label: 'Cashew Production',
+        type: 'link',
+        path: '/report/cashew-production',
       },
     ],
   },
   {
-    id: "assets",
-    title: "Assets",
+    id: 'assets',
+    title: 'Assets',
     icon: <Box size={18} className="text-white" />,
     items: [
-      { label: "Asset Register", type: "link", path: "/report/asset-register" },
+      { label: 'Asset Register', type: 'link', path: '/report/asset-register' },
       {
-        label: "Asset Transfer Register",
-        type: "link",
-        path: "/report/asset-transfer",
+        label: 'Asset Transfer Register',
+        type: 'link',
+        path: '/report/asset-transfer',
       },
       {
-        label: "Asset Depreciation Register",
-        type: "link",
-        path: "/report/asset-depreciation",
+        label: 'Asset Depreciation Register',
+        type: 'link',
+        path: '/report/asset-depreciation',
       },
-      { label: "Asset On Hand", type: "link", path: "/report/asset-on-hand" },
+      { label: 'Asset On Hand', type: 'link', path: '/report/asset-on-hand' },
     ],
   },
   {
-    id: "audit",
-    title: "Audit / Logs",
+    id: 'audit',
+    title: 'Audit / Logs',
     icon: <FileSearch size={18} className="text-white" />,
     items: [
       {
-        label: "Price List Change Track",
-        type: "link",
-        path: "/report/price-list-change",
+        label: 'Price List Change Track',
+        type: 'link',
+        path: '/report/price-list-change',
       },
       {
-        label: "Physical Stock vs Actual",
-        type: "link",
-        path: "/report/physical-stock",
+        label: 'Physical Stock vs Actual',
+        type: 'link',
+        path: '/report/physical-stock',
       },
       {
-        label: "Mismatch Report",
-        type: "link",
-        path: "/report/mismatch-report",
+        label: 'Mismatch Report',
+        type: 'link',
+        path: '/report/mismatch-report',
       },
-      { label: "User Geo Tracking", type: "link", path: "/report/user-geo" },
+      { label: 'User Geo Tracking', type: 'link', path: '/report/user-geo' },
       {
-        label: "Payment Link Status",
-        type: "folder",
-        path: "/report/payment-link-status",
-      },
-      {
-        label: "Document Change Track",
-        type: "folder",
-        path: "/report/document-change-track",
+        label: 'Payment Link Status',
+        type: 'folder',
+        path: '/report/payment-link-status',
       },
       {
-        label: "Attachment Register",
-        type: "folder",
-        path: "/report/attachment-register",
+        label: 'Document Change Track',
+        type: 'folder',
+        path: '/report/document-change-track',
       },
       {
-        label: "Zero Sales Analyses",
-        type: "folder",
-        path: "/report/zero-sales-analyses",
+        label: 'Attachment Register',
+        type: 'folder',
+        path: '/report/attachment-register',
       },
       {
-        label: "Authorization Status",
-        type: "folder",
-        path: "/report/authorization-status",
+        label: 'Zero Sales Analyses',
+        type: 'folder',
+        path: '/report/zero-sales-analyses',
       },
       {
-        label: "Force Close Log",
-        type: "folder",
-        path: "/report/force-close-log",
+        label: 'Authorization Status',
+        type: 'folder',
+        path: '/report/authorization-status',
       },
       {
-        label: "SMS Log",
-        type: "folder",
-        path: "/report/sms-log",
+        label: 'Force Close Log',
+        type: 'folder',
+        path: '/report/force-close-log',
       },
       {
-        label: "Notification Template Register",
-        type: "folder",
-        path: "/report/notification-template-register",
+        label: 'SMS Log',
+        type: 'folder',
+        path: '/report/sms-log',
       },
       {
-        label: "Authorization Matrix Register",
-        type: "folder",
-        path: "/report/authorization-matrix-register",
+        label: 'Notification Template Register',
+        type: 'folder',
+        path: '/report/notification-template-register',
+      },
+      {
+        label: 'Authorization Matrix Register',
+        type: 'folder',
+        path: '/report/authorization-matrix-register',
       },
     ],
   },
   {
-    id: "crm-reports",
-    title: "CRM Reports",
+    id: 'crm-reports',
+    title: 'CRM Reports',
     icon: <FileSearch size={18} className="text-white" />,
     items: [
       {
-        label: "Prospect Master",
-        type: "link",
-        path: "/report/prospect-master",
+        label: 'Prospect Master',
+        type: 'link',
+        path: '/report/prospect-master',
       },
     ],
   },
   {
-    id: "project-management",
-    title: "Project Management",
+    id: 'project-management',
+    title: 'Project Management',
     icon: <FileSearch size={18} className="text-white" />,
     items: [
       {
-        label: "Project Trials and Analyses",
-        type: "link",
-        path: "/project/project-trials-analyses",
+        label: 'Project Trials and Analyses',
+        type: 'link',
+        path: '/project/project-trials-analyses',
       },
       {
-        label: "Project Based Ledgers / OS",
-        type: "link",
-        path: "/project/project-based-ledgers-os",
+        label: 'Project Based Ledgers / OS',
+        type: 'link',
+        path: '/project/project-based-ledgers-os',
       },
       {
-        label: "Stock-Issue-Receipts",
-        type: "link",
-        path: "/project/stock-issue-receipts",
+        label: 'Stock-Issue-Receipts',
+        type: 'link',
+        path: '/project/stock-issue-receipts',
       },
       {
-        label: "Project Material Requisition",
-        type: "link",
-        path: "/project/project-material-requisition",
+        label: 'Project Material Requisition',
+        type: 'link',
+        path: '/project/project-material-requisition',
       },
       {
-        label: "CostSheet-Project-Contract",
-        type: "link",
-        path: "/project/costsheet-project-contract",
+        label: 'CostSheet-Project-Contract',
+        type: 'link',
+        path: '/project/costsheet-project-contract',
       },
     ],
   },
   {
-    id: "country-specification-reports",
-    title: "Country Specification Reports",
+    id: 'country-specification-reports',
+    title: 'Country Specification Reports',
     icon: <FileSearch size={18} className="text-white" />,
     items: [
       {
-        label: "Nepal",
-        type: "link",
-        path: "/report/nepal",
+        label: 'Nepal',
+        type: 'link',
+        path: '/report/nepal',
       },
     ],
   },
   {
-    id: "custom-report",
-    title: "Custom Report",
+    id: 'custom-report',
+    title: 'Custom Report',
     icon: <FileSearch size={18} className="text-white" />,
     items: [],
   },
@@ -673,7 +673,7 @@ const ReportItemView: React.FC<ReportItemViewProps> = ({
       <div className="select-none">
         <div
           onClick={() => setIsOpen(!isOpen)}
-          className={`flex items-center gap-2 px-2 py-1.5 rounded hover:bg-blue-50 text-slate-700 cursor-pointer text-[13px] transition-colors`}
+          className={`flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-[13px] text-slate-700 transition-colors hover:bg-blue-50`}
           style={{ paddingLeft: `${level * 12 + 8}px` }} // Indentation
         >
           {/* Chevron for expansion */}
@@ -682,19 +682,15 @@ const ReportItemView: React.FC<ReportItemViewProps> = ({
           </div>
 
           <div className="text-[#2c4c70]">
-            <Folder
-              size={16}
-              strokeWidth={1.5}
-              fill={isOpen ? "#e0f2fe" : "none"}
-            />
+            <Folder size={16} strokeWidth={1.5} fill={isOpen ? '#e0f2fe' : 'none'} />
           </div>
 
-          <span className="leading-5 font-medium">{item.label}</span>
+          <span className="font-medium leading-5">{item.label}</span>
         </div>
 
         {/* Recursive Children */}
         {isOpen && (
-          <div className="border-l border-slate-200 ml-[19px]">
+          <div className="ml-[19px] border-l border-slate-200">
             {item.children.map((child, idx) => (
               <ReportItemView
                 key={idx}
@@ -717,21 +713,20 @@ const ReportItemView: React.FC<ReportItemViewProps> = ({
       draggable={!isFavouriteSection}
       onDragStart={(e) => onDragStart(e, item)}
       onClick={() => onClick(item)}
-      className={`flex items-start gap-2 px-2 py-1.5 rounded hover:bg-blue-50 text-slate-700 cursor-pointer group/item text-[13px] ${
-        !isFavouriteSection ? "cursor-grab active:cursor-grabbing" : ""
+      className={`group/item flex cursor-pointer items-start gap-2 rounded px-2 py-1.5 text-[13px] text-slate-700 hover:bg-blue-50 ${
+        !isFavouriteSection ? 'cursor-grab active:cursor-grabbing' : ''
       }`}
-      style={{ paddingLeft: `${level * 12 + 8}px` }}
-    >
+      style={{ paddingLeft: `${level * 12 + 8}px` }}>
       {!isFavouriteSection && (
         <GripVertical
           size={14}
-          className="text-slate-300 opacity-0 group-hover/item:opacity-100 mt-0.5 shrink-0"
+          className="mt-0.5 shrink-0 text-slate-300 opacity-0 group-hover/item:opacity-100"
         />
       )}
 
-      <div className="mt-0.5 text-[#2c4c70] shrink-0">
+      <div className="mt-0.5 shrink-0 text-[#2c4c70]">
         {/* Use different icon for leaf nodes if desired, currently staying consistent with UI */}
-        {item.type === "folder" ? (
+        {item.type === 'folder' ? (
           <Folder size={16} strokeWidth={1.5} />
         ) : level > 0 ? (
           <File size={15} strokeWidth={1.5} className="text-slate-500" />
@@ -750,72 +745,68 @@ const ReportItemView: React.FC<ReportItemViewProps> = ({
 const ReportDashboard: React.FC = () => {
   const { addTab } = useTabs();
   const [reportsData, setReportsData] = useState<ReportSection[]>(INITIAL_DATA);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
   const [isDragOverFav, setIsDragOverFav] = useState(false);
 
   // Date Filter States
-  const [datePreset, setDatePreset] = useState("all");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [datePreset, setDatePreset] = useState('all');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
-  const formatDate = (date: Date) => date.toISOString().split("T")[0];
+  const formatDate = (date: Date) => date.toISOString().split('T')[0];
 
   const handlePresetChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const preset = e.target.value;
     setDatePreset(preset);
     const today = new Date();
-    let start = "";
-    let end = "";
+    let start = '';
+    let end = '';
 
     switch (preset) {
-      case "today":
+      case 'today':
         start = end = formatDate(today);
         break;
-      case "yesterday":
+      case 'yesterday':
         const yesterday = new Date(today);
         yesterday.setDate(today.getDate() - 1);
         start = end = formatDate(yesterday);
         break;
-      case "this_week":
+      case 'this_week':
         const firstDayOfWeek = new Date(today);
         firstDayOfWeek.setDate(today.getDate() - today.getDay());
         start = formatDate(firstDayOfWeek);
         end = formatDate(today);
         break;
-      case "this_month":
-        const firstDayOfMonth = new Date(
-          today.getFullYear(),
-          today.getMonth(),
-          1,
-        );
+      case 'this_month':
+        const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
         start = formatDate(firstDayOfMonth);
         end = formatDate(today);
         break;
-      case "this_year":
+      case 'this_year':
         const firstDayOfYear = new Date(today.getFullYear(), 0, 1);
         start = formatDate(firstDayOfYear);
         end = formatDate(today);
         break;
-      case "custom":
+      case 'custom':
         start = startDate;
         end = endDate;
         break;
       default:
-        start = "";
-        end = "";
+        start = '';
+        end = '';
     }
     setStartDate(start);
     setEndDate(end);
   };
 
   const handleDragStart = (e: React.DragEvent, item: ReportItem) => {
-    e.dataTransfer.setData("reportItem", JSON.stringify(item));
-    e.dataTransfer.effectAllowed = "copy";
+    e.dataTransfer.setData('reportItem', JSON.stringify(item));
+    e.dataTransfer.effectAllowed = 'copy';
   };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = "copy";
+    e.dataTransfer.dropEffect = 'copy';
     setIsDragOverFav(true);
   };
 
@@ -827,20 +818,18 @@ const ReportDashboard: React.FC = () => {
     e.preventDefault();
     setIsDragOverFav(false);
 
-    const data = e.dataTransfer.getData("reportItem");
+    const data = e.dataTransfer.getData('reportItem');
     if (!data) return;
 
     const droppedItem: ReportItem = JSON.parse(data);
 
     setReportsData((prevData) => {
-      const favIndex = prevData.findIndex((section) => section.id === "fav");
+      const favIndex = prevData.findIndex((section) => section.id === 'fav');
       if (favIndex === -1) return prevData;
 
       const favSection = prevData[favIndex];
       // Simple duplicate check based on label
-      const exists = favSection.items.some(
-        (item) => item.label === droppedItem.label,
-      );
+      const exists = favSection.items.some((item) => item.label === droppedItem.label);
 
       if (exists) return prevData;
 
@@ -866,9 +855,7 @@ const ReportDashboard: React.FC = () => {
       const matches = item.label.toLowerCase().includes(term.toLowerCase());
 
       // Check children
-      const childMatches = item.children
-        ? filterItems(item.children, term)
-        : [];
+      const childMatches = item.children ? filterItems(item.children, term) : [];
 
       if (matches || childMatches.length > 0) {
         // Keeping structure but ensuring parent shows if child matches.
@@ -891,7 +878,7 @@ const ReportDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-white p-4 font-sans">
       {/* --- Filter Header --- */}
-      <div className="bg-gray-100 p-3 rounded-md mb-6 flex flex-wrap items-center gap-4 text-sm border border-gray-200">
+      <div className="mb-6 flex flex-wrap items-center gap-4 rounded-md border border-gray-200 bg-gray-100 p-3 text-sm">
         <div className="flex items-center gap-2 font-medium text-slate-700">
           <Filter size={16} />
           <span>Filter By Date:</span>
@@ -900,8 +887,7 @@ const ReportDashboard: React.FC = () => {
         <select
           value={datePreset}
           onChange={handlePresetChange}
-          className="px-3 py-1.5 rounded border border-gray-300 bg-white text-slate-700 focus:outline-none focus:border-blue-500"
-        >
+          className="rounded border border-gray-300 bg-white px-3 py-1.5 text-slate-700 focus:border-blue-500 focus:outline-none">
           <option value="all">All Time</option>
           <option value="today">Today</option>
           <option value="yesterday">Yesterday</option>
@@ -911,33 +897,30 @@ const ReportDashboard: React.FC = () => {
           <option value="custom">Custom Range</option>
         </select>
 
-        {datePreset === "custom" && (
+        {datePreset === 'custom' && (
           <div className="flex items-center gap-2">
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="px-2 py-1.5 rounded border border-gray-300 focus:outline-none"
+              className="rounded border border-gray-300 px-2 py-1.5 focus:outline-none"
             />
             <span>to</span>
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="px-2 py-1.5 rounded border border-gray-300 focus:outline-none"
+              className="rounded border border-gray-300 px-2 py-1.5 focus:outline-none"
             />
           </div>
         )}
 
-        <div className="relative w-full lg:w-96 ml-auto">
-          <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-            size={18}
-          />
+        <div className="relative ml-auto w-full lg:w-96">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
           <input
             type="text"
             placeholder="Search reports..."
-            className="w-full pl-10 pr-4 py-2 rounded-md border border-slate-300 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm bg-gray-50"
+            className="w-full rounded-md border border-slate-300 bg-gray-50 py-2 pl-10 pr-4 text-sm outline-none transition-all focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -945,7 +928,7 @@ const ReportDashboard: React.FC = () => {
       </div>
 
       {/* --- Grid Layout --- */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {filteredData.map((section) => {
           const dropZoneProps = section.isFavourite
             ? {
@@ -959,43 +942,33 @@ const ReportDashboard: React.FC = () => {
             <div
               key={section.id}
               {...dropZoneProps}
-              className={`rounded-lg overflow-hidden flex flex-col shadow-sm border border-slate-200 bg-white ${
-                section.isFavourite && isDragOverFav
-                  ? "ring-2 ring-blue-500"
-                  : ""
-              }`}
-            >
+              className={`flex flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm ${
+                section.isFavourite && isDragOverFav ? 'ring-2 ring-blue-500' : ''
+              }`}>
               {/* Card Header */}
-              <div className="bg-[#2c4c70] px-3 py-2 flex items-center justify-between text-white shrink-0">
+              <div className="flex shrink-0 items-center justify-between bg-[#2c4c70] px-3 py-2 text-white">
                 <div className="flex items-center gap-2">
-                  <div className="bg-white/20 p-1 rounded-full">
-                    {section.icon}
-                  </div>
-                  <h3 className="font-semibold text-sm tracking-wide">
-                    {section.title}
-                  </h3>
+                  <div className="rounded-full bg-white/20 p-1">{section.icon}</div>
+                  <h3 className="text-sm font-semibold tracking-wide">{section.title}</h3>
                   {section.isFavourite ? (
-                    <div className="w-3 h-3 bg-red-600 rounded-sm ml-1 shadow-sm opacity-0"></div>
+                    <div className="ml-1 h-3 w-3 rounded-sm bg-red-600 opacity-0 shadow-sm"></div>
                   ) : (
-                    <div className="w-3 h-3 bg-red-600 rounded-sm ml-1 shadow-sm"></div>
+                    <div className="ml-1 h-3 w-3 rounded-sm bg-red-600 shadow-sm"></div>
                   )}
                 </div>
               </div>
 
               {/* Card Body */}
-              <div className="h-[250px] overflow-y-auto custom-scrollbar p-1 relative bg-white">
+              <div className="custom-scrollbar relative h-[250px] overflow-y-auto bg-white p-1">
                 {section.isFavourite && (
                   <div
-                    className={`m-2 p-3 border-2 border-dashed rounded flex flex-col items-center justify-center text-xs font-medium cursor-pointer transition-colors ${
+                    className={`m-2 flex cursor-pointer flex-col items-center justify-center rounded border-2 border-dashed p-3 text-xs font-medium transition-colors ${
                       isDragOverFav
-                        ? "bg-blue-50 border-blue-500 text-blue-600"
-                        : "bg-[#e2e8f0] border-slate-300 text-slate-500"
-                    }`}
-                  >
+                        ? 'border-blue-500 bg-blue-50 text-blue-600'
+                        : 'border-slate-300 bg-[#e2e8f0] text-slate-500'
+                    }`}>
                     <PlusCircle size={16} className="mb-1 text-red-500" />
-                    {isDragOverFav
-                      ? "Drop Report Here!"
-                      : "Drop Here To Add To Favourite"}
+                    {isDragOverFav ? 'Drop Report Here!' : 'Drop Here To Add To Favourite'}
                   </div>
                 )}
 
@@ -1011,7 +984,7 @@ const ReportDashboard: React.FC = () => {
                   ))}
 
                   {section.items.length === 0 && !section.isFavourite && (
-                    <div className="flex flex-col items-center justify-center h-full text-slate-400 text-xs mt-10">
+                    <div className="mt-10 flex h-full flex-col items-center justify-center text-xs text-slate-400">
                       <Search size={20} className="mb-1 opacity-20" />
                       No reports found
                     </div>

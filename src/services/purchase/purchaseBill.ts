@@ -14,6 +14,8 @@ export interface PurchaseBillPayload {
   vendor: string;
   remarks: string;
   items: PurchaseBillItem[];
+  netAmount: string;
+  billDiscount: string;
   logistics: {
     freight: number;
     loadingUnloading: number;
@@ -126,6 +128,7 @@ export interface PurchaseBillReportResponse {
 
 const createPurchaseBill = async (data: PurchaseBillPayload) => {
   try {
+    console.log(data);
     const response = await api.post("/purchasebill/create", data);
     return response.data;
   } catch (error) {

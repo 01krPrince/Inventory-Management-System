@@ -69,7 +69,6 @@ interface ActionBtnProps {
 interface PurchaseBillFormProps {
   themeColor?: string;
   onSubmit?: (data: PurchaseBillFormData) => void;
-  // Callback to notify parent of changes for real-time sync
   onFormChange?: (data: PurchaseBillFormData) => void;
 }
 
