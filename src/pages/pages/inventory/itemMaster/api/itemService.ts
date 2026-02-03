@@ -24,9 +24,14 @@ export const fetchItems = async (): Promise<ItemApiData[]> => {
 export const getItemByCodeAndBarcode = async (
   code: string
 ): Promise<ItemResponse> => {
-  const response = await api.get(
-    `${ENDPOINT}/get_by_code/${code}`
-  );
+  const response = await api.get(`${ENDPOINT}/get_by_code/${code}`);
+
+  console.log("Item Code:", code);
+  console.log("Response:", response.data); // best way
+
+  // OR if you want formatted JSON
+  console.log("Response JSON:", JSON.stringify(response.data, null, 2));
+
   return response.data;
 };
 

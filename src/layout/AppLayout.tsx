@@ -54,6 +54,9 @@ import ItemReport from '../pages/pages/report/reportPages/ItemReport.tsx';
 import GstMasterReport from '../pages/pages/report/reportPages/GstMasterReport.tsx';
 import SalesInvoiceReport from '../pages/pages/report/reportPages/SalesInvoiceReport.tsx';
 import StockSummary from '../pages/pages/report/reportPages/StockSummary.tsx';
+import ChartOfAccountPage from '../pages/pages/finance/ChartOfAccount.tsx';
+import RecieptPaymentVoucher from '../pages/pages/finance/VoucherEntryForm.tsx';
+import StockTrail from '../pages/pages/report/reportPages/StockTrial.tsx';
 
 const useSidebar = () => ({
   isExpanded: false,
@@ -222,6 +225,8 @@ const ReportPageRoutes: { [key: string]: React.FC } = {
 
   // --- Country Specification ---
   '/report/nepal': () => <PlaceholderPage title="Nepal Reports" />,
+
+  '/stock-trial': StockTrail,
 };
 
 const ComponentMap: { [key: string]: React.FC } = {
@@ -263,6 +268,8 @@ const ComponentMap: { [key: string]: React.FC } = {
   '/dispatch': Dispatch,
   '/estimate': Estimate,
   '/sales-return-challan': SaleReturnChallan,
+  '/chart-of-accounts': ChartOfAccountPage,
+  '/reciept-payment-voucher': RecieptPaymentVoucher,
   //
   '/wishlist': WishlistStockManager,
   '/ecom-products': EcomProductDetail,

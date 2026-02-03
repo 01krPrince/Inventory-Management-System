@@ -112,7 +112,7 @@ const INITIAL_DATA: ItemFormData = {
   item_name: "",
   underGroup: "",
   stockUnit: "",
-  gstClassification: "",
+  gst_classification: "",
   profileImage: null,
   warrantyEnabled: false,
   warranty1YearPrice: "",
@@ -254,19 +254,14 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
 
-  const handleSelectionChange = (ids: string[]) => {
-    setSelectedItemIds(ids);
-  };
-
-  const getObjectId = (obj: any) =>
-    obj && typeof obj === "object" && obj._id ? obj._id : obj || "";
-
+  // Modal States
   const [showItemGroupModal, setShowItemGroupModal] = useState(false);
   const [showStockUnit, setShowStockUnit] = useState(false);
   const [isBrandOpen, setIsBrandOpen] = useState(false);
   const [isItemCategory, setIsItemCategory] = useState(false);
   const [isGstModalOpen, setIsGstModalOpen] = useState(false);
 
+  // Edit Initial Data States
   const [gstInitialData, setGstInitialData] = useState<any>(undefined);
   const [underGroupInitialData, setUnderGroupInitialData] = useState<
     UnderGroupData | undefined
@@ -274,7 +269,14 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
   const [stockUnitInitialData, setStockUnitInitialData] = useState<
     StockUnitData | undefined
   >(undefined);
+  const [brandToEdit, setBrandToEdit] = useState<BrandData | undefined>(
+    undefined,
+  );
+  const [categoryToEdit, setCategoryToEdit] = useState<
+    CategoryData | undefined
+  >(undefined);
 
+  // Lists
   const [categories, setCategories] = useState<CategoryData[]>([]);
   const [underGroup, setUnderGroup] = useState<UnderGroupData[]>([]);
   const [brands, setBrands] = useState<BrandData[]>([]);
@@ -282,14 +284,18 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
   const [gstList, setGstList] = useState<GstClassificationData[]>([]);
 
   const isEditMode = !!initialData && (!!initialData._id || !!initialData.id);
-  const [brandToEdit, setBrandToEdit] = useState<BrandData | undefined>(
-    undefined,
-  );
+
+  ///useeffect here
+
+  const handleSelectionChange = (ids: string[]) => {
+    setSelectedItemIds(ids);
+  };
 
   const handleBrandEditClick = (e: React.MouseEvent) => {
     e.preventDefault();
     if (formData.brand) {
-      const selectedBrand = brands.find((b) => b._id === formData.brand);
+      // const selectedBrand = brands.find((b) => b._id === formData.brand);
+      const selectedBrand = brands.find((b) => b.code === formData.brand);
       setBrandToEdit(selectedBrand);
     } else {
       setBrandToEdit(undefined);
@@ -297,15 +303,14 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
     setIsBrandOpen(true);
   };
 
-  const [categoryToEdit, setCategoryToEdit] = useState<
-    CategoryData | undefined
-  >(undefined);
-
   const handleCategoryEditClick = (e: React.MouseEvent) => {
     e.preventDefault();
     if (formData.category) {
+      // const selectedCategory = categories.find(
+      //   (c) => c._id === formData.category,
+      // );
       const selectedCategory = categories.find(
-        (c) => c._id === formData.category,
+        (c) => c.code === formData.category,
       );
       setCategoryToEdit(selectedCategory);
     } else {
@@ -313,10 +318,10 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
     }
     setIsItemCategory(true);
   };
-
-  // --- 1. LOAD DATA ---
+  // --- 1. LOAD DATA (With Debugging) ---
   useEffect(() => {
     const loadData = async () => {
+      console.log("DEBUG: Starting to load dropdown data...");
       try {
         const [
           underGroupData,
@@ -332,50 +337,125 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
           fetchGstClassifications(),
         ]);
 
+        console.log(`DEBUG: Loaded ${underGroupData?.length || 0} UnderGroups`);
+        console.log(`DEBUG: Loaded ${categoriesData?.length || 0} Categories`);
+        console.log(`DEBUG: Loaded ${brandsData?.length || 0} Brands`);
+        console.log(`DEBUG: Loaded ${stockUnitsData?.length || 0} StockUnits`);
+        console.log(`DEBUG: Loaded ${gstData?.length || 0} GST Records`);
+
         setUnderGroup(underGroupData || []);
         setCategories(categoriesData || []);
         setBrands(brandsData || []);
         setStockUnitList(stockUnitsData || []);
         setGstList(gstData || []);
       } catch (error) {
-        console.error("Failed to load dropdown data", error);
+        console.error("DEBUG: Failed to load dropdown data", error);
       }
     };
     loadData();
-  }, [isBrandOpen, isGstModalOpen, isItemCategory, stockUnitList]);
+  }, [
+    isBrandOpen,
+    isGstModalOpen,
+    isItemCategory,
+    showStockUnit,
+    showItemGroupModal,
+  ]);
 
-  // --- 2. INITIALIZE FORM (Handle IDs from Object) ---
+
+
+//// fro the under group data only.
+  const resolveUnderGroup = (
+  data: any,
+  underGroupList: any[]
+) => {
+  // 1. New data (proper)
+  if (data?.under_group) {
+    const found = underGroupList.find(
+      g => g._id === data.under_group || g.code === data.under_group
+    );
+    if (found) return found.code;
+  }
+
+  // 2. New data (details object)
+  if (data?.under_group_details?.code) {
+    return data.under_group_details.code;
+  }
+
+  // 3. OLD imported data (groupCode)
+  if (data?.groupCode) {
+    const found = underGroupList.find(
+      g => g.code === data.groupCode
+    );
+    if (found) return found.code;
+  }
+
+  // 4. OLD imported data (group name)
+  if (data?.group) {
+    const found = underGroupList.find(
+      g => g.item_name === data.group
+    );
+    if (found) return found.code;
+  }
+
+  return "";
+};
+
+
+
+
+  // Removed stockUnitList from dependency to prevent infinite loops
+// --- 2. INITIALIZE FORM (With Fixes) ---
   useEffect(() => {
     if (initialData && Object.keys(initialData).length > 0) {
-      const extractedBrandId = getObjectId(initialData.brand);
-      console.log("DEBUG: Initial Data Received:", initialData);
-      console.log("DEBUG: Extracted Brand ID for state:", extractedBrandId); // CHECK 2: Is the ID extracted correctly?
+      console.log("DEBUG: Form Init triggered. Processing Initial Data...");
 
+      const findCode = (val: any, list: any[], _: string) => {
+        if (val && typeof val === 'object' && val.code) return val.code;
+        if (typeof val === 'string' && list.length > 0) {
+          const found = list.find(item => item._id === val);
+          if (found) return found.code;
+        }
+        return val || "";
+      };
+
+      const findName = (val: any, list: any[]) => {
+        if (val && typeof val === 'object' && val.name) return val.name;
+        if (typeof val === 'string' && list.length > 0) {
+          const found = list.find(item => item._id === val);
+          if (found) return found.name;
+        }
+        return val || "";
+      };
+
+      const findGst = (val: any, list: any[]) => {
+         if (val && typeof val === 'object') return val.hsn_sac_code || val.code || "";
+         if (typeof val === 'string' && list.length > 0) {
+             // Try finding by ID first
+             const found = list.find(item => item._id === val);
+             if (found) return found.hsn_sac_code || found.code;
+         }
+         return val || "";
+      };
+
+      // --- SET FORM DATA ---
       setFormData((prev) => ({
         ...prev,
-        itemMode:
-          initialData.item_mode || initialData.item_mode || prev.itemMode,
+        itemMode: initialData.item_mode || prev.itemMode,
         item_name: initialData.name || prev.item_name,
 
-        underGroup: initialData.under_group?._id || "",
-        stockUnit: initialData.stock_unit?._id || "",
+        // underGroup: findCode(initialData.under_group, underGroup, "UnderGroup"), 
+        underGroup: resolveUnderGroup(initialData, underGroup),
 
-        gstClassification:
-          initialData.gst_classfication || prev.gstClassification,
+        stockUnit: findName(initialData.stock_unit, stockUnitList),
+        
+        // --- FIX HERE: Check BOTH the correct spelling AND the typo ---
+        gst_classification: findGst(
+            initialData.gst_classification || initialData.gst_classfication, 
+            gstList
+        ),
 
-        warrantyEnabled: initialData.warranty === true,
-        warranty1YearPrice:
-          initialData.firstyearwarranty || prev.warranty1YearPrice,
-        warranty2YearPrice:
-          initialData.secyearwarranty || prev.warranty2YearPrice,
-        warranty3YearPrice:
-          initialData.thirdyearwarranty || prev.warranty3YearPrice,
-        customWarranties: initialData.customWarranty || prev.customWarranties,
-
-        category: getObjectId(initialData.category),
-
-        // Use the debugged extraction
-        brand: extractedBrandId,
+        category: findCode(initialData.category, categories, "Category"), 
+        brand: findCode(initialData.brand, brands, "Brand"),
 
         type: initialData.type || prev.type,
         unitOption: initialData.unit_option || prev.unitOption,
@@ -383,44 +463,35 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
         autoBarcodePrefix: initialData.auto_barcode || prev.autoBarcodePrefix,
         gstInputNotApplicable: initialData.gst_applicable === false,
         printBarcode: initialData.print_barcode,
-
+        
+        warrantyEnabled: initialData.warranty === true,
+        warranty1YearPrice: initialData.firstyearwarranty || prev.warranty1YearPrice,
+        warranty2YearPrice: initialData.secyearwarranty || prev.warranty2YearPrice,
+        warranty3YearPrice: initialData.thirdyearwarranty || prev.warranty3YearPrice,
+        customWarranties: initialData.customWarranty || prev.customWarranties,
         salesDescription: initialData.sale_desc || prev.salesDescription,
         salesGL: initialData.sales_gl || prev.salesGL,
         mrp: initialData.mrp?.toString() || prev.mrp,
         minPrice: initialData.minimum_price?.toString() || prev.minPrice,
         salesRate: initialData.sales_rate?.toString() || prev.salesRate,
-        wholesaleRate:
-          initialData.wholesale_rate?.toString() || prev.wholesaleRate,
+        wholesaleRate: initialData.wholesale_rate?.toString() || prev.wholesaleRate,
         dealerRate: initialData.dealer_factor?.toString() || prev.dealerRate,
         rateFactor: initialData.rate_factor?.toString() || prev.rateFactor,
-        salesDiscount:
-          initialData.sale_discount?.toString() || prev.salesDiscount,
-        salesDiscountPercent:
-          initialData.sale_discount_percent?.toString() ||
-          prev.salesDiscountPercent,
-
+        salesDiscount: initialData.sale_discount?.toString() || prev.salesDiscount,
+        salesDiscountPercent: initialData.sale_discount_percent?.toString() || prev.salesDiscountPercent,
         purchaseDescription: initialData.purch_desc || prev.purchaseDescription,
         purchaseGL: initialData.purchase_gl || prev.purchaseGL,
-        purchaseRate:
-          initialData.purchase_rate?.toString() || prev.purchaseRate,
-        purchaseRateFactor:
-          initialData.purchase_ratefactor?.toString() ||
-          prev.purchaseRateFactor,
-        purchaseDiscount1:
-          initialData.purchase_discount?.toString() || prev.purchaseDiscount1,
-        purchaseDiscount2:
-          initialData.purchase_discount_percent?.toString() ||
-          prev.purchaseDiscount2,
-
+        purchaseRate: initialData.purchase_rate?.toString() || prev.purchaseRate,
+        purchaseRateFactor: initialData.purchase_ratefactor?.toString() || prev.purchaseRateFactor,
+        purchaseDiscount1: initialData.purchase_discount?.toString() || prev.purchaseDiscount1,
+        purchaseDiscount2: initialData.purchase_discount_percent?.toString() || prev.purchaseDiscount2,
         itemWorkflow: initialData.item_workflow || prev.itemWorkflow,
         procurementType: initialData.procurement_type || prev.procurementType,
         minLevel: initialData.minimum_level?.toString() || prev.minLevel,
         maxLevel: initialData.maximum_level?.toString() || prev.maxLevel,
-        weighscaleMappingCode:
-          initialData.weighscale_mapping_code || prev.weighscaleMappingCode,
+        weighscaleMappingCode: initialData.weighscale_mapping_code || prev.weighscaleMappingCode,
         rackBinNo: initialData.rackbin_no || prev.rackBinNo,
-        itemSetTemplate:
-          initialData.add_in_item_set_template || prev.itemSetTemplate,
+        itemSetTemplate: initialData.add_in_item_set_template || prev.itemSetTemplate,
         batchWiseInventory: initialData.batch_wise_inventory,
         batchWiseRate: initialData.batch_wise_rate,
         drugType: initialData.drug_type || prev.drugType,
@@ -430,19 +501,16 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
         profileImage: initialData.attachment || prev.profileImage,
       }));
 
-      if (
-        initialData.suggested_cat &&
-        Array.isArray(initialData.suggested_cat)
-      ) {
-        const extractedIds = initialData.suggested_cat.map(
-          (item: any) => item.itemId,
-        );
+      if (initialData.suggested_cat && Array.isArray(initialData.suggested_cat)) {
+        const extractedIds = initialData.suggested_cat.map((item: any) => item.itemId);
         setSelectedItemIds(extractedIds);
       }
     } else {
       setFormData(INITIAL_DATA);
     }
-  }, [initialData]);
+  }, [initialData, brands, categories, underGroup, stockUnitList, gstList]);
+
+
 
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
@@ -467,7 +535,7 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
     setFormData((prev) => ({ ...prev, [fieldName]: value }));
   };
 
-  // --- 3. SUBMIT LOGIC (Send IDs directly) ---
+  // --- 3. SUBMIT LOGIC
   const handleNext = async () => {
     if (activeStep < STEPS.length - 1) {
       setActiveStep((prev) => prev + 1);
@@ -475,21 +543,31 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
       setIsSubmitting(true);
       try {
         // Helper function to extract ID regardless of whether the state is an object or string
-        const getID = (val: any) =>
-          val && typeof val === "object" ? val._id : val || null;
+        // const getID = (val: any) =>
+        //   val && typeof val === "object" ? val._id : val || null;
 
         const payload = {
           item_mode: formData.itemMode,
           name: formData.item_name,
 
+          code: formData.barCode || "",
+
+          brand: formData.brand, // e.g., "NK001"
+          category: formData.category, // e.g., "FTW"
+          under_group: formData.underGroup,
+
+          gst_classification: formData.gst_classification,
+          type: formData.type,
+          procurement_type: formData.procurementType,
+          stock_unit: formData.stockUnit,
           // Ensure these send IDs, not objects or descriptions
-          under_group: getID(formData.underGroup),
-          stock_unit: getID(formData.stockUnit),
-          category: getID(formData.category),
-          brand: getID(formData.brand),
+          // under_group: getID(formData.underGroup),
+          // stock_unit: getID(formData.stockUnit),
+          // category: getID(formData.category),
+          // brand: getID(formData.brand),
 
           // FIXED: Corrected spelling and ensured ID is sent
-          gst_classification: getID(formData.gstClassification),
+          // gst_classification: getID(formData.gstClassification),
 
           // Boolean and Numeric Logic
           gst_applicable: !formData.gstInputNotApplicable,
@@ -519,7 +597,10 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
 
           // Additional fields from your original code
           attachment: formData.profileImage,
-          suggested_cat: selectedItemIds.map((id) => ({ itemId: id })),
+          suggested_cat: selectedItemIds.map((id) => {
+            const category = categories.find((c) => c._id === id);
+            return { itemId: category ? category.code : id };
+          }), // suggested_cat: selectedItemIds.map((id) => ({ itemId: id })),
         };
 
         console.log(
@@ -550,116 +631,178 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
     }
   };
 
+  // const handleGstEditClick = (e: React.MouseEvent) => {
+  //   e.preventDefault();
+  //   const currentId = formData.gstClassification; // Now holds the ID string
+
+  //   const selectedItem = gstList.find((item) => item._id === currentId);
+
+  //   if (selectedItem) {
+  //     setGstInitialData({
+  //       _id: selectedItem._id,
+  //       type: selectedItem.type,
+  //       code: selectedItem.code,
+  //       hsn_sac_code: selectedItem.hsn_sac_code,
+  //       hsnSacDescription: selectedItem.hsn_description,
+  //       gstRate: selectedItem.gstRate,
+  //       cgst: selectedItem.cgst,
+  //       sgst: selectedItem.sgst,
+  //       igst: selectedItem.igst,
+  //     });
+  //   } else {
+  //     setGstInitialData(undefined);
+  //   }
+  //   setIsGstModalOpen(true);
+  // };
+
   const handleGstEditClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    const currentId = formData.gstClassification; // Now holds the ID string
-
-    const selectedItem = gstList.find((item) => item._id === currentId);
-
-    if (selectedItem) {
-      setGstInitialData({
-        _id: selectedItem._id,
-        type: selectedItem.type,
-        code: selectedItem.code,
-        hsn_sac_code: selectedItem.hsn_sac_code,
-        hsnSacDescription: selectedItem.hsn_description,
-        gstRate: selectedItem.gstRate,
-        cgst: selectedItem.cgst,
-        sgst: selectedItem.sgst,
-        igst: selectedItem.igst,
-      });
+    if (formData.gst_classification) {
+      // Find by HSN Code or Description
+      const selectedItem = gstList.find(
+        (item) =>
+          item.hsn_sac_code === formData.gst_classification ||
+          item.hsn_description === formData.gst_classification,
+      );
+      if (selectedItem) {
+        setGstInitialData({
+          _id: selectedItem._id,
+          type: selectedItem.type,
+          code: selectedItem.code,
+          hsn_sac_code: selectedItem.hsn_sac_code,
+          hsnSacDescription: selectedItem.hsn_description,
+        });
+      } else {
+        setGstInitialData(undefined);
+      }
     } else {
       setGstInitialData(undefined);
     }
     setIsGstModalOpen(true);
   };
 
-  const handleGstSave = (savedData: any) => {
-    // 1. Extract the actual database ID
-    const actualId = savedData._id || savedData.id;
+  // const handleGstSave = (savedData: any) => {
+  //   // 1. Extract the actual database ID
+  //   const actualId = savedData._id || savedData.id;
 
-    // 2. Save the ID to the main form state (required for handleNext API payload)
+  //   // 2. Save the ID to the main form state (required for handleNext API payload)
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     gstClassification: actualId,
+  //   }));
+
+  //   // 3. Update the list so the dropdown recognizes the new/edited record
+  //   setGstList((prev) => {
+  //     const existingIndex = prev.findIndex((item) => item._id === actualId);
+
+  //     const updatedItem = {
+  //       ...savedData,
+  //       _id: actualId,
+  //       // Normalize keys to match what your columns use
+  //       hsn_description:
+  //         savedData.hsn_description || savedData.hsnSacDescription,
+  //       hsn_sac_code: savedData.hsn_sac_code || savedData.hsnSacCode,
+  //       gstRate: Number(savedData.gstRate),
+  //       cgst: Number(savedData.cgst),
+  //       sgst: Number(savedData.sgst),
+  //       igst: Number(savedData.igst),
+  //     };
+
+  //     if (existingIndex >= 0) {
+  //       const newList = [...prev];
+  //       newList[existingIndex] = updatedItem;
+  //       return newList;
+  //     } else {
+  //       return [updatedItem, ...prev];
+  //     }
+  //   });
+
+  //   setIsGstModalOpen(false);
+  // };
+
+  const handleGstSave = (savedData: any) => {
     setFormData((prev) => ({
       ...prev,
-      gstClassification: actualId,
+      gst_classification: savedData.hsn_sac_code || savedData.hsnSacCode,
     }));
-
-    // 3. Update the list so the dropdown recognizes the new/edited record
-    setGstList((prev) => {
-      const existingIndex = prev.findIndex((item) => item._id === actualId);
-
-      const updatedItem = {
-        ...savedData,
-        _id: actualId,
-        // Normalize keys to match what your columns use
-        hsn_description:
-          savedData.hsn_description || savedData.hsnSacDescription,
-        hsn_sac_code: savedData.hsn_sac_code || savedData.hsnSacCode,
-        gstRate: Number(savedData.gstRate),
-        cgst: Number(savedData.cgst),
-        sgst: Number(savedData.sgst),
-        igst: Number(savedData.igst),
-      };
-
-      if (existingIndex >= 0) {
-        const newList = [...prev];
-        newList[existingIndex] = updatedItem;
-        return newList;
-      } else {
-        return [updatedItem, ...prev];
-      }
-    });
-
+    setGstList((prev) => [...prev, savedData]);
     setIsGstModalOpen(false);
   };
-
   const handleUnderGroupEditClick = (e: React.MouseEvent) => {
     e.preventDefault();
     // Use ID to find
+    // const selectedItem = underGroup.find(
+    //   (item) => item._id === formData.underGroup,
+    // );
     const selectedItem = underGroup.find(
-      (item) => item._id === formData.underGroup,
+      (item) => item.code === formData.underGroup,
     );
     setUnderGroupInitialData(selectedItem || undefined);
     setShowItemGroupModal(true);
   };
 
+  // const handleUnderGroupSave = (savedData: UnderGroupData) => {
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     underGroup: savedData.code || "", // Save ID
+  //   }));
+
+  //   setUnderGroup((prev: UnderGroupData[]) => {
+  //     const existingIndex = prev.findIndex(
+  //       (item) => savedData._id && item._id === savedData._id,
+  //     );
+
+  //     if (existingIndex >= 0) {
+  //       const updatedList = [...prev];
+  //       updatedList[existingIndex] = savedData;
+  //       return updatedList;
+  //     } else {
+  //       return [...prev, savedData];
+  //     }
+  //   });
+
+  //   setShowItemGroupModal(false);
+  // };
+
   const handleUnderGroupSave = (savedData: UnderGroupData) => {
-    setFormData((prev) => ({
-      ...prev,
-      underGroup: savedData._id || "", // Save ID
-    }));
-
-    setUnderGroup((prev: UnderGroupData[]) => {
-      const existingIndex = prev.findIndex(
-        (item) => savedData._id && item._id === savedData._id,
-      );
-
-      if (existingIndex >= 0) {
-        const updatedList = [...prev];
-        updatedList[existingIndex] = savedData;
-        return updatedList;
-      } else {
-        return [...prev, savedData];
+    setFormData((prev) => ({ ...prev, underGroup: savedData.code })); // Save CODE
+    setUnderGroup((prev) => {
+      // Refresh logic (simplified)
+      const exists = prev.findIndex((i) => i._id === savedData._id);
+      if (exists >= 0) {
+        const updated = [...prev];
+        updated[exists] = savedData;
+        return updated;
       }
+      return [...prev, savedData];
     });
-
     setShowItemGroupModal(false);
+  };
+
+  const handleStockUnitSave = () => {
+    // Reload stock units to get the new one
+    fetchStockUnits().then((data) => setStockUnitList(data || []));
+    // We don't set form data here automatically as we don't know the exact name/code created without return data
+    setShowStockUnit(false);
   };
 
   const handleStockUnitEditClick = (e: React.MouseEvent) => {
     e.preventDefault();
     // Use ID to find
+    // const selectedItem = stockUnitList.find(
+    //   (item) => item._id === formData.stockUnit,
+    // );
     const selectedItem = stockUnitList.find(
-      (item) => item._id === formData.stockUnit,
+      (item) => item.name === formData.stockUnit,
     );
     setStockUnitInitialData(selectedItem || undefined);
     setShowStockUnit(true);
   };
-
   const renderBasicDetails = () => (
     <div className="bg-white border rounded-lg p-6 shadow-sm mt-4">
       <div className="grid grid-cols-12 gap-6">
         <div className="col-span-12 md:col-span-9 space-y-3">
+          {/* Item Mode */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4 md:col-span-3">
               <FormLabel>Item Mode</FormLabel>
@@ -677,6 +820,8 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
               />
             </div>
           </div>
+
+          {/* Name */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4 md:col-span-3">
               <FormLabel required>Name</FormLabel>
@@ -692,8 +837,7 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
             </div>
           </div>
 
-          {/* ... inside renderBasicDetails function ... */}
-
+          {/* Under Group - FIXED: Uses 'code' */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4 md:col-span-3">
               <FormLabel required>Under Group</FormLabel>
@@ -704,10 +848,10 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
                   data={underGroup}
                   columns={underGroupColumns}
                   value={formData.underGroup}
-                  valueKey="_id"
+                  valueKey="code" // <--- CHANGED FROM _id TO code
                   onChange={(item) =>
-                    handleDropdownChange("underGroup", item?._id || "")
-                  }
+                    handleDropdownChange("underGroup", item?.code || "")
+                  } // <--- SAVES CODE
                   placeholder="Select..."
                 />
               </div>
@@ -721,21 +865,21 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
             </div>
           </div>
 
+          {/* Stock Unit - FIXED: Uses 'name' (e.g., PCS) */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4 md:col-span-3">
               <FormLabel required>Stock Unit</FormLabel>
             </div>
             <div className="col-span-8 md:col-span-9 flex">
               <div className="flex-1 min-w-0">
-                {/* ValueKey changed to _id */}
                 <Dropdown
                   data={stockUnitList}
                   columns={stockUnitColumns}
                   value={formData.stockUnit}
-                  valueKey="_id"
+                  valueKey="name" // <--- CHANGED FROM _id TO name
                   onChange={(item) =>
-                    handleDropdownChange("stockUnit", item?._id || "")
-                  }
+                    handleDropdownChange("stockUnit", item?.name || "")
+                  } // <--- SAVES NAME
                   placeholder="Select..."
                 />
               </div>
@@ -749,21 +893,24 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
             </div>
           </div>
 
+          {/* GST - FIXED: Uses 'hsn_sac_code' */}
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4 md:col-span-3">
               <FormLabel>GST Classification(HSN/SAC)</FormLabel>
             </div>
             <div className="col-span-8 md:col-span-9 flex">
               <div className="flex-1 min-w-0">
-                {/* GST usually uses description/code as value, keeping as is but ensuring mapping */}
                 <Dropdown
                   data={gstList}
-                  columns={gstColumns} // Ensure this column set uses "hsn_description" or "hsn_sac_code"
-                  value={formData.gstClassification}
-                  valueKey="_id" // This must match the property in your list
+                  columns={gstColumns}
+                  value={formData.gst_classification}
+                  valueKey="hsn_sac_code" // <--- CHANGED FROM _id TO hsn_sac_code
                   onChange={(item) =>
-                    handleDropdownChange("gstClassification", item?._id || "")
-                  }
+                    handleDropdownChange(
+                      "gst_classification",
+                      item?.hsn_sac_code || "",
+                    )
+                  } // <--- SAVES CODE
                   placeholder="Select..."
                 />
               </div>
@@ -777,6 +924,8 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Image Upload Block (Unchanged) */}
         <div className="col-span-12 md:col-span-3 flex flex-col items-center">
           <div className="w-full h-[180px] bg-gray-100 border border-dashed rounded flex flex-col items-center justify-center mb-2 overflow-hidden relative">
             {formData.profileImage ? (
@@ -801,7 +950,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
       </div>
     </div>
   );
-
   const renderWarrantySection = () => (
     <div className="bg-white border rounded-lg p-6 shadow-sm mt-6">
       <div className="flex justify-between items-center mb-4">
@@ -917,19 +1065,19 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
       <div className="bg-white border rounded-lg p-6 shadow-sm mt-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="col-span-1 md:col-span-2 space-y-4 max-w-4xl">
+            {/* Category - FIXED: Uses 'code' */}
             <div className="mb-3">
               <FormLabel>Category</FormLabel>
               <div className="flex w-full">
                 <div className="flex-1 min-w-0">
-                  {/* ValueKey changed to _id */}
                   <Dropdown
                     data={categories}
                     columns={categoryColumns}
                     value={formData.category}
-                    valueKey="_id"
+                    valueKey="code" // <--- CHANGED FROM _id TO code
                     onChange={(item) =>
-                      handleDropdownChange("category", item?._id || "")
-                    }
+                      handleDropdownChange("category", item?.code || "")
+                    } // <--- SAVES CODE
                     placeholder="Select..."
                   />
                 </div>
@@ -942,19 +1090,19 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
               </div>
             </div>
 
+            {/* Brand - FIXED: Uses 'code' */}
             <div className="mb-3">
               <FormLabel>Brand</FormLabel>
               <div className="flex w-full">
                 <div className="flex-1 min-w-0">
-                  {/* CRITICAL FIX HERE: Simplify Value to always be state */}
                   <Dropdown
                     data={brands}
                     columns={brandColumns}
-                    value={formData.brand} // <--- FIXED: Just use state. It's an ID.
-                    valueKey="_id"
+                    value={formData.brand}
+                    valueKey="code" // <--- CHANGED FROM _id TO code
                     onChange={(item) =>
-                      handleDropdownChange("brand", item?._id || "")
-                    }
+                      handleDropdownChange("brand", item?.code || "")
+                    } // <--- SAVES CODE
                     placeholder="Select..."
                   />
                 </div>
@@ -1428,11 +1576,27 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
             <StockUnit
               onClose={() => setShowStockUnit(false)}
               initialData={stockUnitInitialData}
+              onSave={handleStockUnitSave}
               zIndex={overlayZIndex}
             />
           </div>
         </div>
       )}
+
+      {/* {showStockUnit && (
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-black/50 p-4"
+          style={{ zIndex: overlayZIndex }}
+        >
+          <div className="bg-white rounded shadow-lg">
+            <StockUnit
+              onClose={() => setShowStockUnit(false)}
+              initialData={stockUnitInitialData}
+              zIndex={overlayZIndex}
+            />
+          </div>
+        </div>
+      )} */}
 
       {isItemCategory && (
         <div

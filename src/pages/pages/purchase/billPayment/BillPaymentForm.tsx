@@ -1,16 +1,14 @@
-import React, { useState, useEffect } from "react";
-import Dropdown, { ColumnDef } from "../../../../components/Dropdown";
-import DateInput from "../../../../components/DateInput";
-import { EditIcon } from "lucide-react";
-import { LocationMaster } from "../../../../components/LocationMaster";
-import CrudVendor from "../vendor/pages/AddNewVendor";
+import React, { useState, useEffect } from 'react';
+import Dropdown, { ColumnDef } from '../../../../components/Dropdown';
+import DateInput from '../../../../components/DateInput';
+import { EditIcon } from 'lucide-react';
+import { LocationMaster } from '../../../../components/LocationMaster';
+import CrudVendor from '../vendor/pages/AddNewVendor';
 
 import {
   fetchAllLocations,
   LocationMaster as LocationMasterType,
-} from "../../inventory/stockAdjustment/api/LocationMaster";
-
-// --- 1. Types & Interfaces ---
+} from '../../inventory/stockAdjustment/api/LocationMaster';
 
 interface DropdownItem {
   name: string;
@@ -18,7 +16,6 @@ interface DropdownItem {
   [key: string]: any;
 }
 
-// Mock Data
 interface MockData {
   vendors: DropdownItem[];
   cashBankAccounts: DropdownItem[];
@@ -26,40 +23,38 @@ interface MockData {
 
 const mockData: MockData = {
   vendors: [
-    { name: "Adidas India", code: "V001" },
-    { name: "Nike Corp", code: "V002" },
-    { name: "Puma Sports", code: "V003" },
+    { name: 'Adidas India', code: 'V001' },
+    { name: 'Nike Corp', code: 'V002' },
+    { name: 'Puma Sports', code: 'V003' },
   ],
   cashBankAccounts: [
-    { name: "Cash", code: "CASH" },
-    { name: "HDFC Bank - 1234", code: "HDFC" },
-    { name: "SBI Bank - 5678", code: "SBI" },
+    { name: 'Cash', code: 'CASH' },
+    { name: 'HDFC Bank - 1234', code: 'HDFC' },
+    { name: 'SBI Bank - 5678', code: 'SBI' },
   ],
 };
 
 const defaultColumns: ColumnDef<DropdownItem>[] = [
-  { header: "Code", key: "code", width: "w-20" },
-  { header: "Name", key: "name", width: "w-[50px]" },
+  { header: 'Code', key: 'code', width: 'w-20' },
+  { header: 'Name', key: 'name', width: 'w-[50px]' },
 ];
 
 const locationColumns: ColumnDef<LocationMasterType>[] = [
-  { header: "Code", key: "code", width: "w-20" },
-  { header: "Name", key: "name", width: "flex-1" },
+  { header: 'Code', key: 'code', width: 'w-20' },
+  { header: 'Name', key: 'name', width: 'flex-1' },
 ];
-
-// --- Helper Components ---
 
 const Label: React.FC<{ children: React.ReactNode; required?: boolean }> = ({
   children,
   required,
 }) => (
-  <label className="text-[13px] text-gray-700 font-medium flex items-center h-[30px] whitespace-nowrap">
-    {children} {required && <span className="text-red-500 ml-1">*</span>}
+  <label className="flex h-[30px] items-center whitespace-nowrap text-[13px] font-medium text-gray-700">
+    {children} {required && <span className="ml-1 text-red-500">*</span>}
   </label>
 );
 
 const InputGroup: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="flex items-center w-full relative gap-1">{children}</div>
+  <div className="relative flex w-full items-center gap-1">{children}</div>
 );
 
 interface InputProps {
@@ -67,7 +62,7 @@ interface InputProps {
   placeholder?: string;
   readOnly?: boolean;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  className?: string; // Added to support custom alignment (e.g., right align for amount)
+  className?: string;
 }
 
 const Input: React.FC<InputProps> = ({
@@ -75,16 +70,16 @@ const Input: React.FC<InputProps> = ({
   placeholder,
   readOnly,
   onChange,
-  className = "",
+  className = '',
 }) => (
   <input
     type="text"
     readOnly={readOnly}
     onChange={onChange}
-    className={`w-full h-[30px] border border-gray-300 rounded-sm px-2 text-[13px] text-gray-700 focus:outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)] ${
-      readOnly ? "bg-gray-100 text-gray-500 cursor-not-allowed" : "bg-white"
+    className={`h-[30px] w-full rounded-sm border border-gray-300 px-2 text-[13px] text-gray-700 focus:border-[var(--theme-focus)] focus:outline-none focus:ring-1 focus:ring-[var(--theme-focus)] ${
+      readOnly ? 'cursor-not-allowed bg-gray-100 text-gray-500' : 'bg-white'
     } ${className}`}
-    value={value || ""}
+    value={value || ''}
     placeholder={placeholder}
   />
 );
@@ -97,24 +92,17 @@ const ActionBtn: React.FC<{
   <button
     type="button"
     onClick={onClick}
-    className={`h-[30px] w-[30px] bg-[var(--theme-primary)] text-white flex items-center justify-center rounded-sm border border-[var(--theme-primary)] hover:opacity-90 transition-opacity ml-[-1px] z-10 shrink-0 ${className}`}
-  >
+    className={`z-10 ml-[-1px] flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-sm border border-[var(--theme-primary)] bg-[var(--theme-primary)] text-white transition-opacity hover:opacity-90 ${className}`}>
     <span className="flex items-center justify-center">{icon}</span>
   </button>
 );
-
-// --- Main Component ---
 
 interface BillPaymentFormProps {
   themeColor?: string;
 }
 
-const BillPaymentForm: React.FC<BillPaymentFormProps> = ({
-  themeColor = "#0f3c63",
-}) => {
-  // --- UI State ---
-  const [isLocationMasterOpen, setIsLocationMasterOpen] =
-    useState<boolean>(false);
+const BillPaymentForm: React.FC<BillPaymentFormProps> = ({ themeColor = '#0f3c63' }) => {
+  const [isLocationMasterOpen, setIsLocationMasterOpen] = useState<boolean>(false);
   const [isVendorFormOpen, setIsVendorFormOpen] = useState(false);
   const [editingVendor, setEditingVendor] = useState<DropdownItem | null>(null);
 
@@ -123,15 +111,15 @@ const BillPaymentForm: React.FC<BillPaymentFormProps> = ({
 
   // Form Data State matching screenshot fields
   const [formData, setFormData] = useState({
-    store: "SPORTS HUB",
-    date: "31/12/2025",
-    voucherNo: "00073",
-    vendor: "",
-    email: "",
-    cashBankAc: "",
-    amount: "₹0.00",
-    chequeNo: "",
-    dated: "31/12/2025",
+    store: 'SPORTS HUB',
+    date: '31/12/2025',
+    voucherNo: '00073',
+    vendor: '',
+    email: '',
+    cashBankAc: '',
+    amount: '₹0.00',
+    chequeNo: '',
+    dated: '31/12/2025',
   });
 
   const nestedModalZIndex = 1200;
@@ -148,8 +136,8 @@ const BillPaymentForm: React.FC<BillPaymentFormProps> = ({
     } catch (err) {
       console.error(err);
       setLocationList([
-        { code: "ST01", name: "SPORTS HUB" },
-        { code: "ST02", name: "WAREHOUSE A" },
+        { code: 'ST01', name: 'SPORTS HUB' },
+        { code: 'ST02', name: 'WAREHOUSE A' },
       ] as any);
     }
   };
@@ -165,16 +153,14 @@ const BillPaymentForm: React.FC<BillPaymentFormProps> = ({
   };
 
   const handleLocationSelect = (locationName: string) => {
-    handleFieldChange("store", locationName);
+    handleFieldChange('store', locationName);
     setIsLocationMasterOpen(false);
   };
 
   const handleVendorAction = () => {
     const selectedVendorName = formData.vendor;
     if (selectedVendorName) {
-      const vendorData = mockData.vendors.find(
-        (v) => v.name === selectedVendorName
-      );
+      const vendorData = mockData.vendors.find((v) => v.name === selectedVendorName);
       setEditingVendor(vendorData || null);
     } else {
       setEditingVendor(null);
@@ -183,21 +169,18 @@ const BillPaymentForm: React.FC<BillPaymentFormProps> = ({
   };
 
   const themeStyles = {
-    "--theme-primary": themeColor,
-    "--theme-secondary": themeColor,
-    "--theme-focus": "#60a5fa",
+    '--theme-primary': themeColor,
+    '--theme-secondary': themeColor,
+    '--theme-focus': '#60a5fa',
   } as React.CSSProperties;
 
   return (
-    <div
-      style={themeStyles}
-      className="bg-white rounded border border-gray-200 p-5 relative"
-    >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
+    <div style={themeStyles} className="relative rounded border border-gray-200 bg-white p-5">
+      <div className="grid grid-cols-1 gap-x-12 gap-y-4 md:grid-cols-2">
         {/* === LEFT COLUMN === */}
         <div className="space-y-2">
           {/* Store */}
-          <div className="grid grid-cols-12 gap-2 items-center">
+          <div className="grid grid-cols-12 items-center gap-2">
             <div className="col-span-4">
               <Label required>Store</Label>
             </div>
@@ -208,9 +191,7 @@ const BillPaymentForm: React.FC<BillPaymentFormProps> = ({
                   columns={locationColumns}
                   value={formData.store}
                   valueKey="name"
-                  onChange={(item) =>
-                    handleFieldChange("store", item?.name || "")
-                  }
+                  onChange={(item) => handleFieldChange('store', item?.name || '')}
                 />
                 <ActionBtn
                   icon={<EditIcon size={16} />}
@@ -221,33 +202,33 @@ const BillPaymentForm: React.FC<BillPaymentFormProps> = ({
           </div>
 
           {/* Date */}
-          <div className="grid grid-cols-12 gap-2 items-center">
+          <div className="grid grid-cols-12 items-center gap-2">
             <div className="col-span-4">
               <Label required>Date</Label>
             </div>
             <div className="col-span-8">
               <DateInput
                 value={formData.date}
-                onChange={(e) => handleFieldChange("date", e.target.value)}
+                onChange={(e) => handleFieldChange('date', e.target.value)}
               />
             </div>
           </div>
 
           {/* Voucher No */}
-          <div className="grid grid-cols-12 gap-2 items-center">
+          <div className="grid grid-cols-12 items-center gap-2">
             <div className="col-span-4">
               <Label required>Voucher No</Label>
             </div>
             <div className="col-span-8">
               <Input
                 value={formData.voucherNo}
-                onChange={(e) => handleFieldChange("voucherNo", e.target.value)}
+                onChange={(e) => handleFieldChange('voucherNo', e.target.value)}
               />
             </div>
           </div>
 
           {/* Vendor */}
-          <div className="grid grid-cols-12 gap-2 items-center">
+          <div className="grid grid-cols-12 items-center gap-2">
             <div className="col-span-4">
               <Label required>Vendor</Label>
             </div>
@@ -259,27 +240,22 @@ const BillPaymentForm: React.FC<BillPaymentFormProps> = ({
                   value={formData.vendor}
                   valueKey="name"
                   placeholder="Select..."
-                  onChange={(item) =>
-                    handleFieldChange("vendor", item?.name || "")
-                  }
+                  onChange={(item) => handleFieldChange('vendor', item?.name || '')}
                 />
-                <ActionBtn
-                  icon={<EditIcon size={14} />}
-                  onClick={handleVendorAction}
-                />
+                <ActionBtn icon={<EditIcon size={14} />} onClick={handleVendorAction} />
               </InputGroup>
             </div>
           </div>
 
           {/* Email */}
-          <div className="grid grid-cols-12 gap-2 items-center">
+          <div className="grid grid-cols-12 items-center gap-2">
             <div className="col-span-4">
               <Label>Email</Label>
             </div>
             <div className="col-span-8">
               <Input
                 value={formData.email}
-                onChange={(e) => handleFieldChange("email", e.target.value)}
+                onChange={(e) => handleFieldChange('email', e.target.value)}
               />
             </div>
           </div>
@@ -288,7 +264,7 @@ const BillPaymentForm: React.FC<BillPaymentFormProps> = ({
         {/* === RIGHT COLUMN === */}
         <div className="space-y-2">
           {/* Cash/Bank A/c */}
-          <div className="grid grid-cols-12 gap-2 items-center">
+          <div className="grid grid-cols-12 items-center gap-2">
             <div className="col-span-4">
               <Label>Cash/Bank A/c</Label>
             </div>
@@ -300,9 +276,7 @@ const BillPaymentForm: React.FC<BillPaymentFormProps> = ({
                   value={formData.cashBankAc}
                   valueKey="name"
                   placeholder="Select..."
-                  onChange={(item) =>
-                    handleFieldChange("cashBankAc", item?.name || "")
-                  }
+                  onChange={(item) => handleFieldChange('cashBankAc', item?.name || '')}
                 />
                 <ActionBtn icon={<EditIcon size={14} />} />
               </InputGroup>
@@ -310,7 +284,7 @@ const BillPaymentForm: React.FC<BillPaymentFormProps> = ({
           </div>
 
           {/* Amount */}
-          <div className="grid grid-cols-12 gap-2 items-center">
+          <div className="grid grid-cols-12 items-center gap-2">
             <div className="col-span-4">
               <Label>Amount</Label>
             </div>
@@ -318,45 +292,44 @@ const BillPaymentForm: React.FC<BillPaymentFormProps> = ({
               <Input
                 value={formData.amount}
                 className="text-right" // Align text to right as per screenshot
-                onChange={(e) => handleFieldChange("amount", e.target.value)}
+                onChange={(e) => handleFieldChange('amount', e.target.value)}
               />
             </div>
           </div>
 
           {/* Cheque No */}
-          <div className="grid grid-cols-12 gap-2 items-center">
+          <div className="grid grid-cols-12 items-center gap-2">
             <div className="col-span-4">
               <Label>Cheque No</Label>
             </div>
             <div className="col-span-8">
               <Input
                 value={formData.chequeNo}
-                onChange={(e) => handleFieldChange("chequeNo", e.target.value)}
+                onChange={(e) => handleFieldChange('chequeNo', e.target.value)}
               />
             </div>
           </div>
 
           {/* Dated */}
-          <div className="grid grid-cols-12 gap-2 items-center">
+          <div className="grid grid-cols-12 items-center gap-2">
             <div className="col-span-4">
               <Label required>Dated</Label>
             </div>
             <div className="col-span-8">
               <DateInput
                 value={formData.dated}
-                onChange={(e) => handleFieldChange("dated", e.target.value)}
+                onChange={(e) => handleFieldChange('dated', e.target.value)}
               />
             </div>
           </div>
 
           {/* Auto Adjust Button */}
-          <div className="grid grid-cols-12 gap-2 items-center pt-2">
+          <div className="grid grid-cols-12 items-center gap-2 pt-2">
             <div className="col-span-4"></div>
             <div className="col-span-8">
               <button
                 type="button"
-                className="bg-[var(--theme-primary)] text-white px-4 py-1.5 rounded text-[13px] font-medium hover:opacity-90 transition-opacity"
-              >
+                className="rounded bg-[var(--theme-primary)] px-4 py-1.5 text-[13px] font-medium text-white transition-opacity hover:opacity-90">
                 Auto Adjust
               </button>
             </div>
@@ -367,10 +340,9 @@ const BillPaymentForm: React.FC<BillPaymentFormProps> = ({
       {/* --- Modals (Location & Vendor) --- */}
       {isLocationMasterOpen && (
         <div
-          className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-          style={{ zIndex: nestedModalZIndex }}
-        >
-          <div className="shadow-lg overflow-hidden relative">
+          className="fixed inset-0 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          style={{ zIndex: nestedModalZIndex }}>
+          <div className="relative overflow-hidden shadow-lg">
             <LocationMaster
               onClose={() => setIsLocationMasterOpen(false)}
               initialData={getSelectedStoreData()}
@@ -384,10 +356,9 @@ const BillPaymentForm: React.FC<BillPaymentFormProps> = ({
 
       {isVendorFormOpen && (
         <div
-          className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-          style={{ zIndex: nestedModalZIndex }}
-        >
-          <div className="w-full max-w-6xl h-[90vh] rounded-xl overflow-hidden relative">
+          className="fixed inset-0 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          style={{ zIndex: nestedModalZIndex }}>
+          <div className="relative h-[90vh] w-full max-w-6xl overflow-hidden rounded-xl">
             <CrudVendor
               onClose={() => setIsVendorFormOpen(false)}
               initialData={editingVendor}

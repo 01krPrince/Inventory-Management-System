@@ -211,11 +211,6 @@ const INITIAL_DATA: ReportSection[] = [
         path: '/report/item-master',
       },
       {
-        label: 'Stock Summary',
-        type: 'folder',
-        path: '/report/stock-summary',
-      },
-      {
         label: 'Primary Stock Reports',
         type: 'folder',
         path: '/report/primary-stock',

@@ -1,7 +1,4 @@
 import api from "../../../services/api";
-// ==========================================
-// 1. Interfaces
-// ==========================================
 
 export interface SalesAndPurchaseGL {
   _id: string;
@@ -15,7 +12,7 @@ export interface SalesAndPurchaseGL {
   rtgsIfscCode: string;
   classification: string;
   isLoanAccount: boolean;
-  intrestRate: string; // "9.5%"
+  intrestRate: string;
   calculationOn: string;
   tdsSection: string;
   tdsApplicable: boolean;
@@ -47,10 +44,6 @@ export interface CreateSalesGlResponse {
   data: SalesAndPurchaseGL;
 }
 
-// ==========================================
-// 2. API Functions
-// ==========================================
-
 export const fetchSalesAndPurchaseGL = async (): Promise<SalesAndPurchaseGL[]> => {
   try {
     const response = await api.get<GetSalesGlResponse>('/salespurchasegl/get_salespurchasegl_all');
@@ -81,10 +74,9 @@ export const createSalesAndPurchaseGL = async (
 
 export const updateSalesAndPurchaseGL = async (
   id: string,
-  payload: any // using 'any' to ensure the strict mapping from component passes through
+  payload: any
 ) => {
   try {
-    // Matches your Postman URL: /chartofaccount/updatebyid/:id
     const response = await api.put(`/salespurchasegl/update_salespurchasegl_by_id/${id}`, payload);
     return response.data;
   } catch (error: any) {

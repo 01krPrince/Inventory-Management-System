@@ -239,7 +239,6 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
         name: formData.name,
         identification: formData.identification,
         isSubleder: formData.isSubledger,
-        // FIX: Sending the ID stored in salesGlUnderGroup
         underLedger: formData.salesGlUnderGroup,
         underGroup: formData.salesGlUnderGroup,
         type: formData.type,
@@ -255,6 +254,7 @@ const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({
         pan: formData.pan,
         employee: formData.employee,
         group: formData.group,
+        inactive: formData.inactive || false,
       };
 
       let response;

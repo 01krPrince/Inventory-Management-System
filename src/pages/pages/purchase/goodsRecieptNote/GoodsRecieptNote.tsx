@@ -1,14 +1,12 @@
-import React, { useState } from "react";
-import GoodsRecieptNoteHeader from "./GoodsRecieptNoteHeader";
-import GoodsRecieptNoteForm from "./GoodsRecieptNoteForm";
-import OrderTable from "../purchaseOrder/OrderTable";
-import GoodsRecieptNoteFooter from "./GoodsRecieptNoteFooter";
-import { COLORS } from "../../../../constants/colors";
+import React, { useState } from 'react';
+import GoodsRecieptNoteHeader from './GoodsRecieptNoteHeader';
+import GoodsRecieptNoteForm from './GoodsRecieptNoteForm';
+import OrderTable from '../purchaseOrder/OrderTable';
+import GoodsRecieptNoteFooter from './GoodsRecieptNoteFooter';
+import { COLORS } from '../../../../constants/colors';
 
 // FIX: Import the Component AND the Interface
-import GoodsRecieptNoteLogistics, {
-  LogisticsData,
-} from "./GoodsRecieptNoteLogistics";
+import GoodsRecieptNoteLogistics, { LogisticsData } from './GoodsRecieptNoteLogistics';
 
 interface RowData {
   [key: string]: string | number;
@@ -21,57 +19,57 @@ const GoodsRecieptNote: React.FC = () => {
   // --- 1. Initialize Logistics State ---
   const [logisticsData, setLogisticsData] = useState<LogisticsData>({
     // Left Column
-    destination: "",
-    shippingMode: "Road",
-    shippingCompany: "",
-    shippingCompanyAddress: "",
-    shippingTrackingNo: "",
-    shippingDate: new Date().toISOString().split("T")[0],
-    shippingCharges: "0",
-    vehicleNo: "",
-    chargeType: "Paid",
-    documentThrough: "",
+    destination: '',
+    shippingMode: 'Road',
+    shippingCompany: '',
+    shippingCompanyAddress: '',
+    shippingTrackingNo: '',
+    shippingDate: new Date().toISOString().split('T')[0],
+    shippingCharges: '0',
+    vehicleNo: '',
+    chargeType: 'Paid',
+    documentThrough: '',
 
     // Middle Column
-    portOfLanding: "",
-    portOfDischarge: "",
-    portAddressForEway: "",
-    portStateForEway: "",
-    noOfPackets: "0",
-    weight: "0",
+    portOfLanding: '',
+    portOfDischarge: '',
+    portAddressForEway: '',
+    portStateForEway: '',
+    noOfPackets: '0',
+    weight: '0',
 
     // Note: Skipped optional fields like irnNo, ackNo as per your existing code logic.
 
     // Right Column (Overhead Expenses with Tenders)
-    customDuty: "0.00",
-    customDutyTender: "", // Added
+    custDuty: '0.00',
+    custDutyAccount: '',
 
-    chaPayment: "0.00",
-    chaPaymentTender: "", // Added
+    chaPayment: '0.00',
+    chaPaymentAccount: '',
 
-    freight: "0.00",
-    freightTender: "", // Added
+    freight: '0.00',
+    freightAccount: '',
 
-    insurance: "0.00",
-    insuranceTender: "", // Added
+    insurance: '0.00',
+    insuranceAccount: '',
 
-    handling: "0.00",
-    handlingTender: "", // Added
+    handling: '0.00',
+    handlingAccount: '',
 
-    documentationCharges: "0.00",
-    documentationChargesTender: "", // Added
+    docCharges: '0.00',
+    docChargesAccount: '',
 
-    bankCharges: "0.00",
-    bankChargesTender: "", // Added
+    bankCharges: '0.00',
+    bankChargesAccount: '',
 
-    customExpenses: "0.00",
-    customExpensesTender: "", // Added
+    custExp: '0.00',
+    custExpAccount: '',
 
-    loadingUnloading: "0.00",
-    loadingUnloadingTender: "", // Added
+    loadingUnloading: '0.00',
+    loadingUnloadingAccount: '',
 
-    otherCharges: "0.00",
-    otherChargesTender: "", // Added
+    otherCharges: '0.00',
+    otherChargesAccount: '',
   });
 
   // --- 2. Handler for Logistics Updates ---
@@ -82,8 +80,7 @@ const GoodsRecieptNote: React.FC = () => {
   return (
     <div
       style={{ backgroundColor: COLORS.background }}
-      className="flex flex-col bg-gray-100 overflow-hidden"
-    >
+      className="flex flex-col overflow-hidden bg-gray-100">
       <GoodsRecieptNoteHeader />
 
       <div className="flex-1 overflow-auto p-4">
@@ -99,10 +96,7 @@ const GoodsRecieptNote: React.FC = () => {
 
           <GoodsRecieptNoteFooter />
 
-          <GoodsRecieptNoteLogistics
-            data={logisticsData}
-            onChange={handleLogisticsChange}
-          />
+          <GoodsRecieptNoteLogistics data={logisticsData} onChange={handleLogisticsChange} />
         </div>
       </div>
     </div>

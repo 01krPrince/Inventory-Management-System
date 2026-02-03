@@ -7,7 +7,6 @@ import ChartOfAccounts from '../../../../components/ChartOfAccount';
 import { SalesAndPurchaseGL } from '../../../../components/addItemMaster/api/saleAndPurchaseGL';
 import chartOfAccountService from '../../../../services/chartOfAccountService';
 
-// --- Interfaces ---
 export interface PurchaseBillFooterRef {
   getFooterData: () => {
     remarks: string;
@@ -32,13 +31,25 @@ export interface PurchaseBillFooterRef {
 type InvoiceFooterProps = {
   amount?: number;
   cashCredit?: string;
-  // This prop receives the live data from OrderTable
   currentItems?: any[];
 };
 
+interface GlOption {
+  _id: string;
+  name: string;
+  code: string;
+  type?: string;
+  underGroup: string;
+  nature: string;
+  label: string;
+  value: string;
+  underGroupCode?: string;
+}
+
 const glColumns: ColumnDef<any>[] = [
-  { header: 'Code', key: 'code', width: 'w-1/4' },
-  { header: 'Name', key: 'name', width: 'w-3/4' },
+  { header: 'Code', key: 'code', width: 'w-1/5' },
+  { header: 'Name', key: 'name', width: 'w-2/5' },
+  { header: 'Group', key: 'underGroup', width: 'auto' },
 ];
 
 const PurchaseBillFooter = forwardRef<PurchaseBillFooterRef, InvoiceFooterProps>(
@@ -46,7 +57,6 @@ const PurchaseBillFooter = forwardRef<PurchaseBillFooterRef, InvoiceFooterProps>
     const remarksRef = useRef<HTMLTextAreaElement>(null);
     const receivedAmountRef = useRef<HTMLInputElement>(null);
 
-    // Right Section Calculation Refs
     const itemValueRef = useRef<HTMLInputElement>(null);
     const discount1Ref = useRef<HTMLInputElement>(null);
     const discount2Ref = useRef<HTMLInputElement>(null);
@@ -55,7 +65,6 @@ const PurchaseBillFooter = forwardRef<PurchaseBillFooterRef, InvoiceFooterProps>
     const roundOffRef = useRef<HTMLInputElement>(null);
     const docAmountRef = useRef<HTMLInputElement>(null);
 
-    // Split Fields Refs
     const transportValRef = useRef<HTMLInputElement>(null);
     const transportAmtRef = useRef<HTMLInputElement>(null);
     const otherDiscValRef = useRef<HTMLInputElement>(null);
@@ -63,15 +72,11 @@ const PurchaseBillFooter = forwardRef<PurchaseBillFooterRef, InvoiceFooterProps>
     const adjustmentValRef = useRef<HTMLInputElement>(null);
     const adjustmentAmtRef = useRef<HTMLInputElement>(null);
 
-    // --- State ---
-    const [glOptions, setGlOptions] = useState<any[]>([]);
+    const [glOptions, setGlOptions] = useState<GlOption[]>([]);
     const [selectedLedger, setSelectedLedger] = useState<string>('Cash In Hand');
     const [showChartOfAccounts, setShowChartOfAccounts] = useState(false);
     const [coaFormData, setCoaFormData] = useState<SalesAndPurchaseGL | null>(null);
 
-    // ---------------------------------------------------------------------------
-    // ✅ Helper: Calculate Final Document Amount
-    // ---------------------------------------------------------------------------
     const calculateFinalDocAmount = () => {
       console.group('🧮 Final Doc Amount Calculation');
 
@@ -88,7 +93,6 @@ const PurchaseBillFooter = forwardRef<PurchaseBillFooterRef, InvoiceFooterProps>
       const adjustment = getVal(adjustmentAmtRef, 'Adjustment Amt');
       const roundOff = getVal(roundOffRef, 'Round Off');
 
-      // Math: (Taxable + Tax + Transport + Adjustment + RoundOff) - Discount
       const finalTotal = taxable + tax + transport + adjustment + roundOff - otherDisc;
 
       console.log(
@@ -103,9 +107,6 @@ const PurchaseBillFooter = forwardRef<PurchaseBillFooterRef, InvoiceFooterProps>
       console.groupEnd();
     };
 
-    // ---------------------------------------------------------------------------
-    // ✅ Effect: Item Changes -> Update Taxable/Tax -> Update Final Total
-    // ---------------------------------------------------------------------------
     useEffect(() => {
       const calculateFooterTotals = () => {
         console.group('🧾 Footer Items Processing (INCLUSIVE LOGIC)');
@@ -116,23 +117,20 @@ const PurchaseBillFooter = forwardRef<PurchaseBillFooterRef, InvoiceFooterProps>
           return;
         }
 
-        let totalItemValue = 0; // Final Bill Value
-        let totalTaxable = 0; // Base Value
-        let totalTaxAmount = 0; // GST Value
+        let totalItemValue = 0;
+        let totalTaxable = 0;
+        let totalTaxAmount = 0;
 
         currentItems.forEach((row: any, index: number) => {
           const item = row.data || row;
 
           const qty = Number(item.qty || 0);
           const rate = Number(item.rate || 0);
-          const amount = Number(item.amount || qty * rate); // This is Inclusive Amount
+          const amount = Number(item.amount || qty * rate);
           const gstRate = Number(item.gstRate || 0);
 
-          // --- ✅ CORRECTED MATH (Reverse Calculation) ---
-          // 1. Find Taxable: Amount / (1 + rate/100)
           const itemTaxable = amount / (1 + gstRate / 100);
 
-          // 2. Find Tax: Amount - Taxable
           const itemTax = amount - itemTaxable;
 
           console.log(`   Row #${index + 1}:`, {
@@ -157,38 +155,54 @@ const PurchaseBillFooter = forwardRef<PurchaseBillFooterRef, InvoiceFooterProps>
         if (taxAmountRef.current) taxAmountRef.current.value = totalTaxAmount.toFixed(2);
 
         console.groupEnd();
-
-        // Trigger Final Calculation
         calculateFinalDocAmount();
       };
 
       calculateFooterTotals();
     }, [currentItems]);
 
-    // --- Load Ledgers ---
     useEffect(() => {
       const loadData = async () => {
         try {
           const coaResponse = await chartOfAccountService.getAllChartOfAccounts();
-          if (coaResponse.data && coaResponse.data.success) {
-            const rawData = coaResponse.data.data;
+
+          console.log('🔍 FULL API RESPONSE:', coaResponse);
+
+          const rawData = coaResponse.data;
+
+          if (Array.isArray(rawData)) {
+            console.log('📊 RAW ARRAY DATA FOUND:', rawData);
+
             const mappedOptions = rawData.map((item: any) => ({
               ...item,
-              name: item.name,
-              code: item.code || item.accountCode || '',
+              name: item.name || '',
+              code: item.code || item.identification || 'N/A',
+              underGroup:
+                typeof item.underGroup === 'object' ? item.underGroup?.name : item.underGroup || '',
+              nature: item.nature || 'N/A',
               label: item.name,
               value: item._id,
+              type: item.type,
             }));
-            setGlOptions(mappedOptions);
+
+            const filtered = mappedOptions.filter(
+              (item: any) => item.type === 'Bank' || item.type === 'Cash'
+            );
+
+            setGlOptions(filtered);
+          } else {
+            console.warn(
+              '⚠️ API response is not an array. Check if it is wrapped in an object:',
+              rawData
+            );
           }
         } catch (error) {
-          console.error('Failed to load dropdown data', error);
+          console.error('❌ Failed to load chart of accounts:', error);
         }
       };
       loadData();
     }, []);
 
-    // --- Expose Data to Parent ---
     useImperativeHandle(ref, () => ({
       getFooterData: () => ({
         remarks: remarksRef.current?.value || '',
@@ -213,10 +227,14 @@ const PurchaseBillFooter = forwardRef<PurchaseBillFooterRef, InvoiceFooterProps>
       }),
     }));
 
-    // --- Handlers ---
     const handleOpenCOA = () => {
       const selectedItem = glOptions.find((item) => item.name === selectedLedger);
-      setCoaFormData(selectedItem || ({ name: selectedLedger } as SalesAndPurchaseGL));
+
+      const dataToSet =
+        (selectedItem as unknown as SalesAndPurchaseGL) ||
+        ({ name: selectedLedger } as SalesAndPurchaseGL);
+
+      setCoaFormData(dataToSet);
       setShowChartOfAccounts(true);
     };
 
@@ -243,9 +261,7 @@ const PurchaseBillFooter = forwardRef<PurchaseBillFooterRef, InvoiceFooterProps>
         className="w-full border-t p-4 font-sans text-sm"
         style={{ backgroundColor: COLORS.white }}>
         <div className="flex flex-col gap-8 lg:flex-row">
-          {/* --- LEFT SECTION --- */}
           <div className="flex flex-1 flex-col gap-4">
-            {/* Remarks */}
             <div className="flex flex-col gap-4 sm:flex-row">
               <label
                 className="mt-1 w-32 text-xs font-medium"
@@ -265,10 +281,33 @@ const PurchaseBillFooter = forwardRef<PurchaseBillFooterRef, InvoiceFooterProps>
               </div>
             </div>
 
-            {/* Paid Amount */}
+            {cashCredit === 'Credit' && (
+              <div className="flex flex-col items-center gap-4 sm:flex-row">
+                <label className="w-32 text-xs font-medium" style={{ color: COLORS.textPrimary }}>
+                  Paid Amount
+                </label>
+                <div className="relative w-40">
+                  <span
+                    className="absolute left-2 top-1/2 -translate-y-1/2 text-xs"
+                    style={{ color: COLORS.textMuted }}>
+                    ₹
+                  </span>
+                  <input
+                    ref={receivedAmountRef}
+                    type="text"
+                    defaultValue="0.00"
+                    className="custom-input w-full rounded-sm border py-1 pl-6 pr-2 text-right text-xs outline-none"
+                    style={{
+                      borderColor: COLORS.borderDark,
+                      color: COLORS.textPrimary,
+                    }}
+                  />
+                </div>
+              </div>
+            )}
             <div className="flex flex-col items-center gap-4 sm:flex-row">
               <label className="w-32 text-xs font-medium" style={{ color: COLORS.textPrimary }}>
-                Paid Amount
+                Transport
               </label>
               <div className="relative w-40">
                 <span
@@ -289,8 +328,26 @@ const PurchaseBillFooter = forwardRef<PurchaseBillFooterRef, InvoiceFooterProps>
               </div>
             </div>
 
-            {/* Cash/Bank Ledger */}
-            {cashCredit === 'Credit' && (
+            <div className="flex flex-col items-center gap-4 sm:flex-row">
+              <div className="w-32">
+                <label className="text-[13px] font-medium text-gray-700">Cash/Bank Ledger</label>
+              </div>
+              <div className="flex flex-1 items-center gap-0">
+                <div className="flex-1">
+                  <Dropdown
+                    data={glOptions}
+                    columns={glColumns}
+                    value={selectedLedger}
+                    valueKey="name"
+                    placeholder="Select Ledger..."
+                    onChange={(item) => setSelectedLedger(item?.name || '')}
+                  />
+                </div>
+                <ActionBtn icon={<EditIcon size={14} />} onClick={handleOpenCOA} />
+              </div>
+            </div>
+
+            {cashCredit === 'Cash' && (
               <div className="flex flex-col items-center gap-4 sm:flex-row">
                 <div className="w-32">
                   <label className="text-[13px] font-medium text-gray-700">Cash/Bank Ledger</label>
@@ -298,7 +355,28 @@ const PurchaseBillFooter = forwardRef<PurchaseBillFooterRef, InvoiceFooterProps>
                 <div className="flex flex-1 items-center gap-0">
                   <div className="flex-1">
                     <Dropdown
-                      data={glOptions} // ✅ FIXED: Pass full data, Dropdown handles filtering
+                      data={glOptions}
+                      columns={glColumns}
+                      value={selectedLedger}
+                      valueKey="name"
+                      placeholder="Select Ledger..."
+                      onChange={(item) => setSelectedLedger(item?.name || '')}
+                    />
+                  </div>
+                  <ActionBtn icon={<EditIcon size={14} />} onClick={handleOpenCOA} />
+                </div>
+              </div>
+            )}
+
+            {cashCredit === 'Cash' && (
+              <div className="flex flex-col items-center gap-4 sm:flex-row">
+                <div className="w-32">
+                  <label className="text-[13px] font-medium text-gray-700">Cash/Bank Ledger</label>
+                </div>
+                <div className="flex flex-1 items-center gap-0">
+                  <div className="flex-1">
+                    <Dropdown
+                      data={glOptions}
                       columns={glColumns}
                       value={selectedLedger}
                       valueKey="name"
@@ -451,9 +529,6 @@ const TotalRow = ({ label, inputRef, defaultValue }: any) => (
   </div>
 );
 
-// ---------------------------------------------------------------------------
-// ✅ Updated SplitTotalRow (Amount Only)
-// ---------------------------------------------------------------------------
 interface SplitRowProps {
   label: string;
   amtRef: React.RefObject<HTMLInputElement | null>;

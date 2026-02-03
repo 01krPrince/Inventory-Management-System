@@ -117,10 +117,10 @@ const ItemColumns: Column[] = [
     ),
   },
 
-  { key: "hsn_code", label: "HSN Code", sortable: true },
+  { key: "gst_classification", label: "HSN Code", sortable: true },
 
   {
-    key: "group",
+    key: "effective_group_name",
     label: "Group",
     sortable: true,
     render: (value: any) => <span>{getDisplayValue(value)}</span>,
@@ -128,7 +128,7 @@ const ItemColumns: Column[] = [
 
   { key: "type", label: "Type", sortable: true },
   { key: "barcode", label: "Bar Code", sortable: true },
-  { key: "category_name", label: "Category", sortable: true },
+  { key: "effective_category_name", label: "Category", sortable: true },
 ];
 
 const pageSizeOptions = [5, 10, 20, 50];
@@ -416,9 +416,21 @@ export default function ItemMaster() {
       // Transform API data to include UI specific flags
       const processedData: DataItem[] = result.map((item: any) => ({
         ...item,
+        effective_group_name: 
+            item.under_group_name || 
+            item.under_group_details?.item_name || 
+            item.under_group_details?.name || 
+            item.group_name || // Just in case
+            "",
+            effective_category_name: 
+            item.category_name || 
+            item.category_details?.name || 
+            "",
         widget: false, // Default UI state
         inactive: false, // Default UI state
       }));
+
+      
 
       setApiData(processedData);
     } catch (err) {
@@ -526,12 +538,15 @@ export default function ItemMaster() {
     } else {
       setSelectedRows((prev: string[]) => [
         ...new Set([...prev, ...allIdsOnPage]),
-      ]);
+      ]); 
     }
   };
 
   const handleOpenEditModal = (row: DataItem) => {
-    setEditingRow(row);
+console.log(
+  "EDIT row JSON:",
+  JSON.stringify(row, null, 2)
+);    setEditingRow(row);
     setShowAddForm(true);
   };
 

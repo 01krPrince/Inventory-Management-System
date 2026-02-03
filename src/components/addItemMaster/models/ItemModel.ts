@@ -16,9 +16,9 @@ export interface ItemFormData {
   // Basic Details
   itemMode: string;
   item_name: string;
-  underGroup: string;       // Stores the _ID string
-  stockUnit: string;        // Stores the _ID string
-  gstClassification: string;
+  underGroup: string;       // We store the CODE string here now
+  stockUnit: string;        // We store the NAME string here now
+  gst_classification: string;
   profileImage: string | null;
 
   // Warranty
@@ -29,8 +29,8 @@ export interface ItemFormData {
   customWarranties: CustomWarranty[];
 
   // Advance Info
-  category: string;         // Stores the _ID string
-  brand: string;            // Stores the _ID string
+  category: string;         // We store the CODE string here now
+  brand: string;            // We store the CODE string here now
   type: string;
   unitOption: string;
   barCode: string;
@@ -78,12 +78,14 @@ export interface ItemFormData {
 }
 
 // --- 2. API TYPES (Used by Service/Server response) ---
-// These interfaces define what the Objects inside the response look like
+
+// This interface allows flexibility for different dropdown objects
 export interface IdNameObject {
   _id: string;
   name?: string;
-  item_name?: string;
-  code?: string;
+  item_name?: string; // Used by UnderGroup
+  code?: string;      // Used by Brand, Category, UnderGroup
+  hsn_sac_code?: string; // Used by GST
 }
 
 export interface ItemApiData {
@@ -94,10 +96,12 @@ export interface ItemApiData {
   item_mode: string | null;
   name: string | null; 
   
-  // Relational fields are Objects in the GET response
-  under_group: IdNameObject | null;
-  stock_unit: IdNameObject | null;
-  gst_classfication: string | null; // Note: Typo 'classfication' matches server
+  // --- FIXED SECTION: Allow Object OR String ---
+  // This tells TS: "This might be a populated object with a .code, or just an ID string"
+  under_group: IdNameObject | string | null;
+  stock_unit: IdNameObject | string | null;
+  gst_classfication: IdNameObject | string | null; 
+  gst_classification: string;
 
   // Warranty
   warranty?: boolean;
@@ -107,8 +111,9 @@ export interface ItemApiData {
   customWarranty?: CustomWarranty[];
 
   // Advance
-  category: IdNameObject["_id"] | null;
-  brand: IdNameObject | null;
+  // --- FIXED SECTION: Allow Object OR String ---
+  category: IdNameObject | string | null;
+  brand: IdNameObject | string | null;
   
   type: string | null;
   unit_option: string | null;
