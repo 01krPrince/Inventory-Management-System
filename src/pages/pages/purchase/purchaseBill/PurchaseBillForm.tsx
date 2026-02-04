@@ -1,16 +1,20 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { DocumentIcon, ChevronDownIcon, ChevronUpIcon } from '../../../../components/icons';
-import { EditIcon, BarChart2 } from 'lucide-react';
+import { EditIcon } from 'lucide-react';
 import Dropdown, { ColumnDef } from '../../../../components/Dropdown';
 import { LocationMaster } from '../../../../components/LocationMaster';
 import CrudVendor from '../vendor/pages/AddNewVendor';
 import NameAndCodeMaster from '../../../../components/NameAndCodeComponent';
 import { getAllVendors } from '../vendor/api/vendorService';
 import { fetchAllLocations } from '../../inventory/stockAdjustment/api/LocationMaster';
+import DateInput from '../../../../components/DateInput';
 
 export interface PurchaseBillFormData {
   gstType: string;
   cashCredit: string;
+
+  ecommerceInvoiceNo?: string;
+  contactNo?: string;
 
   store: string;
   storeId?: string;
@@ -59,6 +63,7 @@ interface PurchaseBillFormProps {
 export interface PurchaseBillFormRef {
   triggerSubmit: () => void;
   getFormData: () => PurchaseBillFormData;
+  resetForm: () => void; // <--- Added resetForm to interface
 }
 
 const Label: React.FC<{ children: React.ReactNode; required?: boolean }> = ({
@@ -110,20 +115,6 @@ const Input: React.FC<{
     placeholder={placeholder}
     readOnly={readOnly}
   />
-);
-
-const DateField: React.FC<{
-  value: string;
-  onChange: (val: string) => void;
-}> = ({ value, onChange }) => (
-  <div className="relative w-full">
-    <input
-      type="date"
-      className="h-[30px] w-full rounded-sm border border-gray-300 bg-white px-2 text-[13px] uppercase text-gray-700 focus:border-[var(--theme-focus)] focus:outline-none focus:ring-1 focus:ring-[var(--theme-focus)]"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-    />
-  </div>
 );
 
 const ActionBtn: React.FC<ActionBtnProps> = ({ icon, onClick }) => (
@@ -256,12 +247,13 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
       const value = item?.name || '';
       let updates: Partial<PurchaseBillFormData> = { [field]: value };
 
-      if (field === 'store' && item) {
-        const fullStore = rawStores.find((s) => s._id === item.id);
+      if (field === 'vendor' && item) {
+        const fullVendor = rawVendors.find((v) => v._id === item.id);
         updates = {
           ...updates,
-          storeId: item.id,
-          storeCode: fullStore?.code || fullStore?.storeCode || '',
+          contactNo: fullVendor.phone || '',
+          gstNo: fullVendor.gst_no || '',
+          ecommerceInvoiceNo: '',
         };
       }
 
@@ -307,6 +299,42 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
         }
       },
       getFormData: () => formData,
+      resetForm: () => {
+        // Reset Logic
+        // We preserve the first store logic if available
+        const defaultStore = storeOptions.length > 0 ? storeOptions[0] : null;
+        const defaultStoreData = rawStores.length > 0 ? rawStores[0] : null;
+
+        const resetData: PurchaseBillFormData = {
+          gstType: 'TaxInvoice',
+          cashCredit: 'Credit',
+          store: defaultStore ? defaultStore.name : '',
+          storeId: defaultStore ? defaultStore.id : '',
+          storeCode: defaultStoreData ? defaultStoreData.code || '' : '',
+          vendor: '',
+          vendorId: '',
+          vendorCode: '',
+          priceCategory: 'Wholesale',
+          tax: 'Inclusive',
+          placeOfSupply: '',
+          shipTo: '',
+          paymentTerms: '',
+          email: '',
+          orderNo: '',
+          refNo: '',
+          orderDate: getToday(),
+          refDate: getToday(),
+          dueDate: getToday(),
+          billToText: '',
+          shipToText: '',
+          gstNo: '',
+          contactPerson: '',
+        };
+
+        updateFormState(resetData);
+        setBillToOpen(false);
+        setShipToOpen(false);
+      },
     }));
 
     return (
@@ -382,7 +410,7 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                     icon={<EditIcon size={16} />}
                     onClick={() => setActiveModal('vendor')}
                   />
-                  <ActionBtn icon={<BarChart2 size={14} />} />
+                  {/* <ActionBtn icon={<BarChart2 size={14} />} /> */}
                 </InputGroup>
               </div>
             </div>
@@ -427,9 +455,9 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                 <Label required>Date</Label>
               </div>
               <div className="col-span-8">
-                <DateField
+                <DateInput
                   value={formData.orderDate}
-                  onChange={(val) => handleInputChange('orderDate', val)}
+                  onChange={(e) => handleInputChange('orderDate', e.target.value)}
                 />
               </div>
             </div>
@@ -439,7 +467,9 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
               </div>
               <div className="col-span-8">
                 <Input
-                  value={formData.orderNo}
+                  readOnly
+                  // value={formData.orderNo}
+                  value="N/A"
                   onChange={(e) => handleInputChange('orderNo', e.target.value)}
                 />
               </div>
@@ -461,9 +491,9 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                 <Label>Supplier Inv Date</Label>
               </div>
               <div className="col-span-8">
-                <DateField
+                <DateInput
                   value={formData.refDate}
-                  onChange={(val) => handleInputChange('refDate', val)}
+                  onChange={(e) => handleInputChange('refDate', e.target.value)}
                 />
               </div>
             </div>
@@ -481,27 +511,6 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                 />
               </div>
             </div>
-
-            {/* {formData.cashCredit === 'Cash' && (
-              <div className="mt-2 grid grid-cols-12 gap-2">
-                <div className="col-span-4">
-                  <Label>Bank/Cash Ledger</Label>
-                </div>
-                <div className="col-span-8">
-                  <InputGroup>
-                    <Dropdown
-                      data={glOptions}
-                      columns={glColumns}
-                      value={selectedLedger}
-                      valueKey="name"
-                      placeholder="Select Ledger..."
-                      onChange={(item) => setSelectedLedger(item?.name || '')}
-                    />
-                    <ActionBtn icon={<EditIcon size={14} />} onClick={handleOpenCOA} />
-                  </InputGroup>
-                </div>
-              </div>
-            )} */}
           </div>
 
           <div className="col-span-4 flex min-h-full flex-col">
@@ -583,37 +592,15 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                   <Label>Due Date</Label>
                 </div>
                 <div className="col-span-8">
-                  <DateField
+                  <DateInput
                     value={formData.dueDate}
-                    onChange={(val) => handleInputChange('dueDate', val)}
+                    onChange={(e) => handleInputChange('dueDate', e.target.value)}
                   />
                 </div>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Cash/Bank Ledger - Now only shows when 'Cash' is selected
-        {formData.cashCredit === 'Cash' && (
-          <div className="mt-4 flex flex-col items-center gap-4 border-t pt-4 sm:flex-row">
-            <div className="w-32">
-              <label className="text-[13px] font-medium text-gray-700">Cash/Bank Ledger</label>
-            </div>
-            <div className="flex flex-1 items-center gap-0">
-              <div className="flex-1">
-                <Dropdown
-                  data={glOptions}
-                  columns={glColumns}
-                  value={selectedLedger}
-                  valueKey="name"
-                  placeholder="Select Ledger..."
-                  onChange={(item) => setSelectedLedger(item?.name || '')}
-                />
-              </div>
-              <ActionBtn icon={<EditIcon size={14} />} onClick={handleOpenCOA} />
-            </div>
-          </div>
-        )} */}
 
         {activeModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 p-4 backdrop-blur-[2px]">
@@ -645,20 +632,6 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                   index={1200}
                 />
               )}
-              {/* {showChartOfAccounts && (
-                <div
-                  className="fixed inset-0 flex items-center justify-center bg-black/50 p-4"
-                  style={{ zIndex: 1000 }}>
-                  <div className="max-h-[90vh] w-full max-w-4xl overflow-auto rounded bg-white shadow-lg">
-                    <ChartOfAccounts
-                      isOpen={showChartOfAccounts}
-                      onClose={() => setShowChartOfAccounts(false)}
-                      initialData={coaFormData}
-                      onSave={handleSaveCOA}
-                    />
-                  </div>
-                </div>
-              )} */}
             </div>
           </div>
         )}

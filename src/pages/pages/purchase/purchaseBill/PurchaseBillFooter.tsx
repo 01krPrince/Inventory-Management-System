@@ -15,6 +15,7 @@ export interface PurchaseBillFooterRef {
     itemValue: number;
     discount1: number;
     discount2: number;
+    // promoDiscount: number;
     taxable: number;
     taxAmount: number;
     transportVal: number;
@@ -25,6 +26,17 @@ export interface PurchaseBillFooterRef {
     adjustmentAmt: number;
     roundOff: number;
     docAmount: number;
+    // payments: Array<{
+    //   ledger: string;
+    //   amount: number;
+    //   remarks: string;
+    // }>;
+    promoDiscount: number;
+    payments: Array<{
+      ledger: string;
+      amount: number;
+      remarks: string;
+    }>;
   };
 }
 
@@ -55,7 +67,7 @@ const glColumns: ColumnDef<any>[] = [
 const PurchaseBillFooter = forwardRef<PurchaseBillFooterRef, InvoiceFooterProps>(
   ({ cashCredit, currentItems }, ref) => {
     const remarksRef = useRef<HTMLTextAreaElement>(null);
-    const receivedAmountRef = useRef<HTMLInputElement>(null);
+    // const receivedAmountRef = useRef<HTMLInputElement>(null);
 
     const itemValueRef = useRef<HTMLInputElement>(null);
     const discount1Ref = useRef<HTMLInputElement>(null);
@@ -71,11 +83,17 @@ const PurchaseBillFooter = forwardRef<PurchaseBillFooterRef, InvoiceFooterProps>
     const otherDiscAmtRef = useRef<HTMLInputElement>(null);
     const adjustmentValRef = useRef<HTMLInputElement>(null);
     const adjustmentAmtRef = useRef<HTMLInputElement>(null);
+    const promoDiscountRef = useRef<HTMLInputElement>(null);
 
     const [glOptions, setGlOptions] = useState<GlOption[]>([]);
     const [selectedLedger, setSelectedLedger] = useState<string>('Cash In Hand');
     const [showChartOfAccounts, setShowChartOfAccounts] = useState(false);
     const [coaFormData, setCoaFormData] = useState<SalesAndPurchaseGL | null>(null);
+    const [payments, setPayments] = useState<{ ledger: string; amount: number; remarks: string }[]>(
+      []
+    );
+
+    const [paymentAmount, setPaymentAmount] = useState<number>(0);
 
     const calculateFinalDocAmount = () => {
       console.group('🧮 Final Doc Amount Calculation');
@@ -204,27 +222,30 @@ const PurchaseBillFooter = forwardRef<PurchaseBillFooterRef, InvoiceFooterProps>
     }, []);
 
     useImperativeHandle(ref, () => ({
-      getFooterData: () => ({
-        remarks: remarksRef.current?.value || '',
-        receivedAmount: Number(receivedAmountRef.current?.value || 0),
-        cashBankLedger: selectedLedger,
+      getFooterData: () => {
+        return {
+          remarks: remarksRef.current?.value || '',
+          receivedAmount: paymentAmount,
+          cashBankLedger: selectedLedger,
 
-        itemValue: Number(itemValueRef.current?.value || 0),
-        discount1: Number(discount1Ref.current?.value || 0),
-        discount2: Number(discount2Ref.current?.value || 0),
-        taxable: Number(taxableRef.current?.value || 0),
-        taxAmount: Number(taxAmountRef.current?.value || 0),
+          payments,
 
-        transportVal: Number(transportValRef.current?.value || 0),
-        transportAmt: Number(transportAmtRef.current?.value || 0),
-        otherDiscVal: Number(otherDiscValRef.current?.value || 0),
-        otherDiscAmt: Number(otherDiscAmtRef.current?.value || 0),
-        adjustmentVal: Number(adjustmentValRef.current?.value || 0),
-        adjustmentAmt: Number(adjustmentAmtRef.current?.value || 0),
-
-        roundOff: Number(roundOffRef.current?.value || 0),
-        docAmount: Number(docAmountRef.current?.value || 0),
-      }),
+          itemValue: parseFloat(itemValueRef.current?.value || '0'),
+          discount1: parseFloat(discount1Ref.current?.value || '0'),
+          discount2: parseFloat(discount2Ref.current?.value || '0'),
+          promoDiscount: parseFloat(promoDiscountRef.current?.value || '0'),
+          taxable: parseFloat(taxableRef.current?.value || '0'),
+          taxAmount: parseFloat(taxAmountRef.current?.value || '0'),
+          transportVal: parseFloat(transportValRef.current?.value || '0'),
+          transportAmt: parseFloat(transportAmtRef.current?.value || '0'),
+          otherDiscVal: parseFloat(otherDiscValRef.current?.value || '0'),
+          otherDiscAmt: parseFloat(otherDiscAmtRef.current?.value || '0'),
+          adjustmentVal: parseFloat(adjustmentValRef.current?.value || '0'),
+          adjustmentAmt: parseFloat(adjustmentAmtRef.current?.value || '0'),
+          roundOff: parseFloat(roundOffRef.current?.value || '0'),
+          docAmount: parseFloat(docAmountRef.current?.value || '0'),
+        };
+      },
     }));
 
     const handleOpenCOA = () => {
@@ -256,6 +277,40 @@ const PurchaseBillFooter = forwardRef<PurchaseBillFooterRef, InvoiceFooterProps>
       </button>
     );
 
+    const handleAddNew = () => {
+      const selectedGl = glOptions.find((opt) => opt.name === selectedLedger);
+      if (!selectedGl || paymentAmount <= 0) return;
+
+      const newPayment = {
+        ledger: selectedGl.code,
+        amount: paymentAmount,
+        remarks: selectedGl.name,
+      };
+
+      setPayments((prev) => {
+        const updated = [...prev, newPayment];
+        console.log('✅ PAYMENTS UPDATED:', updated);
+        return updated;
+      });
+
+      setPaymentAmount(0);
+    };
+
+    useEffect(() => {
+      if (cashCredit === 'Credit' && paymentAmount > 0) {
+        const selectedGl = glOptions.find((opt) => opt.name === selectedLedger);
+        if (!selectedGl) return;
+
+        setPayments([
+          {
+            ledger: selectedGl.code,
+            amount: paymentAmount,
+            remarks: selectedGl.name,
+          },
+        ]);
+      }
+    }, [cashCredit, selectedLedger, glOptions]);
+
     return (
       <div
         className="w-full border-t p-4 font-sans text-sm"
@@ -281,58 +336,40 @@ const PurchaseBillFooter = forwardRef<PurchaseBillFooterRef, InvoiceFooterProps>
               </div>
             </div>
 
-            {cashCredit === 'Credit' && (
-              <div className="flex flex-col items-center gap-4 sm:flex-row">
-                <label className="w-32 text-xs font-medium" style={{ color: COLORS.textPrimary }}>
-                  Paid Amount
-                </label>
-                <div className="relative w-40">
-                  <span
-                    className="absolute left-2 top-1/2 -translate-y-1/2 text-xs"
-                    style={{ color: COLORS.textMuted }}>
-                    ₹
-                  </span>
-                  <input
-                    ref={receivedAmountRef}
-                    type="text"
-                    defaultValue="0.00"
-                    className="custom-input w-full rounded-sm border py-1 pl-6 pr-2 text-right text-xs outline-none"
-                    style={{
-                      borderColor: COLORS.borderDark,
-                      color: COLORS.textPrimary,
-                    }}
-                  />
+            {cashCredit === 'Cash' && payments.length > 0 && (
+              <div className="mt-3 rounded border border-gray-200">
+                <div className="grid grid-cols-4 gap-2 bg-gray-100 p-2 text-xs font-semibold">
+                  <div>Ledger</div>
+                  <div className="text-right">Amount</div>
+                  <div className="text-center">Action</div>
                 </div>
+
+                {payments.map((p, index) => (
+                  <div key={index} className="grid grid-cols-4 gap-2 border-t p-2 text-xs">
+                    <div>{p.remarks}</div>
+                    <div className="text-right">₹ {p.amount.toFixed(2)}</div>
+
+                    <div className="text-center">
+                      <button
+                        type="button"
+                        className="text-red-600 hover:underline"
+                        onClick={() => setPayments((prev) => prev.filter((_, i) => i !== index))}>
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
-            <div className="flex flex-col items-center gap-4 sm:flex-row">
-              <label className="w-32 text-xs font-medium" style={{ color: COLORS.textPrimary }}>
-                Transport
-              </label>
-              <div className="relative w-40">
-                <span
-                  className="absolute left-2 top-1/2 -translate-y-1/2 text-xs"
-                  style={{ color: COLORS.textMuted }}>
-                  ₹
-                </span>
-                <input
-                  ref={receivedAmountRef}
-                  type="text"
-                  defaultValue="0.00"
-                  className="custom-input w-full rounded-sm border py-1 pl-6 pr-2 text-right text-xs outline-none"
-                  style={{
-                    borderColor: COLORS.borderDark,
-                    color: COLORS.textPrimary,
-                  }}
-                />
-              </div>
-            </div>
 
-            <div className="flex flex-col items-center gap-4 sm:flex-row">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+              {/* Ledger Label */}
               <div className="w-32">
                 <label className="text-[13px] font-medium text-gray-700">Cash/Bank Ledger</label>
               </div>
-              <div className="flex flex-1 items-center gap-0">
+
+              {/* Ledger Dropdown + Edit */}
+              <div className="flex flex-1 items-center gap-1">
                 <div className="flex-1">
                   <Dropdown
                     data={glOptions}
@@ -345,49 +382,24 @@ const PurchaseBillFooter = forwardRef<PurchaseBillFooterRef, InvoiceFooterProps>
                 </div>
                 <ActionBtn icon={<EditIcon size={14} />} onClick={handleOpenCOA} />
               </div>
+
+              <input
+                type="number"
+                className="w-[200px] rounded border border-gray-300 px-2 py-1 text-sm"
+                placeholder="Amount"
+                value={paymentAmount}
+                onChange={(e) => setPaymentAmount(Number(e.target.value || 0))}
+              />
+
+              {cashCredit === 'Cash' && (
+                <button
+                  type="button"
+                  className="w-[200px] whitespace-nowrap rounded bg-amber-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-900"
+                  onClick={handleAddNew}>
+                  Add New
+                </button>
+              )}
             </div>
-
-            {cashCredit === 'Cash' && (
-              <div className="flex flex-col items-center gap-4 sm:flex-row">
-                <div className="w-32">
-                  <label className="text-[13px] font-medium text-gray-700">Cash/Bank Ledger</label>
-                </div>
-                <div className="flex flex-1 items-center gap-0">
-                  <div className="flex-1">
-                    <Dropdown
-                      data={glOptions}
-                      columns={glColumns}
-                      value={selectedLedger}
-                      valueKey="name"
-                      placeholder="Select Ledger..."
-                      onChange={(item) => setSelectedLedger(item?.name || '')}
-                    />
-                  </div>
-                  <ActionBtn icon={<EditIcon size={14} />} onClick={handleOpenCOA} />
-                </div>
-              </div>
-            )}
-
-            {cashCredit === 'Cash' && (
-              <div className="flex flex-col items-center gap-4 sm:flex-row">
-                <div className="w-32">
-                  <label className="text-[13px] font-medium text-gray-700">Cash/Bank Ledger</label>
-                </div>
-                <div className="flex flex-1 items-center gap-0">
-                  <div className="flex-1">
-                    <Dropdown
-                      data={glOptions}
-                      columns={glColumns}
-                      value={selectedLedger}
-                      valueKey="name"
-                      placeholder="Select Ledger..."
-                      onChange={(item) => setSelectedLedger(item?.name || '')}
-                    />
-                  </div>
-                  <ActionBtn icon={<EditIcon size={14} />} onClick={handleOpenCOA} />
-                </div>
-              </div>
-            )}
 
             {/* Attachment */}
             <div className="mt-2 flex flex-col gap-4 sm:flex-row">
@@ -400,6 +412,25 @@ const PurchaseBillFooter = forwardRef<PurchaseBillFooterRef, InvoiceFooterProps>
                 <Attachment />
               </div>
             </div>
+
+            {/* <div className="flex flex-col items-center gap-4 sm:flex-row">
+              <label className="w-32 text-xs font-medium" style={{ color: COLORS.textPrimary }}>
+                Transport
+              </label>
+              <div className="relative w-40">
+                <span
+                  className="absolute left-2 top-1/2 -translate-y-1/2 text-xs"
+                  style={{ color: COLORS.textMuted }}>
+                  ₹
+                </span>
+                <input
+                  ref={transportAmtRef}
+                  type="text"
+                  defaultValue="0.00"
+                  onChange={calculateFinalDocAmount}
+                />
+              </div>
+            </div> */}
           </div>
 
           {/* --- RIGHT SECTION (Totals) --- */}

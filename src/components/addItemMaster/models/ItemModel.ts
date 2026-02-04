@@ -138,6 +138,7 @@ export interface ItemApiData {
   purch_desc: string | null;
   purchase_gl: string | null;
   purchase_rate: string | number | null;
+  dealer_rate: string | number | null;
   purchase_ratefactor: string | number | null;
   purchase_discount: string | number | null;
   purchase_discount_percent: string | number | null;

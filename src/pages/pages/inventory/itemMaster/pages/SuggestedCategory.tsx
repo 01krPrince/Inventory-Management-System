@@ -4,7 +4,7 @@ import { ItemApiData } from "../models/ItemModel";
 
 interface SuggestedCategoryProps {
   onSelectionChange: (selectedIds: string[]) => void;
-  selectedItemIds: string[];
+  selectedItemIds: string[]; // THIS STORES ITEM CODES
 }
 
 const SuggestedCategory: React.FC<SuggestedCategoryProps> = ({
@@ -16,13 +16,16 @@ const SuggestedCategory: React.FC<SuggestedCategoryProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>("");
 
+  // ===============================
+  // FETCH ITEMS
+  // ===============================
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true);
         const data = await fetchItems();
         setItems(data);
-      } catch (err) {
+      } catch {
         setError("Failed to load items.");
       } finally {
         setLoading(false);
@@ -31,7 +34,9 @@ const SuggestedCategory: React.FC<SuggestedCategoryProps> = ({
     loadData();
   }, []);
 
-  // Admin Search Logic
+  // ===============================
+  // SEARCH FILTER
+  // ===============================
   const filteredItems = useMemo(() => {
     return items.filter(
       (item) =>
@@ -40,19 +45,43 @@ const SuggestedCategory: React.FC<SuggestedCategoryProps> = ({
     );
   }, [items, searchTerm]);
 
-  const handleToggle = (itemId: string) => {
-    const updatedIds = selectedItemIds.includes(itemId)
-      ? selectedItemIds.filter((id) => id !== itemId)
-      : [...selectedItemIds, itemId];
+  // ===============================
+  // SORT: SELECTED ITEMS ON TOP
+  // ===============================
+  const sortedItems = useMemo(() => {
+    return [...filteredItems].sort((a, b) => {
+      const aSelected = selectedItemIds.includes(a.code || "");
+      const bSelected = selectedItemIds.includes(b.code || "");
+
+      if (aSelected && !bSelected) return -1;
+      if (!aSelected && bSelected) return 1;
+      return 0;
+    });
+  }, [filteredItems, selectedItemIds]);
+
+  // ===============================
+  // TOGGLE SELECTION (BY CODE)
+  // ===============================
+  const handleToggle = (itemCode: string) => {
+    if (!itemCode) return;
+
+    const updatedIds = selectedItemIds.includes(itemCode)
+      ? selectedItemIds.filter((code) => code !== itemCode)
+      : [...selectedItemIds, itemCode];
+
     onSelectionChange(updatedIds);
   };
 
+  // ===============================
+  // UI STATES
+  // ===============================
   if (loading)
     return (
       <div className="p-4 text-center text-xs text-gray-500 italic">
         Fetching inventory...
       </div>
     );
+
   if (error)
     return (
       <div className="p-4 text-center text-xs text-red-500 font-medium">
@@ -60,6 +89,9 @@ const SuggestedCategory: React.FC<SuggestedCategoryProps> = ({
       </div>
     );
 
+  // ===============================
+  // RENDER
+  // ===============================
   return (
     <div className="bg-white border border-gray-200 rounded-md shadow-sm overflow-hidden mt-2">
       {/* Search Header */}
@@ -76,7 +108,7 @@ const SuggestedCategory: React.FC<SuggestedCategoryProps> = ({
         </div>
       </div>
 
-      {/* Admin Compact Table */}
+      {/* Table */}
       <div className="max-h-[250px] overflow-y-auto">
         <table className="w-full text-left border-collapse table-fixed">
           <thead className="sticky top-0 bg-[#0c5888] text-white text-[11px] uppercase z-10">
@@ -87,8 +119,9 @@ const SuggestedCategory: React.FC<SuggestedCategoryProps> = ({
               <th className="p-2 text-right">Rate</th>
             </tr>
           </thead>
+
           <tbody className="divide-y divide-gray-100">
-            {filteredItems.length === 0 ? (
+            {sortedItems.length === 0 ? (
               <tr>
                 <td
                   colSpan={4}
@@ -98,8 +131,9 @@ const SuggestedCategory: React.FC<SuggestedCategoryProps> = ({
                 </td>
               </tr>
             ) : (
-              filteredItems.map((item) => {
-                const isSelected = selectedItemIds.includes(item._id || "");
+              sortedItems.map((item) => {
+                const itemCode = item.code || "";
+                const isSelected = selectedItemIds.includes(itemCode);
                 const categoryName =
                   typeof item.category === "object"
                     ? item.category?.name
@@ -108,7 +142,7 @@ const SuggestedCategory: React.FC<SuggestedCategoryProps> = ({
                 return (
                   <tr
                     key={item._id}
-                    onClick={() => handleToggle(item._id || "")}
+                    onClick={() => handleToggle(itemCode)}
                     className={`group cursor-pointer transition-colors hover:bg-gray-50 ${
                       isSelected ? "bg-blue-50/40" : ""
                     }`}
@@ -121,6 +155,7 @@ const SuggestedCategory: React.FC<SuggestedCategoryProps> = ({
                         readOnly
                       />
                     </td>
+
                     <td className="p-2 overflow-hidden">
                       <div
                         className="font-medium text-gray-800 text-xs truncate"
@@ -129,12 +164,14 @@ const SuggestedCategory: React.FC<SuggestedCategoryProps> = ({
                         {item.name}
                       </div>
                       <div className="text-[10px] text-gray-400 font-mono italic">
-                        {item.code || "No Code"}
+                        {itemCode || "No Code"}
                       </div>
                     </td>
+
                     <td className="p-2 text-[10px] text-gray-500 truncate">
                       {categoryName || "—"}
                     </td>
+
                     <td className="p-2 text-right">
                       <div className="text-xs font-bold text-gray-700">
                         ₹{item.sales_rate}
@@ -151,7 +188,7 @@ const SuggestedCategory: React.FC<SuggestedCategoryProps> = ({
         </table>
       </div>
 
-      {/* Action Footer */}
+      {/* Footer */}
       <div className="p-2 border-t bg-gray-50 flex justify-end gap-2">
         <button
           onClick={() => onSelectionChange([])}

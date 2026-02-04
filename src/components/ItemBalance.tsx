@@ -71,12 +71,10 @@ const ItemWithBalance: React.FC<ItemWithBalanceProps> = ({
     return { groups, brands, categories };
   }, [items]);
 
-  // --- LOGIC: SELECTION PERSISTENCE & PINNING ---
   const filteredAndSortedItems = useMemo(() => {
-    // 1. Filter items based on criteria, but ALWAYS include selected items
     const filtered = items.filter((item) => {
       const isSelected = selectedIds.has(item.code);
-      if (isSelected) return true; // Keep selected items visible always
+      if (isSelected) return true;
 
       const matchesSearch =
         item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -152,7 +150,7 @@ const ItemWithBalance: React.FC<ItemWithBalanceProps> = ({
 
   return (
     <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4 font-sans text-xs">
-      <div className="flex w-full max-w-7xl flex-col rounded bg-white shadow-2xl">
+      <div className="flex h-[70vh] w-full max-w-7xl flex-col rounded bg-white shadow-2xl">
         <div className="flex items-center justify-between bg-[#0f3c63] px-4 py-2 text-white">
           <span className="font-bold">Item With Balance</span>
           <button onClick={onClose}>
@@ -312,8 +310,11 @@ const ItemWithBalance: React.FC<ItemWithBalanceProps> = ({
                       <td className="border-r p-1 text-center">
                         <input
                           type="number"
+                          min={0}
+                          step={1}
+                          onWheel={(e) => e.currentTarget.blur()}
                           className="w-16 border border-gray-300 p-0.5 text-center outline-none"
-                          value={quantities[item.code] || ''}
+                          value={quantities[item.code] ?? ''}
                           onChange={(e) => handleQtyChange(item.code, e.target.value)}
                           placeholder="0"
                         />

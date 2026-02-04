@@ -45,6 +45,11 @@ import AttributePanel from '../../../../components/AttributePanel';
 import { ItemApiData, NestedObject } from '../../inventory/itemMaster/models/ItemModel';
 import PullFromOrderModal from '../../../../components/PullFromOrderModal';
 
+// export interface OrderTableRef {
+//   getTableData: () => any; // or whatever your existing return type is
+//   resetTable: () => void; // <--- ADD THIS LINE
+// }
+
 interface Column {
   id: string;
   label: string;
@@ -459,6 +464,21 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
 
   const [newWarranty, setNewWarranty] = useState({ duration: '', price: '' });
   const [scanQuery, setScanQuery] = useState('');
+
+  // Inside your OrderTable component...
+  // useImperativeHandle(ref, () => ({
+  //   getTableData: () => {
+  //     // ... your existing logic
+  //     return { visibleRows: rows };
+  //   },
+  //   // ADD THIS FUNCTION:
+  //   resetTable: () => {
+  //     setRows([]); // Assuming 'rows' is your state variable for table data
+  //     if (onItemsChange) {
+  //       onItemsChange([]);
+  //     }
+  //   },
+  // }));
 
   const [attributePanelState, setAttributePanelState] = useState<{
     visible: boolean;

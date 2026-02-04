@@ -22,6 +22,60 @@ import PurchaseBillInvoice from '../../../../components/invoiceDownload/Purchase
 // Import Utils
 import { downloadPdf, getPdfFileName } from '../../../../utils/pdfUtils';
 
+// --- Constants ---
+const INITIAL_LOGISTICS_DATA: LogisticsData = {
+  destination: '',
+  shippingMode: 'Road',
+  shippingCompany: '',
+  shippingCompanyAddress: '',
+  shippingTrackingNo: '',
+  shippingDate: new Date().toISOString().split('T')[0],
+  shippingCharges: '0',
+  vehicleNo: '',
+  chargeType: 'Paid',
+  documentThrough: '',
+  portOfLanding: '',
+  portOfDischarge: '',
+  noOfPackets: '0',
+  weight: '0',
+  portAddressForEway: '',
+  portStateForEway: '',
+  distance: '',
+  ewayInvoiceNo: '',
+  ewayInvoiceDate: '',
+  ewayCancelDate: '',
+  irnNo: '',
+  qrCode: '',
+  irnCancelDate: '',
+  irnCancelReason: '',
+  ackNo: '',
+  ackDate: '',
+  billOfEntryNum: '',
+  billOfEntryDate: '',
+
+  // --- Expenses Initial State ---
+  custDuty: '0.00',
+  custDutyAccount: '',
+  chaPayment: '0.00',
+  chaPaymentAccount: '',
+  freight: '0.00',
+  freightAccount: '',
+  insurance: '0.00',
+  insuranceAccount: '',
+  handling: '0.00',
+  handlingAccount: '',
+  docCharges: '0.00',
+  docChargesAccount: '',
+  bankCharges: '0.00',
+  bankChargesAccount: '',
+  custExp: '0.00',
+  custExpAccount: '',
+  loadingUnloading: '0.00',
+  loadingUnloadingAccount: '',
+  otherCharges: '0.00',
+  otherChargesAccount: '',
+};
+
 const PurchaseBill: React.FC = () => {
   // --- Refs ---
   const orderTableRef = useRef<OrderTableRef>(null);
@@ -44,58 +98,7 @@ const PurchaseBill: React.FC = () => {
     group: '',
   });
 
-  const [logisticsData, setLogisticsData] = useState<LogisticsData>({
-    destination: '',
-    shippingMode: 'Road',
-    shippingCompany: '',
-    shippingCompanyAddress: '',
-    shippingTrackingNo: '',
-    shippingDate: new Date().toISOString().split('T')[0],
-    shippingCharges: '0',
-    vehicleNo: '',
-    chargeType: 'Paid',
-    documentThrough: '',
-    portOfLanding: '',
-    portOfDischarge: '',
-    noOfPackets: '0',
-    weight: '0',
-    portAddressForEway: '',
-    portStateForEway: '',
-    distance: '',
-    ewayInvoiceNo: '',
-    ewayInvoiceDate: '',
-    ewayCancelDate: '',
-    irnNo: '',
-    qrCode: '',
-    irnCancelDate: '',
-    irnCancelReason: '',
-    ackNo: '',
-    ackDate: '',
-    billOfEntryNum: '',
-    billOfEntryDate: '',
-
-    // --- Expenses Initial State ---
-    custDuty: '0.00',
-    custDutyAccount: '',
-    chaPayment: '0.00',
-    chaPaymentAccount: '',
-    freight: '0.00',
-    freightAccount: '',
-    insurance: '0.00',
-    insuranceAccount: '',
-    handling: '0.00',
-    handlingAccount: '',
-    docCharges: '0.00',
-    docChargesAccount: '',
-    bankCharges: '0.00',
-    bankChargesAccount: '',
-    custExp: '0.00',
-    custExpAccount: '',
-    loadingUnloading: '0.00',
-    loadingUnloadingAccount: '',
-    otherCharges: '0.00',
-    otherChargesAccount: '',
-  });
+  const [logisticsData, setLogisticsData] = useState<LogisticsData>(INITIAL_LOGISTICS_DATA);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showBillPreview, setShowBillPreview] = useState(false);
@@ -242,67 +245,94 @@ const PurchaseBill: React.FC = () => {
     try {
       const formData = formRef.current?.getFormData();
       const tableSource: any = orderTableRef.current?.getTableData?.();
-      const footerData = footerRef.current?.getFooterData();
+      const footerData = footerRef.current?.getFooterData() as any;
+      const paymentList = footerData?.payments || [];
 
-      if (!formData) {
-        alert('Form data is missing');
-        return;
-      }
-      if (!formData.storeCode || !formData.vendorCode) {
+      // const paymentList = footerData?.payments || [];
+
+      if (!formData || !formData.storeCode || !formData.vendorCode) {
         alert('Store or Vendor Code is missing.');
         return;
       }
-      const rawRows = tableSource?.visibleRows || [];
-      if (rawRows.length === 0) {
-        alert('Please add at least one item.');
-        return;
-      }
 
+      const rawRows = tableSource?.visibleRows || [];
       const apiItems = rawRows.map((row: any) => {
         const item = row.data || row;
         return {
-          ...item,
           itemCode: item.select || item.itemCode || '',
           quantity: Number(item.qty || 0),
           rate: Number(item.rate || 0),
           mrp: Number(item.mrp || 0),
-          amount: Number(item.amount || 0),
           sale_rate: Number(item.sale_rate || 0),
           wholesale_rate: Number(item.wholesale_rate || 0),
           dealer_rate: Number(item.dealer_rate || 0),
-          gstRate: Number(item.gstRate || 0),
           taxable: Number(item.taxable || 0),
-          taxAmt: Number(item.taxAmt || 0),
           taxAmount: Number(item.taxAmt || 0),
-          netRate: Number(item.netRate || 0),
+          taxRate: item.gstRate ? `${item.gstRate}%` : '0%',
+          itemBarCode: item.barcode || '',
+          brand: item.brand || '',
         };
       });
+      // const totalPaid = footerData?.receivedAmount ?? 0;
 
       const payload = {
-        billDate: formData.orderDate || new Date().toISOString().split('T')[0],
         storeCode: formData.storeCode,
         vendorCode: formData.vendorCode,
-        remarks: footerData?.remarks || 'Purchase Bill',
-        cashCredit: cashCredit,
-        gstType: formData.gstType,
+        billDate: formData.orderDate,
+        type: cashCredit,
 
-        receivedAmount: footerData?.receivedAmount || 0,
-        cashBankLedger: footerData?.cashBankLedger || '',
+        remarks: footerData?.remarks || '',
 
-        itemValue: footerData?.itemValue || 0,
-        billDiscount: footerData?.otherDiscAmt || 0,
-        taxable: footerData?.taxable || 0,
-        taxAmount: footerData?.taxAmount || 0,
-        roundOff: footerData?.roundOff || 0,
-        netAmount: footerData?.docAmount || 0,
-        adjustment: footerData?.adjustmentAmt || 0,
+        payments: paymentList,
+
+        netAmount: footerData?.docAmount ?? 0,
         transport: footerData?.transportAmt || 0,
-        billDiscountPercent: footerData?.otherDiscVal || 0,
-        promoDiscount: 0,
+        adjustment: footerData?.adjustmentAmt || 0,
+        roundOff: footerData?.roundOff || 0,
+        taxAmount: footerData?.taxAmount || 0,
+
+        paidAmount: paymentList.reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0),
+
+        billingFrom: {
+          contactNo: formData.contactNo || '',
+          gstNo: formData.gstNo || '',
+          placeOfSupply: formData.placeOfSupply || '',
+          ecommerceInvoiceNo: formData.ecommerceInvoiceNo || formData.orderNo || '',
+          fullAddress: formData.billToText || '',
+        },
+
+        shippingFrom: {
+          fullAddress: formData.shipToText || '',
+        },
+
+        supplierInvoiceNo: formData.refNo || '',
+        supplierInvoiceDate: formData.refDate || formData.orderDate,
+
+        tax: formData.tax,
+        dueDate: formData.dueDate,
+        paymentTerms: formData.paymentTerms,
+        email: formData.email,
+        priceCategory: formData.priceCategory,
 
         items: apiItems,
 
         logistics: {
+          freight: {
+            amount: Number(logisticsData.freight) || 0,
+            accountCode: logisticsData.freightAccount || '23400002',
+          },
+          loadingUnloading: {
+            amount: Number(logisticsData.loadingUnloading) || 0,
+            accountCode: logisticsData.loadingUnloadingAccount || '23400002',
+          },
+          insurance: {
+            amount: Number(logisticsData.insurance) || 0,
+            accountCode: logisticsData.insuranceAccount || '23400002',
+          },
+          otherCharges: {
+            amount: Number(logisticsData.otherCharges) || 0,
+            accountCode: logisticsData.otherChargesAccount || '23400002',
+          },
           custDuty: {
             amount: Number(logisticsData.custDuty) || 0,
             accountCode: logisticsData.custDutyAccount || null,
@@ -311,66 +341,49 @@ const PurchaseBill: React.FC = () => {
             amount: Number(logisticsData.chaPayment) || 0,
             accountCode: logisticsData.chaPaymentAccount || null,
           },
-          freight: {
-            amount: Number(logisticsData.freight) || 0,
-            accountCode: logisticsData.freightAccount || null,
-          },
-          insurance: {
-            amount: Number(logisticsData.insurance) || 0,
-            accountCode: logisticsData.insuranceAccount || null,
-          },
           handling: {
             amount: Number(logisticsData.handling) || 0,
-            accountCode: logisticsData.handlingAccount || null,
+            accountCode: logisticsData.handlingAccount || '23400002',
           },
           docCharges: {
             amount: Number(logisticsData.docCharges) || 0,
-            accountCode: logisticsData.docChargesAccount || null,
+            accountCode: logisticsData.docChargesAccount || '23400002',
           },
           bankCharges: {
             amount: Number(logisticsData.bankCharges) || 0,
-            accountCode: logisticsData.bankChargesAccount || null,
+            accountCode: logisticsData.bankChargesAccount || '23400002',
           },
           custExp: {
             amount: Number(logisticsData.custExp) || 0,
             accountCode: logisticsData.custExpAccount || null,
           },
-          loadingUnloading: {
-            amount: Number(logisticsData.loadingUnloading) || 0,
-            accountCode: logisticsData.loadingUnloadingAccount || null,
-          },
-          otherCharges: {
-            amount: Number(logisticsData.otherCharges) || 0,
-            accountCode: logisticsData.otherChargesAccount || null,
-          },
         },
+
+        promoDiscount: footerData?.promoDiscount || 0,
+        promoDiscount2: 0,
+        couponDiscount: 0,
+        billDiscount: footerData?.otherDiscAmt || 0,
+        billDiscountPercent: footerData?.otherDiscVal || 0,
+
+        gstType: formData.gstType,
       };
 
-      console.log('🚀 Request Payload:', payload);
+      // LOGGING THE FULL PAYLOAD
+      console.log('✅ SUBMITTED PAYLOAD:', JSON.stringify(payload, null, 2));
 
       const response = await purchaseBillService.createPurchaseBill(payload as any);
-      const responseData = response.data;
-
-      // Handle nested data if necessary (e.g., responseData.data)
-      const finalBillData = responseData.data || responseData;
+      const finalBillData = response.data?.data || response.data;
 
       if (finalBillData) {
         setGeneratedBillData(finalBillData);
         setShowBillPreview(true);
 
-        // --- NEW: Notification Logic ---
-        setTimeout(() => {
-          const userWantsToShare = window.confirm(
-            'Purchase Bill created successfully!\n\nDo you want to save and share this bill?'
-          );
-
-          if (userWantsToShare) {
-            // 1. Auto Download
-            handleDownloadPdf(finalBillData);
-            // 2. Open Share Menu
-            setIsShareOpen(true);
-          }
-        }, 1000); // 1s delay to ensure the invoice modal is fully rendered
+        // --- RESET DATA ---
+        formRef.current?.resetForm();
+        setLogisticsData(INITIAL_LOGISTICS_DATA);
+        setLedgerData({ employee: '', group: '' });
+        // Note: Table data reset depends on OrderTable's implementation.
+        // If it supports a reset method via ref, add: orderTableRef.current?.resetTable();
       }
     } catch (error) {
       console.error('❌ API ERROR:', error);
@@ -414,7 +427,6 @@ const PurchaseBill: React.FC = () => {
         style={{ borderColor: COLORS.borderDark }}>
         {/* Right: Share & Save */}
         <div className="flex items-center gap-4">
-          {/* Share Dropdown */}
           <div className="share-dropdown-container relative">
             <button
               onClick={() => setIsShareOpen(!isShareOpen)}

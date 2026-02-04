@@ -79,9 +79,8 @@ const simpleLabelColumns: ColumnDef<any>[] = [
 ];
 
 const stockUnitColumns: ColumnDef<StockUnitData>[] = [
-  { header: "Code", key: "code", width: "w-20" },
-  { header: "Name", key: "name", width: "w-full" },
-  { header: "UQC", key: "uqc", width: "w-24" },
+  { header: "Code", key: "code", width: "w-1/2" },
+  { header: "Name", key: "name", width: "w-1/2" },
 ];
 
 const underGroupColumns: ColumnDef<UnderGroupData>[] = [
@@ -252,7 +251,7 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
   const [activeStep, setActiveStep] = useState(0);
   const [formData, setFormData] = useState<ItemFormData>(INITIAL_DATA);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
+  const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);  // it always stores code only...
 
   // Modal States
   const [showItemGroupModal, setShowItemGroupModal] = useState(false);
@@ -294,7 +293,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
   const handleBrandEditClick = (e: React.MouseEvent) => {
     e.preventDefault();
     if (formData.brand) {
-      // const selectedBrand = brands.find((b) => b._id === formData.brand);
       const selectedBrand = brands.find((b) => b.code === formData.brand);
       setBrandToEdit(selectedBrand);
     } else {
@@ -306,9 +304,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
   const handleCategoryEditClick = (e: React.MouseEvent) => {
     e.preventDefault();
     if (formData.category) {
-      // const selectedCategory = categories.find(
-      //   (c) => c._id === formData.category,
-      // );
       const selectedCategory = categories.find(
         (c) => c.code === formData.category,
       );
@@ -403,11 +398,19 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
 
 
 
-  // Removed stockUnitList from dependency to prevent infinite loops
 // --- 2. INITIALIZE FORM (With Fixes) ---
   useEffect(() => {
     if (initialData && Object.keys(initialData).length > 0) {
       console.log("DEBUG: Form Init triggered. Processing Initial Data...");
+
+
+     const shouldEnableWarranty = 
+      initialData.warranty === true || 
+      !!initialData.firstyearwarranty || 
+      !!initialData.secyearwarranty || 
+      !!initialData.thirdyearwarranty || 
+      (Array.isArray(initialData.customWarranty) && initialData.customWarranty.length > 0);
+
 
       const findCode = (val: any, list: any[], _: string) => {
         if (val && typeof val === 'object' && val.code) return val.code;
@@ -430,7 +433,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
       const findGst = (val: any, list: any[]) => {
          if (val && typeof val === 'object') return val.hsn_sac_code || val.code || "";
          if (typeof val === 'string' && list.length > 0) {
-             // Try finding by ID first
              const found = list.find(item => item._id === val);
              if (found) return found.hsn_sac_code || found.code;
          }
@@ -443,12 +445,10 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
         itemMode: initialData.item_mode || prev.itemMode,
         item_name: initialData.name || prev.item_name,
 
-        // underGroup: findCode(initialData.under_group, underGroup, "UnderGroup"), 
         underGroup: resolveUnderGroup(initialData, underGroup),
 
         stockUnit: findName(initialData.stock_unit, stockUnitList),
-        
-        // --- FIX HERE: Check BOTH the correct spelling AND the typo ---
+
         gst_classification: findGst(
             initialData.gst_classification || initialData.gst_classfication, 
             gstList
@@ -464,7 +464,7 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
         gstInputNotApplicable: initialData.gst_applicable === false,
         printBarcode: initialData.print_barcode,
         
-        warrantyEnabled: initialData.warranty === true,
+        warrantyEnabled: shouldEnableWarranty,
         warranty1YearPrice: initialData.firstyearwarranty || prev.warranty1YearPrice,
         warranty2YearPrice: initialData.secyearwarranty || prev.warranty2YearPrice,
         warranty3YearPrice: initialData.thirdyearwarranty || prev.warranty3YearPrice,
@@ -475,13 +475,14 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
         minPrice: initialData.minimum_price?.toString() || prev.minPrice,
         salesRate: initialData.sales_rate?.toString() || prev.salesRate,
         wholesaleRate: initialData.wholesale_rate?.toString() || prev.wholesaleRate,
-        dealerRate: initialData.dealer_factor?.toString() || prev.dealerRate,
         rateFactor: initialData.rate_factor?.toString() || prev.rateFactor,
         salesDiscount: initialData.sale_discount?.toString() || prev.salesDiscount,
         salesDiscountPercent: initialData.sale_discount_percent?.toString() || prev.salesDiscountPercent,
         purchaseDescription: initialData.purch_desc || prev.purchaseDescription,
         purchaseGL: initialData.purchase_gl || prev.purchaseGL,
         purchaseRate: initialData.purchase_rate?.toString() || prev.purchaseRate,
+        dealerRate: initialData.dealer_rate?.toString() || prev.dealerRate,
+
         purchaseRateFactor: initialData.purchase_ratefactor?.toString() || prev.purchaseRateFactor,
         purchaseDiscount1: initialData.purchase_discount?.toString() || prev.purchaseDiscount1,
         purchaseDiscount2: initialData.purchase_discount_percent?.toString() || prev.purchaseDiscount2,
@@ -535,6 +536,9 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
     setFormData((prev) => ({ ...prev, [fieldName]: value }));
   };
 
+
+
+
   // --- 3. SUBMIT LOGIC
   const handleNext = async () => {
     if (activeStep < STEPS.length - 1) {
@@ -542,16 +546,10 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
     } else {
       setIsSubmitting(true);
       try {
-        // Helper function to extract ID regardless of whether the state is an object or string
-        // const getID = (val: any) =>
-        //   val && typeof val === "object" ? val._id : val || null;
-
+  
         const payload = {
           item_mode: formData.itemMode,
           name: formData.item_name,
-
-          code: formData.barCode || "",
-
           brand: formData.brand, // e.g., "NK001"
           category: formData.category, // e.g., "FTW"
           under_group: formData.underGroup,
@@ -560,28 +558,20 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
           type: formData.type,
           procurement_type: formData.procurementType,
           stock_unit: formData.stockUnit,
-          // Ensure these send IDs, not objects or descriptions
-          // under_group: getID(formData.underGroup),
-          // stock_unit: getID(formData.stockUnit),
-          // category: getID(formData.category),
-          // brand: getID(formData.brand),
-
-          // FIXED: Corrected spelling and ensured ID is sent
-          // gst_classification: getID(formData.gstClassification),
-
-          // Boolean and Numeric Logic
           gst_applicable: !formData.gstInputNotApplicable,
           warranty: formData.warrantyEnabled,
-          firstyearwarranty: formData.warranty1YearPrice, // Ensure this is the string desc if required
-          customWarranty: formData.customWarranties || [],
+          customWarranty: formData.customWarranties || [], // why custom warrenty is not in payload while sending...
 
           unit_option: formData.unitOption,
           barcode: formData.barCode,
           print_barcode: formData.printBarcode,
 
-          mrp: Number(formData.mrp) || 0,
+          mrp: Number(formData.mrp) || 0,  
           sales_rate: Number(formData.salesRate) || 0,
+          minimum_price: Number(formData.minPrice) || 0,
           purchase_rate: Number(formData.purchaseRate) || 0,
+          wholesale_rate: Number(formData.wholesaleRate) || 0,
+          dealer_rate: Number(formData.dealerRate) || 0,
 
           minimum_level: Number(formData.minLevel) || 0,
           maximum_level: Number(formData.maxLevel) || 0,
@@ -597,10 +587,15 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
 
           // Additional fields from your original code
           attachment: formData.profileImage,
-          suggested_cat: selectedItemIds.map((id) => {
-            const category = categories.find((c) => c._id === id);
-            return { itemId: category ? category.code : id };
-          }), // suggested_cat: selectedItemIds.map((id) => ({ itemId: id })),
+
+          suggested_cat: selectedItemIds.map(code => ({
+  itemId: code, // YES, variable name is itemId but value is CODE
+})),
+
+          // suggested_cat: selectedItemIds.map((id) => {
+          //   const category = categories.find((c) => c._id === id);
+          //   return { itemId: category ? category.code : id };
+          // }), // suggested_cat: selectedItemIds.map((id) => ({ itemId: id })),
         };
 
         console.log(
@@ -630,30 +625,6 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
       }
     }
   };
-
-  // const handleGstEditClick = (e: React.MouseEvent) => {
-  //   e.preventDefault();
-  //   const currentId = formData.gstClassification; // Now holds the ID string
-
-  //   const selectedItem = gstList.find((item) => item._id === currentId);
-
-  //   if (selectedItem) {
-  //     setGstInitialData({
-  //       _id: selectedItem._id,
-  //       type: selectedItem.type,
-  //       code: selectedItem.code,
-  //       hsn_sac_code: selectedItem.hsn_sac_code,
-  //       hsnSacDescription: selectedItem.hsn_description,
-  //       gstRate: selectedItem.gstRate,
-  //       cgst: selectedItem.cgst,
-  //       sgst: selectedItem.sgst,
-  //       igst: selectedItem.igst,
-  //     });
-  //   } else {
-  //     setGstInitialData(undefined);
-  //   }
-  //   setIsGstModalOpen(true);
-  // };
 
   const handleGstEditClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -963,7 +934,9 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
 
       {formData.warrantyEnabled && (
         <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-4">
+
+          {/* It is not is une by the backend... */}
+          {/* <div className="grid grid-cols-3 gap-4">
             <InputField
               label="1 Year Warranty"
               name="warranty1YearPrice"
@@ -985,7 +958,7 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
               placeholder="Enter warrenty description..."
               onChange={handleInputChange}
             />
-          </div>
+          </div> */}
 
           <div>
             <h4 className="text-xs font-semibold mb-2">Custom Warranties</h4>
@@ -995,7 +968,7 @@ const AddNewItem: React.FC<AddNewItemProps> = ({
                 <div key={idx} className="grid grid-cols-3 gap-3 mb-2">
                   <input
                     type="text"
-                    placeholder="Duration (e.g. 05 Year)"
+                    placeholder="Duration (In Months)"
                     value={cw.duration}
                     onChange={(e) => {
                       const updated = [...formData.customWarranties];

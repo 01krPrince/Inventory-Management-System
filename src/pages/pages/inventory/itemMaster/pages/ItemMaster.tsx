@@ -107,7 +107,7 @@ const ItemColumns: Column[] = [
   { key: "code", label: "Code", sortable: true },
 
   {
-    key: "brand",
+    key: "effective_brand_name",
     label: "Brand",
     sortable: true,
     render: (value: any) => (
@@ -421,11 +421,14 @@ export default function ItemMaster() {
             item.under_group_details?.item_name || 
             item.under_group_details?.name || 
             item.group_name || // Just in case
-            "",
+            "N/A",
+
+            effective_brand_name: 
+            item.brand_details?.name || item.brand || "N/A",
             effective_category_name: 
             item.category_name || 
             item.category_details?.name || 
-            "",
+            "N/A",
         widget: false, // Default UI state
         inactive: false, // Default UI state
       }));
