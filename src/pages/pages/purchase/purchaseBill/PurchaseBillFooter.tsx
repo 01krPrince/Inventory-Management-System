@@ -1,5 +1,5 @@
 import React, { useImperativeHandle, forwardRef, useRef, useState, useEffect } from 'react';
-import { EditIcon } from 'lucide-react';
+import { EditIcon, TrashIcon } from 'lucide-react';
 import { COLORS } from '../../../../constants/colors';
 import Attachment from '../../../../components/Attachment';
 import Dropdown, { ColumnDef } from '../../../../components/Dropdown';
@@ -26,11 +26,6 @@ export interface PurchaseBillFooterRef {
     adjustmentAmt: number;
     roundOff: number;
     docAmount: number;
-    // payments: Array<{
-    //   ledger: string;
-    //   amount: number;
-    //   remarks: string;
-    // }>;
     promoDiscount: number;
     payments: Array<{
       ledger: string;
@@ -38,6 +33,7 @@ export interface PurchaseBillFooterRef {
       remarks: string;
     }>;
   };
+  resetFooter: () => void;
 }
 
 type InvoiceFooterProps = {
@@ -65,9 +61,8 @@ const glColumns: ColumnDef<any>[] = [
 ];
 
 const PurchaseBillFooter = forwardRef<PurchaseBillFooterRef, InvoiceFooterProps>(
-  ({ cashCredit, currentItems }, ref) => {
+  ({ currentItems }, ref) => {
     const remarksRef = useRef<HTMLTextAreaElement>(null);
-    // const receivedAmountRef = useRef<HTMLInputElement>(null);
 
     const itemValueRef = useRef<HTMLInputElement>(null);
     const discount1Ref = useRef<HTMLInputElement>(null);
@@ -89,18 +84,36 @@ const PurchaseBillFooter = forwardRef<PurchaseBillFooterRef, InvoiceFooterProps>
     const [selectedLedger, setSelectedLedger] = useState<string>('Cash In Hand');
     const [showChartOfAccounts, setShowChartOfAccounts] = useState(false);
     const [coaFormData, setCoaFormData] = useState<SalesAndPurchaseGL | null>(null);
+
+    // --- PAYMENT STATES ---
     const [payments, setPayments] = useState<{ ledger: string; amount: number; remarks: string }[]>(
       []
     );
-
     const [paymentAmount, setPaymentAmount] = useState<number>(0);
+    const [totalDocAmount, setTotalDocAmount] = useState<number>(0);
 
+    // --- CALCULATE BALANCE ---
+    const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+
+    // Use toFixed(2) to prevent floating point errors (e.g. 0.00000001)
+    const remainingBalance = parseFloat((totalDocAmount - totalPaid).toFixed(2));
+
+    // --- AUTO FILL AMOUNT ---
+    useEffect(() => {
+      if (remainingBalance > 0) {
+        setPaymentAmount(remainingBalance);
+      } else {
+        setPaymentAmount(0);
+      }
+    }, [remainingBalance]);
+
+    // --- CALCULATION LOGIC ---
     const calculateFinalDocAmount = () => {
       console.group('🧮 Final Doc Amount Calculation');
 
       const getVal = (ref: React.RefObject<HTMLInputElement | null>, name: string) => {
         const val = Number(ref.current?.value || 0);
-        console.log(`   - ${name}: ${val}`);
+        console.log(name);
         return val;
       };
 
@@ -113,14 +126,11 @@ const PurchaseBillFooter = forwardRef<PurchaseBillFooterRef, InvoiceFooterProps>
 
       const finalTotal = taxable + tax + transport + adjustment + roundOff - otherDisc;
 
-      console.log(
-        `   ➤ Formula: (${taxable} + ${tax} + ${transport} + ${adjustment} + ${roundOff}) - ${otherDisc}`
-      );
-      console.log(`   ✅ FINAL TOTAL: ${finalTotal}`);
-
       if (docAmountRef.current) {
         docAmountRef.current.value = finalTotal.toFixed(2);
       }
+
+      setTotalDocAmount(finalTotal);
 
       console.groupEnd();
     };
@@ -141,33 +151,20 @@ const PurchaseBillFooter = forwardRef<PurchaseBillFooterRef, InvoiceFooterProps>
 
         currentItems.forEach((row: any, index: number) => {
           const item = row.data || row;
-
+          console.log(index);
           const qty = Number(item.qty || 0);
           const rate = Number(item.rate || 0);
           const amount = Number(item.amount || qty * rate);
           const gstRate = Number(item.gstRate || 0);
 
           const itemTaxable = amount / (1 + gstRate / 100);
-
           const itemTax = amount - itemTaxable;
-
-          console.log(`   Row #${index + 1}:`, {
-            InclusiveAmount: amount,
-            GSTRate: gstRate,
-            CalculatedTaxable: itemTaxable.toFixed(2),
-            CalculatedTax: itemTax.toFixed(2),
-          });
 
           totalItemValue += amount;
           totalTaxable += itemTaxable;
           totalTaxAmount += itemTax;
         });
 
-        console.log(`   ➤ SUM Taxable: ${totalTaxable.toFixed(2)}`);
-        console.log(`   ➤ SUM Tax: ${totalTaxAmount.toFixed(2)}`);
-        console.log(`   ➤ SUM Total: ${totalItemValue.toFixed(2)}`);
-
-        // Update UI Refs
         if (itemValueRef.current) itemValueRef.current.value = totalItemValue.toFixed(2);
         if (taxableRef.current) taxableRef.current.value = totalTaxable.toFixed(2);
         if (taxAmountRef.current) taxAmountRef.current.value = totalTaxAmount.toFixed(2);
@@ -183,14 +180,9 @@ const PurchaseBillFooter = forwardRef<PurchaseBillFooterRef, InvoiceFooterProps>
       const loadData = async () => {
         try {
           const coaResponse = await chartOfAccountService.getAllChartOfAccounts();
-
-          console.log('🔍 FULL API RESPONSE:', coaResponse);
-
           const rawData = coaResponse.data;
 
           if (Array.isArray(rawData)) {
-            console.log('📊 RAW ARRAY DATA FOUND:', rawData);
-
             const mappedOptions = rawData.map((item: any) => ({
               ...item,
               name: item.name || '',
@@ -208,11 +200,6 @@ const PurchaseBillFooter = forwardRef<PurchaseBillFooterRef, InvoiceFooterProps>
             );
 
             setGlOptions(filtered);
-          } else {
-            console.warn(
-              '⚠️ API response is not an array. Check if it is wrapped in an object:',
-              rawData
-            );
           }
         } catch (error) {
           console.error('❌ Failed to load chart of accounts:', error);
@@ -245,6 +232,31 @@ const PurchaseBillFooter = forwardRef<PurchaseBillFooterRef, InvoiceFooterProps>
           roundOff: parseFloat(roundOffRef.current?.value || '0'),
           docAmount: parseFloat(docAmountRef.current?.value || '0'),
         };
+      },
+      resetFooter: () => {
+        setPayments([]);
+        setPaymentAmount(0);
+        setSelectedLedger('Cash In Hand');
+
+        const resetRef = (ref: React.RefObject<HTMLInputElement | null>, val: string = '0.00') => {
+          if (ref.current) ref.current.value = val;
+        };
+
+        if (remarksRef.current) remarksRef.current.value = '';
+
+        resetRef(itemValueRef);
+        resetRef(discount1Ref);
+        resetRef(discount2Ref);
+        resetRef(promoDiscountRef);
+        resetRef(taxableRef);
+        resetRef(taxAmountRef);
+
+        resetRef(transportAmtRef);
+        resetRef(otherDiscAmtRef);
+        resetRef(adjustmentAmtRef);
+        resetRef(roundOffRef);
+
+        resetRef(docAmountRef);
       },
     }));
 
@@ -279,6 +291,7 @@ const PurchaseBillFooter = forwardRef<PurchaseBillFooterRef, InvoiceFooterProps>
 
     const handleAddNew = () => {
       const selectedGl = glOptions.find((opt) => opt.name === selectedLedger);
+
       if (!selectedGl || paymentAmount <= 0) return;
 
       const newPayment = {
@@ -287,29 +300,8 @@ const PurchaseBillFooter = forwardRef<PurchaseBillFooterRef, InvoiceFooterProps>
         remarks: selectedGl.name,
       };
 
-      setPayments((prev) => {
-        const updated = [...prev, newPayment];
-        console.log('✅ PAYMENTS UPDATED:', updated);
-        return updated;
-      });
-
-      setPaymentAmount(0);
+      setPayments((prev) => [...prev, newPayment]);
     };
-
-    useEffect(() => {
-      if (cashCredit === 'Credit' && paymentAmount > 0) {
-        const selectedGl = glOptions.find((opt) => opt.name === selectedLedger);
-        if (!selectedGl) return;
-
-        setPayments([
-          {
-            ledger: selectedGl.code,
-            amount: paymentAmount,
-            remarks: selectedGl.name,
-          },
-        ]);
-      }
-    }, [cashCredit, selectedLedger, glOptions]);
 
     return (
       <div
@@ -317,6 +309,7 @@ const PurchaseBillFooter = forwardRef<PurchaseBillFooterRef, InvoiceFooterProps>
         style={{ backgroundColor: COLORS.white }}>
         <div className="flex flex-col gap-8 lg:flex-row">
           <div className="flex flex-1 flex-col gap-4">
+            {/* Remarks Section */}
             <div className="flex flex-col gap-4 sm:flex-row">
               <label
                 className="mt-1 w-32 text-xs font-medium"
@@ -336,70 +329,87 @@ const PurchaseBillFooter = forwardRef<PurchaseBillFooterRef, InvoiceFooterProps>
               </div>
             </div>
 
-            {cashCredit === 'Cash' && payments.length > 0 && (
-              <div className="mt-3 rounded border border-gray-200">
-                <div className="grid grid-cols-4 gap-2 bg-gray-100 p-2 text-xs font-semibold">
+            {/* --- PAYMENT LIST DISPLAY (Shows only if payments exist) --- */}
+            {payments.length > 0 && (
+              <div className="mt-2 rounded border border-gray-200">
+                <div className="grid grid-cols-[2fr_1fr_80px] bg-gray-100 p-2 text-xs font-semibold">
                   <div>Ledger</div>
                   <div className="text-right">Amount</div>
                   <div className="text-center">Action</div>
                 </div>
-
                 {payments.map((p, index) => (
-                  <div key={index} className="grid grid-cols-4 gap-2 border-t p-2 text-xs">
+                  <div
+                    key={index}
+                    className="grid grid-cols-[2fr_1fr_80px] items-center border-t p-2 text-xs">
                     <div>{p.remarks}</div>
-                    <div className="text-right">₹ {p.amount.toFixed(2)}</div>
-
+                    <div className="text-right font-medium">₹ {p.amount.toFixed(2)}</div>
                     <div className="text-center">
                       <button
                         type="button"
-                        className="text-red-600 hover:underline"
+                        className="text-red-600 hover:text-red-800"
                         onClick={() => setPayments((prev) => prev.filter((_, i) => i !== index))}>
-                        Remove
+                        <TrashIcon size={14} />
                       </button>
                     </div>
                   </div>
                 ))}
+                {/* Total Paid Footer in the list */}
+                <div className="grid grid-cols-[2fr_1fr_80px] border-t bg-gray-50 p-2 text-xs font-bold text-gray-700">
+                  <div className="pr-2 text-right">Total Paid:</div>
+                  <div className="text-right">₹ {totalPaid.toFixed(2)}</div>
+                  <div></div>
+                </div>
               </div>
             )}
 
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-              {/* Ledger Label */}
-              <div className="w-32">
-                <label className="text-[13px] font-medium text-gray-700">Cash/Bank Ledger</label>
-              </div>
+            {/* --- PAYMENT INPUT ROW (Only Visible if Balance > 0) --- */}
+            {remainingBalance > 0 && (
+              <div className="flex flex-col gap-2 rounded border border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-end">
+                {/* Ledger Selection */}
+                <div className="min-w-[200px] flex-1">
+                  <label className="mb-1 block text-[11px] font-medium text-gray-500">
+                    Select Payment Mode
+                  </label>
+                  <div className="flex items-center gap-1">
+                    <div className="flex-1">
+                      <Dropdown
+                        data={glOptions}
+                        columns={glColumns}
+                        value={selectedLedger}
+                        valueKey="name"
+                        placeholder="Select Ledger..."
+                        onChange={(item) => setSelectedLedger(item?.name || '')}
+                      />
+                    </div>
+                    <ActionBtn icon={<EditIcon size={14} />} onClick={handleOpenCOA} />
+                  </div>
+                </div>
 
-              {/* Ledger Dropdown + Edit */}
-              <div className="flex flex-1 items-center gap-1">
-                <div className="flex-1">
-                  <Dropdown
-                    data={glOptions}
-                    columns={glColumns}
-                    value={selectedLedger}
-                    valueKey="name"
-                    placeholder="Select Ledger..."
-                    onChange={(item) => setSelectedLedger(item?.name || '')}
+                {/* Amount Input */}
+                <div className="w-[120px]">
+                  <label className="mb-1 block w-auto text-[11px] font-medium text-gray-500">
+                    Amount ({remainingBalance.toFixed(2)} left)
+                  </label>
+                  <input
+                    type="number"
+                    className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500"
+                    placeholder="Amount"
+                    value={paymentAmount}
+                    // Prevent negative input typing
+                    min="0"
+                    onChange={(e) => setPaymentAmount(parseFloat(e.target.value) || 0)}
                   />
                 </div>
-                <ActionBtn icon={<EditIcon size={14} />} onClick={handleOpenCOA} />
-              </div>
 
-              <input
-                type="number"
-                className="w-[200px] rounded border border-gray-300 px-2 py-1 text-sm"
-                placeholder="Amount"
-                value={paymentAmount}
-                onChange={(e) => setPaymentAmount(Number(e.target.value || 0))}
-              />
-
-              {cashCredit === 'Cash' && (
+                {/* Add Button */}
                 <button
                   type="button"
-                  className="w-[200px] whitespace-nowrap rounded bg-amber-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-900"
+                  className="h-[34px] rounded bg-green-600 px-4 text-xs font-semibold text-white shadow-sm hover:bg-green-700 active:translate-y-[1px]"
                   onClick={handleAddNew}>
-                  Add New
+                  ADD +
                 </button>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Attachment */}
             <div className="mt-2 flex flex-col gap-4 sm:flex-row">
@@ -412,25 +422,6 @@ const PurchaseBillFooter = forwardRef<PurchaseBillFooterRef, InvoiceFooterProps>
                 <Attachment />
               </div>
             </div>
-
-            {/* <div className="flex flex-col items-center gap-4 sm:flex-row">
-              <label className="w-32 text-xs font-medium" style={{ color: COLORS.textPrimary }}>
-                Transport
-              </label>
-              <div className="relative w-40">
-                <span
-                  className="absolute left-2 top-1/2 -translate-y-1/2 text-xs"
-                  style={{ color: COLORS.textMuted }}>
-                  ₹
-                </span>
-                <input
-                  ref={transportAmtRef}
-                  type="text"
-                  defaultValue="0.00"
-                  onChange={calculateFinalDocAmount}
-                />
-              </div>
-            </div> */}
           </div>
 
           {/* --- RIGHT SECTION (Totals) --- */}
@@ -575,7 +566,6 @@ const SplitTotalRow = ({ label, amtRef, taxableRef, onUpdate }: SplitRowProps) =
     const taxable = parseFloat(taxableRef.current?.value || '0');
 
     if (!isNaN(amount) && taxable >= 0) {
-      console.log(`   -> Using Amt: ${amount}`);
       if (amtRef.current) {
         amtRef.current.value = amount.toFixed(2);
       }

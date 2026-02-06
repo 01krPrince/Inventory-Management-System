@@ -1,12 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { X, Save } from 'lucide-react';
-import { ToWords } from 'to-words';
-
 import SalesInvoiceHeader from './SalesInvoiceHeader';
 import SalesInvoiceForm, { InvoiceFormData, SalesInvoiceFormRef } from './SalesInvoiceForm';
 import ProfitAnalysisModal from '../../../../components/ProfitAnalysisModal';
 import OrderTable, { OrderTableRef } from './OrderTable2';
-// import InvoiceFooter, { InvoiceFooterRef } from "./InvoiceFooter";
+import { ToWords } from 'to-words';
 import PurchaseBillFooter, {
   PurchaseBillFooterRef,
 } from '../../purchase/purchaseBill/PurchaseBillFooter';
@@ -19,6 +17,7 @@ import { createSalesInvoice } from './salesInvoiceService';
 const SalesInvoice: React.FC = () => {
   const [showBillPreview, setShowBillPreview] = useState(false);
   const [generatedBillData, setGeneratedBillData] = useState<any>(null);
+  const [storeCode, setStoreCode] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
   const [tableItems, setTableItems] = useState<any[]>([]);
 
@@ -26,60 +25,37 @@ const SalesInvoice: React.FC = () => {
   const [isAnalysisOpen, setAnalysisOpen] = useState(false);
   const [analysisData, setAnalysisData] = useState<any>(null);
 
-  // New State for Cash/Credit (Lifted from form)
   const [cashCredit, setCashCredit] = useState<string>('Credit');
 
   // Refs
   const formRef = useRef<SalesInvoiceFormRef>(null);
   const orderTableRef = useRef<OrderTableRef>(null);
-  // const footerRef = useRef<InvoiceFooterRef>(null);
   const footerRef = useRef<PurchaseBillFooterRef>(null);
 
-  // Number to Words Converter
-  const toWords = new ToWords({
-    localeCode: 'en-IN',
-    converterOptions: {
-      currency: true,
-      ignoreDecimal: false,
-      ignoreZeroCurrency: false,
-    },
-  });
-
-  // Handler to sync form state with parent
+  // Sync form state
   const handleFormChange = (data: InvoiceFormData) => {
     setCashCredit(data.cashCredit);
+    if (data.storeCode !== storeCode) {
+      setStoreCode(data.storeCode || ''); 
+    }
   };
 
   /* =========================
-      HANDLE PROFIT ANALYSIS
-    ========================== */
+      PROFIT ANALYSIS
+     ========================== */
   const handleAnalyzeProfit = async (tableRows: any[]) => {
     if (!tableRows || tableRows.length === 0) {
       alert('Please add items to the table first.');
       return;
     }
-
-    const itemsPayload = [];
-    for (const row of tableRows) {
-      const hiddenId = row.data.itemId;
-
-      if (!hiddenId) {
-        console.error('Row Data:', row);
-        alert(`Error: Item '${row.data.desc}' is missing a valid System ID.`);
-        return;
-      }
-
-      itemsPayload.push({
-        item: hiddenId,
-        quantity: Number(row.data.qty),
-        sellingPrice: Number(row.data.rate),
-      });
-    }
-
-    // Note: Assuming 'store' is available in scope or derived from formRef.
-    // If 'store' variable is missing in this scope, fetch it from formRef:
     const currentFormData = formRef.current?.getFormData();
     const currentStore = currentFormData?.store || '';
+
+    const itemsPayload = tableRows.map((row) => ({
+      item: row.data.itemId,
+      quantity: Number(row.data.qty),
+      sellingPrice: Number(row.data.rate),
+    }));
 
     try {
       const response = await fetchProfitAnalysis({
@@ -108,216 +84,485 @@ const SalesInvoice: React.FC = () => {
   };
 
   /* =========================
-      MAIN SAVE / SUBMIT LOGIC
-    ========================== */
+      SAVE / SUBMIT LOGIC
+     ========================== */
   const handleBottomSaveClick = () => {
+    // This triggers the submit in the form, which calls handleFormSubmit below
     formRef.current?.triggerSubmit();
   };
 
-  const handleFormSubmit = async (formData: InvoiceFormData) => {
-    try {
-      setIsSaving(true);
 
-      // 1. Get Table Data
-      const tableData = orderTableRef.current?.getTableData();
-      if (!tableData || tableData.visibleRows.length === 0) {
-        alert('Please add at least one item.');
-        return;
-      }
+  // Inside SalseInvoice.tsx
+//// item amount without including warrenty....
+// const handleFormSubmit = async (formData: InvoiceFormData) => {
+//   try {
+//     setIsSaving(true);
 
-      // 2. Get Footer Data
-      const footerData = footerRef.current?.getFooterData();
-      if (!footerData) return;
+//     // --- 1. GET TABLE DATA ---
+//     const tableData = orderTableRef.current?.getTableData();
+//     if (!tableData || tableData.visibleRows.length === 0) {
+//       alert("Please add at least one item to the invoice.");
+//       setIsSaving(false);
+//       return;
+//     }
 
-      // --- CALCULATE GRAND TOTAL ---
-      let currentGrandTotal = 0;
-      const mappedItems = tableData.visibleRows.map((row) => {
-        const qty = Number(row.data.qty || 0);
-        const rate = Number(row.data.rate || 0);
+//     // --- 2. GET FOOTER DATA ---
+//     const footerData = footerRef.current?.getFooterData();
+//     const billDiscount = Number(footerData?.discount1 || 0);
+//     const roundOff = Number(footerData?.roundOff || 0);
 
-        currentGrandTotal += qty * rate;
+//     // --- 3. PROCESS ITEMS LOOP ---
+//     let totalTaxAmount = 0;
+//     let totalItemValue = 0;
 
-        return {
-          itemCode: row.data.select, // Assuming 'select' holds the item code (e.g. "000377")
-          quantity: qty,
-          rate: rate,
-        };
-      });
+//     const mappedItems = tableData.visibleRows.map((row) => {
+//       const rawQty = parseFloat(String(row.data.qty || 0));
+//       const rawRate = parseFloat(String(row.data.rate || 0));
+//       const taxRate = parseFloat(String(row.data.gstRate || row.data.taxRate || 0));
+//       const hsn = String(row.data.taxCode || row.data.hsn || "");
 
-      // --- 3. CONSTRUCT PAYLOAD MANUALLY ---
-      // UPDATED: Sending Customer CODE instead of Name
-      const apiPayload = {
-        store: formData.storeCode || formData.store, // Use Code first, fallback to name
-        customer: formData.customerCode || formData.customer, // Use Code first, fallback to name
-        date: formData.date,
-        gstType: formData.gstType,
-        cashCredit: formData.cashCredit,
-        netAmount: currentGrandTotal,
+      
 
-        cashBankLedger: 'Cash',
-        remarks: formData.refNo || 'Sales Invoice',
-        items: mappedItems,
-      };
+//       const customWarranty = [];
+//       if (row.data.warrantyDuration) {
+//         customWarranty.push({
+//           duration: row.data.warrantyDuration,
+//           price: row.data.warrantyPrice || "0"
+//         });
+//       }
 
-      if (!apiPayload.store || !apiPayload.customer) {
-        alert('Error: Missing Store Code or Customer Code. Please re-select them in the form.');
-        setIsSaving(false);
-        return;
-      }
+//       let taxableRate = 0;
+//       let taxableAmount = 0;
 
-      console.log('🚀 Request Body:', apiPayload);
+//       if (formData.tax === "Inclusive") {
+//         taxableRate = rawRate / (1 + taxRate / 100);
+//       } else {
+//         taxableRate = rawRate;
+//       }
 
-      // 4. Call API
-      const result = await createSalesInvoice(apiPayload);
+//       taxableRate = Number(taxableRate.toFixed(2));
+//       taxableAmount = Number((rawQty * taxableRate).toFixed(2));
 
-      if (!result?.success) {
-        throw new Error(result?.message || 'Invoice creation failed');
-      }
+//       const totalTaxForItem = Number(((taxableAmount * taxRate) / 100).toFixed(2));
+//       const netAmountForItem = Number((taxableAmount + totalTaxForItem).toFixed(2));
 
-      console.log('✅ Response Body:', result);
+//       let cgst = 0, sgst = 0, igst = 0;
+//       if (formData.gstType === "Intra") {
+//         cgst = Number((totalTaxForItem / 2).toFixed(2));
+//         sgst = Number((totalTaxForItem / 2).toFixed(2));
+//       } else {
+//         igst = totalTaxForItem;
+//       }
 
-      /* =========================
-          GENERATE BILL PREVIEW
-      ========================== */
-      const responseData = result.data;
-      const resItems = responseData.items || [];
+//       totalTaxAmount += totalTaxForItem;
+//       totalItemValue += taxableAmount;
 
-      let calculatedGrandTotal = 0;
-      let calculatedTotalTax = 0;
-      let calculatedTaxable = 0;
+//       return {
+//         itemCode: row.data.select,
+//         quantity: rawQty,
+//         rate: taxableRate,
+//         amount: taxableAmount,
+//         hsn: hsn,
+//         taxRate: taxRate,
+//         cgst, sgst, igst,
+//         taxAmount: totalTaxForItem,
+//         netAmount: netAmountForItem,
+//         description: row.data.desc || row.data.item_name || "Item",
+//         unit: row.data.unit || "PCS",
+//         customWarranty: customWarranty
+//       };
+//     });
 
-      const previewItems = resItems.map((item: any) => {
-        const taxableValue = item.taxable || item.amount || 0;
-        const taxVal = item.taxAmount || 0;
-        const lineTotal = taxableValue + taxVal;
+//     const subTotal = totalItemValue + totalTaxAmount;
+//     const finalNetAmount = Number((subTotal - billDiscount + roundOff).toFixed(2));
 
-        calculatedTaxable += taxableValue;
-        calculatedTotalTax += taxVal;
-        calculatedGrandTotal += lineTotal;
+//     // --- 4. API PAYLOAD ---
+//     const apiPayload = {
+//       store: formData.storeCode,
+//       customer: formData.customerCode,
+//       date: formData.date,
+//       remarks: formData.refNo || formData.billToText || "Sales Invoice",
+//       type: formData.cashCredit,
+//       gstType: formData.gstType,
+//       items: mappedItems,
+//       promoDiscount: 0,
+//       billDiscount: billDiscount,
+//       billDiscountPercent: 0,
+//       taxAmount: Number(totalTaxAmount.toFixed(2)),
+//       roundOff: roundOff,
+//       adjustment: 0,
+//       netAmount: finalNetAmount,
+//       payments: [{ ledger: "23400002", amount: finalNetAmount }]
+//     };
 
-        return {
-          id: item.itemCode,
-          description: item.description,
-          hsn: item.hsn || '',
-          qty: item.quantity,
-          uom: 'PCS',
-          rate: item.rate,
-          taxableValue: taxableValue,
-          cgst: item.cgst || 0,
-          sgst: item.sgst || 0,
-          igst: item.igst || 0,
-          amount: item.amount,
-        };
-      });
+//     console.log("🚀 DEBUG: Sending Payload:", JSON.stringify(apiPayload, null, 2));
 
-      const finalBillData = {
-        invoiceNo: responseData.invoiceNo,
-        date: new Date(responseData.date).toLocaleDateString('en-GB'),
-        billType: responseData.gstType,
-        placeOfSupply: formData.placeOfSupply || 'Bihar',
-        stateCode: '10',
+//     if (!apiPayload.store || !apiPayload.customer) {
+//       alert("Validation Failed: Store Code or Customer Code is missing.");
+//       setIsSaving(false);
+//       return;
+//     }
 
-        seller: {
-          name: responseData.store,
-          address: '',
-          gstin: '',
-        },
+//     // --- 5. CALL SERVICE ---
+//     const response = await createSalesInvoice(apiPayload);
 
-        customer: {
-          name: responseData.customer,
-          addressLine: formData.billToText || '',
-          gstin: formData.gstNo || '',
-        },
+//     console.log("✅ DEBUG: API Response:", JSON.stringify(response, null, 2));
 
-        shipping: {
-          name: responseData.customer,
-          addressLine: formData.shipToText || formData.billToText || '',
-        },
+//     if (response.success) {
+//       alert("Invoice Created Successfully!");
 
-        items: previewItems,
+//       formRef.current?.resetForm();
+//       orderTableRef.current?.clearTable();
+//       footerRef.current?.resetFooter?.();
+//       setTableItems([]);
 
-        totals: {
-          totalTaxable: calculatedTaxable,
-          totalTax: calculatedTotalTax,
-          grandTotal: calculatedGrandTotal,
-          roundOff: 0,
-        },
+//       // --- 6. PREPARE PREVIEW DATA ---
+//       const apiData = response.data;
+//       const toWords = new ToWords({ localeCode: 'en-IN', converterOptions: { currency: true } });
+//       const formatDate = (d: string) => d ? new Date(d).toLocaleDateString('en-GB') : "";
 
-        billDiscount: responseData.billDiscount || 0, // e.g. 10
-        grandTotal: responseData.netAmount, // ✅ Using 'netAmount' (840) for the final bold total
+//       const previewData = {
+//         // --- DYNAMIC STORE NAME ---
+//         storeName: apiData.storeName || formData.store || "Unknown Store",
+        
+//         // --- REMARKS (COMMENTS) ---
+//         remarks: apiData.remarks || apiPayload.remarks || "",
 
-        // Convert the NET AMOUNT (840) to words, not the gross
-        amountInWords: toWords.convert(responseData.netAmount),
+//         invoiceNo: apiData.invoiceNo || "NEW-INV",
+//         date: formatDate(apiData.date || formData.date),
+//         billType: apiData.type || formData.cashCredit,
+//         placeOfSupply: formData.placeOfSupply || "Bihar",
+//         grlrNo: "",
+//         destination: "",
+//         stateCode: "10",
+//         customer: {
+//           name: apiData.customerName || formData.customer,
+//           addressLine: formData.billToText || "",
+//           cityStateZip: "",
+//           stateCode: "",
+//           gstin: formData.gstNo || ""
+//         },
+//         items: apiData.items.map((item: any, idx: number) => {
+//           let warrantyText = "";
+//           if (item.customWarranty && item.customWarranty.length > 0) {
+//                 const w = item.customWarranty[0];
+//                 warrantyText = `${w.duration} Months Warranty`;
+//                 const wPrice = Number(w.price || 0);
 
-        bankDetails: {
-          bankName: 'HDFC Bank',
-          ifsc: 'HDFC000123',
-          accountNo: '5020XXXXXXXX',
-          branch: 'Patna',
-        },
+//                 if (wPrice > 0) {
+//                     warrantyText = `${w.duration} Months Warranty (₹${wPrice})`;
+//                 } else {
+//                     warrantyText = `${w.duration} Months Warranty`;
+//                 }
+//           }
+          
+//           // --- FIX: AMOUNT CALCULATION ---
+//           // Use netAmount if exists, otherwise assume 'amount' is taxable and add 'taxAmount'
+//           const itemTaxable = Number(item.amount || 0);
+//           const itemTax = Number(item.taxAmount || 0);
+//           const totalAmountInclusive = item.netAmount ? Number(item.netAmount) : (itemTaxable + itemTax);
+          
+//           const itemQty = Number(item.quantity || 0);
+          
+//           // Calculate Rate (Total / Qty) to show inclusive rate
+//           const inclusiveRate = itemQty > 0 ? (totalAmountInclusive / itemQty) : 0;
 
-        terms: [
-          '1. Goods once sold will not be taken back.',
-          '2. Interest @ 18% p.a. charged on overdue payments.',
-          '3. Subject to Patna Jurisdiction only.',
-        ],
+//           return {
+//             id: idx + 1,
+//             description: item.description || "Item",
+//             qty: itemQty,
+//             uom: "PCS",
+//             rate: inclusiveRate,
+//             amount: totalAmountInclusive,
+//             warranty: warrantyText
+//           };
+//         }),
+//         amountInWords: toWords.convert(apiData.netAmount || 0),
+//         bankDetails: {
+//           bankName: "HDFC BANK",
+//           ifsc: "HDFC0001234",
+//           accountNo: "5020000123456"
+//         },
+//         terms: [
+//           "Goods once sold will not be taken back.",
+//           "Subject to local jurisdiction."
+//         ]
+//       };
 
-        createdBy: 'Admin',
-        time: new Date().toLocaleTimeString(),
-      };
+//       setGeneratedBillData(previewData);
+//       setShowBillPreview(true);
+//     } else {
+//       alert("Failed to create invoice: " + (response.message || "Unknown error"));
+//     }
 
-      setGeneratedBillData(finalBillData);
-      setShowBillPreview(true);
-      alert('✅ Invoice Saved Successfully!');
-    } catch (error: any) {
-      console.error('Submit Error:', error);
-      alert(error.message || 'Something went wrong while saving.');
-    } finally {
+//   } catch (error: any) {
+//     console.error("Submission Error:", error);
+//     alert("Error: " + error.message);
+//   } finally {
+//     setIsSaving(false);
+//   }
+// };
+
+
+const handleFormSubmit = async (formData: InvoiceFormData) => {
+  try {
+    setIsSaving(true);
+
+    // --- 1. GET TABLE DATA ---
+    const tableData = orderTableRef.current?.getTableData();
+    if (!tableData || tableData.visibleRows.length === 0) {
+      alert("Please add at least one item to the invoice.");
       setIsSaving(false);
+      return;
     }
-  };
+
+    // --- 2. GET FOOTER DATA ---
+    const footerData = footerRef.current?.getFooterData();
+    const billDiscount = Number(footerData?.discount1 || 0);
+    const roundOff = Number(footerData?.roundOff || 0);
+
+    // --- 3. PROCESS ITEMS LOOP ---
+    let totalTaxAmount = 0;
+    let totalItemValue = 0;
+    let totalWarrantyValue = 0;
+
+    const mappedItems = tableData.visibleRows.map((row) => {
+      const rawQty = parseFloat(String(row.data.qty || 0));
+      const rawRate = parseFloat(String(row.data.rate || 0));
+      const taxRate = parseFloat(String(row.data.gstRate || row.data.taxRate || 0));
+      const hsn = String(row.data.taxCode || row.data.hsn || "");
+
+      // Warranty Logic
+      let warrantyPrice = 0;
+      const customWarranty = [];
+      if (row.data.warrantyDuration) {
+        warrantyPrice = Number(row.data.warrantyPrice || 0);
+        customWarranty.push({
+          duration: row.data.warrantyDuration,
+          price: row.data.warrantyPrice || "0"
+        });
+      }
+
+      // Tax Logic
+      let taxableRate = 0;
+      if (formData.tax === "Inclusive") {
+        taxableRate = rawRate / (1 + taxRate / 100);
+      } else {
+        taxableRate = rawRate;
+      }
+
+      taxableRate = Number(taxableRate.toFixed(2));
+      const taxableAmount = Number((rawQty * taxableRate).toFixed(2));
+      const totalTaxForItem = Number(((taxableAmount * taxRate) / 100).toFixed(2));
+      
+      // Net Amount for API (Taxable + Tax + Warranty)
+      const netAmountForItem = Number((taxableAmount + totalTaxForItem + warrantyPrice).toFixed(2));
+
+      let cgst = 0, sgst = 0, igst = 0;
+      if (formData.gstType === "Intra") {
+        cgst = Number((totalTaxForItem / 2).toFixed(2));
+        sgst = Number((totalTaxForItem / 2).toFixed(2));
+      } else {
+        igst = totalTaxForItem;
+      }
+
+      totalTaxAmount += totalTaxForItem;
+      totalItemValue += taxableAmount;
+      totalWarrantyValue += warrantyPrice;
+
+      return {
+        itemCode: row.data.select,
+        quantity: rawQty,
+        rate: taxableRate,
+        amount: taxableAmount,
+        hsn: hsn,
+        taxRate: taxRate,
+        cgst, sgst, igst,
+        taxAmount: totalTaxForItem,
+        netAmount: netAmountForItem,
+        description: row.data.desc || "Item",
+        unit: row.data.unit || "PCS",
+        customWarranty: customWarranty
+      };
+    });
+
+    // Calculate Grand Total
+    const subTotal = totalItemValue + totalTaxAmount + totalWarrantyValue;
+    const finalNetAmount = Number((subTotal - billDiscount + roundOff).toFixed(2));
+
+    // --- 4. API PAYLOAD ---
+    const apiPayload = {
+      store: formData.storeCode,
+      customer: formData.customerCode,
+      date: formData.date,
+      remarks: formData.refNo || formData.billToText || "Sales Invoice",
+      type: formData.cashCredit,
+      gstType: formData.gstType,
+      items: mappedItems,
+      promoDiscount: 0,
+      billDiscount: billDiscount,
+      billDiscountPercent: 0,
+      taxAmount: Number(totalTaxAmount.toFixed(2)),
+      roundOff: roundOff,
+      adjustment: 0,
+      netAmount: finalNetAmount,
+      payments: [{ ledger: "23400002", amount: finalNetAmount }]
+    };
+
+    console.log("🚀 DEBUG: Sending Payload:", JSON.stringify(apiPayload, null, 2));
+
+    if (!apiPayload.store || !apiPayload.customer) {
+      alert("Validation Failed: Store Code or Customer Code is missing.");
+      setIsSaving(false);
+      return;
+    }
+
+    // --- 5. CALL SERVICE ---
+    const response = await createSalesInvoice(apiPayload);
+    console.log("✅ DEBUG: API Response:", JSON.stringify(response, null, 2));
+
+    if (response.success) {
+      alert("Invoice Created Successfully!");
+
+      formRef.current?.resetForm();
+      orderTableRef.current?.clearTable();
+      footerRef.current?.resetFooter?.();
+      setTableItems([]);
+
+      // --- 6. PREPARE PREVIEW DATA ---
+      const apiData = response.data;
+      const toWords = new ToWords({ localeCode: 'en-IN', converterOptions: { currency: true } });
+      const formatDate = (d: string) => d ? new Date(d).toLocaleDateString('en-GB') : "";
+
+      // Map Items specifically for the A4 Invoice View
+      const previewItems = apiData.items.map((item: any, idx: number) => {
+        let warrantyText = "";
+        let wPrice = 0;
+
+        if (item.customWarranty && item.customWarranty.length > 0) {
+              const w = item.customWarranty[0];
+              wPrice = Number(w.price || 0);
+              if (wPrice > 0) {
+                  warrantyText = `${w.duration} Months Warranty (₹${wPrice})`;
+              } else {
+                  warrantyText = `${w.duration} Months Warranty`;
+              }
+        }
+        
+        // --- CALCULATION LOGIC FOR PREVIEW ---
+        const itemQty = Number(item.quantity || 0);
+        
+        // 1. Get Base Values (Product Only)
+        const itemTaxable = Number(item.amount || 0); // API 'amount' is taxable
+        const itemTax = Number(item.taxAmount || 0);
+        const productTotal = itemTaxable + itemTax; // Price without warranty
+
+        // 2. Original Rate (Product Rate / Qty) -> Matches "Original Item Rate"
+        const originalRate = itemQty > 0 ? (productTotal / itemQty) : 0;
+
+        // 3. Final Amount (Product + Warranty) -> Matches "Total Amount me add kr ke"
+        const totalLineAmount = productTotal + wPrice;
+
+        return {
+          id: idx + 1,
+          description: item.description || "Item",
+          qty: itemQty,
+          uom: "PCS",
+          rate: originalRate,   // Shows rate WITHOUT warranty
+          amount: totalLineAmount, // Shows total WITH warranty
+          warranty: warrantyText
+        };
+      });
+
+      // Calculate the sum of the displayed amounts for the words
+      const totalDisplayAmount = previewItems.reduce((acc: number, curr: any) => acc + curr.amount, 0);
+      // Adjust for discount/roundoff from API response
+      const finalDisplayTotal = totalDisplayAmount - (apiData.billDiscount || 0) + (apiData.roundOff || 0);
+
+      const previewData = {
+        storeName: apiData.storeName || formData.store || "Unknown Store",
+        remarks: apiData.remarks || apiPayload.remarks || "",
+        invoiceNo: apiData.invoiceNo || "NEW-INV",
+        date: formatDate(apiData.date || formData.date),
+        billType: apiData.type || formData.cashCredit,
+        placeOfSupply: formData.placeOfSupply || "Bihar",
+        grlrNo: "", destination: "", stateCode: "10",
+        customer: {
+          name: apiData.customerName || formData.customer,
+          addressLine: formData.billToText || "",
+          cityStateZip: "", stateCode: "", gstin: formData.gstNo || ""
+        },
+        items: previewItems,
+        amountInWords: toWords.convert(finalDisplayTotal),
+        bankDetails: {
+          bankName: "HDFC BANK",
+          ifsc: "HDFC0001234",
+          accountNo: "5020000123456"
+        },
+        terms: ["Goods once sold will not be taken back.", "Subject to local jurisdiction."]
+      };
+
+      setGeneratedBillData(previewData);
+      setShowBillPreview(true);
+    } else {
+      alert("Failed to create invoice: " + (response.message || "Unknown error"));
+    }
+
+  } catch (error: any) {
+    console.error("Submission Error:", error);
+    alert("Error: " + error.message);
+  } finally {
+    setIsSaving(false);
+  }
+};
 
   /* =========================
       UI RENDER
-    ========================== */
+     ========================== */
   return (
-    <div className="flex flex-col overflow-hidden" style={{ backgroundColor: COLORS.background }}>
+    <div className="flex flex-col overflow-hidden h-screen" style={{ backgroundColor: COLORS.background }}>
       {/* HEADER */}
       <SalesInvoiceHeader />
 
-      {/* CONTENT AREA */}
+      {/* SCROLLABLE CONTENT */}
       <div className="custom-scrollbar flex-1 overflow-auto px-4 py-3 pb-24">
         <div className="mx-auto flex max-w-[1400px] flex-col gap-4">
+          
           <SalesInvoiceForm
             ref={formRef}
             onSubmit={handleFormSubmit}
             onFormChange={handleFormChange}
           />
+          
           <OrderTable
             ref={orderTableRef}
             onAnalyze={handleAnalyzeProfit}
-            vendorCode={''}
+            vendorCode={''} // Not needed for Sales, but prop is required
+            storeCode={storeCode}
             onItemsChange={setTableItems}
           />
-          {/* Passed the live state value here */}
-          {/* <InvoiceFooter
-            ref={footerRef}
-            cashCredit={cashCredit}
-            currentItems={tableItems}
-          /> */}
-          <PurchaseBillFooter ref={footerRef} cashCredit={cashCredit} currentItems={tableItems} />
+          
+          <PurchaseBillFooter 
+            ref={footerRef} 
+            cashCredit={cashCredit} 
+            currentItems={tableItems} 
+          />
+          
           <LedgerAttributes />
         </div>
       </div>
 
-      {/* FIXED BOTTOM BAR */}
+      {/* FOOTER SAVE BAR */}
       <div
         className="fixed bottom-0 left-0 right-0 z-50 flex h-16 items-center justify-end border-t bg-white px-6 shadow-[0_-6px_10px_-4px_rgba(0,0,0,0.15)]"
         style={{ borderColor: COLORS.borderDark }}>
+        <div className="mr-auto text-sm font-medium text-gray-500">
+          {tableItems.length} Items | Total: {tableItems.reduce((acc, curr) => acc + parseFloat(curr.amount || 0), 0).toFixed(2)}
+        </div>
         <button
           onClick={handleBottomSaveClick}
           disabled={isSaving}
-          className="flex items-center gap-2 rounded px-6 py-2 text-sm font-semibold text-white transition-all active:scale-95 disabled:opacity-60"
+          className="flex items-center gap-2 rounded px-6 py-2 text-sm font-bold text-white transition-all active:scale-95 disabled:opacity-60 hover:brightness-110"
           style={{ backgroundColor: COLORS.primary }}>
           <Save size={18} />
           {isSaving ? 'Saving...' : 'Save Invoice'}
@@ -334,7 +579,6 @@ const SalesInvoice: React.FC = () => {
       {showBillPreview && generatedBillData && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
           <div className="relative flex h-[90vh] w-full max-w-4xl flex-col rounded bg-white shadow-2xl">
-            {/* Modal Header */}
             <div className="flex items-center justify-between border-b bg-gray-100 px-4 py-3">
               <h3 className="font-bold text-gray-700">Invoice Generated</h3>
               <button
@@ -343,8 +587,6 @@ const SalesInvoice: React.FC = () => {
                 <X size={18} />
               </button>
             </div>
-
-            {/* Modal Content (The Invoice) */}
             <div className="custom-scrollbar flex-1 overflow-auto bg-gray-50 p-6">
               <InvoiceA4 data={generatedBillData} />
             </div>

@@ -1,11 +1,11 @@
-import React, { useState } from "react";
-import POSInvoiceHeader, { InvoiceTab } from "./POSOrderHeader";
-import POSInvoideForm from "./POSOrderForm";
-import OrderTable from "./OrderTable";
-import POSInvoiceFooter from "./POSOrderFooter";
-import { COLORS } from "../../../../constants/colors";
-import { v4 as uuidv4 } from "uuid";
-import LedgerAttributes from "../../../../components/LedgerAttributes";
+import React, { useState } from 'react';
+import POSInvoiceHeader, { InvoiceTab } from './POSInvoiceHeader';
+import POSInvoideForm from './POSInvoiceForm';
+import OrderTable from './OrderTable';
+import POSInvoiceFooter from './POSInvoiceFooter';
+import { COLORS } from '../../../../constants/colors';
+import { v4 as uuidv4 } from 'uuid';
+import LedgerAttributes from '../../../../components/LedgerAttributes';
 
 interface RowData {
   [key: string]: string | number;
@@ -14,26 +14,26 @@ interface RowData {
 const POSInvoice: React.FC = () => {
   const [tabs, setTabs] = useState<InvoiceTab[]>([
     {
-      id: "1",
-      name: "Invoice #1",
+      id: '1',
+      name: 'Invoice #1',
       data: { rows: [], tableData: {} },
     },
   ]);
-  const [activeTabId, setActiveTabId] = useState<string>("1");
+  const [activeTabId, setActiveTabId] = useState<string>('1');
   const [lastClosedTab, setLastClosedTab] = useState<InvoiceTab | null>(null);
 
   const activeTab = tabs.find((t) => t.id === activeTabId) ||
     tabs[0] || {
-      id: "fallback",
-      name: "Fallback",
+      id: 'fallback',
+      name: 'Fallback',
       data: { rows: [], tableData: {} },
     };
 
   const updateActiveTabData = (
-    updater: (prevData: {
+    updater: (prevData: { rows: string[]; tableData: Record<string, RowData> }) => {
       rows: string[];
       tableData: Record<string, RowData>;
-    }) => { rows: string[]; tableData: Record<string, RowData> }
+    }
   ) => {
     setTabs((prevTabs) =>
       prevTabs.map((tab) => {
@@ -69,7 +69,7 @@ const POSInvoice: React.FC = () => {
   };
 
   const handleResetTab = () => {
-    if (window.confirm("Are you sure you want to clear the current invoice?")) {
+    if (window.confirm('Are you sure you want to clear the current invoice?')) {
       updateActiveTabData(() => ({ rows: [], tableData: {} }));
     }
   };
@@ -78,10 +78,7 @@ const POSInvoice: React.FC = () => {
     handleCloseSpecificTab(null, activeTabId);
   };
 
-  const handleCloseSpecificTab = (
-    e: React.MouseEvent | null,
-    idToClose: string
-  ) => {
+  const handleCloseSpecificTab = (e: React.MouseEvent | null, idToClose: string) => {
     if (e) e.stopPropagation();
 
     if (tabs.length === 1) {
@@ -110,18 +107,16 @@ const POSInvoice: React.FC = () => {
 
   const setRowsWrapper = (val: string[] | ((prev: string[]) => string[])) => {
     updateActiveTabData((prevData) => {
-      const newRows = typeof val === "function" ? val(prevData.rows) : val;
+      const newRows = typeof val === 'function' ? val(prevData.rows) : val;
       return { ...prevData, rows: newRows };
     });
   };
 
   const setTableDataWrapper = (
-    val:
-      | Record<string, RowData>
-      | ((prev: Record<string, RowData>) => Record<string, RowData>)
+    val: Record<string, RowData> | ((prev: Record<string, RowData>) => Record<string, RowData>)
   ) => {
     updateActiveTabData((prevData) => {
-      const newData = typeof val === "function" ? val(prevData.tableData) : val;
+      const newData = typeof val === 'function' ? val(prevData.tableData) : val;
       return { ...prevData, tableData: newData };
     });
   };
@@ -129,8 +124,7 @@ const POSInvoice: React.FC = () => {
   return (
     <div
       style={{ backgroundColor: COLORS.background }}
-      className="flex flex-col min-h-screen overflow-hidden"
-    >
+      className="flex min-h-screen flex-col overflow-hidden">
       <POSInvoiceHeader
         tabs={tabs}
         activeTabId={activeTabId}
@@ -144,7 +138,7 @@ const POSInvoice: React.FC = () => {
       />
 
       <div className="flex-1 overflow-auto p-4">
-        <div className="flex flex-col gap-4 max-w-[1600px] mx-auto">
+        <div className="mx-auto flex max-w-[1600px] flex-col gap-4">
           <POSInvoideForm />
 
           <OrderTable

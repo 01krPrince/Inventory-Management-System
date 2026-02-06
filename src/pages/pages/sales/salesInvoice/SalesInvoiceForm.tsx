@@ -20,6 +20,7 @@ import SalesExecutiveMaster from "../../../../components/SalesExecutiveMaster";
 import { getAllCustomers } from "../../../../services/sales/customer/customerService";
 import { fetchAllLocations } from "../../inventory/stockAdjustment/api/LocationMaster";
 import { fetchSalesExecutives } from "../../../../components/addItemMaster/api/salesExecutiveService";
+import DateInput from "../../../../components/DateInput";
 
 // --- Types ---
 export interface InvoiceFormData {
@@ -74,6 +75,7 @@ interface SalesInvoiceFormProps {
 export interface SalesInvoiceFormRef {
   triggerSubmit: () => void;
   getFormData: () => InvoiceFormData;
+  resetForm: () => void;
 }
 
 // --- Helper Components ---
@@ -114,20 +116,6 @@ const Input: React.FC<{
     placeholder={placeholder}
     readOnly={readOnly}
   />
-);
-
-const DateField: React.FC<{
-  value: string;
-  onChange: (val: string) => void;
-}> = ({ value, onChange }) => (
-  <div className="relative w-full">
-    <input
-      type="date"
-      className="w-full h-[30px] bg-white border border-gray-300 rounded-sm px-2 text-[13px] text-gray-700 focus:outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)] uppercase"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-    />
-  </div>
 );
 
 const ActionBtn: React.FC<ActionBtnProps> = ({ icon, onClick }) => (
@@ -201,7 +189,7 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
       paymentTerms: "",
       paymentLink: "PayTM",
       email: "",
-      invoiceNo: "00046",
+      invoiceNo: "N/A",
       refNo: "",
       billToText: "",
       shipToText: "",
@@ -372,6 +360,27 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
         }
       },
       getFormData: () => formData,
+
+      resetForm: () => {
+        setFormData((prev) => ({
+          ...prev,
+          // Clear Customer & Specific Details
+          customer: "",
+          customerCode: "",
+          customerId: "",
+          email: "",
+          refNo: "",
+          billToText: "",
+          shipToText: "",
+          gstNo: "",
+          contactPerson: "",
+          invoiceNo: "",
+          paymentLink: "PayTM",
+          shipTo: "",
+
+          /// keeping store, salesman, date
+        }));
+      },
     }));
 
     return (
@@ -506,9 +515,9 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
                 <Label required>Date</Label>
               </div>
               <div className="col-span-8">
-                <DateField
+                  <DateInput
                   value={formData.date}
-                  onChange={(val) => handleInputChange("date", val)}
+                  onChange={(e) => handleInputChange('date', e.target.value)}
                 />
               </div>
             </div>

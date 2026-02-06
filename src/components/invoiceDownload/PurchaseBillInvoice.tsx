@@ -1,31 +1,30 @@
 import React, { useMemo, useEffect } from 'react';
-import Logo from './image.svg';
-import { Download, Printer, Mail, MessageCircle } from 'lucide-react'; // Make sure to import icons
+import { Printer } from 'lucide-react';
+import Logo from './image.svg'; // Ensure this path is correct
 
-// --- Interfaces ---
-// (Keep your existing VendorDetails, ApiItem, LogisticsData interfaces here...)
-// ... [Keep existing interfaces from your previous code] ...
-
-interface VendorDetails {
-  vend_name?: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  country?: string;
-  gst_no?: string;
-  payment_term?: string;
-  phone?: string;
-  email?: string;
-  pan?: string;
-}
+// --- Interfaces matching the JSON Response ---
 
 interface ApiItem {
+  item: string;
+  itemcode: string;
   description: string;
+  batchNo: string;
   quantity: number;
   rate: number;
   amount: number;
-  itemcode?: string;
-  hsn?: string;
+  netRate: number;
+  netAmount: number;
+  mrp: number;
+  sale_rate: number;
+  wholesale_rate: number;
+  dealer_rate: number;
+  taxable: number;
+  taxAmount: number;
+  taxRate: string;
+  itemBarCode: string;
+  brand: string;
+  _id: string;
+  hsn?: string; // Optional as it's missing in the provided JSON
 }
 
 interface LogisticsValue {
@@ -34,68 +33,108 @@ interface LogisticsValue {
 }
 
 interface LogisticsData {
-  freight?: LogisticsValue | number;
-  loadingUnloading?: LogisticsValue | number;
-  insurance?: LogisticsValue | number;
-  otherCharges?: LogisticsValue | number;
-  custDuty?: LogisticsValue | number;
-  chaPayment?: LogisticsValue | number;
-  handling?: LogisticsValue | number;
-  docCharges?: LogisticsValue | number;
-  bankCharges?: LogisticsValue | number;
-  custExp?: LogisticsValue | number;
+  freight?: LogisticsValue;
+  loadingUnloading?: LogisticsValue;
+  insurance?: LogisticsValue;
+  otherCharges?: LogisticsValue;
+  custDuty?: LogisticsValue;
+  chaPayment?: LogisticsValue;
+  handling?: LogisticsValue;
+  docCharges?: LogisticsValue;
+  bankCharges?: LogisticsValue;
+  custExp?: LogisticsValue;
+}
+
+interface BillingInfo {
+  contactNo?: string;
+  gstNo?: string;
+  placeOfSupply?: string;
+  ecommerceInvoiceNo?: string;
+  fullAddress?: string;
+}
+
+interface ShippingInfo {
+  fullAddress?: string;
+}
+
+interface PaymentInfo {
+  ledger: string;
+  ledgerName: string;
+  amount: number;
+  remarks: string;
 }
 
 export interface ApiResponse {
   billNo: string;
   billDate: string;
-  storeName: string;
-  vendorDetails?: VendorDetails;
-  vendor?: string;
+  store: string;
+  vendor: string;
   items: ApiItem[];
+  type: string;
   logistics: LogisticsData;
+  gstType: string;
+  billingFrom?: BillingInfo;
+  shippingFrom?: ShippingInfo;
+  supplierInvoiceNo?: string;
+  supplierInvoiceDate?: string;
+  tax: string;
+  dueDate?: string;
+  paymentTerms?: string;
+  email?: string;
+  priceCategory?: string;
+  payments?: PaymentInfo[];
   itemValue: number;
   taxableAmount: number;
   taxAmount: number;
+  promoDiscount?: number;
+  promoDiscount2?: number;
+  couponDiscount?: number;
   billDiscount: number;
   billDiscountPercent: number;
+  adjustment?: number;
   roundOff: number;
   docAmount: number;
+  transport?: number;
   remarks?: string;
-  transport?: number | string;
+  paidAmount?: string;
+  _id?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  storeName?: string;
+  vendorName?: string;
+  netAmount?: number;
+  totalLogistics?: number;
 }
 
-// Add props for actions
+// --- Component Props ---
+
 interface PurchaseBillInvoiceProps {
   data?: ApiResponse;
-  onDownload?: () => void;
-  onShareWhatsApp?: () => void;
-  onShareEmail?: () => void;
 }
 
-// ... [Keep AddressDetails, LineItem, etc. interfaces] ...
+// --- UI Interfaces ---
+
 interface AddressDetails {
   name: string;
   addressLine1: string;
-  addressLine2?: string;
+  addressLine2: string;
   cityStateZip: string;
-  gstin?: string;
-  pan?: string;
-  phone?: string;
-  email?: string;
+  gstin: string;
+  pan: string;
+  phone: string;
+  email: string;
 }
 
 interface LineItem {
   sNo: number;
   description: string;
   hsnSac: string;
-  packQty: number;
+  packQty: string;
   qty: number;
   uom: string;
   rate: number;
   discountPercent: number;
   amount: number;
-  billDiscount?: number;
 }
 
 interface TaxBreakdown {
@@ -121,11 +160,11 @@ interface InvoiceData {
     reverseCharge: string;
     placeOfSupply: string;
     station: string;
-    ewayBillNo?: string;
-    vehicleNo?: string;
-    grRrNo?: string;
-    distance?: string;
-    shippingCompany?: string;
+    ewayBillNo: string;
+    vehicleNo: string;
+    grRrNo: string;
+    distance: string;
+    shippingCompany: string;
   };
   billing: AddressDetails;
   shipping: AddressDetails;
@@ -156,7 +195,8 @@ interface InvoiceData {
   };
 }
 
-// ... [Keep utilities numberToWords and getLogisticsAmt] ...
+// --- Utilities ---
+
 const numberToWords = (num: number): string => {
   const a = [
     '',
@@ -182,11 +222,13 @@ const numberToWords = (num: number): string => {
   ];
   const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
 
-  if ((num = num.toString().length > 9 ? parseFloat('overflow') : num)) return 'overflow';
+  if (num.toString().length > 9) return 'overflow';
+
   const n = ('000000000' + num.toFixed(2))
     .substr(-11)
     .match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
   if (!n) return '';
+
   let str = '';
   str +=
     Number(n[1]) !== 0
@@ -210,46 +252,46 @@ const numberToWords = (num: number): string => {
         (a[Number(n[5])] || b[n[5][0] as any] + ' ' + a[n[5][1] as any]) +
         'Only '
       : '';
-  return str;
+
+  return str || 'Zero Only';
 };
 
-const getLogisticsAmt = (val: LogisticsValue | number | undefined): number => {
-  if (val === undefined || val === null) return 0;
-  if (typeof val === 'number') return val;
-  if (typeof val === 'object' && 'amount' in val) return Number(val.amount) || 0;
-  return 0;
+const formatDate = (dateString?: string) => {
+  if (!dateString) return 'N/A';
+  try {
+    return new Date(dateString).toLocaleDateString('en-GB');
+  } catch (e) {
+    return dateString;
+  }
 };
+
+const safeStr = (val: any) =>
+  val !== undefined && val !== null && val !== '' ? String(val) : 'N/A';
+const currency = (amt: number) =>
+  amt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 // --- Component ---
 
-const PurchaseBillInvoice: React.FC<PurchaseBillInvoiceProps> = ({
-  data,
-  onDownload,
-  onShareWhatsApp,
-  onShareEmail,
-}) => {
-  // Debug log
+const PurchaseBillInvoice: React.FC<PurchaseBillInvoiceProps> = ({ data }) => {
   useEffect(() => {
     if (data) console.log('🧾 Rendering Invoice for:', data.billNo);
   }, [data]);
 
-  // --- Mapper: Convert API JSON -> Invoice UI Format ---
   const invoice: InvoiceData = useMemo(() => {
-    if (!data) return defaultAutomobileData;
+    if (!data) return defaultInvoiceData;
 
-    const billDateFormatted = new Date(data.billDate).toLocaleDateString('en-GB');
-
-    // Helpers
-    const safeStr = (val: any) => (val && val !== 'null' && val !== null ? String(val) : '');
-    const joinAddress = (parts: any[], separator: string = ', ') =>
-      parts.filter((p) => p && String(p).trim() !== '' && String(p) !== 'null').join(separator);
-
+    // Calculations for Tax
+    // Assuming GST is split 50/50 for CGST/SGST if place of supply matches, typically derived from total tax
     const totalTax = data.taxAmount || 0;
     const cgst = totalTax / 2;
     const sgst = totalTax / 2;
 
-    const vDetails = data.vendorDetails || {};
-    const vendorName = vDetails.vend_name || `Vendor ID: ${data.vendor || 'Unknown'}`;
+    // Summing all discounts
+    const totalDiscount =
+      (data.billDiscount || 0) +
+      (data.promoDiscount || 0) +
+      (data.couponDiscount || 0) +
+      (data.promoDiscount2 || 0);
 
     return {
       header: {
@@ -259,57 +301,61 @@ const PurchaseBillInvoice: React.FC<PurchaseBillInvoiceProps> = ({
         logoUrl: Logo,
       },
       seller: {
-        name: safeStr(vendorName),
-        addressLine1:
-          safeStr(vDetails.address) || joinAddress([vDetails.city, vDetails.state], ', '),
-        addressLine2: safeStr(vDetails.country),
-        cityStateZip: joinAddress([vDetails.city, vDetails.state], ' - '),
-        gstin: safeStr(vDetails.gst_no),
-        phone: safeStr(vDetails.phone),
-        email: safeStr(vDetails.email),
-        pan: safeStr(vDetails.pan),
+        name: safeStr(data.vendorName || data.vendor),
+        addressLine1: safeStr(data.billingFrom?.fullAddress),
+        addressLine2: '', // Not provided separately in JSON
+        cityStateZip: safeStr(data.billingFrom?.placeOfSupply),
+        gstin: safeStr(data.billingFrom?.gstNo),
+        phone: safeStr(data.billingFrom?.contactNo),
+        email: safeStr(data.email),
+        pan: 'N/A', // Not in JSON
       },
       invoiceDetails: {
-        invoiceNo: safeStr(data.billNo),
-        invoiceDate: billDateFormatted,
+        invoiceNo: safeStr(data.billNo), // Internal Bill No
+        invoiceDate: formatDate(data.billDate),
         reverseCharge: 'No',
-        placeOfSupply: safeStr(vDetails.state),
-        station: safeStr(vDetails.city),
-        ewayBillNo: '',
-        vehicleNo: String(data.transport || ''),
-        grRrNo: '',
-        distance: '',
-        shippingCompany: '',
+        placeOfSupply: safeStr(data.billingFrom?.placeOfSupply),
+        station: 'N/A',
+        ewayBillNo: 'N/A',
+        vehicleNo: 'N/A', // data.transport is likely cost (300), not vehicle number
+        grRrNo: 'N/A',
+        distance: 'N/A',
+        shippingCompany: 'N/A',
       },
       billing: {
         name: safeStr(data.storeName),
-        addressLine1: '',
+        addressLine1: 'N/A', // Store address not in JSON
         addressLine2: '',
         cityStateZip: '',
-        gstin: '',
-        pan: '',
+        gstin: 'N/A',
+        pan: 'N/A',
+        phone: 'N/A',
+        email: 'N/A',
       },
       shipping: {
         name: safeStr(data.storeName),
-        addressLine1: '',
+        addressLine1: safeStr(data.shippingFrom?.fullAddress), // Using Warehouse address if available
         addressLine2: '',
         cityStateZip: '',
+        gstin: 'N/A',
+        pan: 'N/A',
+        phone: 'N/A',
+        email: 'N/A',
       },
       items: (data.items || []).map((item, index) => ({
         sNo: index + 1,
         description: safeStr(item.description),
         hsnSac: safeStr(item.hsn),
-        packQty: 0,
+        packQty: 'N/A',
         qty: item.quantity,
         uom: 'NOS',
         rate: item.rate,
         discountPercent: data.billDiscountPercent || 0,
         amount: item.amount,
-        billDiscount: 0,
       })),
       totals: {
         subTotal: data.itemValue,
-        billDiscount: data.billDiscount || 0,
+        billDiscount: totalDiscount,
         taxableAmount: data.taxableAmount,
         cgst: cgst,
         sgst: sgst,
@@ -321,7 +367,7 @@ const PurchaseBillInvoice: React.FC<PurchaseBillInvoiceProps> = ({
       },
       taxTable: [
         {
-          rate: 'Tax (Derived)',
+          rate: 'Tax Split',
           taxableValue: data.taxableAmount,
           cgst: cgst,
           sgst: sgst,
@@ -331,9 +377,9 @@ const PurchaseBillInvoice: React.FC<PurchaseBillInvoiceProps> = ({
       ],
       logistics: {
         mode: 'Road',
-        weight: '0.00',
-        bundles: '0.00',
-        chargesPaid: String(getLogisticsAmt(data.logistics?.freight).toFixed(2)),
+        weight: 'N/A',
+        bundles: 'N/A',
+        chargesPaid: currency(data.totalLogistics || 0),
         docExtraInfo: '',
         remarks: safeStr(data.remarks),
       },
@@ -342,12 +388,6 @@ const PurchaseBillInvoice: React.FC<PurchaseBillInvoiceProps> = ({
       },
     };
   }, [data]);
-
-  const formatCurrency = (amount: number) =>
-    amount.toLocaleString('en-IN', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
 
   const handlePrint = () => {
     window.print();
@@ -367,44 +407,20 @@ const PurchaseBillInvoice: React.FC<PurchaseBillInvoiceProps> = ({
         `}
       </style>
 
-      <div id="printable-invoice-area" className="h-auto bg-white">
-        {/* --- ACTION BAR (New) --- */}
-        <div className="no-print mb-4 flex w-full flex-wrap justify-center gap-4 border-b bg-gray-100 py-4 print:hidden">
+      <div id="printable-invoice-area" className="h-auto bg-white font-sans text-black">
+        {/* --- ACTION BAR --- */}
+        <div className="no-print mb-4 flex w-full justify-center gap-4 border-b bg-gray-100 py-4 print:hidden">
           <button
             onClick={handlePrint}
             className="flex items-center gap-2 rounded bg-gray-700 px-4 py-2 font-medium text-white shadow transition-colors hover:bg-gray-800">
             <Printer size={16} /> Print
           </button>
-
-          {onDownload && (
-            <button
-              onClick={onDownload}
-              className="flex items-center gap-2 rounded bg-blue-600 px-4 py-2 font-medium text-white shadow transition-colors hover:bg-blue-700">
-              <Download size={16} /> Download PDF
-            </button>
-          )}
-
-          {onShareWhatsApp && (
-            <button
-              onClick={onShareWhatsApp}
-              className="flex items-center gap-2 rounded bg-green-600 px-4 py-2 font-medium text-white shadow transition-colors hover:bg-green-700">
-              <MessageCircle size={16} /> WhatsApp
-            </button>
-          )}
-
-          {onShareEmail && (
-            <button
-              onClick={onShareEmail}
-              className="flex items-center gap-2 rounded bg-blue-500 px-4 py-2 font-medium text-white shadow transition-colors hover:bg-blue-600">
-              <Mail size={16} /> Email
-            </button>
-          )}
         </div>
 
         {/* Invoice Content */}
         <div className="m-8 flex flex-col items-center bg-white print:m-0">
-          <div className="mx-auto box-border w-full max-w-[210mm] border border-black font-sans text-[10px] leading-tight text-black print:w-full">
-            {/* Header */}
+          <div className="mx-auto box-border w-full max-w-[210mm] border border-black text-[10px] leading-tight print:w-full">
+            {/* 1. Header Section */}
             <div className="border-b border-black p-4">
               <div className="mb-2 flex items-start justify-between">
                 <div className="w-1/4 font-bold">GSTIN : {invoice.seller.gstin}</div>
@@ -417,9 +433,10 @@ const PurchaseBillInvoice: React.FC<PurchaseBillInvoiceProps> = ({
               </div>
 
               <div className="relative min-h-[80px]">
+                {/* Logo Area */}
                 <div className="absolute left-0 top-0 flex h-full w-36 flex-col items-center justify-center">
                   <img
-                    src={invoice.header.logoUrl || Logo}
+                    src={invoice.header.logoUrl}
                     alt="Logo"
                     className="mb-1 h-12 w-16 object-contain"
                   />
@@ -428,6 +445,7 @@ const PurchaseBillInvoice: React.FC<PurchaseBillInvoiceProps> = ({
                   </div>
                 </div>
 
+                {/* Seller Name Area */}
                 <div className="w-full px-24 text-center">
                   <h1 className="mb-1 text-xl font-bold text-black">{invoice.seller.name}</h1>
                   <p>{invoice.seller.addressLine1}</p>
@@ -436,14 +454,15 @@ const PurchaseBillInvoice: React.FC<PurchaseBillInvoiceProps> = ({
                   <div className="mt-1 font-bold">
                     Phone No: {invoice.seller.phone} | Email: {invoice.seller.email}
                   </div>
+                  {/* PAN is N/A in data, displayed if available */}
                   <div className="font-bold">PAN No: {invoice.seller.pan}</div>
                 </div>
               </div>
             </div>
 
-            {/* (Keep the rest of your Invoice Layout: Details, Items Table, Footer...) */}
-            {/* Invoice Details */}
+            {/* 2. Invoice Details Grid */}
             <div className="grid grid-cols-2 border-b border-black text-[10px]">
+              {/* Left Column */}
               <div className="border-r border-black">
                 <div className="flex px-2 py-1">
                   <span className="w-28 font-bold">Invoice No.</span>
@@ -458,14 +477,21 @@ const PurchaseBillInvoice: React.FC<PurchaseBillInvoiceProps> = ({
                   <span>: {invoice.invoiceDetails.reverseCharge}</span>
                 </div>
                 <div className="flex px-2 py-1">
-                  <span className="w-28 font-bold">Eway Bill No & Date</span>
+                  <span className="w-28 font-bold">Eway Bill No</span>
                   <span>: {invoice.invoiceDetails.ewayBillNo}</span>
                 </div>
                 <div className="flex px-2 py-1">
                   <span className="w-28 font-bold">Distance</span>
                   <span>: {invoice.invoiceDetails.distance}</span>
                 </div>
+                {/* Optional: Add Supplier Invoice No if different */}
+                <div className="flex px-2 py-1">
+                  <span className="w-28 font-bold">Supplier Ref</span>
+                  <span>: {data?.supplierInvoiceNo || 'N/A'}</span>
+                </div>
               </div>
+
+              {/* Right Column */}
               <div>
                 <div className="flex px-2 py-1">
                   <span className="w-28 font-bold">Shipping Company</span>
@@ -480,7 +506,7 @@ const PurchaseBillInvoice: React.FC<PurchaseBillInvoiceProps> = ({
                   <span>: {invoice.invoiceDetails.placeOfSupply}</span>
                 </div>
                 <div className="flex px-2 py-1">
-                  <span className="w-28 font-bold">GR /RR.No</span>
+                  <span className="w-28 font-bold">GR / RR.No</span>
                   <span>: {invoice.invoiceDetails.grRrNo}</span>
                 </div>
                 <div className="flex px-2 py-1">
@@ -490,35 +516,32 @@ const PurchaseBillInvoice: React.FC<PurchaseBillInvoiceProps> = ({
               </div>
             </div>
 
-            {/* Addresses */}
-            <div className="flex min-h-[140px] border-b border-black">
+            {/* 3. Address Section (Billing & Shipping) */}
+            <div className="flex min-h-[120px] border-b border-black">
+              {/* Billing To */}
               <div className="flex w-1/2 flex-col border-r border-black">
-                <div className="border-b border-black px-2 py-1 font-bold">
-                  Vendor Name & Billing Address
-                </div>
+                <div className="border-b border-black px-2 py-1 font-bold">Billed To</div>
                 <div className="flex-grow p-3">
                   <div className="font-bold uppercase">{invoice.billing.name}</div>
                   <div>{invoice.billing.addressLine1}</div>
-                  <div>{invoice.billing.addressLine2}</div>
                   <div>{invoice.billing.cityStateZip}</div>
-                  <div className="mt-1">GSTIN / UIN : {invoice.billing.gstin}</div>
-                  <div className="mt-4">Party PAN : {invoice.billing.pan}</div>
+                  <div className="mt-1">GSTIN : {invoice.billing.gstin}</div>
+                  <div className="mt-1">PAN : {invoice.billing.pan}</div>
                 </div>
               </div>
+
+              {/* Shipping To */}
               <div className="flex w-1/2 flex-col">
-                <div className="border-b border-black px-2 py-1 font-bold">Shipping Address</div>
+                <div className="border-b border-black px-2 py-1 font-bold">Shipped To</div>
                 <div className="flex-grow p-3">
-                  <div className="whitespace-pre-wrap">
-                    {invoice.shipping.name} , {invoice.shipping.addressLine1} ,
-                    {invoice.shipping.addressLine2}
-                    {invoice.shipping.cityStateZip}
-                  </div>
-                  <div className="mt-4">Phone : {invoice.shipping.phone}</div>
+                  <div className="font-bold uppercase">{invoice.shipping.name}</div>
+                  <div className="whitespace-pre-wrap">{invoice.shipping.addressLine1}</div>
+                  <div>{invoice.shipping.cityStateZip}</div>
                 </div>
               </div>
             </div>
 
-            {/* Items Table */}
+            {/* 4. Items Table */}
             <div className="w-full">
               <table className="w-full border-collapse text-[10px]">
                 <thead>
@@ -545,14 +568,13 @@ const PurchaseBillInvoice: React.FC<PurchaseBillInvoiceProps> = ({
                       <td className="border-r border-black py-2">{item.qty}</td>
                       <td className="border-r border-black py-2">{item.uom}</td>
                       <td className="border-r border-black px-2 py-2 text-right">
-                        {formatCurrency(item.rate)}
+                        {currency(item.rate)}
                       </td>
-                      <td className="px-2 py-2 text-right font-bold">
-                        {formatCurrency(item.amount)}
-                      </td>
+                      <td className="px-2 py-2 text-right font-bold">{currency(item.amount)}</td>
                     </tr>
                   ))}
-                  <tr className="h-[300px] border-b border-black">
+                  {/* Minimum Height Spacer */}
+                  <tr className="h-[250px] border-b border-black">
                     <td className="border-r border-black"></td>
                     <td className="border-r border-black"></td>
                     <td className="border-r border-black"></td>
@@ -562,66 +584,64 @@ const PurchaseBillInvoice: React.FC<PurchaseBillInvoiceProps> = ({
                     <td className="border-r border-black"></td>
                     <td></td>
                   </tr>
+
+                  {/* Total Line */}
                   <tr className="h-8 border-b border-black text-center font-bold">
                     <td className="border-r border-black"></td>
+                    <td className="border-r border-black px-2 text-right">Total Qty</td>
                     <td className="border-r border-black"></td>
-                    <td className="border-r border-black px-2 py-1 text-right">Total</td>
-                    <td className="border-r border-black py-1 text-center">0.00</td>
+                    <td className="border-r border-black"></td>
                     <td className="border-r border-black py-1 text-center">
-                      {invoice.items.reduce((a, b) => a + b.qty, 0).toFixed(2)}
+                      {invoice.items.reduce((a, b) => a + b.qty, 0)}
                     </td>
                     <td className="border-r border-black"></td>
                     <td className="border-r border-black"></td>
-                    <td className="px-2 py-1 text-right">
-                      {formatCurrency(invoice.totals.subTotal)}
-                    </td>
+                    <td className="px-2 py-1 text-right">{currency(invoice.totals.subTotal)}</td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
-            {/* Footer Section */}
+            {/* 5. Footer / Totals Section */}
             <div className="flex border-b border-black">
+              {/* Left Side: Remarks, Tax Table, Words */}
               <div className="flex w-[65%] flex-col justify-between border-r border-black">
                 <div className="flex border-b border-black px-2 py-2">
                   <span className="w-16 font-bold">Narration</span>
                   <span>: {invoice.logistics.remarks}</span>
                 </div>
-                <div className="flex h-auto min-h-[64px] border-b border-black px-2 py-2">
+
+                {/* Logistics Info Block */}
+                <div className="flex h-auto min-h-[64px] border-b border-black px-2 py-2 text-[9px]">
                   <div className="w-1/2">
-                    <div className="flex">
-                      <span className="w-24 font-bold">Logistics Info</span>
-                      <span>:</span>
-                    </div>
-                    <div className="flex">
-                      <span className="w-24">Charges Paid</span>
-                      <span>: {invoice.logistics.chargesPaid}</span>
-                    </div>
-                    <div className="flex">
-                      <span className="w-24">No of Packets</span>
-                      <span>: {invoice.logistics.bundles}</span>
+                    <div className="mb-1 font-bold underline">Logistics Info</div>
+                    <div className="flex w-3/4 justify-between">
+                      <span>Charges Paid:</span>
+                      <span>{invoice.logistics.chargesPaid}</span>
                     </div>
                   </div>
                   <div className="w-1/2 pl-4">
-                    <div className="flex">
-                      <span className="w-12">Mode</span>
-                      <span>: {invoice.logistics.mode}</span>
+                    <div className="flex w-3/4 justify-between">
+                      <span>Mode:</span>
+                      <span>{invoice.logistics.mode}</span>
                     </div>
-                    <div className="flex">
-                      <span className="w-12">Weight</span>
-                      <span>: {invoice.logistics.weight}</span>
+                    <div className="flex w-3/4 justify-between">
+                      <span>Weight:</span>
+                      <span>{invoice.logistics.weight}</span>
                     </div>
                   </div>
                 </div>
+
+                {/* Tax Table */}
                 <div className="flex-grow">
                   <table className="w-full border-collapse text-center text-[9px]">
                     <thead>
                       <tr className="border-b border-black font-bold">
                         <th className="border-r border-black px-2 py-1 text-left">Tax Rate</th>
-                        <th className="border-r border-black py-1">Taxable Value</th>
-                        <th className="border-r border-black py-1">CGST Amount</th>
-                        <th className="border-r border-black py-1">SGST Amount</th>
-                        <th className="border-r border-black py-1">IGST Amount</th>
+                        <th className="border-r border-black py-1">Taxable</th>
+                        <th className="border-r border-black py-1">CGST</th>
+                        <th className="border-r border-black py-1">SGST</th>
+                        <th className="border-r border-black py-1">IGST</th>
                         <th className="py-1">Total Tax</th>
                       </tr>
                     </thead>
@@ -630,72 +650,85 @@ const PurchaseBillInvoice: React.FC<PurchaseBillInvoiceProps> = ({
                         <tr key={i} className="font-bold">
                           <td className="border-r border-black px-2 py-1 text-left">{tax.rate}</td>
                           <td className="border-r border-black px-2 py-1 text-right">
-                            {formatCurrency(tax.taxableValue)}
+                            {currency(tax.taxableValue)}
                           </td>
                           <td className="border-r border-black px-2 py-1 text-right">
-                            {formatCurrency(tax.cgst)}
+                            {currency(tax.cgst)}
                           </td>
                           <td className="border-r border-black px-2 py-1 text-right">
-                            {formatCurrency(tax.sgst)}
+                            {currency(tax.sgst)}
                           </td>
                           <td className="border-r border-black px-2 py-1 text-right">
-                            {formatCurrency(tax.igst)}
+                            {currency(tax.igst)}
                           </td>
-                          <td className="px-2 py-1 text-right">{formatCurrency(tax.totalTax)}</td>
+                          <td className="px-2 py-1 text-right">{currency(tax.totalTax)}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-                <div className="border-t border-black px-2 py-1 font-bold">
+
+                {/* Amount in Words */}
+                <div className="border-t border-black px-2 py-1 text-[9px] font-bold">
                   Tax Amount : {invoice.totals.taxAmountInWords}
                 </div>
-                <div className="border-t border-black px-2 py-1 font-bold">
+                <div className="border-t border-black px-2 py-1 text-[9px] font-bold">
                   Bill Amount : {invoice.totals.amountInWords}
                 </div>
               </div>
 
+              {/* Right Side: Calculation Block */}
               <div className="w-[35%] text-[10px]">
                 <div className="flex justify-between px-2 py-1">
                   <span className="font-bold">Sub Total</span>
-                  <span className="font-bold">{formatCurrency(invoice.totals.subTotal)}</span>
+                  <span className="font-bold">{currency(invoice.totals.subTotal)}</span>
                 </div>
                 <div className="flex justify-between px-2 py-1">
                   <span>Discount</span>
                   <span>
                     {invoice.totals.billDiscount > 0 ? '-' : ''}
-                    {formatCurrency(Math.abs(invoice.totals.billDiscount))}
+                    {currency(Math.abs(invoice.totals.billDiscount))}
                   </span>
                 </div>
                 <div className="flex justify-between px-2 py-1">
                   <span className="font-bold">Taxable Amount</span>
-                  <span className="font-bold">{formatCurrency(invoice.totals.taxableAmount)}</span>
+                  <span className="font-bold">{currency(invoice.totals.taxableAmount)}</span>
                 </div>
                 <div className="flex justify-between px-2 py-1">
                   <span>CGST</span>
-                  <span>{formatCurrency(invoice.totals.cgst)}</span>
+                  <span>{currency(invoice.totals.cgst)}</span>
                 </div>
                 <div className="flex justify-between px-2 py-1">
                   <span>SGST/UTGST</span>
-                  <span>{formatCurrency(invoice.totals.sgst)}</span>
+                  <span>{currency(invoice.totals.sgst)}</span>
                 </div>
                 <div className="flex justify-between px-2 py-1">
                   <span>CESS</span>
-                  <span>{formatCurrency(invoice.totals.cess)}</span>
+                  <span>{currency(invoice.totals.cess)}</span>
                 </div>
                 <div className="flex justify-between px-2 py-1">
                   <span>Round Off</span>
                   <span>{invoice.totals.roundOff}</span>
                 </div>
-                <div className="mt-1 flex items-center justify-between border-t border-black px-2 py-2 text-sm font-bold">
+                <div className="mt-1 flex items-center justify-between border-t border-black bg-gray-50 px-2 py-2 text-sm font-bold">
                   <span>Bill Total</span>
-                  <span>{formatCurrency(invoice.totals.grandTotal)}</span>
+                  <span>{currency(invoice.totals.grandTotal)}</span>
                 </div>
               </div>
             </div>
 
+            {/* 6. Signature Section */}
             <div className="flex h-24">
-              <div className="w-1/2 border-r border-black"></div>
+              <div className="w-1/2 border-r border-black">
+                <div className="p-2 font-bold underline">Terms & Conditions:</div>
+                <div className="px-2 text-[8px] italic">
+                  1. Goods once sold will not be taken back.
+                  <br />
+                  2. Interest @18% p.a. will be charged if payment is not made within due date.
+                  <br />
+                  3. Subject to local jurisdiction.
+                </div>
+              </div>
               <div className="relative flex w-1/2 flex-col items-end justify-between p-4">
                 <div className="mb-1 w-full border-b border-black pb-1 text-left text-[10px] font-bold">
                   Receiver's Signature
@@ -718,8 +751,8 @@ const PurchaseBillInvoice: React.FC<PurchaseBillInvoiceProps> = ({
   );
 };
 
-// ... [Keep defaultAutomobileData] ...
-const defaultAutomobileData: InvoiceData = {
+// Default Fallback Data to prevent crash on empty props
+const defaultInvoiceData: InvoiceData = {
   header: {
     title: 'PURCHASE INVOICE',
     subTitle: '',
@@ -727,12 +760,14 @@ const defaultAutomobileData: InvoiceData = {
     logoUrl: Logo,
   },
   seller: {
-    name: 'Sample Vendor',
+    name: 'N/A',
     addressLine1: '',
     addressLine2: '',
     cityStateZip: '',
     gstin: '',
     pan: '',
+    phone: '',
+    email: '',
   },
   invoiceDetails: {
     invoiceNo: '',
@@ -740,9 +775,32 @@ const defaultAutomobileData: InvoiceData = {
     reverseCharge: 'No',
     placeOfSupply: '',
     station: '',
+    ewayBillNo: '',
+    vehicleNo: '',
+    grRrNo: '',
+    distance: '',
+    shippingCompany: '',
   },
-  billing: { name: 'My Store', addressLine1: '', addressLine2: '', cityStateZip: '' },
-  shipping: { name: 'My Store', addressLine1: '', addressLine2: '', cityStateZip: '' },
+  billing: {
+    name: 'N/A',
+    addressLine1: '',
+    addressLine2: '',
+    cityStateZip: '',
+    gstin: '',
+    pan: '',
+    phone: '',
+    email: '',
+  },
+  shipping: {
+    name: 'N/A',
+    addressLine1: '',
+    addressLine2: '',
+    cityStateZip: '',
+    gstin: '',
+    pan: '',
+    phone: '',
+    email: '',
+  },
   items: [],
   totals: {
     subTotal: 0,
@@ -753,12 +811,12 @@ const defaultAutomobileData: InvoiceData = {
     cess: 0,
     roundOff: 0,
     grandTotal: 0,
-    amountInWords: 'Zero Only',
-    taxAmountInWords: 'Zero Only',
+    amountInWords: '',
+    taxAmountInWords: '',
   },
   taxTable: [],
   logistics: { mode: '', weight: '', bundles: '', chargesPaid: '', docExtraInfo: '', remarks: '' },
-  signatory: { companyName: 'My Store' },
+  signatory: { companyName: '' },
 };
 
 export default PurchaseBillInvoice;

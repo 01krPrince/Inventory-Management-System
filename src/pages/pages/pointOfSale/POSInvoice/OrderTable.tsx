@@ -1,5 +1,5 @@
-import React, { useState, useRef, MouseEvent, useEffect, useMemo } from "react";
-import ReactDOM from "react-dom";
+import React, { useState, useRef, MouseEvent, useEffect, useMemo } from 'react';
+import ReactDOM from 'react-dom';
 import {
   Plus,
   X,
@@ -18,24 +18,24 @@ import {
   DollarSign,
   Clock,
   RotateCcw,
-} from "lucide-react";
-import { COLORS } from "../../../../constants/colors";
+} from 'lucide-react';
+import { COLORS } from '../../../../constants/colors';
 
-import AddNewItem from "../../../../components/addItemMaster/AddNewItem";
+import AddNewItem from '../../../../components/addItemMaster/AddNewItem';
 
-import { fetchItems } from "../../inventory/itemMaster/api/itemService";
-import { StockUnitData } from "../../../../components/addItemMaster/api/types";
-import { fetchStockUnits } from "../../../../components/addItemMaster/api/stockunitservice";
-import AttributePanel from "../../../../components/AttributePanel";
-import { ItemApiData } from "../../inventory/itemMaster/models/ItemModel";
-import PullFromOrderModal from "../../../../components/PullFromOrderModal";
+import { fetchItems } from '../../inventory/itemMaster/api/itemService';
+import { StockUnitData } from '../../../../components/addItemMaster/api/types';
+import { fetchStockUnits } from '../../../../components/addItemMaster/api/stockunitservice';
+import AttributePanel from '../../../../components/AttributePanel';
+import { ItemApiData } from '../../inventory/itemMaster/models/ItemModel';
+import PullFromOrderModal from '../../../../components/PullFromOrderModal';
 
 interface Column {
   id: string;
   label: string;
   width: number;
-  align: "left" | "center" | "right";
-  sticky?: "left";
+  align: 'left' | 'center' | 'right';
+  sticky?: 'left';
   resizable?: boolean;
   visible: boolean;
 }
@@ -54,15 +54,15 @@ const getStandardWarranties = (itemText: string): WarrantyOption[] => {
   if (!itemText) return [];
   const text = itemText.toLowerCase();
 
-  if (text.includes("bat") || text.includes("elec")) {
+  if (text.includes('bat') || text.includes('elec')) {
     return [
-      { id: "w1", label: "6 Months", price: 0 },
-      { id: "w2", label: "1 Year", price: 500 },
-      { id: "w3", label: "2 Years", price: 1200 },
+      { id: 'w1', label: '6 Months', price: 0 },
+      { id: 'w2', label: '1 Year', price: 500 },
+      { id: 'w3', label: '2 Years', price: 1200 },
     ];
   }
-  if (text.includes("pad") || text.includes("glove")) {
-    return [{ id: "w4", label: "3 Months Repair", price: 0 }];
+  if (text.includes('pad') || text.includes('glove')) {
+    return [{ id: 'w4', label: '3 Months Repair', price: 0 }];
   }
   return [];
 };
@@ -76,331 +76,325 @@ interface OrderTableProps {
 
 const DEFAULT_COLUMNS: Column[] = [
   {
-    id: "sno",
-    label: "SNo",
+    id: 'sno',
+    label: 'SNo',
     width: 40,
-    sticky: "left",
-    align: "center",
+    sticky: 'left',
+    align: 'center',
     resizable: true,
     visible: true,
   },
   {
-    id: "add",
-    label: "",
+    id: 'add',
+    label: '',
     width: 35,
-    sticky: "left",
-    align: "center",
+    sticky: 'left',
+    align: 'center',
     resizable: true,
     visible: true,
   },
   {
-    id: "del",
-    label: "",
+    id: 'del',
+    label: '',
     width: 35,
-    sticky: "left",
-    align: "center",
+    sticky: 'left',
+    align: 'center',
     resizable: true,
     visible: true,
   },
   {
-    id: "copy",
-    label: "",
+    id: 'copy',
+    label: '',
     width: 35,
-    sticky: "left",
-    align: "center",
+    sticky: 'left',
+    align: 'center',
     resizable: true,
     visible: true,
   },
   {
-    id: "postype",
-    label: "POS Type",
+    id: 'postype',
+    label: 'POS Type',
     width: 80,
-    align: "center",
-    sticky: "left",
+    align: 'center',
+    sticky: 'left',
     resizable: true,
     visible: true,
   },
   {
-    id: "select",
-    label: "Select Item",
+    id: 'select',
+    label: 'Select Item',
     width: 110,
-    sticky: "left",
-    align: "left",
+    sticky: 'left',
+    align: 'left',
     resizable: true,
     visible: true,
   },
   {
-    id: "desc",
-    label: "Item Name",
+    id: 'desc',
+    label: 'Item Name',
     width: 180,
-    sticky: "left",
-    align: "left",
+    sticky: 'left',
+    align: 'left',
     resizable: true,
     visible: true,
   },
 
   {
-    id: "warranty",
-    label: "Warranty",
+    id: 'warranty',
+    label: 'Warranty',
     width: 130,
-    align: "left",
+    align: 'left',
     resizable: true,
     visible: true,
   },
 
   {
-    id: "attr",
-    label: "Attribute",
+    id: 'attr',
+    label: 'Attribute',
     width: 40,
-    align: "center",
+    align: 'center',
     resizable: true,
     visible: true,
   },
   {
-    id: "widg",
-    label: "Widget",
+    id: 'widg',
+    label: 'Widget',
     width: 40,
-    align: "center",
+    align: 'center',
     resizable: true,
     visible: true,
   },
   {
-    id: "batch",
-    label: "Batch",
+    id: 'batch',
+    label: 'Batch',
     width: 45,
-    align: "center",
+    align: 'center',
     resizable: true,
     visible: true,
   },
   {
-    id: "unit",
-    label: "Unit",
+    id: 'unit',
+    label: 'Unit',
     width: 70,
-    align: "left",
+    align: 'left',
     resizable: true,
     visible: true,
   },
   {
-    id: "qty",
-    label: "Quantity",
+    id: 'qty',
+    label: 'Quantity',
     width: 80,
-    align: "right",
+    align: 'right',
     resizable: true,
     visible: true,
   },
   {
-    id: "rate",
-    label: "Rate",
+    id: 'rate',
+    label: 'Rate',
     width: 80,
-    align: "right",
+    align: 'right',
     resizable: true,
     visible: true,
   },
   {
-    id: "amount",
-    label: "Amount",
+    id: 'amount',
+    label: 'Amount',
     width: 90,
-    align: "right",
+    align: 'right',
     resizable: true,
     visible: true,
   },
   {
-    id: "mrp",
-    label: "MRP",
+    id: 'mrp',
+    label: 'MRP',
     width: 80,
-    align: "right",
+    align: 'right',
     resizable: true,
     visible: true,
   },
   {
-    id: "rate",
-    label: "Rate",
+    id: 'rate',
+    label: 'Rate',
     width: 120,
-    align: "left",
+    align: 'left',
     resizable: true,
     visible: true,
   },
   {
-    id: "tacCode",
-    label: "Tax Code",
+    id: 'tacCode',
+    label: 'Tax Code',
     width: 120,
-    align: "left",
+    align: 'left',
     resizable: true,
     visible: true,
   },
   {
-    id: "taxRate",
-    label: "Tax Rate",
+    id: 'taxRate',
+    label: 'Tax Rate',
     width: 120,
-    align: "left",
+    align: 'left',
     resizable: true,
     visible: true,
   },
   {
-    id: "netRate",
-    label: "Net Rate",
+    id: 'netRate',
+    label: 'Net Rate',
     width: 120,
-    align: "left",
+    align: 'left',
     resizable: true,
     visible: true,
   },
   {
-    id: "remark",
-    label: "Remark",
+    id: 'remark',
+    label: 'Remark',
     width: 120,
-    align: "left",
+    align: 'left',
     resizable: true,
     visible: true,
   },
   {
-    id: "printdesc",
-    label: "Description",
+    id: 'printdesc',
+    label: 'Description',
     width: 150,
-    align: "left",
+    align: 'left',
     resizable: true,
     visible: true,
   },
   {
-    id: "barcode",
-    label: "Barcode",
+    id: 'barcode',
+    label: 'Barcode',
     width: 100,
-    align: "left",
+    align: 'left',
     resizable: true,
     visible: true,
   },
   {
-    id: "hsn",
-    label: "HSN Code",
+    id: 'hsn',
+    label: 'HSN Code',
     width: 80,
-    align: "left",
+    align: 'left',
     resizable: true,
     visible: true,
   },
   {
-    id: "brand",
-    label: "Brand",
+    id: 'brand',
+    label: 'Brand',
     width: 100,
-    align: "left",
+    align: 'left',
     resizable: true,
     visible: true,
   },
   {
-    id: "punit",
-    label: "Pack Unit",
+    id: 'punit',
+    label: 'Pack Unit',
     width: 70,
-    align: "left",
+    align: 'left',
     resizable: true,
     visible: false,
   },
   {
-    id: "pqty",
-    label: "Pack Qty",
+    id: 'pqty',
+    label: 'Pack Qty',
     width: 70,
-    align: "right",
+    align: 'right',
     resizable: true,
     visible: false,
   },
   {
-    id: "rateper",
-    label: "Rate Per",
+    id: 'rateper',
+    label: 'Rate Per',
     width: 80,
-    align: "left",
+    align: 'left',
     resizable: true,
     visible: false,
   },
   {
-    id: "minrate",
-    label: "Min Rate",
+    id: 'minrate',
+    label: 'Min Rate',
     width: 80,
-    align: "right",
+    align: 'right',
     resizable: true,
     visible: false,
   },
   {
-    id: "netrate",
-    label: "Net Rate",
+    id: 'netrate',
+    label: 'Net Rate',
     width: 80,
-    align: "right",
+    align: 'right',
     resizable: true,
     visible: false,
   },
   {
-    id: "service",
-    label: "Service Loc",
+    id: 'service',
+    label: 'Service Loc',
     width: 100,
-    align: "center",
+    align: 'center',
     resizable: true,
     visible: false,
   },
   {
-    id: "itembarcode",
-    label: "Item Barcode",
+    id: 'itembarcode',
+    label: 'Item Barcode',
     width: 100,
-    align: "left",
+    align: 'left',
     resizable: true,
     visible: false,
   },
   {
-    id: "bdbatchno",
-    label: "BD Batch No",
+    id: 'bdbatchno',
+    label: 'BD Batch No',
     width: 90,
-    align: "left",
+    align: 'left',
     resizable: false,
     visible: false,
   },
   {
-    id: "bdexpdate",
-    label: "BD Exp.Date",
+    id: 'bdexpdate',
+    label: 'BD Exp.Date',
     width: 90,
-    align: "left",
+    align: 'left',
     resizable: false,
     visible: false,
   },
   {
-    id: "bdsalerate",
-    label: "BD Sale Rate",
+    id: 'bdsalerate',
+    label: 'BD Sale Rate',
     width: 90,
-    align: "right",
+    align: 'right',
     resizable: false,
     visible: false,
   },
   {
-    id: "itembalance",
-    label: "Item Balance",
+    id: 'itembalance',
+    label: 'Item Balance',
     width: 80,
-    align: "right",
+    align: 'right',
     resizable: false,
     visible: false,
   },
   {
-    id: "linelevel",
-    label: "Line Lvl Barcode",
+    id: 'linelevel',
+    label: 'Line Lvl Barcode',
     width: 110,
-    align: "left",
+    align: 'left',
     resizable: false,
     visible: false,
   },
 ];
 
-const OrderTable: React.FC<OrderTableProps> = ({
-  rows,
-  setRows,
-  tableData,
-  setTableData,
-}) => {
-  const generateRowId = () =>
-    `row-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+const OrderTable: React.FC<OrderTableProps> = ({ rows, setRows, tableData, setTableData }) => {
+  const generateRowId = () => `row-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
   const [items, setItems] = useState<ItemApiData[]>([]);
   const [, setStockUnits] = useState<StockUnitData[]>([]);
 
   const [sortConfig, setSortConfig] = useState<{
     key: string;
-    direction: "asc" | "desc";
+    direction: 'asc' | 'desc';
   } | null>(null);
 
   const [configOpen, setConfigOpen] = useState(false);
-  const [configSearch, setConfigSearch] = useState("");
+  const [configSearch, setConfigSearch] = useState('');
 
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
@@ -419,7 +413,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
     options: WarrantyOption[];
   }>({ visible: false, top: 0, left: 0, activeRowId: null, options: [] });
 
-  const [newWarranty, setNewWarranty] = useState({ duration: "", price: "" });
+  const [newWarranty, setNewWarranty] = useState({ duration: '', price: '' });
 
   const [attributePanelState, setAttributePanelState] = useState<{
     visible: boolean;
@@ -436,11 +430,11 @@ const OrderTable: React.FC<OrderTableProps> = ({
       const initialData: Record<string, RowData> = {};
       initialRows.forEach((id) => {
         initialData[id] = {
-          postype: "Sale",
+          postype: 'Sale',
           qty: 0,
           rate: 0,
           amount: 0,
-          warranty: "",
+          warranty: '',
         };
       });
       setTableData(initialData);
@@ -458,23 +452,18 @@ const OrderTable: React.FC<OrderTableProps> = ({
       const unitsData = await fetchStockUnits();
       if (Array.isArray(unitsData)) setStockUnits(unitsData);
     } catch (error) {
-      console.error("Failed to load table master data", error);
+      console.error('Failed to load table master data', error);
     }
   };
 
-  const [columns, setColumns] = useState<Column[]>(
-    JSON.parse(JSON.stringify(DEFAULT_COLUMNS))
-  );
+  const [columns, setColumns] = useState<Column[]>(JSON.parse(JSON.stringify(DEFAULT_COLUMNS)));
 
-  const visibleColumns = useMemo(
-    () => columns.filter((c) => c.visible),
-    [columns]
-  );
+  const visibleColumns = useMemo(() => columns.filter((c) => c.visible), [columns]);
 
   const handleResetDefault = () => {
     setColumns(JSON.parse(JSON.stringify(DEFAULT_COLUMNS)));
 
-    setConfigSearch("");
+    setConfigSearch('');
   };
 
   const handleCloseForm = () => {
@@ -486,25 +475,17 @@ const OrderTable: React.FC<OrderTableProps> = ({
     setAddNewItemForm(false);
   };
 
-  const handleInputChange = (
-    rowId: string,
-    columnId: string,
-    value: string
-  ) => {
+  const handleInputChange = (rowId: string, columnId: string, value: string) => {
     setTableData((prev) => {
       const row = prev[rowId] || {};
       const newData = { ...row, [columnId]: value };
-      if (columnId === "qty" || columnId === "rate") {
-        const qty = parseFloat(
-          columnId === "qty" ? value : String(row.qty || 0)
-        );
-        const rate = parseFloat(
-          columnId === "rate" ? value : String(row.rate || 0)
-        );
+      if (columnId === 'qty' || columnId === 'rate') {
+        const qty = parseFloat(columnId === 'qty' ? value : String(row.qty || 0));
+        const rate = parseFloat(columnId === 'rate' ? value : String(row.rate || 0));
         if (!isNaN(qty) && !isNaN(rate)) {
           newData.amount = (qty * rate).toFixed(2);
         } else {
-          newData.amount = "0.00";
+          newData.amount = '0.00';
         }
       }
       return { ...prev, [rowId]: newData };
@@ -523,11 +504,11 @@ const OrderTable: React.FC<OrderTableProps> = ({
       setTableData((prev) => ({
         ...prev,
         [rowIdToDelete]: {
-          postype: "Sale",
+          postype: 'Sale',
           qty: 0,
           rate: 0,
           amount: 0,
-          warranty: "",
+          warranty: '',
         },
       }));
     }
@@ -543,11 +524,11 @@ const OrderTable: React.FC<OrderTableProps> = ({
       setTableData((prev) => ({
         ...prev,
         [newId]: {
-          postype: "Sale",
+          postype: 'Sale',
           qty: 0,
           rate: 0,
           amount: 0,
-          warranty: "",
+          warranty: '',
         },
       }));
     }
@@ -574,16 +555,11 @@ const OrderTable: React.FC<OrderTableProps> = ({
 
   const toggleColumnVisibility = (colId: string) => {
     setColumns((prev) =>
-      prev.map((col) =>
-        col.id === colId ? { ...col, visible: !col.visible } : col
-      )
+      prev.map((col) => (col.id === colId ? { ...col, visible: !col.visible } : col))
     );
   };
 
-  const handleSelectClick = (
-    e: React.MouseEvent<HTMLDivElement>,
-    rowId: string
-  ) => {
+  const handleSelectClick = (e: React.MouseEvent<HTMLDivElement>, rowId: string) => {
     e.stopPropagation();
     const rect = e.currentTarget.getBoundingClientRect();
     setPopupState({
@@ -609,13 +585,10 @@ const OrderTable: React.FC<OrderTableProps> = ({
     }
   };
 
-  const handleWarrantyClick = (
-    e: React.MouseEvent<HTMLDivElement>,
-    rowId: string
-  ) => {
+  const handleWarrantyClick = (e: React.MouseEvent<HTMLDivElement>, rowId: string) => {
     e.stopPropagation();
     const rowData = tableData[rowId];
-    const options = getStandardWarranties(String(rowData?.select || ""));
+    const options = getStandardWarranties(String(rowData?.select || ''));
 
     const rect = e.currentTarget.getBoundingClientRect();
     setWarrantyPopup({
@@ -625,7 +598,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
       activeRowId: rowId,
       options: options,
     });
-    setNewWarranty({ duration: "", price: "" });
+    setNewWarranty({ duration: '', price: '' });
   };
 
   const closeWarrantyPopup = () => {
@@ -639,7 +612,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
   const handleWarrantySelect = (w: WarrantyOption) => {
     if (warrantyPopup.activeRowId) {
       const displayString = w.price > 0 ? `${w.label} (+₹${w.price})` : w.label;
-      handleInputChange(warrantyPopup.activeRowId, "warranty", displayString);
+      handleInputChange(warrantyPopup.activeRowId, 'warranty', displayString);
       closeWarrantyPopup();
     }
   };
@@ -650,7 +623,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
       const price = parseFloat(newWarranty.price) || 0;
       const label = newWarranty.duration;
       const displayString = price > 0 ? `${label} (+₹${price})` : label;
-      handleInputChange(warrantyPopup.activeRowId, "warranty", displayString);
+      handleInputChange(warrantyPopup.activeRowId, 'warranty', displayString);
       closeWarrantyPopup();
     }
   };
@@ -680,17 +653,17 @@ const OrderTable: React.FC<OrderTableProps> = ({
     const { activeRowId, tempItemData } = attributePanelState;
     if (activeRowId && tempItemData) {
       const baseData: RowData = {
-        postype: "Sale",
-        select: tempItemData.code || "",
-        desc: tempItemData.name || "",
+        postype: 'Sale',
+        select: tempItemData.code || '',
+        desc: tempItemData.name || '',
         // unit: tempItemData.stock_unit || "",
-        hsn: tempItemData.gst_classfication || "",
+        hsn: tempItemData.gst_classfication || '',
         // brand: tempItemData.brand || "",
-        qty: "1",
-        mrp: tempItemData.mrp || "0",
-        rate: tempItemData.sales_rate || "0",
-        barcode: tempItemData.barcode || "",
-        printdesc: tempItemData.name || "",
+        qty: '1',
+        mrp: tempItemData.mrp || '0',
+        rate: tempItemData.sales_rate || '0',
+        barcode: tempItemData.barcode || '',
+        printdesc: tempItemData.name || '',
       };
       const qty = 1;
       const rate = parseFloat(String(tempItemData.sales_rate || 0));
@@ -714,23 +687,14 @@ const OrderTable: React.FC<OrderTableProps> = ({
 
   const handleHeaderClick = (columnId: string) => {
     if (
-      [
-        "sno",
-        "add",
-        "del",
-        "copy",
-        "attr",
-        "widg",
-        "batch",
-        "postype",
-        "warranty",
-      ].includes(columnId)
+      ['sno', 'add', 'del', 'copy', 'attr', 'widg', 'batch', 'postype', 'warranty'].includes(
+        columnId
+      )
     )
       return;
     setSortConfig((curr) => ({
       key: columnId,
-      direction:
-        curr?.key === columnId && curr.direction === "asc" ? "desc" : "asc",
+      direction: curr?.key === columnId && curr.direction === 'asc' ? 'desc' : 'asc',
     }));
   };
 
@@ -743,19 +707,19 @@ const OrderTable: React.FC<OrderTableProps> = ({
         if (!rowA && !rowB) return 0;
         if (!rowA) return 1;
         if (!rowB) return -1;
-        const valA = rowA[sortConfig.key] || "",
-          valB = rowB[sortConfig.key] || "";
-        return typeof valA === "string" && typeof valB === "string"
-          ? sortConfig.direction === "asc"
+        const valA = rowA[sortConfig.key] || '',
+          valB = rowB[sortConfig.key] || '';
+        return typeof valA === 'string' && typeof valB === 'string'
+          ? sortConfig.direction === 'asc'
             ? valA.localeCompare(valB)
             : valB.localeCompare(valA)
-          : sortConfig.direction === "asc"
-          ? valA < valB
-            ? -1
-            : 1
-          : valA > valB
-          ? -1
-          : 1;
+          : sortConfig.direction === 'asc'
+            ? valA < valB
+              ? -1
+              : 1
+            : valA > valB
+              ? -1
+              : 1;
       });
     }
     return sortable;
@@ -768,8 +732,8 @@ const OrderTable: React.FC<OrderTableProps> = ({
     resizingRef.current = index;
     startXRef.current = e.clientX;
     startWidthRef.current = visibleColumns[index].width;
-    document.addEventListener("mousemove", handleMouseMove as any);
-    document.addEventListener("mouseup", handleMouseUp);
+    document.addEventListener('mousemove', handleMouseMove as any);
+    document.addEventListener('mouseup', handleMouseUp);
   };
 
   const handleMouseMove = (e: MouseEvent | globalThis.MouseEvent) => {
@@ -780,10 +744,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
         if (col.id === colId) {
           return {
             ...col,
-            width: Math.max(
-              30,
-              startWidthRef.current + (e.clientX - startXRef.current)
-            ),
+            width: Math.max(30, startWidthRef.current + (e.clientX - startXRef.current)),
           };
         }
         return col;
@@ -793,14 +754,14 @@ const OrderTable: React.FC<OrderTableProps> = ({
 
   const handleMouseUp = () => {
     resizingRef.current = null;
-    document.removeEventListener("mousemove", handleMouseMove as any);
-    document.removeEventListener("mouseup", handleMouseUp);
+    document.removeEventListener('mousemove', handleMouseMove as any);
+    document.removeEventListener('mouseup', handleMouseUp);
   };
 
   const getStickyLeft = (idx: number) =>
     visibleColumns
       .slice(0, idx)
-      .reduce((acc, col) => (col.sticky === "left" ? acc + col.width : acc), 0);
+      .reduce((acc, col) => (col.sticky === 'left' ? acc + col.width : acc), 0);
 
   const totals = useMemo(() => {
     const sums: Record<string, number> = { qty: 0, amount: 0, mrp: 0 };
@@ -808,12 +769,12 @@ const OrderTable: React.FC<OrderTableProps> = ({
       const row = tableData[rowId];
       if (row) {
         const addVal = (field: string) => {
-          const val = parseFloat(String(row[field] || "0"));
+          const val = parseFloat(String(row[field] || '0'));
           if (!isNaN(val)) sums[field] += val;
         };
-        addVal("qty");
-        addVal("amount");
-        addVal("mrp");
+        addVal('qty');
+        addVal('amount');
+        addVal('mrp');
       }
     });
     return {
@@ -826,7 +787,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
   if (addNewItemForm) {
     return (
       <div className="w-full">
-        <div className="bg-white p-6 rounded-xl shadow-lg dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-lg dark:border-gray-700 dark:bg-gray-800">
           <AddNewItem
             onClose={handleCloseForm}
             onSuccess={handleFormSuccess}
@@ -839,62 +800,47 @@ const OrderTable: React.FC<OrderTableProps> = ({
 
   return (
     <div
-      className="flex flex-col h-auto font-sans text-sm overflow-hidden relative z-0"
-      style={{ backgroundColor: COLORS.background }}
-    >
+      className="relative z-0 flex h-auto flex-col overflow-hidden font-sans text-sm"
+      style={{ backgroundColor: COLORS.background }}>
       <div
-        className="flex-none flex justify-between items-center p-2 border-b z-10 relative bg-white"
-        style={{ borderColor: COLORS.border }}
-      >
+        className="relative z-10 flex flex-none items-center justify-between border-b bg-white p-2"
+        style={{ borderColor: COLORS.border }}>
         <div className="flex items-center gap-4">
           <div
-            className="flex items-center border h-8 w-72 rounded-sm bg-white"
-            style={{ borderColor: COLORS.borderDark }}
-          >
-            <div className="px-2 border-r h-full flex items-center justify-center bg-gray-50">
-              <ScanLine className="w-6 h-5 text-orange-500" />
+            className="flex h-8 w-72 items-center rounded-sm border bg-white"
+            style={{ borderColor: COLORS.borderDark }}>
+            <div className="flex h-full items-center justify-center border-r bg-gray-50 px-2">
+              <ScanLine className="h-5 w-6 text-orange-500" />
             </div>
-            <input
-              type="text"
-              placeholder="Scan"
-              className="px-2 outline-none text-sm w-full"
-            />
+            <input type="text" placeholder="Scan" className="w-full px-2 text-sm outline-none" />
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={() => setConfigOpen(true)}
-            className="p-1.5 rounded hover:bg-gray-100 text-gray-600 border border-transparent hover:border-gray-300 transition-all"
-            title="Configure Table Columns"
-          >
+            className="rounded border border-transparent p-1.5 text-gray-600 transition-all hover:border-gray-300 hover:bg-gray-100"
+            title="Configure Table Columns">
             <Settings size={18} />
           </button>
 
           <button
-            className="px-6 py-1.5 rounded text-xs font-bold text-white shadow-sm flex items-center gap-2"
+            className="flex items-center gap-2 rounded px-6 py-1.5 text-xs font-bold text-white shadow-sm"
             style={{ backgroundColor: COLORS.primary }}
-            onClick={() => setIsImportModalOpen(true)}
-          >
+            onClick={() => setIsImportModalOpen(true)}>
             <BarChart2 size={14} />
             Analyze & Import
           </button>
         </div>
       </div>
 
-      <div className="flex-1 p-0 relative flex flex-col z-0">
+      <div className="relative z-0 flex flex-1 flex-col p-0">
         <div
-          className="w-full border shadow-sm relative overflow-hidden bg-white"
-          style={{ borderColor: COLORS.borderDark }}
-        >
-          <div
-            className="w-full overflow-auto custom-scrollbar"
-            style={{ height: "250px" }}
-          >
-            <div
-              style={{ width: visibleColumns.reduce((a, c) => a + c.width, 0) }}
-            >
-              <table className="border-collapse table-fixed w-full">
+          className="relative w-full overflow-hidden border bg-white shadow-sm"
+          style={{ borderColor: COLORS.borderDark }}>
+          <div className="custom-scrollbar w-full overflow-auto" style={{ height: '250px' }}>
+            <div style={{ width: visibleColumns.reduce((a, c) => a + c.width, 0) }}>
+              <table className="w-full table-fixed border-collapse">
                 <thead className="sticky top-0 z-20">
                   <tr className="h-6">
                     {visibleColumns.map((col, idx) => (
@@ -902,30 +848,22 @@ const OrderTable: React.FC<OrderTableProps> = ({
                         key={col.id}
                         style={{
                           width: col.width,
-                          left:
-                            col.sticky === "left"
-                              ? getStickyLeft(idx)
-                              : undefined,
-                          position:
-                            col.sticky === "left" ? "sticky" : "relative",
-                          zIndex: col.sticky === "left" ? 30 : 20,
+                          left: col.sticky === 'left' ? getStickyLeft(idx) : undefined,
+                          position: col.sticky === 'left' ? 'sticky' : 'relative',
+                          zIndex: col.sticky === 'left' ? 30 : 20,
                           backgroundColor: COLORS.primary,
-                          color: "white",
+                          color: 'white',
                           borderColor: COLORS.primaryHover,
                         }}
-                        className="border-r px-1 text-xs font-normal cursor-pointer relative group"
-                        onClick={() => handleHeaderClick(col.id)}
-                      >
+                        className="group relative cursor-pointer border-r px-1 text-xs font-normal"
+                        onClick={() => handleHeaderClick(col.id)}>
                         <div
-                          className={`flex w-full h-full items-center ${
-                            col.align === "center"
-                              ? "justify-center"
-                              : "justify-between px-1"
-                          }`}
-                        >
+                          className={`flex h-full w-full items-center ${
+                            col.align === 'center' ? 'justify-center' : 'justify-between px-1'
+                          }`}>
                           <span className="truncate">{col.label}</span>
                           {sortConfig?.key === col.id &&
-                            (sortConfig.direction === "asc" ? (
+                            (sortConfig.direction === 'asc' ? (
                               <ArrowUp size={10} />
                             ) : (
                               <ArrowDown size={10} />
@@ -933,7 +871,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
                         </div>
                         {col.resizable && (
                           <div
-                            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 opacity-0 group-hover:opacity-100"
+                            className="absolute bottom-0 right-0 top-0 w-1 cursor-col-resize opacity-0 hover:bg-blue-400 group-hover:opacity-100"
                             onMouseDown={(e) => handleMouseDown(e, idx)}
                             onClick={(e) => e.stopPropagation()}
                           />
@@ -949,206 +887,157 @@ const OrderTable: React.FC<OrderTableProps> = ({
                       <tr
                         key={rowId}
                         className="h-6 border-b hover:bg-blue-50"
-                        style={{ borderColor: COLORS.border }}
-                      >
+                        style={{ borderColor: COLORS.border }}>
                         {visibleColumns.map((col, cIdx) => {
-                          const isLeft = col.sticky === "left";
+                          const isLeft = col.sticky === 'left';
                           let content: React.ReactNode = null;
 
-                          if (col.id === "sno")
-                            content = (
-                              <span className="text-gray-500">{vIdx + 1}</span>
-                            );
-                          else if (col.id === "add")
+                          if (col.id === 'sno')
+                            content = <span className="text-gray-500">{vIdx + 1}</span>;
+                          else if (col.id === 'add')
                             content = (
                               <Plus
                                 size={12}
-                                className="mx-auto text-green-600 cursor-pointer"
+                                className="mx-auto cursor-pointer text-green-600"
                                 onClick={() => handleAddRow(rowId)}
                               />
                             );
-                          else if (col.id === "del")
+                          else if (col.id === 'del')
                             content = (
                               <X
                                 size={12}
-                                className="mx-auto text-red-500 cursor-pointer"
+                                className="mx-auto cursor-pointer text-red-500"
                                 onClick={() => handleDeleteRow(rowId)}
                               />
                             );
-                          else if (col.id === "copy")
+                          else if (col.id === 'copy')
                             content = (
                               <Copy
                                 size={12}
-                                className="mx-auto text-orange-400 cursor-pointer"
+                                className="mx-auto cursor-pointer text-orange-400"
                                 onClick={() => handleCopyRow(rowId)}
                               />
                             );
-                          else if (col.id === "attr")
+                          else if (col.id === 'attr')
                             content = (
                               <FileText
                                 size={12}
-                                className="mx-auto text-blue-400 cursor-pointer"
+                                className="mx-auto cursor-pointer text-blue-400"
                                 onClick={() => handleAttributeClick(rowId)}
                               />
                             );
-                          else if (col.id === "widg")
+                          else if (col.id === 'widg')
+                            content = <BarChart2 size={12} className="mx-auto text-blue-400" />;
+                          else if (col.id === 'batch')
+                            content = <Table size={12} className="mx-auto text-blue-600" />;
+                          else if (col.id === 'postype') {
                             content = (
-                              <BarChart2
-                                size={12}
-                                className="mx-auto text-blue-400"
-                              />
-                            );
-                          else if (col.id === "batch")
-                            content = (
-                              <Table
-                                size={12}
-                                className="mx-auto text-blue-600"
-                              />
-                            );
-                          else if (col.id === "postype") {
-                            content = (
-                              <div className="relative w-full h-full group">
-                                <div className="flex justify-between items-center h-full px-1 text-[10px]">
+                              <div className="group relative h-full w-full">
+                                <div className="flex h-full items-center justify-between px-1 text-[10px]">
                                   <span
                                     style={{
-                                      color:
-                                        rowData.postype === "Sale"
-                                          ? "inherit"
-                                          : "red",
-                                    }}
-                                  >
-                                    {rowData.postype || "Return"}
+                                      color: rowData.postype === 'Sale' ? 'inherit' : 'red',
+                                    }}>
+                                    {rowData.postype || 'Return'}
                                   </span>
-                                  <ChevronDown
-                                    size={10}
-                                    className="text-gray-400"
-                                  />
+                                  <ChevronDown size={10} className="text-gray-400" />
                                 </div>
                                 <select
-                                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                  value={rowData.postype || "Sale"}
+                                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                                  value={rowData.postype || 'Sale'}
                                   onChange={(e) =>
-                                    handleInputChange(
-                                      rowId,
-                                      "postype",
-                                      e.target.value
-                                    )
-                                  }
-                                >
+                                    handleInputChange(rowId, 'postype', e.target.value)
+                                  }>
                                   <option value="Sale">Sale</option>
                                   <option value="Return">Return</option>
                                 </select>
                               </div>
                             );
-                          } else if (col.id === "select") {
+                          } else if (col.id === 'select') {
                             content = (
                               <div
-                                className="text-[10px] italic text-gray-400 flex justify-between cursor-pointer hover:bg-gray-100 h-full items-center px-1"
-                                onClick={(e) => handleSelectClick(e, rowId)}
-                              >
-                                {rowData.select || "Select..."} <span>▶</span>
+                                className="flex h-full cursor-pointer items-center justify-between px-1 text-[10px] italic text-gray-400 hover:bg-gray-100"
+                                onClick={(e) => handleSelectClick(e, rowId)}>
+                                {rowData.select || 'Select...'} <span>▶</span>
                               </div>
                             );
                           }
                           // --- NEW WARRANTY LOGIC ---
-                          else if (col.id === "warranty") {
+                          else if (col.id === 'warranty') {
                             // If user already selected a value, show it. If not, show "Select"
-                            const displayValue = rowData.warranty || "Select";
+                            const displayValue = rowData.warranty || 'Select';
                             const hasSelection = !!rowData.warranty;
 
                             content = (
                               <div
-                                className="w-full h-full px-1 flex items-center justify-between cursor-pointer hover:bg-gray-100 text-[10px] text-gray-700"
-                                onClick={(e) => handleWarrantyClick(e, rowId)}
-                              >
+                                className="flex h-full w-full cursor-pointer items-center justify-between px-1 text-[10px] text-gray-700 hover:bg-gray-100"
+                                onClick={(e) => handleWarrantyClick(e, rowId)}>
                                 <span
                                   className={
                                     hasSelection
-                                      ? "text-blue-700 font-medium"
-                                      : "text-gray-400 italic"
-                                  }
-                                >
+                                      ? 'font-medium text-blue-700'
+                                      : 'italic text-gray-400'
+                                  }>
                                   {displayValue}
                                 </span>
-                                <ChevronDown
-                                  size={10}
-                                  className="text-gray-400"
-                                />
+                                <ChevronDown size={10} className="text-gray-400" />
                               </div>
                             );
-                          } else if (col.id === "amount") {
+                          } else if (col.id === 'amount') {
                             content = (
-                              <div className="w-full h-full flex items-center justify-end px-1 bg-gray-50 text-gray-700 font-medium">
-                                {rowData[col.id] || "0.00"}
+                              <div className="flex h-full w-full items-center justify-end bg-gray-50 px-1 font-medium text-gray-700">
+                                {rowData[col.id] || '0.00'}
                               </div>
                             );
                           } else if (
                             [
-                              "qty",
-                              "rate",
-                              "mrp",
-                              "pqty",
-                              "minrate",
-                              "netrate",
-                              "bdsalerate",
+                              'qty',
+                              'rate',
+                              'mrp',
+                              'pqty',
+                              'minrate',
+                              'netrate',
+                              'bdsalerate',
                             ].includes(col.id)
                           ) {
                             content = (
                               <input
                                 type="text"
-                                className="w-full h-full bg-transparent outline-none px-1 text-right"
-                                value={rowData[col.id] || ""}
-                                onChange={(e) =>
-                                  handleInputChange(
-                                    rowId,
-                                    col.id,
-                                    e.target.value
-                                  )
-                                }
+                                className="h-full w-full bg-transparent px-1 text-right outline-none"
+                                value={rowData[col.id] || ''}
+                                onChange={(e) => handleInputChange(rowId, col.id, e.target.value)}
                               />
                             );
                           } else {
                             content = (
                               <input
                                 type="text"
-                                className="w-full h-full bg-transparent outline-none px-1"
-                                value={rowData[col.id] || ""}
-                                onChange={(e) =>
-                                  handleInputChange(
-                                    rowId,
-                                    col.id,
-                                    e.target.value
-                                  )
-                                }
+                                className="h-full w-full bg-transparent px-1 outline-none"
+                                value={rowData[col.id] || ''}
+                                onChange={(e) => handleInputChange(rowId, col.id, e.target.value)}
                               />
                             );
                           }
 
-                          const isReadOnly =
-                            !col.resizable &&
-                            !col.sticky &&
-                            col.id !== "warranty";
+                          const isReadOnly = !col.resizable && !col.sticky && col.id !== 'warranty';
                           return (
                             <td
                               key={col.id}
                               style={{
                                 width: col.width,
                                 left: isLeft ? getStickyLeft(cIdx) : undefined,
-                                position: isLeft ? "sticky" : "static",
-                                zIndex: isLeft ? 10 : "auto",
-                                backgroundColor: isReadOnly
-                                  ? "#FAFAFA"
-                                  : "white",
+                                position: isLeft ? 'sticky' : 'static',
+                                zIndex: isLeft ? 10 : 'auto',
+                                backgroundColor: isReadOnly ? '#FAFAFA' : 'white',
                                 borderColor: COLORS.border,
                               }}
-                              className={`border-r px-1 text-xs overflow-hidden whitespace-nowrap ${
-                                col.align === "center"
-                                  ? "text-center"
-                                  : col.align === "right"
-                                  ? "text-right"
-                                  : "text-left"
-                              } ${isReadOnly ? "text-gray-500" : ""}`}
-                            >
+                              className={`overflow-hidden whitespace-nowrap border-r px-1 text-xs ${
+                                col.align === 'center'
+                                  ? 'text-center'
+                                  : col.align === 'right'
+                                    ? 'text-right'
+                                    : 'text-left'
+                              } ${isReadOnly ? 'text-gray-500' : ''}`}>
                               {content}
                             </td>
                           );
@@ -1160,25 +1049,20 @@ const OrderTable: React.FC<OrderTableProps> = ({
                 <tfoot className="sticky bottom-0 z-20 bg-gray-50">
                   <tr className="h-9 font-bold">
                     {visibleColumns.map((col, idx) => {
-                      let content: React.ReactNode = "";
-                      if (col.id === "desc") content = "TOTAL";
-                      else if (col.id === "qty") content = totals.qty;
-                      else if (col.id === "amount") content = totals.amount;
+                      let content: React.ReactNode = '';
+                      if (col.id === 'desc') content = 'TOTAL';
+                      else if (col.id === 'qty') content = totals.qty;
+                      else if (col.id === 'amount') content = totals.amount;
                       return (
                         <td
                           key={col.id}
                           style={{
-                            left:
-                              col.sticky === "left"
-                                ? getStickyLeft(idx)
-                                : undefined,
-                            position:
-                              col.sticky === "left" ? "sticky" : "static",
-                            zIndex: col.sticky === "left" ? 30 : 20,
+                            left: col.sticky === 'left' ? getStickyLeft(idx) : undefined,
+                            position: col.sticky === 'left' ? 'sticky' : 'static',
+                            zIndex: col.sticky === 'left' ? 30 : 20,
                             backgroundColor: COLORS.background,
                           }}
-                          className="border-r border-t-2 px-1 text-xs text-right"
-                        >
+                          className="border-r border-t-2 px-1 text-right text-xs">
                           {content}
                         </td>
                       );
@@ -1193,48 +1077,40 @@ const OrderTable: React.FC<OrderTableProps> = ({
 
       {configOpen &&
         ReactDOM.createPortal(
-          <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <div
-              className="absolute inset-0"
-              onClick={() => setConfigOpen(false)}
-            />
+          <div className="animate-in fade-in fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm duration-200">
+            <div className="absolute inset-0" onClick={() => setConfigOpen(false)} />
 
             <div
-              className="relative rounded-xl shadow-2xl w-full max-w-3xl flex flex-col border overflow-hidden h-[90vh]"
+              className="relative flex h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl border shadow-2xl"
               style={{
                 backgroundColor: COLORS.white,
                 borderColor: COLORS.border,
-                maxHeight: "85vh",
-              }}
-            >
+                maxHeight: '85vh',
+              }}>
               <div
-                className="flex justify-between items-center px-6 py-4 border-b"
-                style={{ borderColor: COLORS.border }}
-              >
+                className="flex items-center justify-between border-b px-6 py-4"
+                style={{ borderColor: COLORS.border }}>
                 <h3
-                  className="font-bold text-xl flex items-center gap-2"
-                  style={{ color: COLORS.textPrimary }}
-                >
+                  className="flex items-center gap-2 text-xl font-bold"
+                  style={{ color: COLORS.textPrimary }}>
                   <Settings size={20} style={{ color: COLORS.primary }} />
                   Table Configuration
                 </h3>
                 <button
                   onClick={() => setConfigOpen(false)}
-                  className="p-1 rounded-full hover:bg-gray-100 transition-colors"
-                >
+                  className="rounded-full p-1 transition-colors hover:bg-gray-100">
                   <X size={22} style={{ color: COLORS.textSecondary }} />
                 </button>
               </div>
 
               {/* Search Bar Area */}
               <div
-                className="px-6 py-4 border-b"
+                className="border-b px-6 py-4"
                 style={{
                   backgroundColor: COLORS.background,
                   borderColor: COLORS.border,
-                }}
-              >
-                <div className="relative group">
+                }}>
+                <div className="group relative">
                   <Search
                     size={18}
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -1242,7 +1118,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
                   <input
                     type="text"
                     placeholder="Search columns to show/hide..."
-                    className="w-full pl-10 pr-4 py-3 border rounded-lg text-sm transition-all focus:ring-2 outline-none"
+                    className="w-full rounded-lg border py-3 pl-10 pr-4 text-sm outline-none transition-all focus:ring-2"
                     style={{
                       borderColor: COLORS.border,
                     }}
@@ -1252,40 +1128,26 @@ const OrderTable: React.FC<OrderTableProps> = ({
                 </div>
               </div>
 
-              <div className="overflow-y-auto flex-1 p-6 custom-scrollbar">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              <div className="custom-scrollbar flex-1 overflow-y-auto p-6">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
                   {columns
-                    .filter(
-                      (c) => !["sno", "add", "del", "copy"].includes(c.id)
-                    )
-                    .filter((c) =>
-                      c.label.toLowerCase().includes(configSearch.toLowerCase())
-                    )
+                    .filter((c) => !['sno', 'add', 'del', 'copy'].includes(c.id))
+                    .filter((c) => c.label.toLowerCase().includes(configSearch.toLowerCase()))
                     .map((col) => (
                       <div
                         key={col.id}
                         onClick={() => toggleColumnVisibility(col.id)}
-                        className="flex items-center gap-3 p-3 rounded-lg cursor-pointer border transition-all hover:shadow-sm select-none"
+                        className="flex cursor-pointer select-none items-center gap-3 rounded-lg border p-3 transition-all hover:shadow-sm"
                         style={{
-                          backgroundColor: col.visible
-                            ? `${COLORS.primary}10`
-                            : COLORS.white,
-                          borderColor: col.visible
-                            ? COLORS.primary
-                            : COLORS.border,
-                        }}
-                      >
+                          backgroundColor: col.visible ? `${COLORS.primary}10` : COLORS.white,
+                          borderColor: col.visible ? COLORS.primary : COLORS.border,
+                        }}>
                         <div
-                          className="w-5 h-5 rounded flex items-center justify-center border transition-colors"
+                          className="flex h-5 w-5 items-center justify-center rounded border transition-colors"
                           style={{
-                            backgroundColor: col.visible
-                              ? COLORS.primary
-                              : COLORS.white,
-                            borderColor: col.visible
-                              ? COLORS.primary
-                              : "#e5e7eb",
-                          }}
-                        >
+                            backgroundColor: col.visible ? COLORS.primary : COLORS.white,
+                            borderColor: col.visible ? COLORS.primary : '#e5e7eb',
+                          }}>
                           <Check
                             size={14}
                             className="transition-opacity"
@@ -1296,13 +1158,10 @@ const OrderTable: React.FC<OrderTableProps> = ({
                           />
                         </div>
                         <span
-                          className="text-sm font-medium truncate"
+                          className="truncate text-sm font-medium"
                           style={{
-                            color: col.visible
-                              ? COLORS.textPrimary
-                              : COLORS.textSecondary,
-                          }}
-                        >
+                            color: col.visible ? COLORS.textPrimary : COLORS.textSecondary,
+                          }}>
                           {col.label}
                         </span>
                       </div>
@@ -1311,14 +1170,12 @@ const OrderTable: React.FC<OrderTableProps> = ({
               </div>
 
               <div
-                className="px-6 py-4 border-t flex justify-between items-center bg-gray-50"
-                style={{ borderColor: COLORS.border }}
-              >
+                className="flex items-center justify-between border-t bg-gray-50 px-6 py-4"
+                style={{ borderColor: COLORS.border }}>
                 <button
                   onClick={handleResetDefault}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
-                  style={{ color: COLORS.textSecondary }}
-                >
+                  className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-200"
+                  style={{ color: COLORS.textSecondary }}>
                   <RotateCcw size={16} /> Reset to Default
                 </button>
 
@@ -1327,10 +1184,9 @@ const OrderTable: React.FC<OrderTableProps> = ({
                 </div>
 
                 <button
-                  className="px-6 py-1.5 rounded text-xs font-bold text-white shadow-sm flex items-center gap-2"
+                  className="flex items-center gap-2 rounded px-6 py-1.5 text-xs font-bold text-white shadow-sm"
                   style={{ backgroundColor: COLORS.primary }}
-                  onClick={() => setConfigOpen(false)}
-                >
+                  onClick={() => setConfigOpen(false)}>
                   Apply
                 </button>
               </div>
@@ -1340,10 +1196,9 @@ const OrderTable: React.FC<OrderTableProps> = ({
         )}
 
       <AttributePanel
+        billType="SALE"
         isOpen={attributePanelState.visible}
-        onClose={() =>
-          setAttributePanelState({ ...attributePanelState, visible: false })
-        }
+        onClose={() => setAttributePanelState({ ...attributePanelState, visible: false })}
         onSave={handleAttributeSave}
         initialData={attributePanelState.tempItemData}
       />
@@ -1356,45 +1211,39 @@ const OrderTable: React.FC<OrderTableProps> = ({
               onClick={closePopup}
             />
             <div
-              className="fixed z-[9999] bg-white border shadow-xl flex flex-col rounded"
+              className="fixed z-[9999] flex flex-col rounded border bg-white shadow-xl"
               style={{
                 top: popupState.top,
                 left: popupState.left,
                 borderColor: COLORS.borderDark,
-                width: "500px",
-                maxHeight: "300px",
-                transform:
-                  popupState.top + 300 > window.innerHeight
-                    ? "translateY(-100%)"
-                    : "none",
-              }}
-            >
+                width: '500px',
+                maxHeight: '300px',
+                transform: popupState.top + 300 > window.innerHeight ? 'translateY(-100%)' : 'none',
+              }}>
               <div
-                className="flex justify-between items-center p-2 border-b h-8"
-                style={{ backgroundColor: COLORS.primary, color: COLORS.white }}
-              >
-                <span className="font-bold text-xs pl-1">Select Item</span>
+                className="flex h-8 items-center justify-between border-b p-2"
+                style={{ backgroundColor: COLORS.primary, color: COLORS.white }}>
+                <span className="pl-1 text-xs font-bold">Select Item</span>
                 <button onClick={closePopup}>
                   <X size={14} />
                 </button>
               </div>
               <div className="flex-1 overflow-auto p-0">
-                <table className="w-full text-xs text-left border-collapse">
+                <table className="w-full border-collapse text-left text-xs">
                   <thead>
                     <tr>
-                      <th className="p-1.5 border">Code</th>
-                      <th className="p-1.5 border">Name</th>
+                      <th className="border p-1.5">Code</th>
+                      <th className="border p-1.5">Name</th>
                     </tr>
                   </thead>
                   <tbody>
                     {items.map((item, idx) => (
                       <tr
                         key={item._id || idx}
-                        className="border-b hover:bg-blue-50 cursor-pointer"
-                        onClick={() => handleItemSelect(item)}
-                      >
-                        <td className="p-1.5 border">{item.code}</td>
-                        <td className="p-1.5 border">{item.name}</td>
+                        className="cursor-pointer border-b hover:bg-blue-50"
+                        onClick={() => handleItemSelect(item)}>
+                        <td className="border p-1.5">{item.code}</td>
+                        <td className="border p-1.5">{item.name}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1413,27 +1262,20 @@ const OrderTable: React.FC<OrderTableProps> = ({
               onClick={closeWarrantyPopup}
             />
             <div
-              className="fixed z-[9999] bg-white border shadow-xl flex flex-col rounded overflow-hidden"
+              className="fixed z-[9999] flex flex-col overflow-hidden rounded border bg-white shadow-xl"
               style={{
                 top: warrantyPopup.top,
                 left: warrantyPopup.left,
                 borderColor: COLORS.borderDark,
-                width: "300px",
+                width: '300px',
                 transform:
-                  warrantyPopup.top + 350 > window.innerHeight
-                    ? "translateY(-100%)"
-                    : "none",
-              }}
-            >
-              <div className="flex justify-between items-center px-3 py-2 border-b bg-gray-50">
-                <span className="font-bold text-xs text-gray-700 flex items-center gap-1">
-                  <ShieldCheck size={14} className="text-blue-600" /> Select
-                  Warranty
+                  warrantyPopup.top + 350 > window.innerHeight ? 'translateY(-100%)' : 'none',
+              }}>
+              <div className="flex items-center justify-between border-b bg-gray-50 px-3 py-2">
+                <span className="flex items-center gap-1 text-xs font-bold text-gray-700">
+                  <ShieldCheck size={14} className="text-blue-600" /> Select Warranty
                 </span>
-                <button
-                  onClick={closeWarrantyPopup}
-                  className="text-gray-400 hover:text-red-500"
-                >
+                <button onClick={closeWarrantyPopup} className="text-gray-400 hover:text-red-500">
                   <X size={16} />
                 </button>
               </div>
@@ -1443,39 +1285,36 @@ const OrderTable: React.FC<OrderTableProps> = ({
                   warrantyPopup.options.map((opt) => (
                     <div
                       key={opt.id}
-                      className="px-3 py-2 border-b text-xs cursor-pointer hover:bg-blue-50 flex justify-between items-center group"
-                      onClick={() => handleWarrantySelect(opt)}
-                    >
-                      <span className="text-gray-700 font-medium">
-                        {opt.label}
-                      </span>
+                      className="group flex cursor-pointer items-center justify-between border-b px-3 py-2 text-xs hover:bg-blue-50"
+                      onClick={() => handleWarrantySelect(opt)}>
+                      <span className="font-medium text-gray-700">{opt.label}</span>
                       {opt.price > 0 && (
-                        <span className="text-green-600 font-bold bg-green-50 px-1.5 py-0.5 rounded">
+                        <span className="rounded bg-green-50 px-1.5 py-0.5 font-bold text-green-600">
                           +₹{opt.price}
                         </span>
                       )}
                     </div>
                   ))
                 ) : (
-                  <div className="p-3 text-xs text-center text-gray-400 italic">
+                  <div className="p-3 text-center text-xs italic text-gray-400">
                     No standard plans available for this item.
                   </div>
                 )}
               </div>
 
-              <div className="bg-gray-50 border-t p-3">
-                <div className="text-[10px] uppercase font-bold text-gray-500 mb-2">
+              <div className="border-t bg-gray-50 p-3">
+                <div className="mb-2 text-[10px] font-bold uppercase text-gray-500">
                   Add Custom Plan
                 </div>
                 <div className="space-y-2">
-                  <div className="flex items-center border bg-white rounded overflow-hidden h-8">
-                    <div className="bg-gray-100 px-2 h-full flex items-center border-r">
+                  <div className="flex h-8 items-center overflow-hidden rounded border bg-white">
+                    <div className="flex h-full items-center border-r bg-gray-100 px-2">
                       <Clock size={12} className="text-gray-500" />
                     </div>
                     <input
                       type="text"
                       placeholder="Duration (e.g. 3 Years)"
-                      className="w-full h-full px-2 text-xs outline-none"
+                      className="h-full w-full px-2 text-xs outline-none"
                       value={newWarranty.duration}
                       onChange={(e) =>
                         setNewWarranty((prev) => ({
@@ -1485,14 +1324,14 @@ const OrderTable: React.FC<OrderTableProps> = ({
                       }
                     />
                   </div>
-                  <div className="flex items-center border bg-white rounded overflow-hidden h-8">
-                    <div className="bg-gray-100 px-2 h-full flex items-center border-r">
+                  <div className="flex h-8 items-center overflow-hidden rounded border bg-white">
+                    <div className="flex h-full items-center border-r bg-gray-100 px-2">
                       <DollarSign size={12} className="text-gray-500" />
                     </div>
                     <input
                       type="number"
                       placeholder="Price (Optional)"
-                      className="w-full h-full px-2 text-xs outline-none"
+                      className="h-full w-full px-2 text-xs outline-none"
                       value={newWarranty.price}
                       onChange={(e) =>
                         setNewWarranty((prev) => ({
@@ -1503,10 +1342,9 @@ const OrderTable: React.FC<OrderTableProps> = ({
                     />
                   </div>
                   <button
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 rounded transition-colors disabled:opacity-50"
+                    className="w-full rounded bg-blue-600 py-2 text-xs font-bold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
                     onClick={handleAddCustomWarranty}
-                    disabled={!newWarranty.duration}
-                  >
+                    disabled={!newWarranty.duration}>
                     Add & Apply
                   </button>
                 </div>

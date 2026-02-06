@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Save, Share2, Mail, MessageCircle, ChevronUp, Download } from 'lucide-react';
+import { X, Save, Download } from 'lucide-react';
 
 import PurchaseBillHeader from './PurchaseBillHeader';
 import PurchaseBillForm, { PurchaseBillFormRef } from './PurchaseBillForm';
@@ -15,14 +15,13 @@ import LedgerAttributes, { LedgerData } from '../../../../components/LedgerAttri
 
 import GoodsRecieptNoteLogistics, {
   LogisticsData,
+  GoodsRecieptNoteLogisticsRef,
 } from '../goodsRecieptNote/GoodsRecieptNoteLogistics';
 
 import PurchaseBillInvoice from '../../../../components/invoiceDownload/PurchaseBillInvoice';
 
-// Import Utils
 import { downloadPdf, getPdfFileName } from '../../../../utils/pdfUtils';
 
-// --- Constants ---
 const INITIAL_LOGISTICS_DATA: LogisticsData = {
   destination: '',
   shippingMode: 'Road',
@@ -77,12 +76,11 @@ const INITIAL_LOGISTICS_DATA: LogisticsData = {
 };
 
 const PurchaseBill: React.FC = () => {
-  // --- Refs ---
   const orderTableRef = useRef<OrderTableRef>(null);
   const formRef = useRef<PurchaseBillFormRef>(null);
   const footerRef = useRef<PurchaseBillFooterRef>(null);
+  const logisticsRef = useRef<GoodsRecieptNoteLogisticsRef>(null);
 
-  // --- State ---
   const [cashCredit, setCashCredit] = useState<string>('Credit');
   const [currentVendorCode, setCurrentVendorCode] = useState<string>('');
   const [currentStoreCode, setCurrentStoreCode] = useState<string>('');
@@ -90,7 +88,6 @@ const PurchaseBill: React.FC = () => {
   const [isAnalysisOpen, setAnalysisOpen] = useState(false);
   const [analysisData, setAnalysisData] = useState<any>(null);
 
-  // Share Dropdown State
   const [isShareOpen, setIsShareOpen] = useState(false);
 
   const [ledgerData, setLedgerData] = useState<LedgerData>({
@@ -105,7 +102,6 @@ const PurchaseBill: React.FC = () => {
   const [generatedBillData, setGeneratedBillData] = useState<any>(null);
   const [tableItems, setTableItems] = useState<any[]>([]);
 
-  // Close share menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
@@ -176,7 +172,6 @@ const PurchaseBill: React.FC = () => {
   };
 
   const handleDownloadPdf = async (billDataToUse: any = null) => {
-    // Priority: Passed Argument > State > Error
     const data = billDataToUse || generatedBillData;
 
     if (!data) {
@@ -184,10 +179,8 @@ const PurchaseBill: React.FC = () => {
       return;
     }
 
-    // Ensure the Modal is actually open so the Element ID exists in the DOM
     if (!showBillPreview) {
       setShowBillPreview(true);
-      // Small delay to let React render the modal before grabbing the ID
       await new Promise((resolve) => setTimeout(resolve, 300));
     }
 
@@ -201,43 +194,39 @@ const PurchaseBill: React.FC = () => {
     });
   };
 
-  // --- Share Handler ---
-  const handleShare = async (method: 'whatsapp' | 'email') => {
-    if (!generatedBillData) {
-      alert('Please save the bill first.');
-      return;
-    }
+  // const handleShare = async (method: 'whatsapp' | 'email') => {
+  //   if (!generatedBillData) {
+  //     alert('Please save the bill first.');
+  //     return;
+  //   }
 
-    // 1. Download the file
-    await handleDownloadPdf(generatedBillData);
+  //   await handleDownloadPdf(generatedBillData);
 
-    const billNo = generatedBillData.billNo;
-    const vendor = generatedBillData.vendorDetails?.vend_name || 'Vendor';
-    const amount = generatedBillData.docAmount;
-    const message = `Hello, Please find attached the Purchase Bill ${billNo} from ${vendor} for Amount ${amount}.`;
+  //   const billNo = generatedBillData.billNo;
+  //   const vendor = generatedBillData.vendorDetails?.vend_name || 'Vendor';
+  //   const amount = generatedBillData.docAmount;
+  //   const message = `Hello, Please find attached the Purchase Bill ${billNo} from ${vendor} for Amount ${amount}.`;
 
-    // 2. Instructions for the user (Cleaner Message)
-    const proceed = window.confirm(
-      `File downloaded successfully!\n\nNext Step: We will open ${method === 'whatsapp' ? 'WhatsApp' : 'Email'}.\n\nPlease drag and drop the downloaded PDF into the chat/email to send it.\n\nProceed?`
-    );
+  //   const proceed = window.confirm(
+  //     `File downloaded successfully!\n\nNext Step: We will open ${method === 'whatsapp' ? 'WhatsApp' : 'Email'}.\n\nPlease drag and drop the downloaded PDF into the chat/email to send it.\n\nProceed?`
+  //   );
 
-    if (!proceed) {
-      setIsShareOpen(false);
-      return;
-    }
+  //   if (!proceed) {
+  //     setIsShareOpen(false);
+  //     return;
+  //   }
 
-    // 3. Open the App
-    if (method === 'whatsapp') {
-      const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
-      window.open(url, '_blank');
-    } else if (method === 'email') {
-      const subject = `Purchase Bill - ${billNo}`;
-      const url = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
-      window.open(url, '_blank');
-    }
+  //   if (method === 'whatsapp') {
+  //     const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+  //     window.open(url, '_blank');
+  //   } else if (method === 'email') {
+  //     const subject = `Purchase Bill - ${billNo}`;
+  //     const url = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
+  //     window.open(url, '_blank');
+  //   }
 
-    setIsShareOpen(false);
-  };
+  //   setIsShareOpen(false);
+  // };
 
   const handleFinalSubmit = async () => {
     setIsSubmitting(true);
@@ -247,8 +236,6 @@ const PurchaseBill: React.FC = () => {
       const tableSource: any = orderTableRef.current?.getTableData?.();
       const footerData = footerRef.current?.getFooterData() as any;
       const paymentList = footerData?.payments || [];
-
-      // const paymentList = footerData?.payments || [];
 
       if (!formData || !formData.storeCode || !formData.vendorCode) {
         alert('Store or Vendor Code is missing.');
@@ -273,7 +260,6 @@ const PurchaseBill: React.FC = () => {
           brand: item.brand || '',
         };
       });
-      // const totalPaid = footerData?.receivedAmount ?? 0;
 
       const payload = {
         storeCode: formData.storeCode,
@@ -319,19 +305,19 @@ const PurchaseBill: React.FC = () => {
         logistics: {
           freight: {
             amount: Number(logisticsData.freight) || 0,
-            accountCode: logisticsData.freightAccount || '23400002',
+            accountCode: logisticsData.freightAccount || '',
           },
           loadingUnloading: {
             amount: Number(logisticsData.loadingUnloading) || 0,
-            accountCode: logisticsData.loadingUnloadingAccount || '23400002',
+            accountCode: logisticsData.loadingUnloadingAccount || '',
           },
           insurance: {
             amount: Number(logisticsData.insurance) || 0,
-            accountCode: logisticsData.insuranceAccount || '23400002',
+            accountCode: logisticsData.insuranceAccount || '',
           },
           otherCharges: {
             amount: Number(logisticsData.otherCharges) || 0,
-            accountCode: logisticsData.otherChargesAccount || '23400002',
+            accountCode: logisticsData.otherChargesAccount || '',
           },
           custDuty: {
             amount: Number(logisticsData.custDuty) || 0,
@@ -343,15 +329,15 @@ const PurchaseBill: React.FC = () => {
           },
           handling: {
             amount: Number(logisticsData.handling) || 0,
-            accountCode: logisticsData.handlingAccount || '23400002',
+            accountCode: logisticsData.handlingAccount || '',
           },
           docCharges: {
             amount: Number(logisticsData.docCharges) || 0,
-            accountCode: logisticsData.docChargesAccount || '23400002',
+            accountCode: logisticsData.docChargesAccount || '',
           },
           bankCharges: {
             amount: Number(logisticsData.bankCharges) || 0,
-            accountCode: logisticsData.bankChargesAccount || '23400002',
+            accountCode: logisticsData.bankChargesAccount || '',
           },
           custExp: {
             amount: Number(logisticsData.custExp) || 0,
@@ -368,22 +354,32 @@ const PurchaseBill: React.FC = () => {
         gstType: formData.gstType,
       };
 
-      // LOGGING THE FULL PAYLOAD
       console.log('✅ SUBMITTED PAYLOAD:', JSON.stringify(payload, null, 2));
 
       const response = await purchaseBillService.createPurchaseBill(payload as any);
       const finalBillData = response.data?.data || response.data;
 
       if (finalBillData) {
+        alert('✅ Invoice Saved Successfully!');
         setGeneratedBillData(finalBillData);
         setShowBillPreview(true);
 
-        // --- RESET DATA ---
         formRef.current?.resetForm();
+
+        if (orderTableRef.current?.clearTable) {
+          orderTableRef.current.clearTable();
+        }
+
+        if (footerRef.current?.resetFooter) {
+          footerRef.current.resetFooter();
+        }
+
+        setTableItems([]);
+
+        logisticsRef.current?.resetLogisticsUI();
+
         setLogisticsData(INITIAL_LOGISTICS_DATA);
         setLedgerData({ employee: '', group: '' });
-        // Note: Table data reset depends on OrderTable's implementation.
-        // If it supports a reset method via ref, add: orderTableRef.current?.resetTable();
       }
     } catch (error) {
       console.error('❌ API ERROR:', error);
@@ -395,16 +391,12 @@ const PurchaseBill: React.FC = () => {
 
   return (
     <div className="flex flex-col overflow-hidden" style={{ backgroundColor: COLORS.background }}>
-      {/* HEADER */}
       <PurchaseBillHeader />
 
-      {/* CONTENT AREA */}
       <div className="custom-scrollbar flex-1 overflow-auto px-4 py-3 pb-24">
         <div className="mx-auto flex max-w-[1400px] flex-col gap-4">
-          {/* Step 1: Form */}
           <PurchaseBillForm ref={formRef} onFormChange={handleFormChange} />
 
-          {/* Step 2: Table */}
           <OrderTable
             ref={orderTableRef}
             onAnalyze={handleAnalyzeProfit}
@@ -417,18 +409,20 @@ const PurchaseBill: React.FC = () => {
 
           <LedgerAttributes data={ledgerData} onChange={setLedgerData} />
 
-          <GoodsRecieptNoteLogistics data={logisticsData} onChange={setLogisticsData} />
+          <GoodsRecieptNoteLogistics
+            data={logisticsData}
+            ref={logisticsRef}
+            onChange={setLogisticsData}
+          />
         </div>
       </div>
 
-      {/* FIXED BOTTOM FOOTER */}
       <div
         className="fixed bottom-0 left-0 right-0 z-50 flex h-16 items-center justify-end border-t bg-white px-6 shadow-[0_-6px_10px_-4px_rgba(0,0,0,0.15)]"
         style={{ borderColor: COLORS.borderDark }}>
-        {/* Right: Share & Save */}
         <div className="flex items-center gap-4">
           <div className="share-dropdown-container relative">
-            <button
+            {/* <button
               onClick={() => setIsShareOpen(!isShareOpen)}
               className="flex items-center gap-2 rounded border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50">
               <Share2 size={18} />
@@ -437,11 +431,10 @@ const PurchaseBill: React.FC = () => {
                 size={16}
                 className={`transition-transform duration-200 ${isShareOpen ? 'rotate-180' : ''}`}
               />
-            </button>
+            </button> */}
 
             {isShareOpen && (
               <div className="animate-in fade-in slide-in-from-bottom-2 absolute bottom-full right-0 z-[100] mb-2 w-56 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl">
-                {/* NEW: Download Option */}
                 <button
                   onClick={() => handleDownloadPdf()}
                   className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50">
@@ -450,7 +443,7 @@ const PurchaseBill: React.FC = () => {
                 </button>
                 <div className="h-[1px] bg-gray-100"></div>
 
-                <button
+                {/* <button
                   onClick={() => handleShare('whatsapp')}
                   className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-gray-700 transition-colors hover:bg-green-50 hover:text-green-700">
                   <MessageCircle size={18} />
@@ -463,25 +456,22 @@ const PurchaseBill: React.FC = () => {
                   className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-gray-700 transition-colors hover:bg-blue-50 hover:text-blue-700">
                   <Mail size={18} />
                   Share on Email
-                </button>
+                </button> */}
               </div>
             )}
           </div>
 
-          {/* Save Button */}
           <button
             onClick={handleFinalSubmit}
             disabled={isSubmitting}
             className="z-50 flex items-center gap-2 rounded px-6 py-2 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg active:scale-95 disabled:opacity-60"
-            style={{ backgroundColor: COLORS.primary || '#0f3c63' }} // Fallback if COLORS.primary undefined
-          >
+            style={{ backgroundColor: COLORS.primary || '#0f3c63' }}>
             <Save size={18} />
             {isSubmitting ? 'Saving...' : 'Save & Preview'}
           </button>
         </div>
       </div>
 
-      {/* MODALS */}
       <ProfitAnalysisModal
         isOpen={isAnalysisOpen}
         onClose={() => setAnalysisOpen(false)}
@@ -494,13 +484,12 @@ const PurchaseBill: React.FC = () => {
             <div className="flex items-center justify-between border-b bg-gray-100 px-4 py-3">
               <h3 className="font-bold text-gray-700">Purchase Bill Generated</h3>
               <div className="flex items-center gap-2">
-                {/* NEW: Download Button in Header */}
-                <button
+                {/* <button
                   onClick={() => handleDownloadPdf(generatedBillData)}
                   className="rounded-full bg-blue-500 p-1.5 text-white transition-colors hover:bg-blue-600"
                   title="Download PDF">
                   <Download size={18} />
-                </button>
+                </button> */}
 
                 <button
                   onClick={() => setShowBillPreview(false)}
@@ -510,12 +499,11 @@ const PurchaseBill: React.FC = () => {
               </div>
             </div>
             <div className="custom-scrollbar flex-1 overflow-auto bg-gray-50 p-6">
-              {/* Ensure this component contains the id="printable-invoice-area" */}
               <PurchaseBillInvoice
                 data={generatedBillData}
-                onDownload={() => handleDownloadPdf(generatedBillData)}
-                onShareWhatsApp={() => handleShare('whatsapp')}
-                onShareEmail={() => handleShare('email')}
+                // onDownload={() => handleDownloadPdf(generatedBillData)}
+                // onShareWhatsApp={() => handleShare('whatsapp')}
+                // onShareEmail={() => handleShare('email')}
               />
             </div>
           </div>

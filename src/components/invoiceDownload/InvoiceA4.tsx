@@ -1,6 +1,6 @@
 import React, { useRef } from "react";
-// You can keep using your existing Icon import
-import { PrintIcon } from "../function/functions";
+import { PrintIcon } from "../function/functions"; // Assuming this is a custom icon component
+import { Share2 } from "lucide-react";
 
 // --- Types ---
 interface InvoiceItem {
@@ -10,6 +10,7 @@ interface InvoiceItem {
   uom: string;
   rate: number;
   amount: number;
+  warranty?: string;
 }
 
 interface Address {
@@ -21,6 +22,8 @@ interface Address {
 }
 
 interface InvoiceData {
+  storeName?: string;
+  remarks?: string;
   invoiceNo: string;
   date: string;
   billType: string;
@@ -47,38 +50,35 @@ interface InvoiceProps {
 const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
   const componentRef = useRef<HTMLDivElement>(null);
 
-  // --- FIXED PRINT LOGIC ---
   const handlePrint = () => {
     const printContent = componentRef.current;
     if (!printContent) return;
 
     const printWindow = window.open("", "", "height=800,width=900");
-
     if (printWindow) {
       printWindow.document.write("<html><head><title>Print Invoice</title>");
 
-      // 1. Convert Relative Paths to Absolute and Copy Stylesheets
-      // This fixes the issue where styles were missing in the popup
+      // Append all stylesheet links
       const links = document.querySelectorAll('link[rel="stylesheet"]');
       links.forEach((link) => {
         const newLink = printWindow.document.createElement("link");
         newLink.rel = "stylesheet";
-        // Use .href property (absolute URL) instead of getAttribute (relative)
         newLink.href = (link as HTMLLinkElement).href;
         printWindow.document.head.appendChild(newLink);
       });
 
-      // 2. Copy Inline Styles (e.g., from style-loader or CSS-in-JS)
+      // Append all inline styles
       const styles = document.querySelectorAll("style");
       styles.forEach((style) => {
         printWindow.document.head.appendChild(style.cloneNode(true));
       });
 
-      // 3. Add Print-Specific CSS to hide browser headers/footers
+      // Custom print styles for perfect A4 sizing
       const customStyle = printWindow.document.createElement("style");
       customStyle.innerHTML = `
-        @page { size: auto; margin: 0mm; } /* Hides browser header/footer */
-        body { margin: 0; background-color: white; -webkit-print-color-adjust: exact; }
+        @page { size: A4 portrait; margin: 0; }
+        body { margin: 0; padding: 0; background-color: white; -webkit-print-color-adjust: exact; color-adjust: exact; }
+        html { margin: 0; padding: 0; }
       `;
       printWindow.document.head.appendChild(customStyle);
 
@@ -87,26 +87,40 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
       printWindow.document.write("</body></html>");
       printWindow.document.close();
 
-      // 4. Wait for styles to load before printing
+      // Wait for content to load before printing
       printWindow.onload = () => {
         printWindow.focus();
         setTimeout(() => {
           printWindow.print();
-        }, 500); // Small delay to ensure rendering is complete
+          // Optionally close the window after print, but better to let user handle
+          // printWindow.close();
+        }, 500);
       };
-
-      // Fallback if onload doesn't trigger immediately
-      setTimeout(() => {
-        if (!printWindow.closed) {
-          printWindow.focus();
-          printWindow.print();
-        }
-      }, 1000);
     }
   };
 
-  // --- Default Data ---
+  const handleShare = async () => {
+    const activeData = data || defaultData;
+    const totalAmount = activeData.items.reduce((sum, item) => sum + item.amount, 0);
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Invoice ${activeData.invoiceNo}`,
+          text: `Invoice from ${activeData.storeName || "Store"}. Total: ₹${totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          url: window.location.href, // Consider generating a shareable PDF URL if possible
+        });
+      } catch (error) {
+        console.error('Error sharing:', error);
+      }
+    } else {
+      alert("Browser sharing not supported. Please use the Print button to Save as PDF.");
+    }
+  };
+
   const defaultData: InvoiceData = {
+    storeName: "CHANDAN KHEL GHAR",
+    remarks: "",
     invoiceNo: "00043/25-26",
     date: "14/11/2025",
     billType: "Credit",
@@ -121,55 +135,47 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
       stateCode: "10",
       gstin: "Unregistered",
     },
-    items: [
-      {
-        id: 1,
-        description: "HERCULES HYPER EXTENSION",
-        qty: 1.0,
-        uom: "PCS",
-        rate: 20500.0,
-        amount: 20500.0,
-      },
-    ],
-    amountInWords: "Twenty Thousand Five Hundred Only",
+    items: [],
+    amountInWords: "Zero Only",
     bankDetails: {
       bankName: "BANK OF BARODA",
       ifsc: "BARBOPANDAS",
       accountNo: "5086 0500 0001 11",
     },
-    terms: [
-      "1. NO MONEY REFUND.",
-      "2. Exchange within 7 days with BILL & TAGS After 2PM.",
-      "3. FOR Service- WHATSAPP on 9852380932 With INVOICE COPY, ADDRESS & MACHINE PHOTO.",
-    ],
+    terms: ["1. NO MONEY REFUND."],
   };
 
   const activeData = data || defaultData;
   const shippingAddress = activeData.shipping || activeData.customer;
-
-  // Calculate Totals
-  const totalAmount = activeData.items.reduce(
-    (sum, item) => sum + item.amount,
-    0,
-  );
+  const totalAmount = activeData.items.reduce((sum, item) => sum + item.amount, 0);
 
   return (
     <div className="w-auto bg-gray-100 flex flex-col items-center min-h-screen font-sans pb-7">
-      <button
-        onClick={handlePrint}
-        className="p-2 mt-4 mb-4 text-gray-600 dark:text-gray-300 border border-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-        title="Print Invoice"
-      >
-        <PrintIcon className="size-5" />
-      </button>
+      {/* Buttons for Print and Share */}
+      <div className="flex gap-2 mt-4 mb-4">
+        <button
+          onClick={handlePrint}
+          className="flex items-center gap-2 p-2 text-gray-600 dark:text-gray-300 border border-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+          title="Print Invoice"
+        >
+          <PrintIcon className="size-5" /> Print / Save PDF
+        </button>
+        <button
+          onClick={handleShare}
+          className="flex items-center gap-2 p-2 text-blue-600 border border-blue-300 rounded-lg hover:bg-blue-50 transition"
+          title="Share"
+        >
+          <Share2 className="size-5" /> Share
+        </button>
+      </div>
 
-      {/* --- A4 Page Start --- */}
+      {/* Invoice Content - Sized exactly for A4 */}
       <div
         ref={componentRef}
-        className="w-[210mm] min-h-[297mm] bg-white text-black text-sm relative shadow-lg print:shadow-none print:w-full print:h-auto print:m-0 box-border"
-        style={{ padding: "10mm" }}
+        className="w-[210mm] min-h-[297mm] bg-white text-black text-sm relative shadow-lg print:shadow-none print:w-auto print:h-auto print:m-0 print:p-0 box-border overflow-hidden"
+        style={{ padding: "10mm", boxSizing: "border-box" }} // Internal padding acts as margin
       >
-        {/* Header Row */}
+        {/* Header */}
         <div className="flex justify-between items-start p-2">
           <div>
             <span className="font-bold">GSTIN: 10HACPS7876F1ZF</span>
@@ -184,10 +190,11 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
         <div className="relative text-center py-2">
           <div className="px-24">
             <h1 className="text-3xl font-bold uppercase tracking-wide">
-              Chandan Khel Ghar
+              {activeData.storeName}
             </h1>
             <p className="text-[14px] font-extrabold">
-              (Registered under CHANDAN KHEL GHAR)
+              {/* Registered under {activeData.storeName} */}
+              Registered Under Chandan Khel Ghar
             </p>
             <p className="text-[14px] font-medium">
               VIP ROAD, Laheriasarai, Darbhanga, Bihar 846001
@@ -196,40 +203,39 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
               Sports Fitness * Trophy & Awards * Garments
             </p>
             <p className="text-[14px] mt-1 font-extrabold">
-              Phone No: 9852380932 | Email: CHANDANKHELGHAR@GMAIL.COM
+              Phone No: 9852380932 | Email: INFO@SPORTS.COM
             </p>
           </div>
-
           <div className="absolute right-2 top-[4vh] transform -translate-y-1/2 flex flex-col items-end">
             <div className="text-xs text-right mb-2 font-semibold">
               Scan for Payment
             </div>
             <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${activeData.invoiceNo}`}
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(activeData.invoiceNo)}`} // Encoded for safety
               alt="QR Code"
               className="w-20 h-20 object-contain"
             />
           </div>
         </div>
 
+        {/* State Code */}
         <div className="flex w-full justify-end -mt-5 mb-1">
           <div className="font-semibold mr-1">State Code:</div>
-          <div className="">{activeData.stateCode}</div>
+          <div>{activeData.stateCode}</div>
         </div>
 
+        {/* Invoice Details Border */}
         <div className="border border-black">
-          {/* Meta Data */}
+          {/* Invoice Info Grid */}
           <div className="grid grid-cols-4 text-sm">
             <div className="pl-2 font-semibold">Invoice No.</div>
-            <div className="pl-2 font-semibold">{activeData.invoiceNo}</div>
+            <div className="pl-2">{activeData.invoiceNo}</div>
             <div className="pl-2 font-semibold">Invoice Date</div>
-            <div className="pl-2 font-semibold">{activeData.date}</div>
-
+            <div className="pl-2">{activeData.date}</div>
             <div className="pl-2 font-semibold">Bill Type</div>
             <div className="pl-2">{activeData.billType}</div>
             <div className="pl-2 font-semibold">GR / LR No</div>
             <div className="pl-2">{activeData.grlrNo || "-"}</div>
-
             <div className="pl-2 font-semibold border-b border-black pb-1">
               Place of Supply
             </div>
@@ -252,7 +258,6 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
               </p>
               <p className="w-1/2 p-2 font-bold">Shipping Address</p>
             </div>
-
             <div className="flex">
               <div className="w-1/2 p-2 border-r border-black">
                 <p className="uppercase font-semibold">
@@ -271,7 +276,6 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
                   </p>
                 </div>
               </div>
-
               <div className="w-1/2 p-2">
                 <p className="uppercase font-semibold">
                   {shippingAddress.name}
@@ -286,9 +290,9 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
             </div>
           </div>
 
-          {/* Table */}
+          {/* Items Table */}
           <div className="w-full">
-            <table className="w-full text-xs">
+            <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="bg-gray-100 border-b border-black text-center">
                   <th className="border-r border-black p-1 w-[5%]">S No</th>
@@ -310,7 +314,12 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
                       {index + 1}
                     </td>
                     <td className="border-r border-black p-1 font-medium">
-                      {item.description}
+                      <div>{item.description}</div>
+                      {item.warranty && (
+                        <div className="text-[10px] text-gray-600 font-normal mt-0.5">
+                          ({item.warranty})
+                        </div>
+                      )}
                     </td>
                     <td className="border-r border-black p-1 text-center">
                       {item.qty.toFixed(2)}
@@ -321,29 +330,29 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
                     <td className="border-r border-black p-1 text-right">
                       {item.rate.toLocaleString("en-IN", {
                         minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
                       })}
                     </td>
                     <td className="p-1 text-right font-bold">
                       {item.amount.toLocaleString("en-IN", {
                         minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
                       })}
                     </td>
                   </tr>
                 ))}
-                {/* Empty Rows Logic */}
+                {/* Empty rows to maintain consistent height (up to 15 items) */}
                 {activeData.items.length < 15 &&
-                  Array.from({ length: 15 - activeData.items.length }).map(
-                    (_, i) => (
-                      <tr key={`empty-${i}`} className="h-6">
-                        <td className="border-r border-black"></td>
-                        <td className="border-r border-black"></td>
-                        <td className="border-r border-black"></td>
-                        <td className="border-r border-black"></td>
-                        <td className="border-r border-black"></td>
-                        <td></td>
-                      </tr>
-                    ),
-                  )}
+                  Array.from({ length: 15 - activeData.items.length }).map((_, i) => (
+                    <tr key={`empty-${i}`} className="h-6">
+                      <td className="border-r border-black"></td>
+                      <td className="border-r border-black"></td>
+                      <td className="border-r border-black"></td>
+                      <td className="border-r border-black"></td>
+                      <td className="border-r border-black"></td>
+                      <td></td>
+                    </tr>
+                  ))}
                 {/* Total Row */}
                 <tr className="border-t border-black">
                   <td className="border-r border-black p-1 text-center"></td>
@@ -356,6 +365,7 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
                   <td className="p-1 text-right font-bold">
                     {totalAmount.toLocaleString("en-IN", {
                       minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
                     })}
                   </td>
                 </tr>
@@ -363,13 +373,20 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
             </table>
           </div>
 
-          {/* Footer Totals */}
+          {/* Amount in Words and Totals */}
           <div className="border-t border-black flex">
             <div className="flex-grow border-r border-black p-2">
               <p className="text-xs font-bold">Amount In Words:</p>
               <p className="italic uppercase text-sm">
                 {activeData.amountInWords}
               </p>
+              {/* Remarks */}
+              {activeData.remarks && (
+                <div className="mt-2">
+                  <p className="text-xs font-bold">Remarks:</p>
+                  <p className="text-xs text-gray-700">{activeData.remarks}</p>
+                </div>
+              )}
             </div>
             <div className="w-[30%]">
               <div className="flex justify-between border-b border-black p-1 font-bold bg-gray-50">
@@ -377,6 +394,7 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
                 <span>
                   {totalAmount.toLocaleString("en-IN", {
                     minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
                   })}
                 </span>
               </div>
@@ -385,13 +403,14 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
                 <span>
                   {totalAmount.toLocaleString("en-IN", {
                     minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
                   })}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Terms & Signatures */}
+          {/* Bank Details, Terms, and Signatory */}
           <div className="border-t border-black grid grid-cols-2">
             <div className="border-r border-black p-2 text-xs">
               {activeData.bankDetails && (
@@ -411,15 +430,14 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
                 </ul>
               </div>
             </div>
-
             <div className="p-2 flex flex-col justify-between text-center min-h-[150px]">
               <div className="text-xs font-bold text-center border-b border-black pb-1 mb-2">
                 Composition taxable person, not eligible to collect tax on
                 supplies.
               </div>
               <div>
-                <p className="text-xs mb-8">For CHANDAN KHEL GHAR</p>
-                <div className="h-10"></div>
+                <p className="text-xs mb-8">For {activeData.storeName}</p>
+                <div className="h-10"></div> {/* Space for signature */}
                 <p className="text-xs font-bold border-t border-black/50 inline-block px-8 pt-1">
                   Authorized Signatory
                 </p>
@@ -428,9 +446,10 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
           </div>
         </div>
 
-        <div className="text-center text-[10px] mt-2 text-gray-500">
+        {/* Footer */}
+        {/* <div className="text-center text-[10px] mt-2 text-gray-500">
           THANKS VISIT AGAIN
-        </div>
+        </div> */}
       </div>
     </div>
   );

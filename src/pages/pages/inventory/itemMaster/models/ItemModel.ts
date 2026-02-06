@@ -87,7 +87,7 @@ export interface ItemApiData {
   brand: { _id: string; name: string; code: string } | null;
   category: { _id: string; name: string; code: string } | null;
   gst_classification?: string;
-  sales_rate: number;
+  // sales_rate: number;
   mrp: number;
   barcode: string;
   warranty: boolean;

@@ -45,11 +45,6 @@ import AttributePanel from '../../../../components/AttributePanel';
 import { ItemApiData, NestedObject } from '../../inventory/itemMaster/models/ItemModel';
 import PullFromOrderModal from '../../../../components/PullFromOrderModal';
 
-// export interface OrderTableRef {
-//   getTableData: () => any; // or whatever your existing return type is
-//   resetTable: () => void; // <--- ADD THIS LINE
-// }
-
 interface Column {
   id: string;
   label: string;
@@ -84,6 +79,7 @@ export interface OrderTableRef {
     visibleRows: Array<{ id: string; data: RowData }>;
     vendorCode: string;
   };
+  clearTable: () => void;
 }
 
 const DEFAULT_COLUMNS: Column[] = [
@@ -503,19 +499,14 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
         }
 
         if (scannedItem) {
-          // --- FIX START ---
-          // Only match if codes match OR if barcodes match AND are not empty
           const masterItem = items.find((i) => {
             const codesMatch = i.code === scannedItem!.code;
-            // Crucial check: Ensure both barcodes exist and are not empty strings before comparing
             const barcodesMatch =
               i.barcode && scannedItem!.barcode && i.barcode === scannedItem!.barcode;
 
             return codesMatch || barcodesMatch;
           });
-          // --- FIX END ---
 
-          // Use masterItem if found (it has the correct taxRate), otherwise use API result
           const itemToUse = masterItem || scannedItem;
 
           addScannedItemToTable(itemToUse);
@@ -543,7 +534,6 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
     const qty = 1;
     const gstRate = item.gstRate || 0;
 
-    /* ---------------- Base Row Mapping ---------------- */
     const baseData: RowData = {
       reciss: 'Receipt',
       select: item.code ?? '',
@@ -553,13 +543,11 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
       hsn: item.gst_classification ?? '',
       taxCode: item.hsn_code,
 
-      // Values
       qty: String(qty),
       rate: String(rate),
       mrp: String(item.mrp ?? 0),
       amount: (qty * rate).toFixed(2),
 
-      // ✅ Calculate Taxable using Helper
       taxable: calculateRowTaxable(qty, rate, gstRate),
       taxAmt: calculateRowTaxAmount(qty, rate, gstRate),
 
@@ -570,12 +558,11 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
       gstRate: String(gstRate),
       taxRate: item.hsn_description || '',
 
-      sale_rate: item.sale_rate || item.last_sales_rate || 0,
+      // sale_rate: item.sale_rate || item.last_sales_rate || 0,
       wholesale_rate: item.wholesale_rate || 0,
       dealer_rate: item.dealer_rate || 0,
     };
 
-    // Find first empty row
     let targetRowId: string | null = null;
     for (const rId of rows) {
       const rData = tableData[rId];
@@ -591,7 +578,6 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
         [targetRowId!]: { ...prev[targetRowId!], ...baseData },
       }));
     } else {
-      // Append new row
       const newId = generateRowId();
       setRows((prev) => [...prev, newId]);
       setTableData((prev) => ({ ...prev, [newId]: baseData }));
@@ -639,7 +625,6 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
       if (Array.isArray(itemsData)) {
         setItems(itemsData);
 
-        // --- UPDATED LOGIC START ---
         setTableData((prevData) => {
           const updatedTableData = { ...prevData };
           let hasUpdates = false;
@@ -659,23 +644,10 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
                 const newGstRate = matchedItem.gstRate || '0';
                 const currentQty = parseFloat(String(row.qty || 0));
 
-                // Recalculate amount
                 const newAmount =
                   !isNaN(currentQty) && !isNaN(parseFloat(newRate))
                     ? (currentQty * parseFloat(newRate)).toFixed(2)
                     : '0.00';
-
-                // ✅ Calculate Taxable using Helper
-                // const newTaxable = calculateRowTaxable(
-                //   currentQty,
-                //   newRate,
-                //   newGstRate,
-                // );
-                // const newTaxAmount = calculateRowTaxable(
-                //   currentQty,
-                //   newRate,
-                //   newGstRate,
-                // );
 
                 const newTaxable = calculateRowTaxable(currentQty, newRate, newGstRate);
                 const newTaxAmt = calculateRowTaxAmount(currentQty, newRate, newGstRate);
@@ -695,7 +667,6 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
 
           return hasUpdates ? updatedTableData : prevData;
         });
-        // --- UPDATED LOGIC END ---
       }
       const unitsData = await fetchStockUnits();
       if (Array.isArray(unitsData)) setStockUnits(unitsData);
@@ -739,6 +710,10 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
         vendorCode: vendorCode,
       };
     },
+
+    clearTable: () => {
+      setRows([]);
+    },
   }));
 
   const handleResetDefault = () => {
@@ -780,6 +755,21 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
           // Recalculate Taxes based on the new implied rate
           newData.taxable = calculateRowTaxable(qty, calculatedRate, gst);
           newData.taxAmt = calculateRowTaxAmount(qty, calculatedRate, gst);
+        }
+      } else if (columnId === 'taxable') {
+        const newTaxable = parseFloat(value || '0');
+
+        // 1. Calculate Tax Amount based on new Taxable value
+        const newTaxAmt = newTaxable * (gst / 100);
+        newData.taxAmt = newTaxAmt.toFixed(2);
+
+        // 2. Calculate Total Amount (Taxable + TaxAmt)
+        const newTotalAmount = newTaxable + newTaxAmt;
+        newData.amount = newTotalAmount.toFixed(2);
+
+        // 3. Back-calculate Rate if Qty exists
+        if (!isNaN(qty) && qty !== 0) {
+          newData.rate = (newTotalAmount / qty).toFixed(2);
         }
       }
 
@@ -960,7 +950,7 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
         stock_unit: data.unit,
         gst_classification: data.hsn,
         brand: data.brand,
-        purchase_rate: data.rate,
+        purchase_rate: data.purchase_rate || data.last_purchase_rate,
         mrp: data.mrp,
         barcode: data.barcode,
         hsn_description: data.taxRate,
@@ -983,26 +973,20 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
   };
 
   const handleAttributeSave = (attributeData: Partial<RowData>) => {
-    const { activeRowId, tempItemData } = attributePanelState as {
-      activeRowId: string | number | null;
-      tempItemData: ItemApiData | null;
-    };
+    const { activeRowId, tempItemData } = attributePanelState;
 
     if (!activeRowId || !tempItemData) {
-      setAttributePanelState({
-        visible: false,
-        activeRowId: null,
-        tempItemData: null,
-      });
+      setAttributePanelState({ visible: false, activeRowId: null, tempItemData: null });
       return;
     }
 
-    const rate = parseFloat(
+    // Ensure we prioritize the Purchase Rate exactly like the scan method does
+    const purchaseRate = parseFloat(
       String((tempItemData.last_purchase_rate || tempItemData.purchase_rate) ?? 0)
     );
+
     const qty = 1;
 
-    /* ---------------- Base Row Mapping ---------------- */
     const baseData: RowData = {
       reciss: 'Receipt',
       select: tempItemData.code ?? '',
@@ -1019,10 +1003,9 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
       brand: getStringValue(tempItemData.brand),
       netRate: tempItemData.netRate || '0',
       gstRate: tempItemData.gstRate || '0',
-      rate: String(rate),
-      amount: (qty * rate).toFixed(2),
-
-      sale_rate: tempItemData.sale_rate || tempItemData.last_sales_rate || 0,
+      // FORCE the purchase rate here
+      rate: String(purchaseRate),
+      amount: (qty * purchaseRate).toFixed(2),
       wholesale_rate: tempItemData.wholesale_rate || 0,
       dealer_rate: tempItemData.dealer_rate || 0,
     };
@@ -1030,12 +1013,13 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
     setTableData((prev) => {
       const existingRow = (prev[activeRowId] ?? {}) as Partial<RowData>;
 
-      // Merging logic
+      // We merge attributeData BUT ensure rate remains the purchaseRate
+      // unless you specifically want the user to override it in the panel
       const mergedRow: RowData = {
         ...existingRow,
         ...baseData,
         ...attributeData,
-        taxRate: baseData.taxRate,
+        rate: attributeData.rate || baseData.rate, // Fallback to purchase rate
       };
 
       const newQty = Number(mergedRow.qty) || 0;
@@ -1043,18 +1027,13 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
       const gst = Number(mergedRow.gstRate) || 0;
 
       mergedRow.amount = (newQty * newRate).toFixed(2);
-      // ✅ Update Taxable using Helper
       mergedRow.taxable = calculateRowTaxable(newQty, newRate, gst);
       mergedRow.taxAmt = calculateRowTaxAmount(newQty, newRate, gst);
 
       return { ...prev, [activeRowId]: mergedRow };
     });
 
-    setAttributePanelState({
-      visible: false,
-      activeRowId: null,
-      tempItemData: null,
-    });
+    setAttributePanelState({ visible: false, activeRowId: null, tempItemData: null });
   };
 
   const resizingRef = useRef<number | null>(null);
@@ -1063,7 +1042,8 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
 
   const handleHeaderClick = (columnId: string) => {
     if (
-      ['sno', 'add', 'del', 'srch', 'copy', 'attr', 'widg', 'batch', 'reciss', 'warranty'].includes(
+      ['sno', 'add', 'del', 'srch', 'copy', 'attr', 'widg', 'batch', 'reciss'].includes(
+        //'warranty'
         columnId
       )
     )
@@ -1183,7 +1163,7 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
       let currentEmptyRowIdx = 0;
 
       newItems.forEach((item) => {
-        const rate = parseFloat(String((item.last_purchase_rate || item.purchase_rate) ?? 0));
+        const rate = parseFloat(String(item.last_purchase_rate || item.purchase_rate || 0));
         const qty = item.qty || 1;
         const gstRate = item.gstRate || 0;
 
@@ -1208,7 +1188,7 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
           gstRate: String(gstRate),
           taxRate: item.hsn_description || '',
 
-          sale_rate: item.sale_rate || item.sales_rate || 0, // Handle naming variations if any
+          // sale_rate: item.sale_rate || item.sales_rate || 0,
           wholesale_rate: item.wholesale_rate || 0,
           dealer_rate: item.dealer_rate || 0,
         };
@@ -1256,8 +1236,8 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
       brand: item.brand ?? null,
       category: item.category ?? null,
       gst_classification: item.hsn_code ?? '',
-      sales_rate: item.last_sales_rate ?? 0,
-      purchase_rate: item.last_sales_rate ?? 0,
+      // sales_rate: item.last_sales_rate ?? 0,
+      purchase_rate: item.last_purchase_rate ?? item.purchase_rate ?? 0,
       mrp: item.mrp ?? 0,
       barcode: item.barcode ?? '',
       qty: item.quantity || 1, // Pass the user-typed quantity
@@ -1490,6 +1470,7 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
                               'bdsalerate',
                               'taxable',
                               'taxamount',
+                              'taxAmt',
                             ].includes(col.id)
                           ) {
                             content = (
@@ -1497,9 +1478,7 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
                                 type="text"
                                 className="h-full w-full bg-transparent px-1 text-right outline-none"
                                 value={rowData[col.id] || ''}
-                                // Taxable is auto-calculated, but let's allow editing if logic permits.
-                                // Generally it should be read-only based on qty/rate.
-                                readOnly={col.id === 'taxable'}
+                                readOnly={col.id === 'taxAmt' || col.id === 'taxamount'}
                                 onChange={(e) => handleInputChange(rowId, col.id, e.target.value)}
                               />
                             );
@@ -1697,6 +1676,7 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
         isOpen={attributePanelState.visible}
         onClose={() => setAttributePanelState({ ...attributePanelState, visible: false })}
         onSave={handleAttributeSave}
+        billType="PURCHASE"
         initialData={attributePanelState.tempItemData}
       />
 
@@ -1742,7 +1722,7 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
                         <td className="border p-1.5">{item.code}</td>
                         <td className="border p-1.5 font-medium">{item.name}</td>
                         <td className="border p-1.5 text-right font-bold text-blue-600">
-                          {item.netRate || '0.00'}
+                          {item.purchase_rate || item.last_purchase_rate || '0.00'}
                         </td>
                         <td className="border p-1.5 text-right">{item.gstRate || '0'}%</td>
                       </tr>

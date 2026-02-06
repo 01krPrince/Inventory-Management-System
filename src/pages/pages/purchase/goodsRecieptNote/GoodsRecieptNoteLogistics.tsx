@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useImperativeHandle } from 'react';
 import { ChevronDown, ChevronUp, FileText, EditIcon, ExternalLink, Minimize2 } from 'lucide-react';
-
 import Dropdown, { ColumnDef } from '../../../../components/Dropdown';
 import Transporter from '../../../../components/Transporter';
 import DateInput from '../../../../components/DateInput';
 import chartOfAccountService from '../../../../services/chartOfAccountService';
+
+export interface GoodsRecieptNoteLogisticsRef {
+  resetLogisticsUI: () => void;
+}
 
 export interface LogisticsData {
   destination: string;
@@ -255,536 +258,546 @@ const SummaryInputGroup: React.FC<{
   );
 };
 
-const GoodsRecieptNoteLogistics: React.FC<LogisticsProps> = ({
-  data,
-  onChange,
-  themeColor = '#0f3c63',
-}) => {
-  const [isOpen, setIsOpen] = useState(true);
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [transporterModalOpen, setTransporterModalOpen] = useState(false);
+const GoodsRecieptNoteLogistics = React.forwardRef<GoodsRecieptNoteLogisticsRef, LogisticsProps>(
+  (props, ref) => {
+    const { data, onChange, themeColor = '#0f3c63' } = props;
 
-  const [glOptions, setGlOptions] = useState<GlOption[]>([]);
+    const [isOpen, setIsOpen] = useState(true);
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [transporterModalOpen, setTransporterModalOpen] = useState(false);
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const coaResponse = await chartOfAccountService.getAllChartOfAccounts();
-        const rawData = coaResponse.data;
+    const [glOptions, setGlOptions] = useState<GlOption[]>([]);
 
-        if (Array.isArray(rawData)) {
-          const mappedOptions = rawData.map((item: any) => ({
-            ...item,
-            name: item.name || '',
-            code: item.code || item.identification || 'N/A',
-            underGroup:
-              typeof item.underGroup === 'object' ? item.underGroup?.name : item.underGroup || '',
-            nature: item.nature || 'N/A',
-            label: item.name,
-            value: item._id,
-            type: item.type,
-          }));
+    useImperativeHandle(
+      ref,
+      (): GoodsRecieptNoteLogisticsRef => ({
+        resetLogisticsUI: () => {
+          setIsExpanded(false);
+          setIsOpen(true);
+        },
+      })
+    );
 
-          const filtered = mappedOptions.filter(
-            (item: GlOption) => item.type === 'Bank' || item.type === 'Cash'
-          );
+    useEffect(() => {
+      const loadData = async () => {
+        try {
+          const coaResponse = await chartOfAccountService.getAllChartOfAccounts();
+          const rawData = coaResponse.data;
 
-          setGlOptions(filtered);
+          if (Array.isArray(rawData)) {
+            const mappedOptions = rawData.map((item: any) => ({
+              ...item,
+              name: item.name || '',
+              code: item.code || item.identification || 'N/A',
+              underGroup:
+                typeof item.underGroup === 'object' ? item.underGroup?.name : item.underGroup || '',
+              nature: item.nature || 'N/A',
+              label: item.name,
+              value: item._id,
+              type: item.type,
+            }));
+
+            const filtered = mappedOptions.filter(
+              (item: GlOption) => item.type === 'Bank' || item.type === 'Cash'
+            );
+
+            setGlOptions(filtered);
+          }
+        } catch (error) {
+          console.error('❌ Failed to load chart of accounts:', error);
         }
-      } catch (error) {
-        console.error('❌ Failed to load chart of accounts:', error);
-      }
+      };
+      loadData();
+    }, []);
+
+    const themeStyles = {
+      '--theme-primary': themeColor,
+      '--theme-focus': '#60a5fa',
+    } as React.CSSProperties;
+
+    const shippingModes = ['Road', 'Air', 'Sea', 'Rail'];
+    const chargeTypes = ['Paid', 'To Pay', 'Free'];
+
+    const transporterColumns: ColumnDef<any>[] = [
+      { header: 'Code', key: 'code', width: 'w-20' },
+      { header: 'Name', key: 'name', width: 'flex-1' },
+    ];
+
+    const handleChange = (field: keyof LogisticsData, value: string) => {
+      onChange({ ...data, [field]: value });
     };
-    loadData();
-  }, []);
 
-  const themeStyles = {
-    '--theme-primary': themeColor,
-    '--theme-focus': '#60a5fa',
-  } as React.CSSProperties;
+    const handleTransporterSelect = (item: any) => {
+      onChange({
+        ...data,
+        shippingCompany: item?.name || '',
+      });
+    };
 
-  const shippingModes = ['Road', 'Air', 'Sea', 'Rail'];
-  const chargeTypes = ['Paid', 'To Pay', 'Free'];
+    return (
+      <div style={themeStyles} className="w-full">
+        <div className="mb-4 overflow-hidden rounded-md border border-gray-200 bg-white shadow-sm transition-all duration-300">
+          <div className="flex items-center justify-between border-b border-gray-100 bg-white px-4 py-3">
+            <div
+              className="flex cursor-pointer items-center gap-2"
+              onClick={() => setIsOpen(!isOpen)}>
+              <FileText className="text-[var(--theme-primary)]" size={18} />
+              <h3 className="text-sm font-semibold text-[var(--theme-primary)]">Logistics</h3>
+            </div>
 
-  const transporterColumns: ColumnDef<any>[] = [
-    { header: 'Code', key: 'code', width: 'w-20' },
-    { header: 'Name', key: 'name', width: 'flex-1' },
-  ];
+            <div className="flex items-center gap-4">
+              {isOpen && (
+                <button
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="flex items-center gap-1 text-xs font-medium text-gray-700 transition-colors hover:text-gray-800">
+                  {isExpanded ? (
+                    <>
+                      <Minimize2 size={12} /> Collapse View
+                    </>
+                  ) : (
+                    <>
+                      <ExternalLink size={12} /> Expand / View Details
+                    </>
+                  )}
+                </button>
+              )}
 
-  const handleChange = (field: keyof LogisticsData, value: string) => {
-    onChange({ ...data, [field]: value });
-  };
-
-  const handleTransporterSelect = (item: any) => {
-    onChange({
-      ...data,
-      shippingCompany: item?.name || '',
-    });
-  };
-
-  return (
-    <div style={themeStyles} className="w-full">
-      <div className="mb-4 overflow-hidden rounded-md border border-gray-200 bg-white shadow-sm transition-all duration-300">
-        <div className="flex items-center justify-between border-b border-gray-100 bg-white px-4 py-3">
-          <div
-            className="flex cursor-pointer items-center gap-2"
-            onClick={() => setIsOpen(!isOpen)}>
-            <FileText className="text-[var(--theme-primary)]" size={18} />
-            <h3 className="text-sm font-semibold text-[var(--theme-primary)]">Logistics</h3>
-          </div>
-
-          <div className="flex items-center gap-4">
-            {isOpen && (
-              <button
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="flex items-center gap-1 text-xs font-medium text-gray-700 transition-colors hover:text-gray-800">
-                {isExpanded ? (
-                  <>
-                    <Minimize2 size={12} /> Collapse View
-                  </>
-                ) : (
-                  <>
-                    <ExternalLink size={12} /> Expand / View Details
-                  </>
-                )}
-              </button>
-            )}
-
-            <div className="cursor-pointer text-gray-500" onClick={() => setIsOpen(!isOpen)}>
-              {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+              <div className="cursor-pointer text-gray-500" onClick={() => setIsOpen(!isOpen)}>
+                {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+              </div>
             </div>
           </div>
+
+          {isOpen && (
+            <div className="p-5">
+              {!isExpanded && (
+                <div className="animate-in fade-in grid grid-cols-1 gap-6 rounded-md border border-gray-100 bg-gray-50 p-4 duration-300 md:grid-cols-3">
+                  <SummaryInputGroup
+                    label="Freight Charge"
+                    amount={data.freight}
+                    setAmount={(v) => handleChange('freight', v)}
+                    tender={data.freightAccount}
+                    setTender={(v) => handleChange('freightAccount', v)}
+                    glOptions={glOptions}
+                  />
+                  <SummaryInputGroup
+                    label="Loading/Unloading"
+                    amount={data.loadingUnloading}
+                    setAmount={(v) => handleChange('loadingUnloading', v)}
+                    tender={data.loadingUnloadingAccount}
+                    setTender={(v) => handleChange('loadingUnloadingAccount', v)}
+                    glOptions={glOptions}
+                  />
+                  <SummaryInputGroup
+                    label="Other Charges"
+                    amount={data.otherCharges}
+                    setAmount={(v) => handleChange('otherCharges', v)}
+                    tender={data.otherChargesAccount}
+                    setTender={(v) => handleChange('otherChargesAccount', v)}
+                    glOptions={glOptions}
+                  />
+                </div>
+              )}
+
+              {isExpanded && (
+                <div className="animate-in fade-in slide-in-from-top-2 grid grid-cols-1 gap-6 duration-300 lg:grid-cols-3">
+                  <div className="space-y-1">
+                    <div className="grid grid-cols-12 gap-2">
+                      <div className="col-span-4">
+                        <Label>Destination</Label>
+                      </div>
+                      <div className="col-span-8">
+                        <Input
+                          value={data.destination}
+                          onChange={(e) => handleChange('destination', e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-12 gap-2">
+                      <div className="col-span-4">
+                        <Label>Shipping Mode</Label>
+                      </div>
+                      <div className="col-span-8">
+                        <Select
+                          options={shippingModes}
+                          value={data.shippingMode}
+                          onChange={(e) => handleChange('shippingMode', e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-12 gap-2">
+                      <div className="col-span-4">
+                        <Label>Shipping Company</Label>
+                      </div>
+                      <div className="col-span-8 flex gap-1">
+                        <Dropdown
+                          data={STATIC_TRANSPORTERS}
+                          columns={transporterColumns}
+                          value={data.shippingCompany}
+                          valueKey="name"
+                          onChange={handleTransporterSelect}
+                          placeholder="Select..."
+                        />
+                        <ActionBtn
+                          icon={<EditIcon size={14} />}
+                          onClick={() => setTransporterModalOpen(true)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-12 gap-2">
+                      <div className="col-span-4">
+                        <Label>Address/Ph...</Label>
+                      </div>
+                      <div className="col-span-8">
+                        <TextArea
+                          rows={3}
+                          value={data.shippingCompanyAddress}
+                          onChange={(e) => handleChange('shippingCompanyAddress', e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-12 gap-2">
+                      <div className="col-span-4">
+                        <Label>Tracking No</Label>
+                      </div>
+                      <div className="col-span-8">
+                        <Input
+                          value={data.shippingTrackingNo}
+                          onChange={(e) => handleChange('shippingTrackingNo', e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-12 gap-2">
+                      <div className="col-span-4">
+                        <Label>Shipping Date</Label>
+                      </div>
+                      <div className="col-span-8">
+                        <DateInput
+                          value={data.shippingDate}
+                          onChange={(e) => handleChange('shippingDate', e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-12 gap-2">
+                      <div className="col-span-4">
+                        <Label>Shipping Charges</Label>
+                      </div>
+                      <div className="col-span-8">
+                        <Input
+                          type="number"
+                          value={data.shippingCharges}
+                          onChange={(e) => handleChange('shippingCharges', e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-12 gap-2">
+                      <div className="col-span-4">
+                        <Label>Vehicle/Vessel No</Label>
+                      </div>
+                      <div className="col-span-8">
+                        <Input
+                          value={data.vehicleNo}
+                          onChange={(e) => handleChange('vehicleNo', e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-12 gap-2">
+                      <div className="col-span-4">
+                        <Label>Charge Type</Label>
+                      </div>
+                      <div className="col-span-8">
+                        <Select
+                          options={chargeTypes}
+                          value={data.chargeType}
+                          onChange={(e) => handleChange('chargeType', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-12 gap-2">
+                      <div className="col-span-4">
+                        <Label>Document Through</Label>
+                      </div>
+                      <div className="col-span-8">
+                        <Input
+                          value={data.documentThrough}
+                          onChange={(e) => handleChange('documentThrough', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="grid grid-cols-12 gap-2">
+                      <div className="col-span-4">
+                        <Label>Port of Landing</Label>
+                      </div>
+                      <div className="col-span-8">
+                        <Input
+                          value={data.portOfLanding}
+                          onChange={(e) => handleChange('portOfLanding', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-12 gap-2">
+                      <div className="col-span-4">
+                        <Label>Port of Discharge</Label>
+                      </div>
+                      <div className="col-span-8">
+                        <Input
+                          value={data.portOfDischarge}
+                          onChange={(e) => handleChange('portOfDischarge', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-12 gap-2">
+                      <div className="col-span-4">
+                        <Label>No of Packets</Label>
+                      </div>
+                      <div className="col-span-8">
+                        <Input
+                          type="number"
+                          value={data.noOfPackets}
+                          onChange={(e) => handleChange('noOfPackets', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-12 gap-2">
+                      <div className="col-span-4">
+                        <Label>Weight</Label>
+                      </div>
+                      <div className="col-span-8">
+                        <Input
+                          value={data.weight}
+                          onChange={(e) => handleChange('weight', e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="my-2 border-t border-gray-100 pt-2"></div>
+
+                    <div className="grid grid-cols-12 gap-2">
+                      <div className="col-span-4">
+                        <Label>Distance</Label>
+                      </div>
+                      <div className="col-span-8">
+                        <Input
+                          value={data.distance || ''}
+                          onChange={(e) => handleChange('distance', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-12 gap-2">
+                      <div className="col-span-4">
+                        <Label>eWay Inv No</Label>
+                      </div>
+                      <div className="col-span-8">
+                        <Input
+                          value={data.ewayInvoiceNo || ''}
+                          onChange={(e) => handleChange('ewayInvoiceNo', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-12 gap-2">
+                      <div className="col-span-4">
+                        <Label>eWay Inv Date</Label>
+                      </div>
+                      <div className="col-span-8">
+                        <DateInput
+                          value={data.ewayInvoiceDate || ''}
+                          onChange={(e) => handleChange('ewayInvoiceDate', e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-12 gap-2">
+                      <div className="col-span-4">
+                        <Label>IRN No</Label>
+                      </div>
+                      <div className="col-span-8">
+                        <Input
+                          value={data.irnNo || ''}
+                          onChange={(e) => handleChange('irnNo', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-12 gap-2">
+                      <div className="col-span-4">
+                        <Label>QR Code</Label>
+                      </div>
+                      <div className="col-span-8">
+                        <Input
+                          value={data.qrCode || ''}
+                          onChange={(e) => handleChange('qrCode', e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-12 gap-2">
+                      <div className="col-span-4">
+                        <Label>Ack No</Label>
+                      </div>
+                      <div className="col-span-8">
+                        <Input
+                          value={data.ackNo || ''}
+                          onChange={(e) => handleChange('ackNo', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-12 gap-2">
+                      <div className="col-span-4">
+                        <Label>Ack Date</Label>
+                      </div>
+                      <div className="col-span-8">
+                        <DateInput
+                          value={data.ackDate || ''}
+                          onChange={(e) => handleChange('ackDate', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-12 gap-2">
+                      <div className="col-span-4">
+                        <Label>Bill Entry No</Label>
+                      </div>
+                      <div className="col-span-8">
+                        <Input
+                          value={data.billOfEntryNum || ''}
+                          onChange={(e) => handleChange('billOfEntryNum', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-12 gap-2">
+                      <div className="col-span-4">
+                        <Label>Bill Entry Date</Label>
+                      </div>
+                      <div className="col-span-8">
+                        <DateInput
+                          value={data.billOfEntryDate || ''}
+                          onChange={(e) => handleChange('billOfEntryDate', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-0">
+                    <div className="overflow-hidden rounded-sm border border-gray-300 shadow-sm">
+                      <div className="flex justify-between bg-slate-400/80 px-3 py-2 text-center text-xs font-semibold uppercase tracking-wide text-white">
+                        <span className="flex-1 text-left">Expense</span>
+                        <span className="w-[100px] text-center">Tender</span>
+                        <span className="w-[100px] text-right">Amount</span>
+                      </div>
+
+                      <div className="bg-white">
+                        <ExpenseRow
+                          label="Custom Duty"
+                          value={data.custDuty}
+                          onChange={(v) => handleChange('custDuty', v)}
+                          tenderValue={data.custDutyAccount}
+                          onTenderChange={(v) => handleChange('custDutyAccount', v)}
+                          glOptions={glOptions}
+                        />
+                        <ExpenseRow
+                          label="CHA Payment"
+                          value={data.chaPayment}
+                          onChange={(v) => handleChange('chaPayment', v)}
+                          tenderValue={data.chaPaymentAccount}
+                          onTenderChange={(v) => handleChange('chaPaymentAccount', v)}
+                          glOptions={glOptions}
+                        />
+                        <ExpenseRow
+                          label="Freight"
+                          value={data.freight}
+                          onChange={(v) => handleChange('freight', v)}
+                          tenderValue={data.freightAccount}
+                          onTenderChange={(v) => handleChange('freightAccount', v)}
+                          glOptions={glOptions}
+                          highlight
+                        />
+                        <ExpenseRow
+                          label="Insurance"
+                          value={data.insurance}
+                          onChange={(v) => handleChange('insurance', v)}
+                          tenderValue={data.insuranceAccount}
+                          onTenderChange={(v) => handleChange('insuranceAccount', v)}
+                          glOptions={glOptions}
+                        />
+                        <ExpenseRow
+                          label="Handling"
+                          value={data.handling}
+                          onChange={(v) => handleChange('handling', v)}
+                          tenderValue={data.handlingAccount}
+                          onTenderChange={(v) => handleChange('handlingAccount', v)}
+                          glOptions={glOptions}
+                        />
+                        <ExpenseRow
+                          label="Doc Charges"
+                          value={data.docCharges}
+                          onChange={(v) => handleChange('docCharges', v)}
+                          tenderValue={data.docChargesAccount}
+                          onTenderChange={(v) => handleChange('docChargesAccount', v)}
+                          glOptions={glOptions}
+                        />
+                        <ExpenseRow
+                          label="Bank Charges"
+                          value={data.bankCharges}
+                          onChange={(v) => handleChange('bankCharges', v)}
+                          tenderValue={data.bankChargesAccount}
+                          onTenderChange={(v) => handleChange('bankChargesAccount', v)}
+                          glOptions={glOptions}
+                        />
+                        <ExpenseRow
+                          label="Custom Exp"
+                          value={data.custExp}
+                          onChange={(v) => handleChange('custExp', v)}
+                          tenderValue={data.custExpAccount}
+                          onTenderChange={(v) => handleChange('custExpAccount', v)}
+                          glOptions={glOptions}
+                        />
+                        <ExpenseRow
+                          label="Load/Unload"
+                          value={data.loadingUnloading}
+                          onChange={(v) => handleChange('loadingUnloading', v)}
+                          tenderValue={data.loadingUnloadingAccount}
+                          onTenderChange={(v) => handleChange('loadingUnloadingAccount', v)}
+                          glOptions={glOptions}
+                          highlight
+                        />
+                        <ExpenseRow
+                          label="Other Charges"
+                          value={data.otherCharges}
+                          onChange={(v) => handleChange('otherCharges', v)}
+                          tenderValue={data.otherChargesAccount}
+                          onTenderChange={(v) => handleChange('otherChargesAccount', v)}
+                          glOptions={glOptions}
+                          highlight
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {transporterModalOpen && (
+            <Transporter
+              isOpen={transporterModalOpen}
+              onClose={() => setTransporterModalOpen(false)}
+              initialData={null}
+              onSuccess={() => setTransporterModalOpen(false)}
+            />
+          )}
         </div>
-
-        {isOpen && (
-          <div className="p-5">
-            {!isExpanded && (
-              <div className="animate-in fade-in grid grid-cols-1 gap-6 rounded-md border border-gray-100 bg-gray-50 p-4 duration-300 md:grid-cols-3">
-                <SummaryInputGroup
-                  label="Freight Charge"
-                  amount={data.freight}
-                  setAmount={(v) => handleChange('freight', v)}
-                  tender={data.freightAccount}
-                  setTender={(v) => handleChange('freightAccount', v)}
-                  glOptions={glOptions}
-                />
-                <SummaryInputGroup
-                  label="Loading/Unloading"
-                  amount={data.loadingUnloading}
-                  setAmount={(v) => handleChange('loadingUnloading', v)}
-                  tender={data.loadingUnloadingAccount}
-                  setTender={(v) => handleChange('loadingUnloadingAccount', v)}
-                  glOptions={glOptions}
-                />
-                <SummaryInputGroup
-                  label="Other Charges"
-                  amount={data.otherCharges}
-                  setAmount={(v) => handleChange('otherCharges', v)}
-                  tender={data.otherChargesAccount}
-                  setTender={(v) => handleChange('otherChargesAccount', v)}
-                  glOptions={glOptions}
-                />
-              </div>
-            )}
-
-            {isExpanded && (
-              <div className="animate-in fade-in slide-in-from-top-2 grid grid-cols-1 gap-6 duration-300 lg:grid-cols-3">
-                <div className="space-y-1">
-                  <div className="grid grid-cols-12 gap-2">
-                    <div className="col-span-4">
-                      <Label>Destination</Label>
-                    </div>
-                    <div className="col-span-8">
-                      <Input
-                        value={data.destination}
-                        onChange={(e) => handleChange('destination', e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-12 gap-2">
-                    <div className="col-span-4">
-                      <Label>Shipping Mode</Label>
-                    </div>
-                    <div className="col-span-8">
-                      <Select
-                        options={shippingModes}
-                        value={data.shippingMode}
-                        onChange={(e) => handleChange('shippingMode', e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-12 gap-2">
-                    <div className="col-span-4">
-                      <Label>Shipping Company</Label>
-                    </div>
-                    <div className="col-span-8 flex gap-1">
-                      <Dropdown
-                        data={STATIC_TRANSPORTERS}
-                        columns={transporterColumns}
-                        value={data.shippingCompany}
-                        valueKey="name"
-                        onChange={handleTransporterSelect}
-                        placeholder="Select..."
-                      />
-                      <ActionBtn
-                        icon={<EditIcon size={14} />}
-                        onClick={() => setTransporterModalOpen(true)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-12 gap-2">
-                    <div className="col-span-4">
-                      <Label>Address/Ph...</Label>
-                    </div>
-                    <div className="col-span-8">
-                      <TextArea
-                        rows={3}
-                        value={data.shippingCompanyAddress}
-                        onChange={(e) => handleChange('shippingCompanyAddress', e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-12 gap-2">
-                    <div className="col-span-4">
-                      <Label>Tracking No</Label>
-                    </div>
-                    <div className="col-span-8">
-                      <Input
-                        value={data.shippingTrackingNo}
-                        onChange={(e) => handleChange('shippingTrackingNo', e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-12 gap-2">
-                    <div className="col-span-4">
-                      <Label>Shipping Date</Label>
-                    </div>
-                    <div className="col-span-8">
-                      <DateInput
-                        value={data.shippingDate}
-                        onChange={(e) => handleChange('shippingDate', e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-12 gap-2">
-                    <div className="col-span-4">
-                      <Label>Shipping Charges</Label>
-                    </div>
-                    <div className="col-span-8">
-                      <Input
-                        type="number"
-                        value={data.shippingCharges}
-                        onChange={(e) => handleChange('shippingCharges', e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-12 gap-2">
-                    <div className="col-span-4">
-                      <Label>Vehicle/Vessel No</Label>
-                    </div>
-                    <div className="col-span-8">
-                      <Input
-                        value={data.vehicleNo}
-                        onChange={(e) => handleChange('vehicleNo', e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-12 gap-2">
-                    <div className="col-span-4">
-                      <Label>Charge Type</Label>
-                    </div>
-                    <div className="col-span-8">
-                      <Select
-                        options={chargeTypes}
-                        value={data.chargeType}
-                        onChange={(e) => handleChange('chargeType', e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-12 gap-2">
-                    <div className="col-span-4">
-                      <Label>Document Through</Label>
-                    </div>
-                    <div className="col-span-8">
-                      <Input
-                        value={data.documentThrough}
-                        onChange={(e) => handleChange('documentThrough', e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="grid grid-cols-12 gap-2">
-                    <div className="col-span-4">
-                      <Label>Port of Landing</Label>
-                    </div>
-                    <div className="col-span-8">
-                      <Input
-                        value={data.portOfLanding}
-                        onChange={(e) => handleChange('portOfLanding', e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-12 gap-2">
-                    <div className="col-span-4">
-                      <Label>Port of Discharge</Label>
-                    </div>
-                    <div className="col-span-8">
-                      <Input
-                        value={data.portOfDischarge}
-                        onChange={(e) => handleChange('portOfDischarge', e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-12 gap-2">
-                    <div className="col-span-4">
-                      <Label>No of Packets</Label>
-                    </div>
-                    <div className="col-span-8">
-                      <Input
-                        type="number"
-                        value={data.noOfPackets}
-                        onChange={(e) => handleChange('noOfPackets', e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-12 gap-2">
-                    <div className="col-span-4">
-                      <Label>Weight</Label>
-                    </div>
-                    <div className="col-span-8">
-                      <Input
-                        value={data.weight}
-                        onChange={(e) => handleChange('weight', e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="my-2 border-t border-gray-100 pt-2"></div>
-
-                  <div className="grid grid-cols-12 gap-2">
-                    <div className="col-span-4">
-                      <Label>Distance</Label>
-                    </div>
-                    <div className="col-span-8">
-                      <Input
-                        value={data.distance || ''}
-                        onChange={(e) => handleChange('distance', e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-12 gap-2">
-                    <div className="col-span-4">
-                      <Label>eWay Inv No</Label>
-                    </div>
-                    <div className="col-span-8">
-                      <Input
-                        value={data.ewayInvoiceNo || ''}
-                        onChange={(e) => handleChange('ewayInvoiceNo', e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-12 gap-2">
-                    <div className="col-span-4">
-                      <Label>eWay Inv Date</Label>
-                    </div>
-                    <div className="col-span-8">
-                      <DateInput
-                        value={data.ewayInvoiceDate || ''}
-                        onChange={(e) => handleChange('ewayInvoiceDate', e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-12 gap-2">
-                    <div className="col-span-4">
-                      <Label>IRN No</Label>
-                    </div>
-                    <div className="col-span-8">
-                      <Input
-                        value={data.irnNo || ''}
-                        onChange={(e) => handleChange('irnNo', e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-12 gap-2">
-                    <div className="col-span-4">
-                      <Label>QR Code</Label>
-                    </div>
-                    <div className="col-span-8">
-                      <Input
-                        value={data.qrCode || ''}
-                        onChange={(e) => handleChange('qrCode', e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-12 gap-2">
-                    <div className="col-span-4">
-                      <Label>Ack No</Label>
-                    </div>
-                    <div className="col-span-8">
-                      <Input
-                        value={data.ackNo || ''}
-                        onChange={(e) => handleChange('ackNo', e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-12 gap-2">
-                    <div className="col-span-4">
-                      <Label>Ack Date</Label>
-                    </div>
-                    <div className="col-span-8">
-                      <DateInput
-                        value={data.ackDate || ''}
-                        onChange={(e) => handleChange('ackDate', e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-12 gap-2">
-                    <div className="col-span-4">
-                      <Label>Bill Entry No</Label>
-                    </div>
-                    <div className="col-span-8">
-                      <Input
-                        value={data.billOfEntryNum || ''}
-                        onChange={(e) => handleChange('billOfEntryNum', e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-12 gap-2">
-                    <div className="col-span-4">
-                      <Label>Bill Entry Date</Label>
-                    </div>
-                    <div className="col-span-8">
-                      <DateInput
-                        value={data.billOfEntryDate || ''}
-                        onChange={(e) => handleChange('billOfEntryDate', e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-0">
-                  <div className="overflow-hidden rounded-sm border border-gray-300 shadow-sm">
-                    <div className="flex justify-between bg-slate-400/80 px-3 py-2 text-center text-xs font-semibold uppercase tracking-wide text-white">
-                      <span className="flex-1 text-left">Expense</span>
-                      <span className="w-[100px] text-center">Tender</span>
-                      <span className="w-[100px] text-right">Amount</span>
-                    </div>
-
-                    <div className="bg-white">
-                      <ExpenseRow
-                        label="Custom Duty"
-                        value={data.custDuty}
-                        onChange={(v) => handleChange('custDuty', v)}
-                        tenderValue={data.custDutyAccount}
-                        onTenderChange={(v) => handleChange('custDutyAccount', v)}
-                        glOptions={glOptions}
-                      />
-                      <ExpenseRow
-                        label="CHA Payment"
-                        value={data.chaPayment}
-                        onChange={(v) => handleChange('chaPayment', v)}
-                        tenderValue={data.chaPaymentAccount}
-                        onTenderChange={(v) => handleChange('chaPaymentAccount', v)}
-                        glOptions={glOptions}
-                      />
-                      <ExpenseRow
-                        label="Freight"
-                        value={data.freight}
-                        onChange={(v) => handleChange('freight', v)}
-                        tenderValue={data.freightAccount}
-                        onTenderChange={(v) => handleChange('freightAccount', v)}
-                        glOptions={glOptions}
-                        highlight
-                      />
-                      <ExpenseRow
-                        label="Insurance"
-                        value={data.insurance}
-                        onChange={(v) => handleChange('insurance', v)}
-                        tenderValue={data.insuranceAccount}
-                        onTenderChange={(v) => handleChange('insuranceAccount', v)}
-                        glOptions={glOptions}
-                      />
-                      <ExpenseRow
-                        label="Handling"
-                        value={data.handling}
-                        onChange={(v) => handleChange('handling', v)}
-                        tenderValue={data.handlingAccount}
-                        onTenderChange={(v) => handleChange('handlingAccount', v)}
-                        glOptions={glOptions}
-                      />
-                      <ExpenseRow
-                        label="Doc Charges"
-                        value={data.docCharges}
-                        onChange={(v) => handleChange('docCharges', v)}
-                        tenderValue={data.docChargesAccount}
-                        onTenderChange={(v) => handleChange('docChargesAccount', v)}
-                        glOptions={glOptions}
-                      />
-                      <ExpenseRow
-                        label="Bank Charges"
-                        value={data.bankCharges}
-                        onChange={(v) => handleChange('bankCharges', v)}
-                        tenderValue={data.bankChargesAccount}
-                        onTenderChange={(v) => handleChange('bankChargesAccount', v)}
-                        glOptions={glOptions}
-                      />
-                      <ExpenseRow
-                        label="Custom Exp"
-                        value={data.custExp}
-                        onChange={(v) => handleChange('custExp', v)}
-                        tenderValue={data.custExpAccount}
-                        onTenderChange={(v) => handleChange('custExpAccount', v)}
-                        glOptions={glOptions}
-                      />
-                      <ExpenseRow
-                        label="Load/Unload"
-                        value={data.loadingUnloading}
-                        onChange={(v) => handleChange('loadingUnloading', v)}
-                        tenderValue={data.loadingUnloadingAccount}
-                        onTenderChange={(v) => handleChange('loadingUnloadingAccount', v)}
-                        glOptions={glOptions}
-                        highlight
-                      />
-                      <ExpenseRow
-                        label="Other Charges"
-                        value={data.otherCharges}
-                        onChange={(v) => handleChange('otherCharges', v)}
-                        tenderValue={data.otherChargesAccount}
-                        onTenderChange={(v) => handleChange('otherChargesAccount', v)}
-                        glOptions={glOptions}
-                        highlight
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {transporterModalOpen && (
-          <Transporter
-            isOpen={transporterModalOpen}
-            onClose={() => setTransporterModalOpen(false)}
-            initialData={null}
-            onSuccess={() => setTransporterModalOpen(false)}
-          />
-        )}
       </div>
-    </div>
-  );
-};
+    );
+  }
+);
 
 export default GoodsRecieptNoteLogistics;
