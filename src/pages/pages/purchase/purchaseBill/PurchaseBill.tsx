@@ -22,6 +22,152 @@ import PurchaseBillInvoice from '../../../../components/invoiceDownload/Purchase
 
 import { downloadPdf, getPdfFileName } from '../../../../utils/pdfUtils';
 
+export const sampleInvoiceResponse = {
+  success: true,
+  message: 'Purchase Bill created successfully',
+  data: {
+    billNo: 'PB0207',
+    billDate: '2026-02-04T00:00:00.000Z',
+    store: '00002',
+    vendor: '000019',
+    items: [
+      {
+        item: '00001308',
+        itemcode: '00001308',
+        description: 'SVR Push up Bar',
+        batchNo: 'PUR-PB0207-00001308',
+        quantity: 10,
+        rate: 100,
+        amount: 1000,
+        netRate: 100,
+        netAmount: 0,
+        mrp: 150,
+        sale_rate: 130,
+        wholesale_rate: 120,
+        dealer_rate: 115,
+        taxable: 1000,
+        taxAmount: 50,
+        taxRate: '5%',
+        itemBarCode: '8901234567890',
+        brand: 'TATA',
+        _id: '69858184d4a76a23edc7e612',
+      },
+      {
+        item: '00000249',
+        itemcode: '00000249',
+        description: 'HELIX FOOTBALL SOCKS',
+        batchNo: 'PUR-PB0207-00000249',
+        quantity: 5,
+        rate: 200,
+        amount: 1000,
+        netRate: 200,
+        netAmount: 0,
+        mrp: 260,
+        sale_rate: 240,
+        wholesale_rate: 230,
+        dealer_rate: 225,
+        taxable: 1000,
+        taxAmount: 120,
+        taxRate: '12%',
+        itemBarCode: '8909876543210',
+        brand: 'HUL',
+        _id: '69858184d4a76a23edc7e613',
+      },
+    ],
+    type: 'Credit',
+    logistics: {
+      freight: {
+        amount: 500,
+        accountCode: '23400002',
+      },
+      loadingUnloading: {
+        amount: 200,
+        accountCode: '23400002',
+      },
+      insurance: {
+        amount: 100,
+        accountCode: '23400002',
+      },
+      otherCharges: {
+        amount: 50,
+        accountCode: '23400002',
+      },
+      custDuty: {
+        amount: 0,
+        accountCode: null,
+      },
+      chaPayment: {
+        amount: 0,
+        accountCode: null,
+      },
+      handling: {
+        amount: 100,
+        accountCode: '23400002',
+      },
+      docCharges: {
+        amount: 50,
+        accountCode: '23400002',
+      },
+      bankCharges: {
+        amount: 20,
+        accountCode: '23400002',
+      },
+      custExp: {
+        amount: 0,
+        accountCode: null,
+      },
+    },
+    gstType: 'GST',
+    billingFrom: {
+      contactNo: '9876543210',
+      gstNo: '09ABCDE1234F1Z5',
+      placeOfSupply: 'UP',
+      ecommerceInvoiceNo: 'ECOM123',
+      fullAddress: 'Noida, UP',
+    },
+    shippingFrom: {
+      fullAddress: 'Warehouse 2, Delhi',
+    },
+    supplierInvoiceNo: 'SUPINV123',
+    supplierInvoiceDate: '2026-02-04T00:00:00.000Z',
+    tax: 'Inclusive',
+    dueDate: '2026-02-15T00:00:00.000Z',
+    paymentTerms: '15 Days',
+    email: 'supplier@gmail.com',
+    priceCategory: 'Retail',
+    payments: [
+      {
+        ledger: '23400002',
+        ledgerName: 'Advance Income - Tax Paid',
+        amount: 1000,
+        remarks: 'NEFT TXN12345',
+      },
+    ],
+    itemValue: 2000,
+    taxableAmount: 1700,
+    taxAmount: 170,
+    promoDiscount: 100,
+    promoDiscount2: 50,
+    couponDiscount: 20,
+    billDiscount: 30,
+    billDiscountPercent: 5,
+    adjustment: -10,
+    roundOff: 0,
+    docAmount: 3150,
+    transport: 300,
+    remarks: 'Purchase from main supplier',
+    paidAmount: '1000',
+    _id: '69858184d4a76a23edc7e611',
+    createdAt: '2026-02-06T05:52:04.638Z',
+    updatedAt: '2026-02-06T05:52:04.638Z',
+    __v: 0,
+    storeName: 'SPORTS HUB',
+    vendorName: 'S.S TRENDY SPORTS',
+    netAmount: 3150,
+    totalLogistics: 1020,
+  },
+};
+
 const INITIAL_LOGISTICS_DATA: LogisticsData = {
   destination: '',
   shippingMode: 'Road',
@@ -193,40 +339,6 @@ const PurchaseBill: React.FC = () => {
       format: 'A4',
     });
   };
-
-  // const handleShare = async (method: 'whatsapp' | 'email') => {
-  //   if (!generatedBillData) {
-  //     alert('Please save the bill first.');
-  //     return;
-  //   }
-
-  //   await handleDownloadPdf(generatedBillData);
-
-  //   const billNo = generatedBillData.billNo;
-  //   const vendor = generatedBillData.vendorDetails?.vend_name || 'Vendor';
-  //   const amount = generatedBillData.docAmount;
-  //   const message = `Hello, Please find attached the Purchase Bill ${billNo} from ${vendor} for Amount ${amount}.`;
-
-  //   const proceed = window.confirm(
-  //     `File downloaded successfully!\n\nNext Step: We will open ${method === 'whatsapp' ? 'WhatsApp' : 'Email'}.\n\nPlease drag and drop the downloaded PDF into the chat/email to send it.\n\nProceed?`
-  //   );
-
-  //   if (!proceed) {
-  //     setIsShareOpen(false);
-  //     return;
-  //   }
-
-  //   if (method === 'whatsapp') {
-  //     const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
-  //     window.open(url, '_blank');
-  //   } else if (method === 'email') {
-  //     const subject = `Purchase Bill - ${billNo}`;
-  //     const url = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
-  //     window.open(url, '_blank');
-  //   }
-
-  //   setIsShareOpen(false);
-  // };
 
   const handleFinalSubmit = async () => {
     setIsSubmitting(true);
@@ -499,12 +611,14 @@ const PurchaseBill: React.FC = () => {
               </div>
             </div>
             <div className="custom-scrollbar flex-1 overflow-auto bg-gray-50 p-6">
-              <PurchaseBillInvoice
-                data={generatedBillData}
+              {/* <PurchaseBillInvoice
+                // data={generatedBillData}
+                data={sampleInvoiceResponse.data}
                 // onDownload={() => handleDownloadPdf(generatedBillData)}
                 // onShareWhatsApp={() => handleShare('whatsapp')}
                 // onShareEmail={() => handleShare('email')}
-              />
+              /> */}
+              <PurchaseBillInvoice data={sampleInvoiceResponse.data} />
             </div>
           </div>
         </div>

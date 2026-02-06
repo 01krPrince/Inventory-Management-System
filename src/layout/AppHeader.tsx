@@ -1,8 +1,8 @@
-import React, { useState, useRef, useEffect, useLayoutEffect } from "react";
-import { createPortal } from "react-dom";
-import { useAuth } from "../context/AuthContext";
-import { useTabs } from "../context/TabContext"; // ← ADD THIS IMPORT
-import { PlusCircle, RefreshCw, Star, Settings, Bell, X } from "lucide-react";
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { useAuth } from '../context/AuthContext';
+import { useTabs } from '../context/TabContext'; // ← ADD THIS IMPORT
+import { PlusCircle, RefreshCw, Star, Settings, Bell, X } from 'lucide-react';
 
 // ==========================================
 // 1. COMPONENT: Opening Transaction Menu
@@ -39,8 +39,8 @@ const OpeningTransactionMenu: React.FC<{
         onClose();
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen, onClose, triggerRef]);
 
   if (!isOpen) return null;
@@ -48,37 +48,34 @@ const OpeningTransactionMenu: React.FC<{
   // ← CHANGE TO ARRAY OF OBJECTS WITH path AND name
   const openingItems = [
     {
-      name: "Opening Outstanding Bills - Customer",
-      path: "/opening-outstanding-customer",
+      name: 'Opening Outstanding Bills - Customer',
+      path: '/opening-outstanding-customer',
     },
     {
-      name: "Opening Outstanding Bills - Vendor",
-      path: "/opening-outstanding-vendor",
+      name: 'Opening Outstanding Bills - Vendor',
+      path: '/opening-outstanding-vendor',
     },
-    { name: "Opening Stock", path: "/opening-stock" },
-    { name: "Opening Financials", path: "/opening-financials" },
-    { name: "Opening Leaves", path: "/opening-leaves" },
-    { name: "Opening Stock - Barcode", path: "/opening-stock-barcode" },
-    { name: "Opening Stock - Fixed Asset", path: "/opening-stock-fixed-asset" },
-    { name: "Opening POS Customer", path: "/opening-pos-customer" },
+    { name: 'Opening Stock', path: '/opening-stock' },
+    { name: 'Opening Financials', path: '/opening-financials' },
+    { name: 'Opening Leaves', path: '/opening-leaves' },
+    { name: 'Opening Stock - Barcode', path: '/opening-stock-barcode' },
+    { name: 'Opening Stock - Fixed Asset', path: '/opening-stock-fixed-asset' },
+    { name: 'Opening POS Customer', path: '/opening-pos-customer' },
   ];
 
   const menuContent = (
     <div
       ref={menuRef}
       style={{
-        position: "fixed",
+        position: 'fixed',
         top: coords.top,
         left: coords.left,
         zIndex: 9999,
       }}
-      className="w-80 bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden animate-in fade-in zoom-in-95 duration-100 font-sans"
-    >
+      className="animate-in fade-in zoom-in-95 w-80 overflow-hidden rounded-lg border border-gray-200 bg-white font-sans shadow-2xl duration-100 dark:border-gray-700 dark:bg-gray-800">
       {/* Header matching screenshot color */}
-      <div className="flex items-center justify-between px-4 py-3 bg-[#003f6b] text-white">
-        <h3 className="font-semibold text-sm tracking-wide">
-          Opening Transaction
-        </h3>
+      <div className="flex items-center justify-between bg-[#003f6b] px-4 py-3 text-white">
+        <h3 className="text-sm font-semibold tracking-wide">Opening Transaction</h3>
         <button onClick={onClose} className="hover:text-gray-200">
           <X size={18} />
         </button>
@@ -93,8 +90,7 @@ const OpeningTransactionMenu: React.FC<{
               addTab({ path: item.path, name: item.name }); // ← Open tab
               onClose(); // ← Close menu after selection
             }}
-            className="w-full text-left px-5 py-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-          >
+            className="w-full px-5 py-2.5 text-left transition-colors hover:bg-gray-100 dark:hover:bg-gray-700">
             {item.name}
           </button>
         ))}
@@ -110,10 +106,10 @@ const OpeningTransactionMenu: React.FC<{
 // ==========================================
 const HeaderActionButtons: React.FC = () => {
   const iconClass =
-    "text-gray-500 dark:text-gray-400 hover:text-[#0c5888] dark:hover:text-white transition-colors cursor-pointer";
+    'text-gray-500 dark:text-gray-400 hover:text-[#0c5888] dark:hover:text-white transition-colors cursor-pointer';
 
   return (
-    <div className="flex items-center gap-3 md:gap-4 mr-2">
+    <div className="mr-2 flex items-center gap-3 md:gap-4">
       {/* Refresh */}
       <button className={iconClass} title="Refresh">
         <RefreshCw size={20} />
@@ -134,9 +130,9 @@ const HeaderActionButtons: React.FC = () => {
         <button className={iconClass} title="Notifications">
           <Bell size={20} />
         </button>
-        <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+        <span className="absolute -right-1 -top-1 flex h-2.5 w-2.5">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500"></span>
         </span>
       </div>
     </div>
@@ -195,9 +191,9 @@ const AppHeader: React.FC = () => {
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutsideUser);
+    document.addEventListener('mousedown', handleClickOutsideUser);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutsideUser);
+      document.removeEventListener('mousedown', handleClickOutsideUser);
     };
   }, []);
 
@@ -206,42 +202,36 @@ const AppHeader: React.FC = () => {
     <div
       ref={userMenuRef}
       style={{
-        position: "fixed",
+        position: 'fixed',
         top: userCoords.top,
         left: userCoords.left,
         zIndex: 9999,
       }}
-      className="w-48 bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden animate-in fade-in zoom-in-95 duration-100"
-    >
-      <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700">
+      className="animate-in fade-in zoom-in-95 w-48 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-2xl duration-100 dark:border-gray-700 dark:bg-gray-800">
+      <div className="border-b border-gray-100 px-4 py-2 dark:border-gray-700">
         <p className="text-sm font-medium dark:text-white">Admin User</p>
-        <p className="text-xs text-gray-500 truncate">admin@example.com</p>
+        <p className="truncate text-xs text-gray-500">admin@example.com</p>
       </div>
-      <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-[#0c5888]/10 transition-colors">
+      <button className="w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-[#0c5888]/10 dark:text-gray-300">
         Account
       </button>
       <button
         onClick={handleLogout}
-        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-      >
+        className="w-full px-4 py-2 text-left text-sm text-red-600 transition-colors hover:bg-red-50">
         Logout
       </button>
     </div>
   );
 
   return (
-    <header className="sticky top-0 z-20 w-full bg-white border-b border-gray-200 dark:bg-gray-900 dark:border-gray-800 transition-all duration-300 ease-in-out">
-      <div className="flex flex-col w-full grow lg:flex-row lg:px-6">
+    <header className="sticky top-0 z-20 w-full border-b border-gray-200 bg-white transition-all duration-300 ease-in-out dark:border-gray-800 dark:bg-gray-900">
+      <div className="flex w-full grow flex-col lg:flex-row lg:px-6">
         {/* === HEADER TOP ROW (Brand + Mobile Icons) === */}
-        <div className="flex items-center justify-between w-full gap-2 px-3 sm:gap-4 lg:justify-normal lg:w-auto lg:py-1">
-          <a
-            href="https://solution.alignbooks.com/#/login"
-            target="_blank"
-            rel="noreferrer"
-          >
-            <div className="ml-3 p-2 h-10 flex items-center justify-center">
-              <span className="text-xl font-bold text-[#0c5888] dark:text-white">
-                Inventory
+        <div className="flex w-full items-center justify-between gap-2 px-3 sm:gap-4 lg:w-auto lg:justify-normal lg:py-1">
+          <a href="https://solution.alignbooks.com/#/login" target="_blank" rel="noreferrer">
+            <div className="ml-3 flex h-10 items-center justify-center p-2">
+              <span className="w-auto whitespace-nowrap text-xl font-bold text-[#0c5888] dark:text-white">
+                SPORTS HUB
               </span>
             </div>
           </a>
@@ -252,12 +242,11 @@ const AppHeader: React.FC = () => {
             <div className="relative" ref={userTriggerRef}>
               <button
                 onClick={toggleUserMenu}
-                className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 dark:border-gray-700 overflow-hidden"
-              >
+                className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-gray-300 dark:border-gray-700">
                 <img
                   src="https://ui-avatars.com/api/?name=Admin+User&background=0c5888&color=fff"
                   alt="User Avatar"
-                  className="w-9 h-9 rounded-full"
+                  className="h-9 w-9 rounded-full"
                 />
               </button>
             </div>
@@ -265,7 +254,7 @@ const AppHeader: React.FC = () => {
         </div>
 
         {/* === DESKTOP ICONS (Right Aligned, No Search) === */}
-        <div className="flex w-full items-center justify-end px-3 py-2 border-t lg:border-t-0 lg:px-0 lg:py-2">
+        <div className="flex w-full items-center justify-end border-t px-3 py-2 lg:border-t-0 lg:px-0 lg:py-2">
           {/* Container for all right-side icons */}
           <div className="hidden items-center gap-2 lg:flex">
             <ThemeToggleButton />
@@ -277,13 +266,12 @@ const AppHeader: React.FC = () => {
             <div className="relative mr-2" ref={transTriggerRef}>
               <button
                 onClick={toggleTransMenu}
-                className={`flex items-center justify-center w-9 h-9 rounded-full transition-colors ${
+                className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors ${
                   isTransMenuOpen
-                    ? "bg-[#0c5888] text-white"
-                    : "bg-gray-100 text-[#0c5888] hover:bg-gray-200 dark:bg-gray-800 dark:text-white"
+                    ? 'bg-[#0c5888] text-white'
+                    : 'bg-gray-100 text-[#0c5888] hover:bg-gray-200 dark:bg-gray-800 dark:text-white'
                 }`}
-                title="Opening Transactions"
-              >
+                title="Opening Transactions">
                 <PlusCircle size={20} />
               </button>
             </div>
@@ -292,12 +280,11 @@ const AppHeader: React.FC = () => {
             <div className="relative" ref={userTriggerRef}>
               <button
                 onClick={toggleUserMenu}
-                className="flex items-center justify-center w-9 h-9 rounded-full border dark:border-gray-700 ring-offset-2 hover:ring-2 ring-[#0c5888]/50 transition-all"
-              >
+                className="flex h-9 w-9 items-center justify-center rounded-full border ring-[#0c5888]/50 ring-offset-2 transition-all hover:ring-2 dark:border-gray-700">
                 <img
                   src="https://ui-avatars.com/api/?name=Admin+User&background=0c5888&color=fff"
                   alt="User Avatar"
-                  className="w-9 h-9 rounded-full"
+                  className="h-9 w-9 rounded-full"
                 />
               </button>
             </div>

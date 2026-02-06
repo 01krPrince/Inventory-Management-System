@@ -63,7 +63,7 @@ interface PurchaseBillFormProps {
 export interface PurchaseBillFormRef {
   triggerSubmit: () => void;
   getFormData: () => PurchaseBillFormData;
-  resetForm: () => void; // <--- Added resetForm to interface
+  resetForm: () => void;
 }
 
 const Label: React.FC<{ children: React.ReactNode; required?: boolean }> = ({
@@ -211,7 +211,6 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
     useEffect(() => {
       loadDropdownData();
     }, []);
-
     const loadDropdownData = async () => {
       try {
         const storesData = await fetchAllLocations();
@@ -219,6 +218,7 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
         const mappedStores = storesData.map((item: any) => ({
           name: item.name || item.storeName,
           id: item._id,
+          code: item.storeCode || item.code || '',
         }));
         setStoreOptions(mappedStores);
 
@@ -227,7 +227,7 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
           updateFormState({
             store: mappedStores[0].name,
             storeId: mappedStores[0].id,
-            storeCode: firstStore.code || '',
+            storeCode: (firstStore as any).code || (firstStore as any).storeCode || '',
           });
         }
 
@@ -246,7 +246,6 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
     const handleDropdownChange = (field: keyof PurchaseBillFormData, item: SimpleOption | null) => {
       const value = item?.name || '';
       let updates: Partial<PurchaseBillFormData> = { [field]: value };
-
       if (field === 'vendor' && item) {
         const fullVendor = rawVendors.find((v) => v._id === item.id);
         updates = {
@@ -257,6 +256,14 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
         };
       }
 
+      if (field === 'store' && item) {
+        const fullStore = rawStores.find((s) => s._id === item.id);
+        const sCode = fullStore?.code || fullStore.storeCode || '';
+        updates = {
+          store: value,
+          storeCode: sCode,
+        };
+      }
       if (field === 'vendor' && item) {
         const fullVendor = rawVendors.find((v) => v._id === item.id);
         if (fullVendor) {
@@ -300,8 +307,6 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
       },
       getFormData: () => formData,
       resetForm: () => {
-        // Reset Logic
-        // We preserve the first store logic if available
         const defaultStore = storeOptions.length > 0 ? storeOptions[0] : null;
         const defaultStoreData = rawStores.length > 0 ? rawStores[0] : null;
 

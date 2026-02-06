@@ -298,14 +298,6 @@ const DEFAULT_COLUMNS: Column[] = [
     resizable: true,
     visible: false,
   },
-  // {
-  //   id: 'rateper',
-  //   label: 'Rate Per',
-  //   width: 80,
-  //   align: 'left',
-  //   resizable: true,
-  //   visible: false,
-  // },
   {
     id: 'netRate',
     label: 'Net Rate',
@@ -397,7 +389,6 @@ const getStandardWarranties = (itemText: string): WarrantyOption[] => {
   return [];
 };
 
-// 1. Calculate Taxable Value (Base)
 const calculateRowTaxable = (qty: any, rate: any, gstRate: any): string => {
   const q = parseFloat(String(qty || 0));
   const r = parseFloat(String(rate || 0));
@@ -407,7 +398,6 @@ const calculateRowTaxable = (qty: any, rate: any, gstRate: any): string => {
   return (totalInclusive / (1 + g / 100)).toFixed(2);
 };
 
-// 2. Calculate Tax Amount (GST Portion)
 const calculateRowTaxAmount = (qty: any, rate: any, gstRate: any): string => {
   const q = parseFloat(String(qty || 0));
   const r = parseFloat(String(rate || 0));
@@ -417,7 +407,6 @@ const calculateRowTaxAmount = (qty: any, rate: any, gstRate: any): string => {
   const totalInclusive = q * r;
   const taxable = totalInclusive / (1 + g / 100);
 
-  // Tax = Total - Taxable
   return (totalInclusive - taxable).toFixed(2);
 };
 
@@ -460,21 +449,6 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
 
   const [newWarranty, setNewWarranty] = useState({ duration: '', price: '' });
   const [scanQuery, setScanQuery] = useState('');
-
-  // Inside your OrderTable component...
-  // useImperativeHandle(ref, () => ({
-  //   getTableData: () => {
-  //     // ... your existing logic
-  //     return { visibleRows: rows };
-  //   },
-  //   // ADD THIS FUNCTION:
-  //   resetTable: () => {
-  //     setRows([]); // Assuming 'rows' is your state variable for table data
-  //     if (onItemsChange) {
-  //       onItemsChange([]);
-  //     }
-  //   },
-  // }));
 
   const [attributePanelState, setAttributePanelState] = useState<{
     visible: boolean;
@@ -740,34 +714,28 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
       const gst = parseFloat(String(row.gstRate || 0));
 
       if (columnId === 'qty' || columnId === 'rate') {
-        // Standard flow: Qty/Rate change updates Amount
         newData.amount = !isNaN(qty) && !isNaN(rate) ? (qty * rate).toFixed(2) : '0.00';
 
         const currentRate = columnId === 'rate' ? rate : rate;
         newData.taxable = calculateRowTaxable(qty, currentRate, gst);
         newData.taxAmt = calculateRowTaxAmount(qty, currentRate, gst);
       } else if (columnId === 'amount') {
-        // Reverse flow: Amount change updates Rate
         if (!isNaN(amount) && !isNaN(qty) && qty !== 0) {
           const calculatedRate = amount / qty;
           newData.rate = calculatedRate.toFixed(2);
 
-          // Recalculate Taxes based on the new implied rate
           newData.taxable = calculateRowTaxable(qty, calculatedRate, gst);
           newData.taxAmt = calculateRowTaxAmount(qty, calculatedRate, gst);
         }
       } else if (columnId === 'taxable') {
         const newTaxable = parseFloat(value || '0');
 
-        // 1. Calculate Tax Amount based on new Taxable value
         const newTaxAmt = newTaxable * (gst / 100);
         newData.taxAmt = newTaxAmt.toFixed(2);
 
-        // 2. Calculate Total Amount (Taxable + TaxAmt)
         const newTotalAmount = newTaxable + newTaxAmt;
         newData.amount = newTotalAmount.toFixed(2);
 
-        // 3. Back-calculate Rate if Qty exists
         if (!isNaN(qty) && qty !== 0) {
           newData.rate = (newTotalAmount / qty).toFixed(2);
         }
@@ -980,7 +948,6 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
       return;
     }
 
-    // Ensure we prioritize the Purchase Rate exactly like the scan method does
     const purchaseRate = parseFloat(
       String((tempItemData.last_purchase_rate || tempItemData.purchase_rate) ?? 0)
     );
@@ -1003,7 +970,6 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
       brand: getStringValue(tempItemData.brand),
       netRate: tempItemData.netRate || '0',
       gstRate: tempItemData.gstRate || '0',
-      // FORCE the purchase rate here
       rate: String(purchaseRate),
       amount: (qty * purchaseRate).toFixed(2),
       wholesale_rate: tempItemData.wholesale_rate || 0,
@@ -1013,13 +979,11 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
     setTableData((prev) => {
       const existingRow = (prev[activeRowId] ?? {}) as Partial<RowData>;
 
-      // We merge attributeData BUT ensure rate remains the purchaseRate
-      // unless you specifically want the user to override it in the panel
       const mergedRow: RowData = {
         ...existingRow,
         ...baseData,
         ...attributeData,
-        rate: attributeData.rate || baseData.rate, // Fallback to purchase rate
+        rate: attributeData.rate || baseData.rate,
       };
 
       const newQty = Number(mergedRow.qty) || 0;
@@ -1041,12 +1005,7 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
   const startWidthRef = useRef<number>(0);
 
   const handleHeaderClick = (columnId: string) => {
-    if (
-      ['sno', 'add', 'del', 'srch', 'copy', 'attr', 'widg', 'batch', 'reciss'].includes(
-        //'warranty'
-        columnId
-      )
-    )
+    if (['sno', 'add', 'del', 'srch', 'copy', 'attr', 'widg', 'batch', 'reciss'].includes(columnId))
       return;
     setSortConfig((curr) => ({
       key: columnId,
@@ -1159,7 +1118,6 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
       const updatedTableData = { ...prevTableData };
       const updatedRows = [...rows];
 
-      // Track which rows are already filled in this specific update cycle
       let currentEmptyRowIdx = 0;
 
       newItems.forEach((item) => {
@@ -1193,13 +1151,12 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
           dealer_rate: item.dealer_rate || 0,
         };
 
-        // Find the next empty row starting from our last known index
         let targetRowId: string | null = null;
         for (let i = currentEmptyRowIdx; i < updatedRows.length; i++) {
           const rId = updatedRows[i];
           if (!updatedTableData[rId] || !updatedTableData[rId].select) {
             targetRowId = rId;
-            currentEmptyRowIdx = i + 1; // Move pointer for next item
+            currentEmptyRowIdx = i + 1;
             break;
           }
         }
@@ -1207,14 +1164,12 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
         if (targetRowId) {
           updatedTableData[targetRowId] = { ...updatedTableData[targetRowId], ...baseData };
         } else {
-          // No empty rows left? Create a new one
           const newId = generateRowId();
           updatedRows.push(newId);
           updatedTableData[newId] = baseData;
         }
       });
 
-      // Update the row order state
       setRows(updatedRows);
 
       return updatedTableData;
@@ -1222,7 +1177,6 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
   };
 
   const handleItemBalConfirm = (selectedItems: any[]) => {
-    // Map the items to the structure expected by the table
     const itemsToAdd = selectedItems.map((item) => ({
       _id: item.code,
       code: item.code,
@@ -1236,17 +1190,15 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
       brand: item.brand ?? null,
       category: item.category ?? null,
       gst_classification: item.hsn_code ?? '',
-      // sales_rate: item.last_sales_rate ?? 0,
       purchase_rate: item.last_purchase_rate ?? item.purchase_rate ?? 0,
       mrp: item.mrp ?? 0,
       barcode: item.barcode ?? '',
-      qty: item.quantity || 1, // Pass the user-typed quantity
+      qty: item.quantity || 1,
       warranty: false,
       firstyearwarranty: '',
       customWarranty: [],
     }));
 
-    // Call the new bulk add function
     addMultipleItemsToTable(itemsToAdd);
 
     setItemBalListOpen(false);
@@ -1854,10 +1806,8 @@ const OrderTable = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
       {isItemBalListOpen &&
         ReactDOM.createPortal(
           <div className="animate-in fade-in fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm duration-200">
-            {/* Clickable overlay to close */}
             <div className="absolute inset-0" onClick={() => setItemBalListOpen(false)} />
 
-            {/* Component Container */}
             <div className="relative w-full max-w-7xl shadow-2xl">
               <ItemWithBalance
                 isOpen={isItemBalListOpen}

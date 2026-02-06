@@ -237,7 +237,7 @@ const PurchaseBillFooter = forwardRef<PurchaseBillFooterRef, InvoiceFooterProps>
         setPayments([]);
         setPaymentAmount(0);
         setSelectedLedger('Cash In Hand');
-
+        setTotalDocAmount(0);
         const resetRef = (ref: React.RefObject<HTMLInputElement | null>, val: string = '0.00') => {
           if (ref.current) ref.current.value = val;
         };

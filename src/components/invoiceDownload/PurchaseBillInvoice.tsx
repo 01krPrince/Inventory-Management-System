@@ -1,8 +1,6 @@
 import React, { useMemo, useEffect } from 'react';
 import { Printer } from 'lucide-react';
-import Logo from './image.svg'; // Ensure this path is correct
-
-// --- Interfaces matching the JSON Response ---
+import Logo from './image.svg';
 
 interface ApiItem {
   item: string;
@@ -24,7 +22,7 @@ interface ApiItem {
   itemBarCode: string;
   brand: string;
   _id: string;
-  hsn?: string; // Optional as it's missing in the provided JSON
+  hsn?: string;
 }
 
 interface LogisticsValue {
@@ -106,13 +104,9 @@ export interface ApiResponse {
   totalLogistics?: number;
 }
 
-// --- Component Props ---
-
 interface PurchaseBillInvoiceProps {
   data?: ApiResponse;
 }
-
-// --- UI Interfaces ---
 
 interface AddressDetails {
   name: string;
@@ -147,6 +141,7 @@ interface TaxBreakdown {
 }
 
 interface InvoiceData {
+  storeName: string;
   header: {
     title: string;
     subTitle: string;
@@ -194,8 +189,6 @@ interface InvoiceData {
     companyName: string;
   };
 }
-
-// --- Utilities ---
 
 const numberToWords = (num: number): string => {
   const a = [
@@ -270,8 +263,7 @@ const safeStr = (val: any) =>
 const currency = (amt: number) =>
   amt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-// --- Component ---
-
+// Now it defaults to your static data automatically
 const PurchaseBillInvoice: React.FC<PurchaseBillInvoiceProps> = ({ data }) => {
   useEffect(() => {
     if (data) console.log('🧾 Rendering Invoice for:', data.billNo);
@@ -280,13 +272,10 @@ const PurchaseBillInvoice: React.FC<PurchaseBillInvoiceProps> = ({ data }) => {
   const invoice: InvoiceData = useMemo(() => {
     if (!data) return defaultInvoiceData;
 
-    // Calculations for Tax
-    // Assuming GST is split 50/50 for CGST/SGST if place of supply matches, typically derived from total tax
     const totalTax = data.taxAmount || 0;
     const cgst = totalTax / 2;
     const sgst = totalTax / 2;
 
-    // Summing all discounts
     const totalDiscount =
       (data.billDiscount || 0) +
       (data.promoDiscount || 0) +
@@ -294,6 +283,7 @@ const PurchaseBillInvoice: React.FC<PurchaseBillInvoiceProps> = ({ data }) => {
       (data.promoDiscount2 || 0);
 
     return {
+      storeName: safeStr(data.storeName),
       header: {
         title: 'PURCHASE INVOICE',
         subTitle: '',
@@ -303,7 +293,7 @@ const PurchaseBillInvoice: React.FC<PurchaseBillInvoiceProps> = ({ data }) => {
       seller: {
         name: safeStr(data.vendorName || data.vendor),
         addressLine1: safeStr(data.billingFrom?.fullAddress),
-        addressLine2: '', // Not provided separately in JSON
+        addressLine2: '',
         cityStateZip: safeStr(data.billingFrom?.placeOfSupply),
         gstin: safeStr(data.billingFrom?.gstNo),
         phone: safeStr(data.billingFrom?.contactNo),
@@ -447,7 +437,7 @@ const PurchaseBillInvoice: React.FC<PurchaseBillInvoiceProps> = ({ data }) => {
 
                 {/* Seller Name Area */}
                 <div className="w-full px-24 text-center">
-                  <h1 className="mb-1 text-xl font-bold text-black">{invoice.seller.name}</h1>
+                  <h1 className="mb-1 text-xl font-bold text-black">{invoice.storeName}</h1>
                   <p>{invoice.seller.addressLine1}</p>
                   <p>{invoice.seller.addressLine2}</p>
                   <p>{invoice.seller.cityStateZip}</p>
@@ -751,8 +741,8 @@ const PurchaseBillInvoice: React.FC<PurchaseBillInvoiceProps> = ({ data }) => {
   );
 };
 
-// Default Fallback Data to prevent crash on empty props
 const defaultInvoiceData: InvoiceData = {
+  storeName: 'SPORTS HUB',
   header: {
     title: 'PURCHASE INVOICE',
     subTitle: '',
