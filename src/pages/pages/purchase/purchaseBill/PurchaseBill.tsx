@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Save, Download } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 import PurchaseBillHeader from './PurchaseBillHeader';
 import PurchaseBillForm, { PurchaseBillFormRef } from './PurchaseBillForm';
@@ -226,6 +227,8 @@ const PurchaseBill: React.FC = () => {
   const formRef = useRef<PurchaseBillFormRef>(null);
   const footerRef = useRef<PurchaseBillFooterRef>(null);
   const logisticsRef = useRef<GoodsRecieptNoteLogisticsRef>(null);
+  const [footerExpenseTotal, setFooterExpenseTotal] = useState(0);
+  const [grandTotalExpense, setGrandTotalExpense] = useState(0);
 
   const [cashCredit, setCashCredit] = useState<string>('Credit');
   const [currentVendorCode, setCurrentVendorCode] = useState<string>('');
@@ -258,22 +261,56 @@ const PurchaseBill: React.FC = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+  useEffect(() => {
+    const logisticsTotal = calculateLogisticsTotal(logisticsData);
+    const total = logisticsTotal + footerExpenseTotal;
+
+    console.log('💰 EXPENSE UPDATE:');
+    console.log('   Logistics Total:', logisticsTotal);
+    console.log('   Footer Total:', footerExpenseTotal);
+    console.log('   GRAND TOTAL:', total);
+
+    setGrandTotalExpense(total);
+    // Ab ye 'grandTotalExpense' seedha Table me prop banke jayega
+  }, [logisticsData, footerExpenseTotal]);
 
   const handleFormChange = (data: any) => {
-    if (data.cashCredit) {
-      setCashCredit(data.cashCredit);
-    }
-    if (data.vendorCode !== undefined) {
-      setCurrentVendorCode(data.vendorCode);
-    }
-    if (data.storeCode !== undefined) {
-      setCurrentStoreCode(data.storeCode);
-    }
+    if (data.cashCredit) setCashCredit(data.cashCredit);
+    if (data.vendorCode !== undefined) setCurrentVendorCode(data.vendorCode);
+    if (data.storeCode !== undefined) setCurrentStoreCode(data.storeCode);
   };
 
+  // Footer Expense Change Handler
+  const handleFooterExpenseChange = (val: number) => {
+    console.log('Footer Expense Changed to:', val);
+    setFooterExpenseTotal(val);
+  };
+
+  // 2. Helper to calculate total from Logistics Data
+  const calculateLogisticsTotal = (data: LogisticsData) => {
+    return (
+      Number(data.freight || 0) +
+      Number(data.loadingUnloading || 0) +
+      Number(data.insurance || 0) +
+      Number(data.otherCharges || 0) +
+      Number(data.custDuty || 0) +
+      Number(data.chaPayment || 0) +
+      Number(data.handling || 0) +
+      Number(data.docCharges || 0) +
+      Number(data.bankCharges || 0) +
+      Number(data.custExp || 0)
+    );
+  };
+
+  // onClick={() => toast("Hello World")}
   const handleAnalyzeProfit = async (tableRows: any[]) => {
     if (!tableRows || tableRows.length === 0) {
-      alert('Please add items to the table first.');
+      // alert('Please add items to the table first.');
+      toast.error('Please add items to the table first.', {
+        duration: 4000,
+        position: 'top-center',
+      });
+
       return;
     }
 
@@ -281,7 +318,10 @@ const PurchaseBill: React.FC = () => {
     const storeId = formData?.storeId;
 
     if (!storeId) {
-      alert('Please select a Store in the form.');
+      toast.error('Please select a Store in the form.', {
+        duration: 4000,
+        position: 'top-center',
+      });
       return;
     }
 
@@ -313,7 +353,10 @@ const PurchaseBill: React.FC = () => {
       setAnalysisOpen(true);
     } catch (error: any) {
       console.error('Analysis Error:', error);
-      alert(error.message || 'Failed to fetch profit analysis.');
+      toast.error(error.message || 'Failed to fetch profit analysis.', {
+        duration: 4000,
+        position: 'top-center',
+      });
     }
   };
 
@@ -321,7 +364,10 @@ const PurchaseBill: React.FC = () => {
     const data = billDataToUse || generatedBillData;
 
     if (!data) {
-      alert('No bill data available to download.');
+      toast.error('No bill data available to download.', {
+        duration: 4000,
+        position: 'top-center',
+      });
       return;
     }
 
@@ -350,17 +396,60 @@ const PurchaseBill: React.FC = () => {
       const paymentList = footerData?.payments || [];
 
       if (!formData || !formData.storeCode || !formData.vendorCode) {
-        alert('Store or Vendor Code is missing.');
+        toast.error('Store or Vendor Code is missing.', {
+          duration: 4000,
+          position: 'top-center',
+        });
         return;
       }
 
+      // --- B. CALCULATE TOTAL ITEM VALUE ---
       const rawRows = tableSource?.visibleRows || [];
+      let totalItemValue = 0;
+      rawRows.forEach((row: any) => {
+        const item = row.data || row;
+        totalItemValue += Number(item.amount || 0);
+      });
+
+      if (footerRef.current) {
+        const validation = footerRef.current.validatePayment();
+
+        // This says: "If NOT valid, stop and alert."
+        if (!validation.isValid) {
+          toast.error(validation.message, {
+            duration: 4000,
+            position: 'top-center',
+          });
+          return;
+        }
+      }
+      // --- C. CALCULATE RATIO ---
+      const expenseRatio = totalItemValue > 0 ? grandTotalExpense / totalItemValue : 0;
+
+      // --- D. MAP ITEMS ---
       const apiItems = rawRows.map((row: any) => {
         const item = row.data || row;
+
+        // 1. Get Base Rate
+        const rate = Number(item.rate || 0);
+        const qty = Number(item.qty || 0);
+
+        const taxableAmount = rate * qty;
+
+        const expenseShare = taxableAmount * expenseRatio;
+
+        // 2. Calculate Net Rate (FIX IS HERE)
+        const calculatedNetRate = qty > 0 ? (taxableAmount + expenseShare) / qty : rate;
         return {
           itemCode: item.select || item.itemCode || '',
           quantity: Number(item.qty || 0),
-          rate: Number(item.rate || 0),
+          rate: rate,
+
+          // 3. Send Calculated Net Rate
+          netRate: Number(calculatedNetRate.toFixed(2)),
+
+          hsn_code: item.hsn || '',
+
           mrp: Number(item.mrp || 0),
           sale_rate: Number(item.sale_rate || 0),
           wholesale_rate: Number(item.wholesale_rate || 0),
@@ -472,7 +561,10 @@ const PurchaseBill: React.FC = () => {
       const finalBillData = response.data?.data || response.data;
 
       if (finalBillData) {
-        alert('✅ Invoice Saved Successfully!');
+        toast.success('✅ Invoice Saved Successfully!', {
+          duration: 4000,
+          position: 'top-center',
+        });
         setGeneratedBillData(finalBillData);
         setShowBillPreview(true);
 
@@ -495,7 +587,10 @@ const PurchaseBill: React.FC = () => {
       }
     } catch (error) {
       console.error('❌ API ERROR:', error);
-      alert('Failed to save. Check console for details.');
+      toast.error('Failed to save. Check console for details.', {
+        duration: 4000,
+        position: 'top-center',
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -515,9 +610,15 @@ const PurchaseBill: React.FC = () => {
             vendorCode={currentVendorCode}
             onItemsChange={setTableItems}
             storeCode={currentStoreCode}
+            totalExpense={grandTotalExpense}
           />
 
-          <PurchaseBillFooter ref={footerRef} cashCredit={cashCredit} currentItems={tableItems} />
+          <PurchaseBillFooter
+            ref={footerRef}
+            cashCredit={cashCredit}
+            currentItems={tableItems}
+            onExpenseChange={handleFooterExpenseChange}
+          />
 
           <LedgerAttributes data={ledgerData} onChange={setLedgerData} />
 
@@ -611,14 +712,14 @@ const PurchaseBill: React.FC = () => {
               </div>
             </div>
             <div className="custom-scrollbar flex-1 overflow-auto bg-gray-50 p-6">
-              {/* <PurchaseBillInvoice
-                // data={generatedBillData}
-                data={sampleInvoiceResponse.data}
+              <PurchaseBillInvoice
+                data={generatedBillData}
+                // data={sampleInvoiceResponse.data}
                 // onDownload={() => handleDownloadPdf(generatedBillData)}
                 // onShareWhatsApp={() => handleShare('whatsapp')}
                 // onShareEmail={() => handleShare('email')}
-              /> */}
-              <PurchaseBillInvoice data={sampleInvoiceResponse.data} />
+              />
+              {/* <PurchaseBillInvoice data={sampleInvoiceResponse.data} /> */}
             </div>
           </div>
         </div>

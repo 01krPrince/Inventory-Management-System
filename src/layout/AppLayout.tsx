@@ -57,6 +57,7 @@ import StockSummary from '../pages/pages/report/reportPages/StockSummary.tsx';
 import ChartOfAccountPage from '../pages/pages/finance/ChartOfAccount.tsx';
 import RecieptPaymentVoucher from '../pages/pages/finance/VoucherEntryForm.tsx';
 import StockTrail from '../pages/pages/report/reportPages/StockTrial.tsx';
+import StockTrial from '../pages/pages/report/reportPages/StockTrial.tsx';
 
 const useSidebar = () => ({
   isExpanded: false,
@@ -226,7 +227,7 @@ const ReportPageRoutes: { [key: string]: React.FC } = {
   // --- Country Specification ---
   '/report/nepal': () => <PlaceholderPage title="Nepal Reports" />,
 
-  '/stock-trial': StockTrail,
+  '/report/stock-trial': StockTrail,
 };
 
 const ComponentMap: { [key: string]: React.FC } = {
@@ -275,6 +276,7 @@ const ComponentMap: { [key: string]: React.FC } = {
   '/ecom-products': EcomProductDetail,
   //
   '/opening-stock': OpeningStock,
+  '/stock-trial': StockTrial,
   '/opening-outstanding-customer': () => (
     <div className="p-10 text-center">
       <h1 className="mb-4 text-3xl font-bold text-[#003f6b] dark:text-white">

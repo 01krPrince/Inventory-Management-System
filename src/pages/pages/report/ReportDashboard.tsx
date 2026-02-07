@@ -67,8 +67,6 @@ const INITIAL_DATA: ReportSection[] = [
         type: 'folder',
         path: '/report/financial-analysis',
       },
-      // SCENARIO: Folder with Multiple Files
-      // This will render as a collapsible folder
       {
         label: 'Stock Analysis',
         type: 'folder',

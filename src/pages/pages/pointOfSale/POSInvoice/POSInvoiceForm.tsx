@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { DocumentIcon, ChevronDownIcon, ChevronUpIcon } from '../../../../components/icons';
 import {
   Search,
@@ -9,7 +9,8 @@ import {
   ChevronUp,
   ChevronDown,
 } from 'lucide-react';
-import CustomerService, { PosCustomer } from '../../../../services/posCustomerService';
+import { createPortal } from 'react-dom';
+import CustomerService from '../../../../services/posCustomerService';
 import { fetchAllLocations } from '../../inventory/stockAdjustment/api/LocationMaster';
 import PriceCategoryService from '../../../../services/price-category.service';
 import Dropdown, { ColumnDef } from '../../../../components/Dropdown';
@@ -45,6 +46,11 @@ interface MockData {
 const codeNameColumns: ColumnDef<DropdownItem>[] = [
   { header: 'Code', key: 'code', width: 'w-20' },
   { header: 'Name', key: 'name', width: 'w-full' },
+];
+
+const simpleColumns: ColumnDef<SimpleOption>[] = [
+  { header: 'Code', key: 'code', width: 'w-20' },
+  { header: 'Name', key: 'name', width: 'flex-1' },
 ];
 
 const mockData: MockData = {
@@ -131,6 +137,217 @@ const AccordionSection: React.FC<{
   );
 };
 
+interface CustomerSelectorProps {
+  customers: any[];
+  selected: any | null;
+  onSelect: (item: any | null) => void;
+  placeholder: string;
+  withSearchButton?: boolean;
+}
+
+const CustomerSelector: React.FC<CustomerSelectorProps> = ({
+  customers,
+  selected,
+  onSelect,
+  placeholder,
+  withSearchButton = false,
+}) => {
+  const [open, setOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const portalRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [position, setPosition] = useState<{ top: number; left: number; width: number } | null>(
+    null
+  );
+
+  // Click outside handler
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        triggerRef.current &&
+        !triggerRef.current.contains(e.target as Node) &&
+        portalRef.current &&
+        !portalRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+        // Optional: clear search when closing
+        // setSearchTerm('');
+      }
+    };
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [open]);
+
+  // Focus search input when opened
+  useEffect(() => {
+    if (open && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [open]);
+
+  // Calculate position
+  useEffect(() => {
+    const recalculatePosition = () => {
+      if (open && triggerRef.current) {
+        const rect = triggerRef.current.getBoundingClientRect();
+        const gap = 4;
+        const estimatedHeight = 400; // approx max height of dropdown
+        const spaceBelow = window.innerHeight - rect.bottom;
+
+        let top;
+        if (spaceBelow < estimatedHeight && rect.top > estimatedHeight) {
+          top = rect.top + window.pageYOffset - estimatedHeight - gap;
+        } else {
+          top = rect.bottom + window.pageYOffset + gap;
+        }
+
+        setPosition({
+          top,
+          left: rect.left + window.pageXOffset,
+          width: rect.width,
+        });
+      } else {
+        setPosition(null);
+      }
+    };
+
+    if (open) {
+      recalculatePosition();
+      window.addEventListener('resize', recalculatePosition);
+      window.addEventListener('scroll', recalculatePosition);
+      return () => {
+        window.removeEventListener('resize', recalculatePosition);
+        window.removeEventListener('scroll', recalculatePosition);
+      };
+    }
+  }, [open]);
+
+  const lowerTerm = searchTerm.toLowerCase().trim();
+
+  const getMatchScore = (item: any, term: string): number => {
+    if (!term) return 0;
+    const nameLower = (item.print_name || '').toLowerCase();
+    const phoneStr = item.phone || '';
+    let score = 0;
+    if (nameLower === term) score += 100;
+    if (nameLower.startsWith(term)) score += 50;
+    if (nameLower.includes(term)) score += 10;
+    if (phoneStr === searchTerm) score += 95;
+    if (phoneStr.startsWith(searchTerm)) score += 45;
+    if (phoneStr.includes(searchTerm)) score += 5;
+    return score;
+  };
+
+  const filteredCustomers = useMemo(() => {
+    let list = customers;
+    if (lowerTerm || searchTerm) {
+      list = customers.filter((item) => {
+        const nameMatch = (item.print_name || '').toLowerCase().includes(lowerTerm);
+        const phoneMatch = (item.phone || '').includes(searchTerm);
+        return nameMatch || phoneMatch;
+      });
+    }
+    return [...list].sort((a, b) => {
+      const scoreA = getMatchScore(a, lowerTerm);
+      const scoreB = getMatchScore(b, lowerTerm);
+      if (scoreA !== scoreB) return scoreB - scoreA;
+      return (a.print_name || '').localeCompare(b.print_name || '');
+    });
+  }, [customers, lowerTerm, searchTerm]);
+
+  const displayInput = (
+    <input
+      type="text"
+      readOnly
+      value={selected?.print_name || ''}
+      placeholder={placeholder}
+      onClick={() => setOpen(true)}
+      className="h-[30px] w-full cursor-pointer rounded-sm border border-gray-300 bg-white px-2 text-[13px] text-gray-700 focus:border-[var(--theme-focus)] focus:outline-none focus:ring-1 focus:ring-[var(--theme-focus)]"
+    />
+  );
+
+  return (
+    <div ref={containerRef} className="w-full">
+      <div ref={triggerRef} className="relative w-full">
+        {withSearchButton ? (
+          <div className="flex w-full items-center">
+            {displayInput}
+            <ActionBtn icon={<Search size={16} />} onClick={() => setOpen(true)} />
+          </div>
+        ) : (
+          <>
+            {displayInput}
+            <ChevronDown
+              size={16}
+              className={`pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
+            />
+          </>
+        )}
+      </div>
+
+      {open &&
+        position &&
+        createPortal(
+          <div
+            ref={portalRef}
+            className="fixed z-[10000] max-h-96 w-auto overflow-y-auto rounded-md border border-gray-300 bg-white shadow-xl"
+            style={{
+              top: position.top,
+              left: position.left,
+              width: position.width,
+            }}>
+            <div className="sticky top-0 border-b border-gray-200 bg-white">
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Search by name or phone..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="h-[30px] w-full px-3 text-[13px] outline-none"
+              />
+            </div>
+            <div className="max-h-[352px] overflow-y-auto">
+              {selected && (
+                <div
+                  onClick={() => {
+                    onSelect(null);
+                    setOpen(false);
+                    setSearchTerm('');
+                  }}
+                  className="flex cursor-pointer items-center px-3 py-2 text-[13px] text-red-600 hover:bg-red-50">
+                  <div className="w-32 shrink-0"></div>
+                  <div className="flex-1 italic">-- Clear selection --</div>
+                </div>
+              )}
+              {filteredCustomers.length === 0 ? (
+                <div className="px-3 py-2 text-sm text-gray-500">No customers found</div>
+              ) : (
+                filteredCustomers.map((item) => (
+                  <div
+                    key={item.id}
+                    onClick={() => {
+                      onSelect(item);
+                      setOpen(false);
+                      setSearchTerm('');
+                    }}
+                    className="flex cursor-pointer items-center px-3 py-1.5 text-[13px] hover:bg-gray-100">
+                    <div className="w-28 shrink-0 text-gray-600">{item.phone || '-'}</div>
+                    <div className="flex-1 truncate">{item.print_name}</div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>,
+          document.body
+        )}
+    </div>
+  );
+};
+
 const POSInvoiceForm: React.FC<POSInvoiceFormProps> = ({
   data,
   onChange,
@@ -163,15 +380,6 @@ const POSInvoiceForm: React.FC<POSInvoiceFormProps> = ({
     '--theme-focus': '#60a5fa',
   } as React.CSSProperties;
 
-  const simpleColumns: ColumnDef<SimpleOption>[] = [
-    { header: 'Name', key: 'name', width: 'flex-1' },
-  ];
-
-  const posCustomerDropdown: ColumnDef<PosCustomer>[] = [
-    { header: 'Phone', key: 'phone', width: 'w-32' },
-    { header: 'Name', key: 'print_name', width: 'flex-1' },
-  ];
-
   useEffect(() => {
     const loadInitialData = async () => {
       try {
@@ -203,6 +411,7 @@ const POSInvoiceForm: React.FC<POSInvoiceFormProps> = ({
           state: cust.state,
           pin: cust.pin,
           gst_category: cust.gst_category,
+          // gst_no: cust.gst_no,
         }));
         setPosCustomerOptions(mappedPosCustomers);
       } catch (error) {
@@ -212,6 +421,22 @@ const POSInvoiceForm: React.FC<POSInvoiceFormProps> = ({
 
     loadInitialData();
   }, []);
+
+  useEffect(() => {
+    if (!data.customerName) {
+      setSelectedCustomerUI(null);
+    } else {
+      const matchingCustomer = posCustomerOptions.find(
+        (cust) => cust.print_name === data.customerName || cust.code === data.customerCode
+      );
+
+      if (matchingCustomer) {
+        setSelectedCustomerUI(matchingCustomer);
+      } else {
+        setSelectedCustomerUI(null);
+      }
+    }
+  }, [data.customerName, data.customerCode, posCustomerOptions]);
 
   const handleCustomerChange = (item: any | null) => {
     if (!item) {
@@ -291,17 +516,13 @@ const POSInvoiceForm: React.FC<POSInvoiceFormProps> = ({
                     <Label required>Customer</Label>
                   </div>
                   <div className="col-span-8">
-                    <InputGroup>
-                      <Dropdown
-                        data={posCustomerOptions}
-                        columns={posCustomerDropdown}
-                        value={data.customerName}
-                        valueKey="print_name"
-                        onChange={handleCustomerChange}
-                        placeholder="Search by name or phone..."
-                      />
-                      <ActionBtn icon={<Search size={16} />} />
-                    </InputGroup>
+                    <CustomerSelector
+                      customers={posCustomerOptions}
+                      selected={selectedCustomerUI}
+                      onSelect={handleCustomerChange}
+                      placeholder="Search by name or phone..."
+                      withSearchButton={true}
+                    />
                   </div>
                 </div>
 
@@ -482,13 +703,12 @@ const POSInvoiceForm: React.FC<POSInvoiceFormProps> = ({
                           <Label required>Customer</Label>
                         </div>
                         <div className="col-span-8">
-                          <Dropdown
-                            data={posCustomerOptions}
-                            columns={posCustomerDropdown}
-                            value={data.customerName}
-                            valueKey="print_name"
-                            onChange={handleCustomerChange}
+                          <CustomerSelector
+                            customers={posCustomerOptions}
+                            selected={selectedCustomerUI}
+                            onSelect={handleCustomerChange}
                             placeholder="Select Customer..."
+                            withSearchButton={false}
                           />
                         </div>
                       </div>

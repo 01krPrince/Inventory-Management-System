@@ -5,10 +5,11 @@ import SalesInvoiceForm, { InvoiceFormData, SalesInvoiceFormRef } from './SalesI
 import ProfitAnalysisModal from '../../../../components/ProfitAnalysisModal';
 import OrderTable, { OrderTableRef } from './OrderTable2';
 import { ToWords } from 'to-words';
-import PurchaseBillFooter, {
-  PurchaseBillFooterRef,
-} from '../../purchase/purchaseBill/PurchaseBillFooter';
-import LedgerAttributes from '../../../../components/LedgerAttributes';
+import SaleInvoiceFooter, {
+  SaleInvoiceFooterRef
+} from './SaleInvoiceFooter';
+
+// import LedgerAttributes from '../../../../components/LedgerAttributes';
 import InvoiceA4 from '../../../../components/invoiceDownload/InvoiceA4';
 import { fetchProfitAnalysis } from '../../../../services/analysis/profitService';
 import { COLORS } from '../../../../constants/colors';
@@ -30,7 +31,7 @@ const SalesInvoice: React.FC = () => {
   // Refs
   const formRef = useRef<SalesInvoiceFormRef>(null);
   const orderTableRef = useRef<OrderTableRef>(null);
-  const footerRef = useRef<PurchaseBillFooterRef>(null);
+  const footerRef = useRef<SaleInvoiceFooterRef>(null);
 
   // Sync form state
   const handleFormChange = (data: InvoiceFormData) => {
@@ -316,10 +317,45 @@ const handleFormSubmit = async (formData: InvoiceFormData) => {
       return;
     }
 
+
     // --- 2. GET FOOTER DATA ---
     const footerData = footerRef.current?.getFooterData();
     const billDiscount = Number(footerData?.discount1 || 0);
     const roundOff = Number(footerData?.roundOff || 0);
+
+
+
+    // A. Calculate Total Expense from Footer
+    // const transportAmt = Number(footerData?.transportAmt || 0);
+    //   const otherDiscAmt = Number(footerData?.otherDiscAmt || 0);
+    //   const adjustmentAmt = Number(footerData?.adjustmentAmt || 0);
+
+      // const totalExpense = transportAmt + otherDiscAmt + adjustmentAmt;
+
+      // B. Trigger Visual Update in Table
+      // if (orderTableRef.current) {
+      //    orderTableRef.current.calculateNetRates(totalExpense);
+      // }
+
+
+      // C. Calculate Expense Ratio for Payload Mapping
+      // We need to re-calculate total item value here to be safe
+      // let totalItemValueForMath = 0;
+      // tableData.visibleRows.forEach((row) => {
+      //    totalItemValueForMath += parseFloat(String(row.data.amount || 0));
+      // });
+      
+      // const expenseRatio = totalItemValueForMath > 0 ? (totalExpense / totalItemValueForMath) : 0;
+
+    if (footerRef.current) {
+        const validation = footerRef.current.validatePayment();
+        
+        // This says: "If NOT valid, stop and alert."
+        if (!validation.isValid) { 
+           alert(validation.message); 
+           return; 
+        }
+    }
 
     // --- 3. PROCESS ITEMS LOOP ---
     let totalTaxAmount = 0;
@@ -329,6 +365,7 @@ const handleFormSubmit = async (formData: InvoiceFormData) => {
     const mappedItems = tableData.visibleRows.map((row) => {
       const rawQty = parseFloat(String(row.data.qty || 0));
       const rawRate = parseFloat(String(row.data.rate || 0));
+      // const calculatedNetRate = rawRate + (rawRate * expenseRatio);
       const taxRate = parseFloat(String(row.data.gstRate || row.data.taxRate || 0));
       const hsn = String(row.data.taxCode || row.data.hsn || "");
 
@@ -382,13 +419,18 @@ const handleFormSubmit = async (formData: InvoiceFormData) => {
         netAmount: netAmountForItem,
         description: row.data.desc || "Item",
         unit: row.data.unit || "PCS",
-        customWarranty: customWarranty
+        customWarranty: customWarranty,
+        // netRate: Number(calculatedNetRate.toFixed(2)),
+        // warrantyPrice: warrantyPrice
       };
     });
 
     // Calculate Grand Total
     const subTotal = totalItemValue + totalTaxAmount + totalWarrantyValue;
     const finalNetAmount = Number((subTotal - billDiscount + roundOff).toFixed(2));
+    const paymentList = footerData?.payments || [];
+
+    
 
     // --- 4. API PAYLOAD ---
     const apiPayload = {
@@ -406,7 +448,7 @@ const handleFormSubmit = async (formData: InvoiceFormData) => {
       roundOff: roundOff,
       adjustment: 0,
       netAmount: finalNetAmount,
-      payments: [{ ledger: "23400002", amount: finalNetAmount }]
+      payments: paymentList
     };
 
     console.log("🚀 DEBUG: Sending Payload:", JSON.stringify(apiPayload, null, 2));
@@ -516,6 +558,16 @@ const handleFormSubmit = async (formData: InvoiceFormData) => {
   }
 };
 
+// This function runs automatically whenever Footer expenses change
+  // const handleExpenseChange = (totalExpense: number) => {
+  //   if (orderTableRef.current) {
+  //     // Trigger the calculation in the table immediately
+  //     orderTableRef.current.calculateNetRates(totalExpense);
+  //   }
+  // };
+ 
+ 
+
   /* =========================
       UI RENDER
      ========================== */
@@ -542,13 +594,14 @@ const handleFormSubmit = async (formData: InvoiceFormData) => {
             onItemsChange={setTableItems}
           />
           
-          <PurchaseBillFooter 
+          <SaleInvoiceFooter 
             ref={footerRef} 
             cashCredit={cashCredit} 
             currentItems={tableItems} 
+            // onExpenseChange={handleExpenseChange}
           />
           
-          <LedgerAttributes />
+          {/* <LedgerAttributes /> */}
         </div>
       </div>
 

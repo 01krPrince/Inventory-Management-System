@@ -7,9 +7,9 @@ import {
   AlertCircle,
   ChevronUp,
   ChevronDown,
-} from "lucide-react";
-import React, { useState, useRef } from "react";
-import { COLORS } from "../constants/colors";
+} from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { COLORS } from '../constants/colors';
 
 const Attachment: React.FC = () => {
   interface AttachedFile {
@@ -33,11 +33,11 @@ const Attachment: React.FC = () => {
   };
 
   const handleOpen = (file: AttachedFile) => {
-    window.open(file.url, "_blank");
+    window.open(file.url, '_blank');
   };
 
   const handleRemoveFile = (id: string) => {
-    if (window.confirm("Are you sure you want to remove this attachment?")) {
+    if (window.confirm('Are you sure you want to remove this attachment?')) {
       setAttachments((prev) => {
         const fileToRemove = prev.find((f) => f.id === id);
         if (fileToRemove) {
@@ -49,7 +49,7 @@ const Attachment: React.FC = () => {
   };
 
   const handleDownload = (file: AttachedFile) => {
-    const link = document.createElement("a");
+    const link = document.createElement('a');
     link.href = file.url;
     link.download = file.name;
     document.body.appendChild(link);
@@ -63,8 +63,8 @@ const Attachment: React.FC = () => {
 
     const maxSize = 2 * 1024 * 1024; // 2MB
     if (file.size > maxSize) {
-      setError("File size exceeds 2MB limit.");
-      e.target.value = "";
+      setError('File size exceeds 2MB limit.');
+      e.target.value = '';
       return;
     }
 
@@ -79,30 +79,24 @@ const Attachment: React.FC = () => {
     };
 
     setAttachments((prev) => [...prev, newFile]);
-    e.target.value = "";
+    e.target.value = '';
   };
 
   return (
     <div
-      className="flex-1 border p-0 rounded-sm flex flex-col overflow-hidden"
+      className="flex flex-1 flex-col overflow-hidden rounded-sm border p-0"
       style={{
         borderColor: COLORS.border,
         backgroundColor: COLORS.background,
-      }}
-    >
-      {/* Header / Toggle Section */}
+      }}>
       <div
-        className="flex items-center justify-between p-3 cursor-pointer select-none"
+        className="flex cursor-pointer select-none items-center justify-between p-3"
         onClick={() => setIsOpen(!isOpen)}
         style={{
           backgroundColor: COLORS.white,
-          borderBottom: isOpen ? `1px solid ${COLORS.border}` : "none",
-        }}
-      >
-        <span
-          className="font-semibold text-sm"
-          style={{ color: COLORS.textPrimary }}
-        >
+          borderBottom: isOpen ? `1px solid ${COLORS.border}` : 'none',
+        }}>
+        <span className="text-sm font-semibold" style={{ color: COLORS.textPrimary }}>
           Attachment
         </span>
         <div style={{ color: COLORS.textSecondary }}>
@@ -110,41 +104,32 @@ const Attachment: React.FC = () => {
         </div>
       </div>
 
-      {/* Collapsible Content */}
       {isOpen && (
-        <div className="flex flex-col sm:flex-row h-32">
-          {/* 1. File Upload Area */}
+        <div className="flex h-32 flex-col sm:flex-row">
           <div
-            className="w-full sm:w-48 border-r p-3 flex flex-col justify-center items-start"
+            className="flex w-full flex-col items-start justify-center border-r p-3 sm:w-48"
             style={{
               borderColor: COLORS.border,
               backgroundColor: COLORS.white,
-            }}
-          >
-            {/* Conditional Error or Info Message */}
+            }}>
             {error ? (
               <span
-                className="text-[10px] mb-3 flex items-center gap-1"
-                style={{ color: COLORS.danger }}
-              >
+                className="mb-3 flex items-center gap-1 text-[10px]"
+                style={{ color: COLORS.danger }}>
                 <AlertCircle size={10} /> {error}
               </span>
             ) : (
-              <span
-                className="text-[10px] mb-3"
-                style={{ color: COLORS.danger }}
-              >
+              <span className="mb-3 text-[10px]" style={{ color: COLORS.danger }}>
                 Attachment Size should Not Exceed 2MB
               </span>
             )}
 
             <div
-              className="border border-dashed rounded w-full h-full flex items-center justify-center"
+              className="flex h-full w-full items-center justify-center rounded border border-dashed"
               style={{
                 borderColor: COLORS.borderDark,
                 backgroundColor: COLORS.background,
-              }}
-            >
+              }}>
               <input
                 type="file"
                 ref={fileInputRef}
@@ -154,109 +139,86 @@ const Attachment: React.FC = () => {
               />
               <button
                 onClick={handleButtonClick}
-                className="custom-upload-btn text-white text-xs px-3 py-1 rounded-sm flex items-center gap-1 shadow-sm"
-                style={{ color: COLORS.white }}
-              >
+                className="custom-upload-btn flex items-center gap-1 rounded-sm px-3 py-1 text-xs text-white shadow-sm"
+                style={{ color: COLORS.white }}>
                 <Upload size={12} /> Select file
               </button>
             </div>
           </div>
 
-          {/* 2. File Table Area */}
-          <div
-            className="flex-1 flex flex-col min-w-0"
-            style={{ backgroundColor: COLORS.white }}
-          >
-            {/* Table Header */}
+          <div className="flex min-w-0 flex-1 flex-col" style={{ backgroundColor: COLORS.white }}>
             <div
-              className="text-xs flex h-7 items-center"
-              style={{ backgroundColor: COLORS.primary, color: COLORS.white }}
-            >
+              className="flex h-7 items-center text-xs"
+              style={{ backgroundColor: COLORS.primary, color: COLORS.white }}>
               <div
-                className="w-8 border-r h-full flex items-center justify-center"
-                style={{ borderColor: COLORS.primaryHover }}
-              >
+                className="flex h-full w-8 items-center justify-center border-r"
+                style={{ borderColor: COLORS.primaryHover }}>
                 <Download size={10} />
               </div>
               <div
-                className="w-8 border-r h-full flex items-center justify-center"
-                style={{ borderColor: COLORS.primaryHover }}
-              >
+                className="flex h-full w-8 items-center justify-center border-r"
+                style={{ borderColor: COLORS.primaryHover }}>
                 <Eye size={10} />
               </div>
               <div
-                className="w-8 border-r h-full flex items-center justify-center"
-                style={{ borderColor: COLORS.primaryHover }}
-              >
+                className="flex h-full w-8 items-center justify-center border-r"
+                style={{ borderColor: COLORS.primaryHover }}>
                 <Trash2 size={10} />
               </div>
-              <div className="flex-1 px-2 font-medium flex items-center h-full overflow-hidden">
+              <div className="flex h-full flex-1 items-center overflow-hidden px-2 font-medium">
                 FileName
               </div>
             </div>
 
-            {/* Table Body */}
-            <div
-              className="flex-1 overflow-y-auto"
-              style={{ backgroundColor: COLORS.white }}
-            >
+            <div className="flex-1 overflow-y-auto" style={{ backgroundColor: COLORS.white }}>
               {attachments.length === 0 ? (
                 <div
-                  className="h-full flex items-center justify-center text-xs italic"
-                  style={{ color: COLORS.textMuted }}
-                >
+                  className="flex h-full items-center justify-center text-xs italic"
+                  style={{ color: COLORS.textMuted }}>
                   No files attached
                 </div>
               ) : (
                 attachments.map((file) => (
                   <div
                     key={file.id}
-                    className="flex h-7 items-center border-b text-xs custom-row"
-                    style={{ borderColor: COLORS.background }}
-                  >
+                    className="custom-row flex h-7 items-center border-b text-xs"
+                    style={{ borderColor: COLORS.background }}>
                     <div
-                      className="w-8 border-r h-full flex items-center justify-center"
-                      style={{ borderColor: COLORS.border }}
-                    >
+                      className="flex h-full w-8 items-center justify-center border-r"
+                      style={{ borderColor: COLORS.border }}>
                       <button
                         onClick={() => handleDownload(file)}
                         className="hover-icon-primary"
                         title="Download"
-                        style={{ color: COLORS.textSecondary }}
-                      >
+                        style={{ color: COLORS.textSecondary }}>
                         <Download size={12} />
                       </button>
                     </div>
                     <div
-                      className="w-8 border-r h-full flex items-center justify-center"
-                      style={{ borderColor: COLORS.border }}
-                    >
+                      className="flex h-full w-8 items-center justify-center border-r"
+                      style={{ borderColor: COLORS.border }}>
                       <button
                         onClick={() => handleOpen(file)}
                         className="hover-icon-primary"
                         title="Open"
-                        style={{ color: COLORS.textSecondary }}
-                      >
+                        style={{ color: COLORS.textSecondary }}>
                         <Eye size={12} />
                       </button>
                     </div>
                     <div
-                      className="w-8 border-r h-full flex items-center justify-center"
-                      style={{ borderColor: COLORS.border }}
-                    >
+                      className="flex h-full w-8 items-center justify-center border-r"
+                      style={{ borderColor: COLORS.border }}>
                       <button
                         onClick={() => handleRemoveFile(file.id)}
                         className="hover-icon-danger"
                         title="Remove"
-                        style={{ color: COLORS.danger }}
-                      >
+                        style={{ color: COLORS.danger }}>
                         <Trash2 size={12} />
                       </button>
                     </div>
                     <div
-                      className="flex-1 px-2 flex items-center gap-2 truncate h-full"
-                      style={{ color: COLORS.textPrimary }}
-                    >
+                      className="flex h-full flex-1 items-center gap-2 truncate px-2"
+                      style={{ color: COLORS.textPrimary }}>
                       <FileText
                         size={12}
                         className="flex-shrink-0"

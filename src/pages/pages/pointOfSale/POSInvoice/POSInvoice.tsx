@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { COLORS } from '../../../../constants/colors';
-import { ToWords } from 'to-words'; // Ensure this is installed: npm install to-words
+import { ToWords } from 'to-words';
 import { X } from 'lucide-react';
 
 // Child Components
@@ -146,38 +146,45 @@ const initialInvoiceData: FullInvoiceData = {
   payments: [],
 };
 
+// Deep clone helper – prevents shared references between tabs
+const deepCloneInvoiceData = (data: FullInvoiceData): FullInvoiceData => {
+  return JSON.parse(JSON.stringify(data));
+};
+
 const POSInvoice: React.FC = () => {
   const [tabs, setTabs] = useState<InvoiceTab[]>([
-    { id: '1', name: 'Invoice #1', data: { ...initialInvoiceData } },
+    {
+      id: '1',
+      name: 'Invoice #1',
+      data: deepCloneInvoiceData(initialInvoiceData),
+    },
   ]);
   const [activeTabId, setActiveTabId] = useState<string>('1');
-  const [lastClosedTab, setLastClosedTab] = useState<InvoiceTab | null>(null);
+  const [recentlyClosedTabs, setRecentlyClosedTabs] = useState<InvoiceTab[]>([]);
 
   // Receipt Modal State
   const [showReceipt, setShowReceipt] = useState(false);
   const [receiptData, setReceiptData] = useState<any>(null);
 
   const activeTab = tabs.find((t) => t.id === activeTabId) || tabs[0];
-  const activeData = (activeTab.data || initialInvoiceData) as FullInvoiceData;
+  const activeData = (activeTab?.data || initialInvoiceData) as FullInvoiceData;
 
-  // [FIX] useCallback prevents 'updateActiveTabData' from changing every render
+  // ────────────────────────────────────────────────
+  //  Tab Data Update Helpers (stable with useCallback)
+  // ────────────────────────────────────────────────
   const updateActiveTabData = useCallback(
     (updater: (prev: FullInvoiceData) => Partial<FullInvoiceData>) => {
       setTabs((prevTabs) =>
-        prevTabs.map((tab) => {
-          if (tab.id === activeTabId) {
-            const currentData = tab.data as FullInvoiceData;
-            const updates = updater(currentData);
-            return { ...tab, data: { ...currentData, ...updates } };
-          }
-          return tab;
-        })
+        prevTabs.map((tab) =>
+          tab.id === activeTabId
+            ? { ...tab, data: { ...tab.data, ...updater(tab.data as FullInvoiceData) } }
+            : tab
+        )
       );
     },
     [activeTabId]
   );
 
-  // [FIX] Wrappers wrapped in useCallback
   const setRowsWrapper = useCallback(
     (val: string[] | ((prev: string[]) => string[])) => {
       updateActiveTabData((prev) => ({
@@ -188,7 +195,9 @@ const POSInvoice: React.FC = () => {
   );
 
   const setTableDataWrapper = useCallback(
-    (val: any) => {
+    (
+      val: Record<string, RowData> | ((prev: Record<string, RowData>) => Record<string, RowData>)
+    ) => {
       updateActiveTabData((prev) => ({
         tableData: typeof val === 'function' ? val(prev.tableData) : val,
       }));
@@ -196,11 +205,10 @@ const POSInvoice: React.FC = () => {
     [updateActiveTabData]
   );
 
-  // [CRITICAL FIX] This caused the infinite loop. Now it's stable.
   const handleItemsUpdated = useCallback(
     (items: PosInvoiceItem[], totals: any) => {
       updateActiveTabData(() => ({
-        items: items,
+        items,
         itemsTotal: totals,
       }));
     },
@@ -216,10 +224,81 @@ const POSInvoice: React.FC = () => {
 
   const handlePaymentUpdate = useCallback(
     (payments: any[]) => {
-      updateActiveTabData(() => ({ payments: payments }));
+      updateActiveTabData(() => ({ payments }));
     },
     [updateActiveTabData]
   );
+
+  // ────────────────────────────────────────────────
+  //  Tab CRUD Operations
+  // ────────────────────────────────────────────────
+  const handleNewTab = useCallback(() => {
+    const newId = uuidv4();
+    const newName = `Invoice #${tabs.length + 1}`;
+    setTabs((prev) => [
+      ...prev,
+      {
+        id: newId,
+        name: newName,
+        data: deepCloneInvoiceData(initialInvoiceData),
+      },
+    ]);
+    setActiveTabId(newId);
+  }, [tabs.length]);
+
+  const handleCopyTab = useCallback(() => {
+    if (!activeTab) return;
+    const newId = uuidv4();
+    const newName = `${activeTab.name} (Copy)`;
+    const copiedData = deepCloneInvoiceData(activeTab.data as FullInvoiceData);
+    setTabs((prev) => [...prev, { id: newId, name: newName, data: copiedData }]);
+    setActiveTabId(newId);
+  }, [activeTab]);
+
+  const handleResetTab = useCallback(() => {
+    if (!window.confirm('Clear current invoice data? This cannot be undone.')) return;
+    updateActiveTabData(() => deepCloneInvoiceData(initialInvoiceData));
+  }, [updateActiveTabData]);
+
+  const handleCloseTab = useCallback(
+    (e: React.MouseEvent | null, idToClose?: string) => {
+      if (e) e.stopPropagation();
+
+      const targetId = idToClose ?? activeTabId;
+      if (!targetId) return;
+
+      // Cannot close last remaining tab → reset instead
+      if (tabs.length === 1) {
+        updateActiveTabData(() => deepCloneInvoiceData(initialInvoiceData));
+        return;
+      }
+
+      const tabToClose = tabs.find((t) => t.id === targetId);
+      if (!tabToClose) return;
+
+      // Remember closed tab (for restore)
+      setRecentlyClosedTabs((prev) => [tabToClose, ...prev].slice(0, 5)); // keep last 5
+
+      const remaining = tabs.filter((t) => t.id !== targetId);
+      setTabs(remaining);
+
+      // Switch to last tab if we closed the active one
+      if (targetId === activeTabId) {
+        setActiveTabId(remaining[remaining.length - 1]?.id || '');
+      }
+    },
+    [tabs, activeTabId, updateActiveTabData]
+  );
+
+  const handleRestoreTab = useCallback(() => {
+    if (recentlyClosedTabs.length === 0) return;
+
+    const [toRestore, ...rest] = recentlyClosedTabs;
+
+    setTabs((prev) => [...prev, toRestore]);
+    setActiveTabId(toRestore.id);
+    setRecentlyClosedTabs(rest);
+  }, [recentlyClosedTabs]);
 
   const handleSaveInvoice = async () => {
     try {
@@ -267,7 +346,7 @@ const POSInvoice: React.FC = () => {
 
       // 3. Construct Payload
       const payload: PosInvoicePayload = {
-        store: data.store || '00002', // Fallback to ensure not empty
+        store: data.store || '00002',
         billDate: new Date(data.billDate).toISOString(),
         salesman: data.salesman || '',
         priceCategory: data.priceCategory || 'Retail',
@@ -307,97 +386,48 @@ const POSInvoice: React.FC = () => {
 
       console.log('🚀 SUBMITTING PAYLOAD:', JSON.stringify(payload, null, 2));
 
-      // 4. API Call
       const response = await PosInvoiceService.createInvoice(payload);
       console.log('✅ API RESPONSE:', response);
 
       if (response.success && response.data) {
         alert(`Invoice Saved Successfully!`);
 
-        // Map Response & Open Modal
         const mappedReceipt = mapApiResponseToReceipt(response.data);
         setReceiptData(mappedReceipt);
         setShowReceipt(true);
+
+        // Reset current tab after successful save
+        updateActiveTabData(() => ({
+          ...deepCloneInvoiceData(initialInvoiceData),
+          billDate: new Date().toISOString().split('T')[0],
+        }));
       } else {
-        alert(`Failed to save invoice: ${response.message}`);
+        alert(`Failed to save invoice: ${response.message || 'Unknown error'}`);
       }
     } catch (error: any) {
       console.error('❌ Error saving invoice:', error);
-      // Detailed error alert for debugging 500 errors
       const errMsg = error.response?.data?.message || error.message || 'Unknown error';
       alert('Failed to save invoice: ' + errMsg);
-    }
-  };
-
-  const handleNewTab = () => {
-    const newId = uuidv4();
-    setTabs([
-      ...tabs,
-      { id: newId, name: `Invoice #${tabs.length + 1}`, data: { ...initialInvoiceData } },
-    ]);
-    setActiveTabId(newId);
-  };
-
-  const handleCopyTab = () => {
-    if (!activeTab) return;
-    const newId = uuidv4();
-    setTabs([
-      ...tabs,
-      {
-        id: newId,
-        name: `${activeTab.name} (Copy)`,
-        data: JSON.parse(JSON.stringify(activeTab.data)),
-      },
-    ]);
-    setActiveTabId(newId);
-  };
-
-  const handleDeleteTab = () => handleCloseSpecificTab(null, activeTabId);
-
-  const handleCloseSpecificTab = (e: React.MouseEvent | null, idToClose: string) => {
-    if (e) e.stopPropagation();
-    if (tabs.length === 1) {
-      updateActiveTabData(() => ({ ...initialInvoiceData }));
-      return;
-    }
-    const tabToClose = tabs.find((t) => t.id === idToClose);
-    if (tabToClose) setLastClosedTab(tabToClose);
-    const newTabs = tabs.filter((t) => t.id !== idToClose);
-    setTabs(newTabs);
-    if (idToClose === activeTabId) setActiveTabId(newTabs[newTabs.length - 1].id);
-  };
-
-  const handleRestoreTab = () => {
-    if (!lastClosedTab) return;
-    setTabs([...tabs, lastClosedTab]);
-    setActiveTabId(lastClosedTab.id);
-    setLastClosedTab(null);
-  };
-
-  const handleResetTab = () => {
-    if (window.confirm('Are you sure you want to clear the current invoice?')) {
-      updateActiveTabData(() => ({ ...initialInvoiceData }));
     }
   };
 
   return (
     <div
       style={{ backgroundColor: COLORS.background }}
-      className="flex min-h-screen flex-col overflow-hidden">
+      className="min-h-auto flex flex-col overflow-hidden">
       <POSInvoiceHeader
         tabs={tabs}
         activeTabId={activeTabId}
         onNewTab={handleNewTab}
         onCopyTab={handleCopyTab}
-        onDeleteTab={handleDeleteTab}
+        onDeleteTab={() => handleCloseTab(null, activeTabId)}
         onRestoreTab={handleRestoreTab}
         onResetTab={handleResetTab}
         onSwitchTab={setActiveTabId}
-        onCloseSpecificTab={handleCloseSpecificTab}
+        onCloseSpecificTab={handleCloseTab}
       />
 
       <div className="flex-1 overflow-auto p-4 pb-24">
-        {' '}
         <div className="mx-auto flex max-w-[1600px] flex-col gap-4">
           <POSInvoiceForm data={activeData} onChange={handleFieldChange} />
 
@@ -416,27 +446,19 @@ const POSInvoice: React.FC = () => {
             onPaymentUpdate={handlePaymentUpdate}
           />
 
-          {/* <div className="flex justify-end">
-            <button
-              onClick={handleSaveInvoice}
-              className="rounded bg-green-600 px-6 py-2 font-bold text-white shadow transition-colors hover:bg-green-700">
-              Save Invoice
-            </button>
-          </div> */}
-
           <div
             className="fixed bottom-0 left-0 right-0 z-50 flex h-16 items-center justify-end border-t bg-white px-6 shadow-[0_-6px_10px_-4px_rgba(0,0,0,0.15)]"
             style={{ borderColor: COLORS.borderDark || '#e5e7eb' }}>
             <button
               onClick={handleSaveInvoice}
-              className="flex items-center gap-2 rounded bg-green-600 px-6 py-2 text-sm font-bold text-white shadow-md transition-all hover:bg-green-700 hover:shadow-lg active:scale-95">
+              className="flex items-center gap-2 rounded px-6 py-2 text-sm font-bold text-white shadow-md transition-all active:scale-95"
+              style={{ backgroundColor: COLORS.primary, color: COLORS.white }}>
               Save Invoice
             </button>
           </div>
         </div>
       </div>
 
-      {/* --- RECEIPT MODAL --- */}
       {showReceipt && receiptData && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
           <div className="relative flex max-h-[90vh] flex-col items-center overflow-hidden rounded-lg bg-white p-2 shadow-2xl">

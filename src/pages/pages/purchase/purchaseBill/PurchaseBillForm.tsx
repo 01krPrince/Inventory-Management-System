@@ -1,13 +1,22 @@
-import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { DocumentIcon, ChevronDownIcon, ChevronUpIcon } from '../../../../components/icons';
-import { EditIcon } from 'lucide-react';
-import Dropdown, { ColumnDef } from '../../../../components/Dropdown';
-import { LocationMaster } from '../../../../components/LocationMaster';
-import CrudVendor from '../vendor/pages/AddNewVendor';
-import NameAndCodeMaster from '../../../../components/NameAndCodeComponent';
-import { getAllVendors } from '../vendor/api/vendorService';
-import { fetchAllLocations } from '../../inventory/stockAdjustment/api/LocationMaster';
-import DateInput from '../../../../components/DateInput';
+import React, {
+  useState,
+  useEffect,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
+import {
+  DocumentIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+} from "../../../../components/icons";
+import { EditIcon } from "lucide-react";
+import Dropdown, { ColumnDef } from "../../../../components/Dropdown";
+import { LocationMaster } from "../../../../components/LocationMaster";
+import CrudVendor from "../vendor/pages/AddNewVendor";
+import NameAndCodeMaster from "../../../../components/NameAndCodeComponent";
+import { getAllVendors } from "../vendor/api/vendorService";
+import { fetchAllLocations } from "../../inventory/stockAdjustment/api/LocationMaster";
+import DateInput from "../../../../components/DateInput";
 
 export interface PurchaseBillFormData {
   gstType: string;
@@ -63,7 +72,7 @@ interface PurchaseBillFormProps {
 export interface PurchaseBillFormRef {
   triggerSubmit: () => void;
   getFormData: () => PurchaseBillFormData;
-  resetForm: () => void;
+  resetForm: () => void; // <--- Added resetForm to interface
 }
 
 const Label: React.FC<{ children: React.ReactNode; required?: boolean }> = ({
@@ -75,24 +84,25 @@ const Label: React.FC<{ children: React.ReactNode; required?: boolean }> = ({
   </label>
 );
 
-const toOptions = (arr: string[]): SimpleOption[] => arr.map((s) => ({ name: s }));
+const toOptions = (arr: string[]): SimpleOption[] =>
+  arr.map((s) => ({ name: s }));
 
 const mockData = {
   gstTypes: toOptions([
-    'TaxInvoice',
-    'Import',
-    'ReverseCharges',
-    'BillOfSupply_Compounding',
-    'BillOfSupply_UnRegistered',
-    'BillOfSupply_Exempted',
-    'BillOfSupply_NilRated',
-    'BillOfSupply_NonGST',
-    'BranchTransfer',
+    "TaxInvoice",
+    "Import",
+    "ReverseCharges",
+    "BillOfSupply_Compounding",
+    "BillOfSupply_UnRegistered",
+    "BillOfSupply_Exempted",
+    "BillOfSupply_NilRated",
+    "BillOfSupply_NonGST",
+    "BranchTransfer",
   ]),
-  cashCredit: toOptions(['Cash', 'Credit']),
-  priceCategories: toOptions(['Wholesale', 'Retail', 'Distributor']),
-  taxOptions: toOptions(['Inclusive', 'Exclusive']),
-  paymentTerms: toOptions(['Net 30', 'Immediate', 'Cash on Delivery']),
+  cashCredit: toOptions(["Cash", "Credit"]),
+  priceCategories: toOptions(["Wholesale", "Retail", "Distributor"]),
+  taxOptions: toOptions(["Inclusive", "Exclusive"]),
+  paymentTerms: toOptions(["Net 30", "Immediate", "Cash on Delivery"]),
 };
 
 const InputGroup: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -108,9 +118,9 @@ const Input: React.FC<{
   <input
     type="text"
     className={`h-[30px] w-full rounded-sm border border-gray-300 bg-white px-2 text-[13px] text-gray-700 focus:border-[var(--theme-focus)] focus:outline-none focus:ring-1 focus:ring-[var(--theme-focus)] ${
-      readOnly ? 'bg-gray-50' : ''
+      readOnly ? "bg-gray-50" : ""
     }`}
-    value={value || ''}
+    value={value || ""}
     onChange={onChange}
     placeholder={placeholder}
     readOnly={readOnly}
@@ -121,7 +131,8 @@ const ActionBtn: React.FC<ActionBtnProps> = ({ icon, onClick }) => (
   <button
     onClick={onClick}
     type="button"
-    className="z-10 ml-[-1px] flex h-[32px] w-[32px] items-center justify-center rounded-sm border border-[var(--theme-primary)] bg-[var(--theme-primary)] text-white shadow-sm transition-opacity hover:opacity-90">
+    className="z-10 ml-[-1px] flex h-[32px] w-[32px] items-center justify-center rounded-sm border border-[var(--theme-primary)] bg-[var(--theme-primary)] text-white shadow-sm transition-opacity hover:opacity-90"
+  >
     {icon}
   </button>
 );
@@ -135,13 +146,18 @@ const AccordionSection: React.FC<{
   <div className="mb-2 rounded border border-gray-200 bg-white">
     <div
       onClick={onToggle}
-      className="flex cursor-pointer select-none items-center justify-between border-b border-transparent px-3 py-2 transition-colors hover:bg-gray-50">
+      className="flex cursor-pointer select-none items-center justify-between border-b border-transparent px-3 py-2 transition-colors hover:bg-gray-50"
+    >
       <div className="flex items-center gap-2 text-sm font-bold text-[var(--theme-secondary)]">
         <DocumentIcon className="h-5 w-5" />
         <span>{title}</span>
       </div>
       <div className="text-[var(--theme-secondary)]">
-        {isOpen ? <ChevronUpIcon className="h-5 w-5" /> : <ChevronDownIcon className="h-5 w-5" />}
+        {isOpen ? (
+          <ChevronUpIcon className="h-5 w-5" />
+        ) : (
+          <ChevronDownIcon className="h-5 w-5" />
+        )}
       </div>
     </div>
     {isOpen && <div className="border-t border-gray-100 p-3">{children}</div>}
@@ -149,7 +165,7 @@ const AccordionSection: React.FC<{
 );
 
 const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
-  ({ themeColor = '#0f3c63', onSubmit, onFormChange }, ref) => {
+  ({ themeColor = "#0f3c63", onSubmit, onFormChange }, ref) => {
     const [storeOptions, setStoreOptions] = useState<SimpleOption[]>([]);
     const [vendorOptions, setVendorOptions] = useState<SimpleOption[]>([]);
 
@@ -160,42 +176,42 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
     const [isShipToOpen, setShipToOpen] = useState<boolean>(false);
     const [activeModal, setActiveModal] = useState<string | null>(null);
 
-    const getToday = () => new Date().toISOString().split('T')[0];
+    const getToday = () => new Date().toISOString().split("T")[0];
 
     const [formData, setFormData] = useState<PurchaseBillFormData>({
-      gstType: 'TaxInvoice',
-      cashCredit: 'Credit',
-      store: '',
-      storeId: '',
-      storeCode: '',
-      vendor: '',
-      vendorId: '',
-      vendorCode: '',
-      priceCategory: 'Wholesale',
-      tax: 'Inclusive',
-      placeOfSupply: '',
-      shipTo: '',
-      paymentTerms: '',
-      email: '',
-      orderNo: '',
-      refNo: '',
+      gstType: "TaxInvoice",
+      cashCredit: "Credit",
+      store: "",
+      storeId: "",
+      storeCode: "",
+      vendor: "",
+      vendorId: "",
+      vendorCode: "",
+      priceCategory: "Wholesale",
+      tax: "Inclusive",
+      placeOfSupply: "",
+      shipTo: "",
+      paymentTerms: "",
+      email: "",
+      orderNo: "",
+      refNo: "",
       orderDate: getToday(),
       refDate: getToday(),
       dueDate: getToday(),
-      billToText: '',
-      shipToText: '',
-      gstNo: '',
-      contactPerson: '',
+      billToText: "",
+      shipToText: "",
+      gstNo: "",
+      contactPerson: "",
     });
 
     const simpleColumns: ColumnDef<SimpleOption>[] = [
-      { header: 'Name', key: 'name', width: 'flex-1' },
+      { header: "Name", key: "name", width: "flex-1" },
     ];
 
     const themeStyles = {
-      '--theme-primary': themeColor,
-      '--theme-secondary': themeColor,
-      '--theme-focus': '#60a5fa',
+      "--theme-primary": themeColor,
+      "--theme-secondary": themeColor,
+      "--theme-focus": "#60a5fa",
     } as React.CSSProperties;
 
     const updateFormState = (updates: Partial<PurchaseBillFormData>) => {
@@ -211,6 +227,7 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
     useEffect(() => {
       loadDropdownData();
     }, []);
+
     const loadDropdownData = async () => {
       try {
         const storesData = await fetchAllLocations();
@@ -218,7 +235,7 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
         const mappedStores = storesData.map((item: any) => ({
           name: item.name || item.storeName,
           id: item._id,
-          code: item.storeCode || item.code || '',
+          code: item.storeCode || item.code || "",
         }));
         setStoreOptions(mappedStores);
 
@@ -227,7 +244,8 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
           updateFormState({
             store: mappedStores[0].name,
             storeId: mappedStores[0].id,
-            storeCode: (firstStore as any).code || (firstStore as any).storeCode || '',
+            storeCode:
+              (firstStore as any).code || (firstStore as any).storeCode || "",
           });
         }
 
@@ -239,51 +257,55 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
         }));
         setVendorOptions(mappedVendors);
       } catch (error) {
-        console.error('Error loading dropdowns', error);
+        console.error("Error loading dropdowns", error);
       }
     };
 
-    const handleDropdownChange = (field: keyof PurchaseBillFormData, item: SimpleOption | null) => {
-      const value = item?.name || '';
+    const handleDropdownChange = (
+      field: keyof PurchaseBillFormData,
+      item: SimpleOption | null,
+    ) => {
+      const value = item?.name || "";
       let updates: Partial<PurchaseBillFormData> = { [field]: value };
-      if (field === 'vendor' && item) {
+
+      if (field === "vendor" && item) {
         const fullVendor = rawVendors.find((v) => v._id === item.id);
         updates = {
           ...updates,
-          contactNo: fullVendor.phone || '',
-          gstNo: fullVendor.gst_no || '',
-          ecommerceInvoiceNo: '',
+          contactNo: fullVendor.phone || "",
+          gstNo: fullVendor.gst_no || "",
+          ecommerceInvoiceNo: "",
         };
       }
 
-      if (field === 'store' && item) {
+      if (field === "store" && item) {
         const fullStore = rawStores.find((s) => s._id === item.id);
-        const sCode = fullStore?.code || fullStore.storeCode || '';
+        const sCode = fullStore?.code || fullStore.storeCode || "";
         updates = {
           store: value,
           storeCode: sCode,
         };
       }
-      if (field === 'vendor' && item) {
+      if (field === "vendor" && item) {
         const fullVendor = rawVendors.find((v) => v._id === item.id);
         if (fullVendor) {
-          const vCode = fullVendor.code || fullVendor.vend_code || '';
+          const vCode = fullVendor.code || fullVendor.vend_code || "";
 
-          const billTo = `${fullVendor.vend_name || fullVendor.name || ''}\n${fullVendor.address || ''}\n${fullVendor.city || ''}, ${fullVendor.state || ''} - ${fullVendor.pin_code || ''}\nPhone: ${fullVendor.phone || ''}`;
-          const shipToAddress = `${fullVendor.vend_name || fullVendor.name || ''}\n${fullVendor.address_ship || fullVendor.address || ''}\n${fullVendor.city_ship || fullVendor.city || ''}, ${fullVendor.state_ship || fullVendor.state || ''} - ${fullVendor.pin_code_ship || fullVendor.pin_code || ''}\nPhone: ${fullVendor.phone_ship || fullVendor.phone || ''}`;
+          const billTo = `${fullVendor.vend_name || fullVendor.name || ""}\n${fullVendor.address || ""}\n${fullVendor.city || ""}, ${fullVendor.state || ""} - ${fullVendor.pin_code || ""}\nPhone: ${fullVendor.phone || ""}`;
+          const shipToAddress = `${fullVendor.vend_name || fullVendor.name || ""}\n${fullVendor.address_ship || fullVendor.address || ""}\n${fullVendor.city_ship || fullVendor.city || ""}, ${fullVendor.state_ship || fullVendor.state || ""} - ${fullVendor.pin_code_ship || fullVendor.pin_code || ""}\nPhone: ${fullVendor.phone_ship || fullVendor.phone || ""}`;
 
           updates = {
             ...updates,
             vendorId: item.id,
             vendorCode: vCode,
-            email: fullVendor.email || '',
+            email: fullVendor.email || "",
             priceCategory: fullVendor.price_category || formData.priceCategory,
             paymentTerms: fullVendor.payment_term || formData.paymentTerms,
-            placeOfSupply: fullVendor.state || '',
+            placeOfSupply: fullVendor.state || "",
             billToText: billTo,
             shipToText: shipToAddress,
-            gstNo: fullVendor.gst_no || '',
-            contactPerson: fullVendor.contact_person || '',
+            gstNo: fullVendor.gst_no || "",
+            contactPerson: fullVendor.contact_person || "",
           };
         }
       }
@@ -291,7 +313,10 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
       updateFormState(updates);
     };
 
-    const handleInputChange = (field: keyof PurchaseBillFormData, value: string) => {
+    const handleInputChange = (
+      field: keyof PurchaseBillFormData,
+      value: string,
+    ) => {
       updateFormState({ [field]: value });
     };
 
@@ -299,7 +324,7 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
       triggerSubmit: () => {
         if (onSubmit) {
           if (!formData.vendor) {
-            alert('Please select a vendor');
+            alert("Please select a vendor");
             return;
           }
           onSubmit(formData);
@@ -307,33 +332,35 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
       },
       getFormData: () => formData,
       resetForm: () => {
+        // Reset Logic
+        // We preserve the first store logic if available
         const defaultStore = storeOptions.length > 0 ? storeOptions[0] : null;
         const defaultStoreData = rawStores.length > 0 ? rawStores[0] : null;
 
         const resetData: PurchaseBillFormData = {
-          gstType: 'TaxInvoice',
-          cashCredit: 'Credit',
-          store: defaultStore ? defaultStore.name : '',
-          storeId: defaultStore ? defaultStore.id : '',
-          storeCode: defaultStoreData ? defaultStoreData.code || '' : '',
-          vendor: '',
-          vendorId: '',
-          vendorCode: '',
-          priceCategory: 'Wholesale',
-          tax: 'Inclusive',
-          placeOfSupply: '',
-          shipTo: '',
-          paymentTerms: '',
-          email: '',
-          orderNo: '',
-          refNo: '',
+          gstType: "TaxInvoice",
+          cashCredit: "Credit",
+          store: defaultStore ? defaultStore.name : "",
+          storeId: defaultStore ? defaultStore.id : "",
+          storeCode: defaultStoreData ? defaultStoreData.code || "" : "",
+          vendor: "",
+          vendorId: "",
+          vendorCode: "",
+          priceCategory: "Wholesale",
+          tax: "Inclusive",
+          placeOfSupply: "",
+          shipTo: "",
+          paymentTerms: "",
+          email: "",
+          orderNo: "",
+          refNo: "",
           orderDate: getToday(),
           refDate: getToday(),
           dueDate: getToday(),
-          billToText: '',
-          shipToText: '',
-          gstNo: '',
-          contactPerson: '',
+          billToText: "",
+          shipToText: "",
+          gstNo: "",
+          contactPerson: "",
         };
 
         updateFormState(resetData);
@@ -343,7 +370,10 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
     }));
 
     return (
-      <div style={themeStyles} className="relative rounded border border-gray-200 bg-white p-5">
+      <div
+        style={themeStyles}
+        className="relative rounded border border-gray-200 bg-white p-5"
+      >
         <div className="grid grid-cols-12 gap-8">
           <div className="col-span-4 space-y-1">
             <div className="grid grid-cols-12 gap-2">
@@ -356,7 +386,7 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                   columns={simpleColumns}
                   value={formData.gstType}
                   valueKey="name"
-                  onChange={(i) => handleDropdownChange('gstType', i)}
+                  onChange={(i) => handleDropdownChange("gstType", i)}
                 />
               </div>
             </div>
@@ -371,7 +401,7 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                   columns={simpleColumns}
                   value={formData.cashCredit}
                   valueKey="name"
-                  onChange={(i) => handleDropdownChange('cashCredit', i)}
+                  onChange={(i) => handleDropdownChange("cashCredit", i)}
                 />
               </div>
             </div>
@@ -387,11 +417,11 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                     columns={simpleColumns}
                     value={formData.store}
                     valueKey="name"
-                    onChange={(item) => handleDropdownChange('store', item)}
+                    onChange={(item) => handleDropdownChange("store", item)}
                   />
                   <ActionBtn
                     icon={<EditIcon size={14} />}
-                    onClick={() => setActiveModal('store')}
+                    onClick={() => setActiveModal("store")}
                   />
                 </InputGroup>
               </div>
@@ -409,11 +439,11 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                     value={formData.vendor}
                     valueKey="name"
                     placeholder="Select Vendor..."
-                    onChange={(item) => handleDropdownChange('vendor', item)}
+                    onChange={(item) => handleDropdownChange("vendor", item)}
                   />
                   <ActionBtn
                     icon={<EditIcon size={16} />}
-                    onClick={() => setActiveModal('vendor')}
+                    onClick={() => setActiveModal("vendor")}
                   />
                   {/* <ActionBtn icon={<BarChart2 size={14} />} /> */}
                 </InputGroup>
@@ -427,7 +457,7 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
               <div className="col-span-8">
                 <Input
                   value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  onChange={(e) => handleInputChange("email", e.target.value)}
                 />
               </div>
             </div>
@@ -443,11 +473,13 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                     columns={simpleColumns}
                     value={formData.priceCategory}
                     valueKey="name"
-                    onChange={(item) => handleDropdownChange('priceCategory', item)}
+                    onChange={(item) =>
+                      handleDropdownChange("priceCategory", item)
+                    }
                   />
                   <ActionBtn
                     icon={<EditIcon size={16} />}
-                    onClick={() => setActiveModal('priceCategory')}
+                    onClick={() => setActiveModal("priceCategory")}
                   />
                 </InputGroup>
               </div>
@@ -462,7 +494,9 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
               <div className="col-span-8">
                 <DateInput
                   value={formData.orderDate}
-                  onChange={(e) => handleInputChange('orderDate', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("orderDate", e.target.value)
+                  }
                 />
               </div>
             </div>
@@ -475,7 +509,7 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                   readOnly
                   // value={formData.orderNo}
                   value="N/A"
-                  onChange={(e) => handleInputChange('orderNo', e.target.value)}
+                  onChange={(e) => handleInputChange("orderNo", e.target.value)}
                 />
               </div>
             </div>
@@ -486,7 +520,7 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
               <div className="col-span-8">
                 <Input
                   value={formData.refNo}
-                  onChange={(e) => handleInputChange('refNo', e.target.value)}
+                  onChange={(e) => handleInputChange("refNo", e.target.value)}
                 />
               </div>
             </div>
@@ -498,7 +532,7 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
               <div className="col-span-8">
                 <DateInput
                   value={formData.refDate}
-                  onChange={(e) => handleInputChange('refDate', e.target.value)}
+                  onChange={(e) => handleInputChange("refDate", e.target.value)}
                 />
               </div>
             </div>
@@ -512,7 +546,7 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                   columns={simpleColumns}
                   value={formData.tax}
                   valueKey="name"
-                  onChange={(i) => handleDropdownChange('tax', i)}
+                  onChange={(i) => handleDropdownChange("tax", i)}
                 />
               </div>
             </div>
@@ -522,12 +556,15 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
             <AccordionSection
               title="Billing Address"
               isOpen={isBillToOpen}
-              onToggle={() => setBillToOpen(!isBillToOpen)}>
+              onToggle={() => setBillToOpen(!isBillToOpen)}
+            >
               <div className="space-y-2">
                 <textarea
                   className="h-20 w-full resize-none rounded border border-gray-300 p-2 text-[13px] focus:outline-none"
                   value={formData.billToText}
-                  onChange={(e) => handleInputChange('billToText', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("billToText", e.target.value)
+                  }
                 />
                 <div className="grid grid-cols-12 items-center gap-2">
                   <div className="col-span-4">
@@ -536,7 +573,9 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                   <div className="col-span-8">
                     <Input
                       value={formData.gstNo}
-                      onChange={(e) => handleInputChange('gstNo', e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("gstNo", e.target.value)
+                      }
                     />
                   </div>
                 </div>
@@ -547,7 +586,9 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                   <div className="col-span-8">
                     <Input
                       value={formData.placeOfSupply}
-                      onChange={(e) => handleInputChange('placeOfSupply', e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("placeOfSupply", e.target.value)
+                      }
                     />
                   </div>
                 </div>
@@ -557,7 +598,8 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
             <AccordionSection
               title="Delivery At"
               isOpen={isShipToOpen}
-              onToggle={() => setShipToOpen(!isShipToOpen)}>
+              onToggle={() => setShipToOpen(!isShipToOpen)}
+            >
               <div className="mb-2 flex items-center">
                 <span className="w-16 whitespace-nowrap text-[13px] font-medium text-gray-600">
                   Delivery At
@@ -567,13 +609,15 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                   columns={simpleColumns}
                   value={formData.shipTo}
                   valueKey="name"
-                  onChange={(item) => handleDropdownChange('shipTo', item)}
+                  onChange={(item) => handleDropdownChange("shipTo", item)}
                 />
               </div>
               <textarea
                 className="h-24 w-full resize-none rounded border border-gray-300 p-2 text-[13px] focus:outline-none"
                 value={formData.shipToText}
-                onChange={(e) => handleInputChange('shipToText', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("shipToText", e.target.value)
+                }
               />
             </AccordionSection>
 
@@ -588,7 +632,9 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                     columns={simpleColumns}
                     value={formData.paymentTerms}
                     valueKey="name"
-                    onChange={(item) => handleDropdownChange('paymentTerms', item)}
+                    onChange={(item) =>
+                      handleDropdownChange("paymentTerms", item)
+                    }
                   />
                 </div>
               </div>
@@ -599,7 +645,9 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                 <div className="col-span-8">
                   <DateInput
                     value={formData.dueDate}
-                    onChange={(e) => handleInputChange('dueDate', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("dueDate", e.target.value)
+                    }
                   />
                 </div>
               </div>
@@ -610,7 +658,7 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
         {activeModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 p-4 backdrop-blur-[2px]">
             <div className="p-8">
-              {activeModal === 'vendor' && (
+              {activeModal === "vendor" && (
                 <CrudVendor
                   onClose={() => setActiveModal(null)}
                   onSuccess={() => {
@@ -620,7 +668,7 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                   initialData={null}
                 />
               )}
-              {activeModal === 'store' && (
+              {activeModal === "store" && (
                 <LocationMaster
                   onClose={() => setActiveModal(null)}
                   onSuccess={() => {
@@ -630,7 +678,7 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                   initialData={null}
                 />
               )}
-              {activeModal === 'priceCategory' && (
+              {activeModal === "priceCategory" && (
                 <NameAndCodeMaster
                   title="Price Category"
                   onClose={() => setActiveModal(null)}
@@ -642,7 +690,7 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
         )}
       </div>
     );
-  }
+  },
 );
 
 export default PurchaseBillForm;

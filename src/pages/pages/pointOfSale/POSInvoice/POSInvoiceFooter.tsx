@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { COLORS } from '../../../../constants/colors';
-import Attachment from '../../../../components/Attachment';
 import PaymentType from '../../../../components/PaymentType';
+import { ChevronRight, CreditCard } from 'lucide-react';
 
-// --- PROPS INTERFACE ---
 interface POSInvoiceFooterProps {
-  data: any; // Full Invoice Data object
+  data: any;
   totals: { qty: number; amount: number; tax: number; total: number };
   onChange: (field: string, value: any) => void;
   onPaymentUpdate: (payments: any[]) => void;
@@ -40,10 +39,10 @@ const POSInvoiceFooter: React.FC<POSInvoiceFooterProps> = ({
   const statusText = isAdvance ? 'Advance Paid' : isDue ? 'Due Amount' : 'Fully Paid';
 
   const statusColor = isAdvance
-    ? 'text-green-600 bg-green-100'
+    ? 'text-green-700 bg-green-50 border-green-200'
     : isDue
-      ? 'text-red-600 bg-red-100'
-      : 'text-gray-600 bg-gray-100';
+      ? 'text-red-700 bg-red-50 border-red-200'
+      : 'text-gray-700 bg-gray-50 border-gray-200';
 
   const handleDiscountPercentChange = (val: string) => {
     const percent = parseFloat(val) || 0;
@@ -63,7 +62,7 @@ const POSInvoiceFooter: React.FC<POSInvoiceFooterProps> = ({
 
   return (
     <div
-      className="w-full border-t p-4 font-sans text-sm shadow-[0_-4px_10px_rgba(0,0,0,0.05)]"
+      className="w-full border-t p-4 font-sans text-sm shadow-[0_-4px_10px_rgba(0,0,0,0.05)] transition-all duration-300"
       style={{
         backgroundColor: COLORS.white,
         zIndex: zIndex,
@@ -77,46 +76,64 @@ const POSInvoiceFooter: React.FC<POSInvoiceFooterProps> = ({
         zIndex={zIndex + 50}
       />
 
-      {/* 1. TOP PORTION: 4-COLUMN GRID FOR TOTALS */}
-      <div className="mb-6 grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2 lg:grid-cols-4">
-        {/* Row 1 */}
-        <TotalRow label="Item Value (Taxable)" value={totals.amount.toFixed(2)} />
+      <div className="mb-6 grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2 lg:grid-cols-4">
+        <TotalRow label="Item Value (Taxable)" value={totals.amount.toFixed(2)} readOnly />
 
-        <EditableRow
-          label="Promo Discount"
-          value={data.promoDiscount}
-          onChange={(val) => onChange('promoDiscount', val)}
+        <ReadOnlyRow label="Promo Discount" value={data.promoDiscount || '0.00'} />
+
+        <div className="flex flex-col gap-1">
+          <label className="select-none text-[10px] font-bold uppercase text-transparent">
+            Action
+          </label>
+          <button
+            onClick={() => setIsPaymentOpen(true)}
+            style={{ backgroundColor: COLORS.primary, color: COLORS.white }}
+            className="group flex h-[34px] w-full items-center justify-center gap-2 rounded-sm text-xs font-bold uppercase tracking-widest text-white shadow-sm transition-all duration-200 hover:bg-green-700 hover:shadow-md active:scale-[0.98]">
+            <CreditCard
+              size={14}
+              className="opacity-80 transition-transform group-hover:scale-110"
+            />
+            <span>Process Pay</span>
+            <ChevronRight
+              size={14}
+              className="opacity-60 transition-transform group-hover:translate-x-1"
+            />
+          </button>
+        </div>
+
+        <TotalRow label="Doc Amount" value={docAmount.toFixed(2)} isBold readOnly />
+
+        <TotalRow
+          label="Taxable Total"
+          value={(totals.amount - totalDiscount).toFixed(2)}
+          readOnly
         />
 
-        <EditableRow
-          label="Promo Discount 2"
-          value={data.promoDiscount2}
-          onChange={(val) => onChange('promoDiscount2', val)}
-        />
+        <TotalRow label="Tax Amount" value={totals.tax.toFixed(2)} readOnly />
 
-        <EditableRow
-          label="Coupon Discount"
-          value={data.couponDiscount}
-          onChange={(val) => onChange('couponDiscount', val)}
-        />
+        <ReadOnlyRow label="Promo Discount 2" value={data.promoDiscount2 || '0.00'} />
 
-        {/* Row 2 */}
-        <TotalRow label="Taxable Total" value={(totals.amount - totalDiscount).toFixed(2)} />
+        <div className="flex flex-col gap-1">
+          <label className="text-[10px] font-bold uppercase text-gray-500">Payment Status</label>
+          <div
+            className={`flex h-[34px] items-center justify-between rounded-sm border px-3 text-[11px] font-bold ${statusColor}`}>
+            <span>{statusText}</span>
+            <span>Bal: {Math.abs(balance).toFixed(0)}</span>
+          </div>
+        </div>
 
-        <TotalRow label="Tax Amount" value={totals.tax.toFixed(2)} />
+        <ReadOnlyRow label="Coupon Discount" value={data.couponDiscount || '0.00'} />
 
         <EditableRow
           label="Round Off"
-          value={data.roundOff}
+          value={data.roundOff || '0.00'}
           onChange={(val) => onChange('roundOff', val)}
         />
 
-        <TotalRow label="Doc Amount" value={docAmount.toFixed(2)} isBold />
-
         <DualInputRow
           label="Bill Discount"
-          percent={data.billDiscountPercent}
-          amount={data.billDiscountAmount}
+          percent={data.billDiscountPercent || '0.00'}
+          amount={data.billDiscountAmount || '0.00'}
           onPercentChange={handleDiscountPercentChange}
           onAmountChange={handleDiscountAmountChange}
         />
@@ -127,98 +144,100 @@ const POSInvoiceFooter: React.FC<POSInvoiceFooterProps> = ({
             type="text"
             value={data.couponCode || ''}
             onChange={(e) => onChange('couponCode', e.target.value)}
-            className="w-full rounded-sm border bg-white px-2 py-1 text-right text-xs outline-none"
+            className="w-full rounded-sm border bg-white px-2 py-1.5 text-right text-xs outline-none focus:border-blue-400"
             style={{ borderColor: COLORS.borderDark }}
           />
         </div>
-
-        {/* Payment Status Display */}
-        <div className="flex flex-col gap-1 lg:col-span-2">
-          <label className="text-[10px] font-bold uppercase text-gray-500">
-            Payment Status (Paid: ₹{totalPaid.toFixed(2)})
-          </label>
-          <div
-            className={`flex items-center justify-between rounded px-2 py-1.5 text-[11px] font-bold ${statusColor}`}>
-            <span>{statusText}</span>
-            <span>Balance: ₹{Math.abs(balance).toFixed(2)}</span>
-          </div>
-        </div>
       </div>
 
-      <hr className="mb-6 border-gray-100" />
-
-      {/* 2. BOTTOM PORTION: ATTACHMENT (Left) & REMARKS/BUTTON (Right) */}
-      <div className="flex flex-col items-start gap-8 lg:flex-row">
-        {/* Attachment - Left side */}
-        <div className="flex w-full flex-col gap-2 lg:w-1/2">
-          <label className="text-xs font-bold uppercase tracking-wider text-gray-500">
-            Attachments
-          </label>
-          <Attachment />
+      <div className="flex flex-col gap-4 border-t border-dashed border-gray-200 pt-4 lg:flex-row">
+        {/* Attachment - LEFT side */}
+        <div className="flex w-full flex-col gap-1 lg:order-1 lg:w-1/2">
+          <label className="text-[10px] font-bold uppercase text-gray-500">Attachment</label>
         </div>
 
-        {/* Remarks and Button - Right side */}
-        <div className="flex w-full flex-col items-end gap-4 lg:w-1/2">
-          <div className="flex w-full flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold uppercase tracking-wider text-gray-500">
-                Remarks
-              </label>
-              <span className="text-[10px] text-gray-400">{(data.remarks || '').length}/250</span>
-            </div>
-            <textarea
-              value={data.remarks || ''}
-              onChange={(e) => onChange('remarks', e.target.value)}
-              className="custom-input h-20 w-full resize-none rounded-sm border bg-gray-50 p-2 text-xs outline-none transition-colors focus:bg-white"
-              placeholder="Enter internal notes or customer remarks..."
-              style={{
-                borderColor: COLORS.borderDark,
-                color: COLORS.textPrimary,
-              }}
-            />
+        {/* Remarks - RIGHT side (half space) */}
+        <div className="flex w-full flex-col gap-1 lg:order-2 lg:w-1/2">
+          <div className="flex items-center justify-between px-1">
+            <label className="flex items-center gap-2 text-[10px] font-bold uppercase text-gray-400">
+              Remarks
+            </label>
+            <span className="text-[9px] text-gray-300">{(data.remarks || '').length}/250</span>
           </div>
-
-          <div className="mt-2 flex w-full justify-end">
-            <button
-              onClick={() => setIsPaymentOpen(true)}
-              className="custom-btn-primary w-full rounded-sm px-6 py-3 text-xs font-black uppercase tracking-widest text-white shadow-md transition-all lg:w-56">
-              Process Payment
-            </button>
-          </div>
+          <textarea
+            value={data.remarks || ''}
+            onChange={(e) => onChange('remarks', e.target.value)}
+            className="custom-input h-20 min-h-[80px] w-full resize-y rounded-sm border bg-gray-50 px-3 py-2 text-xs text-gray-700 outline-none transition-all duration-200 placeholder:text-gray-400 focus:h-32 focus:bg-white focus:shadow-sm"
+            placeholder="Add internal notes or special instructions..."
+            maxLength={250}
+            style={{
+              borderColor: COLORS.borderDark,
+            }}
+          />
         </div>
       </div>
 
       <style>{`
-        .custom-btn-primary { background-color: ${COLORS.primary}; transition: all 0.2s; }
-        .custom-btn-primary:hover { background-color: ${COLORS.primaryHover}; transform: translateY(-1px); }
-        .custom-input:focus { border-color: ${COLORS.primary} !important; box-shadow: 0 0 0 1px ${COLORS.primary}20; }
+        .custom-input:focus { 
+          border-color: ${COLORS.primary} !important; 
+          box-shadow: 0 0 0 1px ${COLORS.primary}20; 
+        }
       `}</style>
     </div>
   );
 };
 
-// --- SUB COMPONENTS ---
+// ────────────────────────────────────────────────
+//  Helper Components (unchanged except styling tweaks)
+// ────────────────────────────────────────────────
 
 const TotalRow: React.FC<{
   label: string;
   value: string;
   isBold?: boolean;
-}> = ({ label, value, isBold }) => (
+  readOnly?: boolean;
+}> = ({ label, value, isBold = false, readOnly = true }) => (
   <div className="flex flex-col gap-1">
-    <label className="text-[10px] font-bold uppercase text-gray-400">{label}</label>
+    <label className="truncate text-[10px] font-bold uppercase text-gray-400" title={label}>
+      {label}
+    </label>
+    <div className="relative">
+      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400">₹</span>
+      <input
+        type="text"
+        value={value}
+        readOnly={readOnly}
+        className={`w-full rounded-sm border py-1.5 pl-5 pr-2 text-right text-xs outline-none ${
+          isBold
+            ? 'border-blue-200 bg-blue-50 font-black text-blue-900'
+            : readOnly
+              ? 'cursor-not-allowed bg-gray-100 text-gray-700'
+              : 'bg-gray-50 text-gray-700'
+        }`}
+        style={{
+          borderColor: isBold ? undefined : COLORS.borderDark,
+        }}
+      />
+    </div>
+  </div>
+);
+
+const ReadOnlyRow: React.FC<{
+  label: string;
+  value: string | number;
+}> = ({ label, value }) => (
+  <div className="flex flex-col gap-1">
+    <label className="truncate text-[10px] font-bold uppercase text-gray-400" title={label}>
+      {label}
+    </label>
     <div className="relative">
       <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400">₹</span>
       <input
         type="text"
         value={value}
         readOnly
-        className={`w-full rounded-sm border py-1.5 pl-5 pr-2 text-right text-xs outline-none ${
-          isBold ? 'border-blue-200 bg-blue-50 font-black' : 'bg-gray-50'
-        }`}
-        style={{
-          borderColor: isBold ? undefined : COLORS.borderDark,
-          color: COLORS.textPrimary,
-        }}
+        className="w-full cursor-not-allowed rounded-sm border bg-gray-100 py-1.5 pl-5 pr-2 text-right text-xs text-gray-700 outline-none"
+        style={{ borderColor: COLORS.borderDark }}
       />
     </div>
   </div>
@@ -230,7 +249,9 @@ const EditableRow: React.FC<{
   onChange: (val: string) => void;
 }> = ({ label, value, onChange }) => (
   <div className="flex flex-col gap-1">
-    <label className="text-[10px] font-bold uppercase text-gray-400">{label}</label>
+    <label className="truncate text-[10px] font-bold uppercase text-gray-400" title={label}>
+      {label}
+    </label>
     <div className="relative">
       <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400">₹</span>
       <input
@@ -252,7 +273,9 @@ const DualInputRow: React.FC<{
   onAmountChange: (val: string) => void;
 }> = ({ label, percent, amount, onPercentChange, onAmountChange }) => (
   <div className="flex flex-col gap-1">
-    <label className="text-[10px] font-bold uppercase text-gray-400">{label}</label>
+    <label className="truncate text-[10px] font-bold uppercase text-gray-400" title={label}>
+      {label}
+    </label>
     <div className="flex gap-1">
       <input
         type="number"

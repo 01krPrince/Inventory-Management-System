@@ -6,8 +6,8 @@ import React, {
   useMemo,
   forwardRef,
   useImperativeHandle,
-} from 'react';
-import ReactDOM from 'react-dom';
+} from "react";
+import ReactDOM from "react-dom";
 import {
   Plus,
   X,
@@ -29,28 +29,31 @@ import {
   List,
   SlidersHorizontal,
   ChevronsRight,
-} from 'lucide-react';
-import { COLORS } from '../../../../constants/colors';
-import ItemWithBalance from '../../../../components/ItemBalance';
+} from "lucide-react";
+import { COLORS } from "../../../../constants/colors";
+import ItemWithBalance from "../../../../components/ItemBalance";
 
-import AddNewItem from '../../../../components/addItemMaster/AddNewItem';
+import AddNewItem from "../../../../components/addItemMaster/AddNewItem";
 
 import {
   fetchItemsByVendorCode,
-  getItemByCodeAndBarcode
-} from '../../inventory/itemMaster/api/itemService';
-import { StockUnitData } from '../../../../components/addItemMaster/api/types';
-import { fetchStockUnits } from '../../../../components/addItemMaster/api/stockunitservice';
-import AttributePanel from '../../../../components/AttributePanel';
-import { ItemApiData, NestedObject } from '../../inventory/itemMaster/models/ItemModel';
-import PullFromOrderModal from '../../../../components/PullFromOrderModal';
+  getItemByCodeAndBarcode,
+} from "../../inventory/itemMaster/api/itemService";
+import { StockUnitData } from "../../../../components/addItemMaster/api/types";
+import { fetchStockUnits } from "../../../../components/addItemMaster/api/stockunitservice";
+import AttributePanel from "../../../../components/AttributePanel";
+import {
+  ItemApiData,
+  NestedObject,
+} from "../../inventory/itemMaster/models/ItemModel";
+import PullFromOrderModal from "../../../../components/PullFromOrderModal";
 
 interface Column {
   id: string;
   label: string;
   width: number;
-  align: 'left' | 'center' | 'right';
-  sticky?: 'left';
+  align: "left" | "center" | "right";
+  sticky?: "left";
   resizable?: boolean;
   visible: boolean;
 }
@@ -81,221 +84,230 @@ export interface OrderTableRef {
     vendorCode: string;
   };
   clearTable: () => void;
+  // calculateNetRates: (totalExpense: number) => void;
 }
 
 const DEFAULT_COLUMNS: Column[] = [
   {
-    id: 'sno',
-    label: 'SNo',
+    id: "sno",
+    label: "SNo",
     width: 40,
-    sticky: 'left',
-    align: 'center',
+    sticky: "left",
+    align: "center",
     resizable: true,
     visible: true,
   },
   {
-    id: 'add',
-    label: '',
+    id: "add",
+    label: "",
     width: 35,
-    sticky: 'left',
-    align: 'center',
+    sticky: "left",
+    align: "center",
     resizable: true,
     visible: true,
   },
   {
-    id: 'del',
-    label: '',
+    id: "del",
+    label: "",
     width: 35,
-    sticky: 'left',
-    align: 'center',
+    sticky: "left",
+    align: "center",
     resizable: true,
     visible: true,
   },
   {
-    id: 'srch',
-    label: '',
+    id: "srch",
+    label: "",
     width: 35,
-    sticky: 'left',
-    align: 'center',
+    sticky: "left",
+    align: "center",
     resizable: true,
     visible: true,
   },
   {
-    id: 'copy',
-    label: '',
+    id: "copy",
+    label: "",
     width: 35,
-    sticky: 'left',
-    align: 'center',
+    sticky: "left",
+    align: "center",
     resizable: true,
     visible: true,
   },
   {
-    id: 'select',
-    label: 'Select Item',
+    id: "select",
+    label: "Select Item",
     width: 110,
-    sticky: 'left',
-    align: 'left',
+    sticky: "left",
+    align: "left",
     resizable: true,
     visible: true,
   },
   {
-    id: 'desc',
-    label: 'Item Name',
+    id: "desc",
+    label: "Item Name",
     width: 180,
-    sticky: 'left',
-    align: 'left',
+    sticky: "left",
+    align: "left",
     resizable: true,
     visible: true,
   },
   {
-    id: 'warranty',
-    label: 'Warranty',
+    id: "warranty",
+    label: "Warranty",
     width: 130,
-    align: 'left',
+    align: "left",
     resizable: true,
     visible: true,
   },
   {
-    id: 'attr',
-    label: 'Attribute',
+    id: "attr",
+    label: "Attribute",
     width: 40,
-    align: 'center',
+    align: "center",
     resizable: true,
     visible: true,
   },
   {
-    id: 'widg',
-    label: 'Widget',
+    id: "widg",
+    label: "Widget",
     width: 40,
-    align: 'center',
+    align: "center",
     resizable: true,
     visible: true,
   },
   {
-    id: 'batch',
-    label: 'Batch',
+    id: "batch",
+    label: "Batch",
     width: 45,
-    align: 'center',
+    align: "center",
     resizable: true,
     visible: true,
   },
   {
-    id: 'unit',
-    label: 'Unit',
+    id: "unit",
+    label: "Unit",
     width: 70,
-    align: 'left',
+    align: "left",
     resizable: true,
     visible: true,
   },
   {
-    id: 'qty',
-    label: 'Quantity',
+    id: "qty",
+    label: "Quantity",
     width: 80,
-    align: 'right',
+    align: "right",
     resizable: true,
     visible: true,
   },
   {
-    id: 'rate',
-    label: 'Rate',
+    id: "rate",
+    label: "Rate",
     width: 80,
-    align: 'right',
+    align: "right",
     resizable: true,
     visible: true,
   },
   {
-    id: 'amount',
-    label: 'Amount',
+    id: "amount",
+    label: "Amount",
     width: 90,
-    align: 'right',
+    align: "right",
     resizable: true,
     visible: true,
   },
   {
-    id: 'taxable',
-    label: 'Taxable',
+    id: "taxable",
+    label: "Taxable",
     width: 80,
-    align: 'right',
+    align: "right",
     resizable: true,
     visible: true,
   },
   {
-    id: 'taxAmt',
-    label: 'Tax Amount',
+    id: "taxAmt",
+    label: "Tax Amount",
     width: 80,
-    align: 'right',
+    align: "right",
     resizable: true,
     visible: true,
   },
   {
-    id: 'mrp',
-    label: 'MRP',
+    id: "netRate",
+    label: "Net Rate",
     width: 80,
-    align: 'right',
+    align: "left",
     resizable: true,
     visible: true,
   },
   {
-    id: 'taxCode',
-    label: 'Tax Code',
+    id: "mrp",
+    label: "MRP",
+    width: 80,
+    align: "right",
+    resizable: true,
+    visible: true,
+  },
+  {
+    id: "taxCode",
+    label: "Tax Code",
     width: 120,
-    align: 'left',
+    align: "left",
     resizable: true,
     visible: true,
   },
   {
-    id: 'taxRate',
-    label: 'Tax Rate',
+    id: "taxRate",
+    label: "Tax Rate",
     width: 120,
-    align: 'left',
+    align: "left",
     resizable: true,
     visible: true,
   },
   {
-    id: 'remark',
-    label: 'Remark',
+    id: "remark",
+    label: "Remark",
     width: 120,
-    align: 'left',
+    align: "left",
     resizable: true,
     visible: true,
   },
   {
-    id: 'printdesc',
-    label: 'Description',
+    id: "printdesc",
+    label: "Description",
     width: 150,
-    align: 'left',
+    align: "left",
     resizable: true,
     visible: true,
   },
   {
-    id: 'barcode',
-    label: 'Barcode',
+    id: "barcode",
+    label: "Barcode",
     width: 100,
-    align: 'left',
+    align: "left",
     resizable: true,
     visible: true,
   },
   {
-    id: 'brand',
-    label: 'Brand',
+    id: "brand",
+    label: "Brand",
     width: 100,
-    align: 'left',
+    align: "left",
     resizable: true,
     visible: true,
   },
   {
-    id: 'punit',
-    label: 'Pack Unit',
+    id: "punit",
+    label: "Pack Unit",
     width: 70,
-    align: 'left',
+    align: "left",
     resizable: true,
     visible: false,
   },
   {
-    id: 'pqty',
-    label: 'Pack Qty',
+    id: "pqty",
+    label: "Pack Qty",
     width: 70,
-    align: 'right',
+    align: "right",
     resizable: true,
     visible: false,
   },
@@ -307,75 +319,68 @@ const DEFAULT_COLUMNS: Column[] = [
   //   resizable: true,
   //   visible: false,
   // },
+
   {
-    id: 'netRate',
-    label: 'Net Rate',
+    id: "minrate",
+    label: "Min Rate",
     width: 80,
-    align: 'left',
-    resizable: true,
-    visible: true,
-  },
-  {
-    id: 'minrate',
-    label: 'Min Rate',
-    width: 80,
-    align: 'right',
+    align: "right",
     resizable: true,
     visible: false,
   },
   {
-    id: 'service',
-    label: 'Service Loc',
+    id: "service",
+    label: "Service Loc",
     width: 100,
-    align: 'center',
+    align: "center",
     resizable: true,
     visible: false,
   },
   {
-    id: 'itembarcode',
-    label: 'Item Barcode',
+    id: "itembarcode",
+    label: "Item Barcode",
     width: 100,
-    align: 'left',
+    align: "left",
     resizable: true,
     visible: false,
   },
   {
-    id: 'bdbatchno',
-    label: 'BD Batch No',
+    id: "bdbatchno",
+    label: "BD Batch No",
     width: 90,
-    align: 'left',
+    align: "left",
     resizable: false,
     visible: false,
   },
   {
-    id: 'bdexpdate',
-    label: 'BD Exp.Date',
+    id: "bdexpdate",
+    label: "BD Exp.Date",
     width: 90,
-    align: 'left',
+    align: "left",
     resizable: false,
     visible: false,
   },
   {
-    id: 'bdsalerate',
-    label: 'BD Sale Rate',
+    id: "bdsalerate",
+    label: "BD Sale Rate",
     width: 90,
-    align: 'right',
+    align: "right",
     resizable: false,
     visible: false,
   },
   {
-    id: 'itembalance',
-    label: 'Item Balance',
+    id: "itembalance",
+    label: "Item Balance",
     width: 80,
-    align: 'right',
+    align: "right",
     resizable: false,
     visible: false,
   },
   {
-    id: 'linelevel',
-    label: 'Line Lvl Barcode',
+    id: "linelevel",
+    label: "Line Lvl Barcode",
     width: 110,
-    align: 'left',
+    align: "left",
     resizable: false,
     visible: false,
   },
@@ -403,7 +408,7 @@ const calculateRowTaxable = (qty: any, rate: any, gstRate: any): string => {
   const q = parseFloat(String(qty || 0));
   const r = parseFloat(String(rate || 0));
   const g = parseFloat(String(gstRate || 0));
-  if (isNaN(q) || isNaN(r)) return '0.00';
+  if (isNaN(q) || isNaN(r)) return "0.00";
   const totalInclusive = q * r;
   return (totalInclusive / (1 + g / 100)).toFixed(2);
 };
@@ -413,7 +418,7 @@ const calculateRowTaxAmount = (qty: any, rate: any, gstRate: any): string => {
   const q = parseFloat(String(qty || 0));
   const r = parseFloat(String(rate || 0));
   const g = parseFloat(String(gstRate || 0));
-  if (isNaN(q) || isNaN(r)) return '0.00';
+  if (isNaN(q) || isNaN(r)) return "0.00";
 
   const totalInclusive = q * r;
   const taxable = totalInclusive / (1 + g / 100);
@@ -424,9 +429,10 @@ const calculateRowTaxAmount = (qty: any, rate: any, gstRate: any): string => {
 
 const OrderTable2 = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
   const { vendorCode, storeCode } = props;
-    console.log("storeCode:", storeCode);
+  console.log("storeCode:", storeCode);
 
-  const generateRowId = () => `row-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  const generateRowId = () =>
+    `row-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
   const [rows, setRows] = useState<string[]>([]);
   const [tableData, setTableData] = useState<Record<string, RowData>>({});
@@ -436,13 +442,13 @@ const OrderTable2 = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
 
   const [sortConfig, setSortConfig] = useState<{
     key: string;
-    direction: 'asc' | 'desc';
+    direction: "asc" | "desc";
   } | null>(null);
 
   const [configOpen, setConfigOpen] = useState(false);
   const [isItemBalListOpen, setItemBalListOpen] = useState(false);
 
-  const [configSearch, setConfigSearch] = useState('');
+  const [configSearch, setConfigSearch] = useState("");
 
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
@@ -461,8 +467,8 @@ const OrderTable2 = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
     options: WarrantyOption[];
   }>({ visible: false, top: 0, left: 0, activeRowId: null, options: [] });
 
-  const [newWarranty, setNewWarranty] = useState({ duration: '', price: '' });
-  const [scanQuery, setScanQuery] = useState('');
+  const [newWarranty, setNewWarranty] = useState({ duration: "", price: "" });
+  const [scanQuery, setScanQuery] = useState("");
 
   const [attributePanelState, setAttributePanelState] = useState<{
     visible: boolean;
@@ -472,8 +478,10 @@ const OrderTable2 = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
 
   const [addNewItemForm, setAddNewItemForm] = useState(false);
 
-  const handleScanKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && scanQuery.trim()) {
+  const handleScanKeyDown = async (
+    e: React.KeyboardEvent<HTMLInputElement>,
+  ) => {
+    if (e.key === "Enter" && scanQuery.trim()) {
       try {
         const response = await getItemByCodeAndBarcode(scanQuery.trim());
         const data = response?.data;
@@ -482,7 +490,7 @@ const OrderTable2 = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
 
         if (Array.isArray(data)) {
           if (data.length > 0) scannedItem = data[0] as unknown as ItemApiData;
-        } else if (data && typeof data === 'object') {
+        } else if (data && typeof data === "object") {
           scannedItem = data as unknown as ItemApiData;
         }
 
@@ -493,7 +501,9 @@ const OrderTable2 = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
             const codesMatch = i.code === scannedItem!.code;
             // Crucial check: Ensure both barcodes exist and are not empty strings before comparing
             const barcodesMatch =
-              i.barcode && scannedItem!.barcode && i.barcode === scannedItem!.barcode;
+              i.barcode &&
+              scannedItem!.barcode &&
+              i.barcode === scannedItem!.barcode;
 
             return codesMatch || barcodesMatch;
           });
@@ -503,21 +513,21 @@ const OrderTable2 = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
           const itemToUse = masterItem || scannedItem;
 
           addScannedItemToTable(itemToUse);
-          setScanQuery('');
+          setScanQuery("");
         } else {
-          alert('Item not found!');
+          alert("Item not found!");
         }
       } catch (err) {
-        console.error('Scan error:', err);
-        alert('Error fetching item by scan');
+        console.error("Scan error:", err);
+        alert("Error fetching item by scan");
       }
     }
   };
 
   const getStringValue = (val: any): string => {
-    if (val === null || val === undefined) return '';
-    if (typeof val === 'object') {
-      return val.name || val.item_name || val.code || '';
+    if (val === null || val === undefined) return "";
+    if (typeof val === "object") {
+      return val.name || val.item_name || val.code || "";
     }
     return String(val);
   };
@@ -529,12 +539,12 @@ const OrderTable2 = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
 
     /* ---------------- Base Row Mapping ---------------- */
     const baseData: RowData = {
-      reciss: 'Receipt',
-      select: item.code ?? '',
-      desc: item.name ?? '',
+      reciss: "Receipt",
+      select: item.code ?? "",
+      desc: item.name ?? "",
       unit: getName(item.stock_unit),
-      itemId: item._id || '',
-      hsn: item.gst_classification ?? '',
+      itemId: item._id || "",
+      hsn: item.gst_classification ?? "",
       taxCode: item.hsn_code,
 
       // Values
@@ -543,16 +553,16 @@ const OrderTable2 = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
       mrp: String(item.mrp ?? 0),
       amount: (qty * rate).toFixed(2),
 
-      // ✅ Calculate Taxable using Helper
+      // Calculate Taxable using Helper
       taxable: calculateRowTaxable(qty, rate, gstRate),
       taxAmt: calculateRowTaxAmount(qty, rate, gstRate),
 
-      barcode: item.barcode ?? '',
-      printdesc: item.name ?? '',
+      barcode: item.barcode ?? "",
+      printdesc: item.name ?? "",
       brand: getStringValue(item.brand),
-      netRate: item.netRate || '0',
+      netRate: item.netRate || "0",
       gstRate: String(gstRate),
-      taxRate: item.hsn_description || '',
+      taxRate: item.hsn_description || "",
 
       sale_rate: item.sale_rate || item.last_sales_rate || 0,
       wholesale_rate: item.wholesale_rate || 0,
@@ -589,11 +599,11 @@ const OrderTable2 = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
       const initialData: Record<string, RowData> = {};
       initialRows.forEach((id) => {
         initialData[id] = {
-          reciss: 'Receipt',
+          reciss: "Receipt",
           qty: 0,
           rate: 0,
           amount: 0,
-          warranty: '',
+          warranty: "",
           taxable: 0,
           taxAmount: 0,
         };
@@ -604,14 +614,14 @@ const OrderTable2 = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
 
   useEffect(() => {
     loadMasterData();
-    console.log('Updating on change, Vendor Id: ' + vendorCode);
+    console.log("Updating on change, Vendor Id: " + vendorCode);
   }, [vendorCode]);
 
   useEffect(() => {
     if (props.onItemsChange) {
       const validItems = rows
         .map((id) => tableData[id])
-        .filter((d) => d && d.select && d.select !== '');
+        .filter((d) => d && d.select && d.select !== "");
 
       props.onItemsChange(validItems);
     }
@@ -632,22 +642,22 @@ const OrderTable2 = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
             const row = updatedTableData[rowId];
             if (row && row.select) {
               const matchedItem = itemsData.find(
-                (i) => i.code === row.select || i.barcode === row.barcode
+                (i) => i.code === row.select || i.barcode === row.barcode,
               );
 
               if (matchedItem) {
                 const newRate = String(
-                  (matchedItem.sales_rate || matchedItem.sale_rate) ?? 0
+                  (matchedItem.sales_rate || matchedItem.sale_rate) ?? 0,
                 );
-                const newNetRate = matchedItem.netRate || '0';
-                const newGstRate = matchedItem.gstRate || '0';
+                const newNetRate = matchedItem.netRate || "0";
+                const newGstRate = matchedItem.gstRate || "0";
                 const currentQty = parseFloat(String(row.qty || 0));
 
                 // Recalculate amount
                 const newAmount =
                   !isNaN(currentQty) && !isNaN(parseFloat(newRate))
                     ? (currentQty * parseFloat(newRate)).toFixed(2)
-                    : '0.00';
+                    : "0.00";
 
                 // ✅ Calculate Taxable using Helper
                 // const newTaxable = calculateRowTaxable(
@@ -661,8 +671,16 @@ const OrderTable2 = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
                 //   newGstRate,
                 // );
 
-                const newTaxable = calculateRowTaxable(currentQty, newRate, newGstRate);
-                const newTaxAmt = calculateRowTaxAmount(currentQty, newRate, newGstRate);
+                const newTaxable = calculateRowTaxable(
+                  currentQty,
+                  newRate,
+                  newGstRate,
+                );
+                const newTaxAmt = calculateRowTaxAmount(
+                  currentQty,
+                  newRate,
+                  newGstRate,
+                );
                 updatedTableData[rowId] = {
                   ...row,
                   rate: newRate,
@@ -684,13 +702,18 @@ const OrderTable2 = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
       const unitsData = await fetchStockUnits();
       if (Array.isArray(unitsData)) setStockUnits(unitsData);
     } catch (error) {
-      console.error('Failed to load table master data', error);
+      console.error("Failed to load table master data", error);
     }
   };
 
-  const [columns, setColumns] = useState<Column[]>(JSON.parse(JSON.stringify(DEFAULT_COLUMNS)));
+  const [columns, setColumns] = useState<Column[]>(
+    JSON.parse(JSON.stringify(DEFAULT_COLUMNS)),
+  );
 
-  const visibleColumns = useMemo(() => columns.filter((c) => c.visible), [columns]);
+  const visibleColumns = useMemo(
+    () => columns.filter((c) => c.visible),
+    [columns],
+  );
 
   const getTableData = () => {
     const visibleRows = rows
@@ -724,14 +747,59 @@ const OrderTable2 = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
       };
     },
     clearTable: () => {
-    setRows([]); // Assuming 'rows' is your state variable for table data
-    // If you have other states like 'subTotal' inside the table, reset them too
-  },
+      setRows([]); // Assuming 'rows' is your state variable for table data
+      // If you have other states like 'subTotal' inside the table, reset them too
+    },
+
+    // calculateNetRates: (totalExpense: number) => {
+    //     setTableData((prev) => {
+    //       const newData = { ...prev };
+
+    //       // 1. Calculate Total Item Value (Sum of Taxable Amounts)
+    //       let totalItemValue = 0;
+    //       Object.values(newData).forEach((row) => {
+    //          // Ensure we ignore empty rows
+    //          if(row.select) {
+    //            totalItemValue += parseFloat(String(row.amount || 0)); // Using Amount (Taxable/Base)
+    //          }
+    //       });
+
+    //       // 2. Avoid division by zero
+    //       if (totalItemValue === 0) return prev;
+
+    //       // 3. Calculate Expense Percentage factor
+    //       // Formula: (Expense / TotalValue)
+    //       // We don't need *100 here if we multiply directly.
+    //       // Example: 1500 / 3540 = 0.4237
+    //       const expenseFactor = totalExpense / totalItemValue;
+
+    //       // 4. Update Each Row
+    //       Object.keys(newData).forEach((key) => {
+    //         const row = newData[key];
+    //         if (row.select) {
+    //            const currentRate = parseFloat(String(row.rate || 0));
+
+    //            // Logic: Net Rate = Rate + (Rate * Factor)
+    //            // Example: 2500 + (2500 * 0.4237) = 3559.25
+    //            const addedValue = currentRate * expenseFactor;
+    //            const netRate = currentRate + addedValue;
+
+    //            // Update the row
+    //            newData[key] = {
+    //              ...row,
+    //              netRate: netRate.toFixed(2) // Save to netRate column
+    //            };
+    //         }
+    //       });
+
+    //       return newData;
+    //     });
+    //   }
   }));
 
   const handleResetDefault = () => {
     setColumns(JSON.parse(JSON.stringify(DEFAULT_COLUMNS)));
-    setConfigSearch('');
+    setConfigSearch("");
   };
 
   const handleCloseForm = () => setAddNewItemForm(false);
@@ -741,72 +809,80 @@ const OrderTable2 = forwardRef<OrderTableRef, OrderTableProps>((props, ref) => {
     setAddNewItemForm(false);
   };
 
-const handleInputChange = (rowId: string, columnId: string, value: string) => {
+  const handleInputChange = (
+    rowId: string,
+    columnId: string,
+    value: string,
+  ) => {
     setTableData((prev) => {
       const row = prev[rowId] || {};
       const newData = { ...row, [columnId]: value };
 
       // Get current numbers
-      const qty = parseFloat(columnId === 'qty' ? value : String(row.qty || 0));
-      let rate = parseFloat(columnId === 'rate' ? value : String(row.rate || 0));
-      let amount = parseFloat(columnId === 'amount' ? value : String(row.amount || 0));
+      const qty = parseFloat(columnId === "qty" ? value : String(row.qty || 0));
+      let rate = parseFloat(
+        columnId === "rate" ? value : String(row.rate || 0),
+      );
+      let amount = parseFloat(
+        columnId === "amount" ? value : String(row.amount || 0),
+      );
       const gst = parseFloat(String(row.gstRate || 0));
-      
+
       // Get Taxable (needed for taxAmt calculation)
-      const currentTaxable = parseFloat(columnId === 'taxable' ? value : String(row.taxable || 0));
+      const currentTaxable = parseFloat(
+        columnId === "taxable" ? value : String(row.taxable || 0),
+      );
 
       // --- CASE 1: Qty or Rate Changed ---
-      if (columnId === 'qty' || columnId === 'rate') {
-        newData.amount = !isNaN(qty) && !isNaN(rate) ? (qty * rate).toFixed(2) : '0.00';
-        const currentRate = columnId === 'rate' ? rate : rate;
+      if (columnId === "qty" || columnId === "rate") {
+        newData.amount =
+          !isNaN(qty) && !isNaN(rate) ? (qty * rate).toFixed(2) : "0.00";
+        const currentRate = columnId === "rate" ? rate : rate;
         newData.taxable = calculateRowTaxable(qty, currentRate, gst);
         newData.taxAmt = calculateRowTaxAmount(qty, currentRate, gst);
-      } 
+      }
       // --- CASE 2: Total Amount Changed ---
-      else if (columnId === 'amount') {
+      else if (columnId === "amount") {
         if (!isNaN(amount) && !isNaN(qty) && qty !== 0) {
           const calculatedRate = amount / qty;
           newData.rate = calculatedRate.toFixed(2);
           newData.taxable = calculateRowTaxable(qty, calculatedRate, gst);
           newData.taxAmt = calculateRowTaxAmount(qty, calculatedRate, gst);
         }
-      }
-     else if (columnId === 'taxable') {
-         const newTaxable = parseFloat(value);
-         
-         if (!isNaN(newTaxable)) {
-           // 1. Calculate Tax Amount based on fixed GST Rate
-           const newTaxAmt = (newTaxable * gst) / 100;
-           newData.taxAmt = newTaxAmt.toFixed(2);
+      } else if (columnId === "taxable") {
+        const newTaxable = parseFloat(value);
 
-           // 2. Calculate Total Amount (Taxable + Tax)
-           const newTotalAmount = newTaxable + newTaxAmt;
-           newData.amount = newTotalAmount.toFixed(2);
+        if (!isNaN(newTaxable)) {
+          // 1. Calculate Tax Amount based on fixed GST Rate
+          const newTaxAmt = (newTaxable * gst) / 100;
+          newData.taxAmt = newTaxAmt.toFixed(2);
 
-           // 3. Reverse Calculate Unit Rate (if Qty exists)
-           if (qty > 0) {
-             newData.rate = (newTotalAmount / qty).toFixed(2);
-           }
-         }
+          // 2. Calculate Total Amount (Taxable + Tax)
+          const newTotalAmount = newTaxable + newTaxAmt;
+          newData.amount = newTotalAmount.toFixed(2);
+
+          // 3. Reverse Calculate Unit Rate (if Qty exists)
+          if (qty > 0) {
+            newData.rate = (newTotalAmount / qty).toFixed(2);
+          }
+        }
       }
       // --- CASE 4: Tax Amount Changed (NEW LOGIC) ---
-      else if (columnId === 'taxAmt') {
-         const newTaxAmt = parseFloat(value);
-         if (!isNaN(newTaxAmt)) {
-             // If Tax Amount changes, Total = Taxable + New Tax
-             const newTotal = currentTaxable + newTaxAmt;
-             newData.amount = newTotal.toFixed(2);
-             
-             // Recalculate Rate
-             if (qty > 0) newData.rate = (newTotal / qty).toFixed(2);
-         }
+      else if (columnId === "taxAmt") {
+        const newTaxAmt = parseFloat(value);
+        if (!isNaN(newTaxAmt)) {
+          // If Tax Amount changes, Total = Taxable + New Tax
+          const newTotal = currentTaxable + newTaxAmt;
+          newData.amount = newTotal.toFixed(2);
+
+          // Recalculate Rate
+          if (qty > 0) newData.rate = (newTotal / qty).toFixed(2);
+        }
       }
 
       return { ...prev, [rowId]: newData };
     });
   };
-
-
 
   const handleDeleteRow = (rowIdToDelete: string) => {
     if (rows.length > 15) {
@@ -820,11 +896,11 @@ const handleInputChange = (rowId: string, columnId: string, value: string) => {
       setTableData((prev) => ({
         ...prev,
         [rowIdToDelete]: {
-          reciss: 'Receipt',
+          reciss: "Receipt",
           qty: 0,
           rate: 0,
           amount: 0,
-          warranty: '',
+          warranty: "",
           taxable: 0,
           taxamount: 0,
         },
@@ -842,11 +918,11 @@ const handleInputChange = (rowId: string, columnId: string, value: string) => {
       setTableData((prev) => ({
         ...prev,
         [newId]: {
-          reciss: 'Receipt',
+          reciss: "Receipt",
           qty: 0,
           rate: 0,
           amount: 0,
-          warranty: '',
+          warranty: "",
           taxable: 0,
           taxamount: 0,
         },
@@ -875,11 +951,16 @@ const handleInputChange = (rowId: string, columnId: string, value: string) => {
 
   const toggleColumnVisibility = (colId: string) => {
     setColumns((prev) =>
-      prev.map((col) => (col.id === colId ? { ...col, visible: !col.visible } : col))
+      prev.map((col) =>
+        col.id === colId ? { ...col, visible: !col.visible } : col,
+      ),
     );
   };
 
-  const handleSelectClick = (e: React.MouseEvent<HTMLDivElement>, rowId: string) => {
+  const handleSelectClick = (
+    e: React.MouseEvent<HTMLDivElement>,
+    rowId: string,
+  ) => {
     e.stopPropagation();
     const rect = e.currentTarget.getBoundingClientRect();
     setPopupState({
@@ -905,31 +986,37 @@ const handleInputChange = (rowId: string, columnId: string, value: string) => {
     }
   };
 
-const handleWarrantyClick = (e: React.MouseEvent<HTMLDivElement>, rowId: string) => {
+  const handleWarrantyClick = (
+    e: React.MouseEvent<HTMLDivElement>,
+    rowId: string,
+  ) => {
     e.stopPropagation();
-    
+
     // 1. Find the Item Data
     const rowData = tableData[rowId];
-    const itemCode = String(rowData?.select || '');
+    const itemCode = String(rowData?.select || "");
     const selectedItem = items.find((i) => i.code === itemCode);
-    
+
     let options: WarrantyOption[] = [];
 
     // 2. Map Options from Item Master
     if (selectedItem) {
       // Check for Custom Warranty Array
-      if (selectedItem.customWarranty && Array.isArray(selectedItem.customWarranty)) {
+      if (
+        selectedItem.customWarranty &&
+        Array.isArray(selectedItem.customWarranty)
+      ) {
         selectedItem.customWarranty.forEach((cw: any, index: number) => {
           options.push({
             id: `cw${index}`,
             label: `${cw.duration} Months`, // UI Label
             price: parseFloat(cw.price) || 0,
-            duration: String(cw.duration)   // Critical for API
+            duration: String(cw.duration), // Critical for API
           });
         });
       }
-      
-      // (Optional) If you have a 'firstyearwarranty' string in your data, 
+
+      // (Optional) If you have a 'firstyearwarranty' string in your data,
       // you can uncomment this block:
       /*
       if (selectedItem.firstyearwarranty) {
@@ -946,8 +1033,8 @@ const handleWarrantyClick = (e: React.MouseEvent<HTMLDivElement>, rowId: string)
     // 3. Fallback: If no item-specific warranty exists, use Defaults
     if (options.length === 0) {
       options = [
-        { id: 'w1', label: '6 Months', price: 0, duration: '6' },
-        { id: 'w2', label: '1 Year', price: 500, duration: '12' },
+        { id: "w1", label: "6 Months", price: 0, duration: "6" },
+        { id: "w2", label: "1 Year", price: 500, duration: "12" },
       ];
     }
 
@@ -960,7 +1047,7 @@ const handleWarrantyClick = (e: React.MouseEvent<HTMLDivElement>, rowId: string)
       activeRowId: rowId,
       options,
     });
-    setNewWarranty({ duration: '', price: '' });
+    setNewWarranty({ duration: "", price: "" });
   };
   const closeWarrantyPopup = () => {
     setWarrantyPopup((prev) => ({
@@ -970,7 +1057,7 @@ const handleWarrantyClick = (e: React.MouseEvent<HTMLDivElement>, rowId: string)
     }));
   };
 
-const handleWarrantySelect = (w: WarrantyOption) => {
+  const handleWarrantySelect = (w: WarrantyOption) => {
     // 1. Capture the ID in a constant variable first
     const rowId = warrantyPopup.activeRowId;
 
@@ -980,7 +1067,8 @@ const handleWarrantySelect = (w: WarrantyOption) => {
         // 3. Use 'rowId' instead of 'warrantyPopup.activeRowId'
         const row = prev[rowId];
 
-        const displayString = w.price > 0 ? `${w.label} (+₹${w.price})` : w.label;
+        const displayString =
+          w.price > 0 ? `${w.label} (+₹${w.price})` : w.label;
 
         return {
           ...prev,
@@ -1005,7 +1093,7 @@ const handleWarrantySelect = (w: WarrantyOption) => {
       const price = parseFloat(newWarranty.price) || 0;
       const label = newWarranty.duration;
       const displayString = price > 0 ? `${label} (+₹${price})` : label;
-      handleInputChange(warrantyPopup.activeRowId, 'warranty', displayString);
+      handleInputChange(warrantyPopup.activeRowId, "warranty", displayString);
       closeWarrantyPopup();
     }
   };
@@ -1037,9 +1125,9 @@ const handleWarrantySelect = (w: WarrantyOption) => {
   };
 
   const getName = (val?: NestedObject | string | null): string => {
-    if (!val) return '';
-    if (typeof val === 'string') return val;
-    return val.name || val.item_name || '';
+    if (!val) return "";
+    if (typeof val === "string") return val;
+    return val.name || val.item_name || "";
   };
 
   const handleAttributeSave = (attributeData: Partial<RowData>) => {
@@ -1058,27 +1146,27 @@ const handleWarrantySelect = (w: WarrantyOption) => {
     }
 
     const rate = parseFloat(
-      String((tempItemData.sales_rate || tempItemData.sales_rate) ?? 0)
+      String((tempItemData.sales_rate || tempItemData.sales_rate) ?? 0),
     );
     const qty = 1;
 
     /* ---------------- Base Row Mapping ---------------- */
     const baseData: RowData = {
-      reciss: 'Receipt',
-      select: tempItemData.code ?? '',
-      desc: tempItemData.name ?? '',
+      reciss: "Receipt",
+      select: tempItemData.code ?? "",
+      desc: tempItemData.name ?? "",
       unit: getName(tempItemData.stock_unit),
-      itemId: tempItemData._id || '',
-      hsn: tempItemData.gst_classification ?? '',
+      itemId: tempItemData._id || "",
+      hsn: tempItemData.gst_classification ?? "",
       taxCode: tempItemData.hsn_code,
-      taxRate: tempItemData.hsn_description || '',
+      taxRate: tempItemData.hsn_description || "",
       qty: String(qty),
       mrp: String(tempItemData.mrp ?? 0),
-      barcode: tempItemData.barcode ?? '',
-      printdesc: tempItemData.name ?? '',
+      barcode: tempItemData.barcode ?? "",
+      printdesc: tempItemData.name ?? "",
       brand: getStringValue(tempItemData.brand),
-      netRate: tempItemData.netRate || '0',
-      gstRate: tempItemData.gstRate || '0',
+      netRate: tempItemData.netRate || "0",
+      gstRate: tempItemData.gstRate || "0",
       rate: String(rate),
       amount: (qty * rate).toFixed(2),
 
@@ -1123,14 +1211,24 @@ const handleWarrantySelect = (w: WarrantyOption) => {
 
   const handleHeaderClick = (columnId: string) => {
     if (
-      ['sno', 'add', 'del', 'srch', 'copy', 'attr', 'widg', 'batch', 'reciss', 'warranty'].includes(
-        columnId
-      )
+      [
+        "sno",
+        "add",
+        "del",
+        "srch",
+        "copy",
+        "attr",
+        "widg",
+        "batch",
+        "reciss",
+        "warranty",
+      ].includes(columnId)
     )
       return;
     setSortConfig((curr) => ({
       key: columnId,
-      direction: curr?.key === columnId && curr.direction === 'asc' ? 'desc' : 'asc',
+      direction:
+        curr?.key === columnId && curr.direction === "asc" ? "desc" : "asc",
     }));
   };
 
@@ -1143,13 +1241,13 @@ const handleWarrantySelect = (w: WarrantyOption) => {
         if (!rowA && !rowB) return 0;
         if (!rowA) return 1;
         if (!rowB) return -1;
-        const valA = rowA[sortConfig.key] || '',
-          valB = rowB[sortConfig.key] || '';
-        return typeof valA === 'string' && typeof valB === 'string'
-          ? sortConfig.direction === 'asc'
+        const valA = rowA[sortConfig.key] || "",
+          valB = rowB[sortConfig.key] || "";
+        return typeof valA === "string" && typeof valB === "string"
+          ? sortConfig.direction === "asc"
             ? valA.localeCompare(valB)
             : valB.localeCompare(valA)
-          : sortConfig.direction === 'asc'
+          : sortConfig.direction === "asc"
             ? Number(valA) - Number(valB) || valA < valB
               ? -1
               : 1
@@ -1168,8 +1266,8 @@ const handleWarrantySelect = (w: WarrantyOption) => {
     resizingRef.current = index;
     startXRef.current = e.clientX;
     startWidthRef.current = visibleColumns[index].width;
-    document.addEventListener('mousemove', handleMouseMove as any);
-    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener("mousemove", handleMouseMove as any);
+    document.addEventListener("mouseup", handleMouseUp);
   };
 
   const handleMouseMove = (e: MouseEvent | globalThis.MouseEvent) => {
@@ -1180,7 +1278,10 @@ const handleWarrantySelect = (w: WarrantyOption) => {
         if (col.id === colId) {
           return {
             ...col,
-            width: Math.max(30, startWidthRef.current + (e.clientX - startXRef.current)),
+            width: Math.max(
+              30,
+              startWidthRef.current + (e.clientX - startXRef.current),
+            ),
           };
         }
         return col;
@@ -1190,14 +1291,14 @@ const handleWarrantySelect = (w: WarrantyOption) => {
 
   const handleMouseUp = () => {
     resizingRef.current = null;
-    document.removeEventListener('mousemove', handleMouseMove as any);
-    document.removeEventListener('mouseup', handleMouseUp);
+    document.removeEventListener("mousemove", handleMouseMove as any);
+    document.removeEventListener("mouseup", handleMouseUp);
   };
 
   const getStickyLeft = (idx: number) =>
     visibleColumns
       .slice(0, idx)
-      .reduce((acc, col) => (col.sticky === 'left' ? acc + col.width : acc), 0);
+      .reduce((acc, col) => (col.sticky === "left" ? acc + col.width : acc), 0);
 
   const totals = useMemo(() => {
     const sums: Record<string, number> = { qty: 0, amount: 0, mrp: 0 };
@@ -1205,12 +1306,12 @@ const handleWarrantySelect = (w: WarrantyOption) => {
       const row = tableData[rowId];
       if (row) {
         const addVal = (field: string) => {
-          const val = parseFloat(String(row[field] || '0'));
+          const val = parseFloat(String(row[field] || "0"));
           if (!isNaN(val)) sums[field] += val;
         };
-        addVal('qty');
-        addVal('amount');
-        addVal('mrp');
+        addVal("qty");
+        addVal("amount");
+        addVal("mrp");
       }
     });
     return {
@@ -1243,17 +1344,19 @@ const handleWarrantySelect = (w: WarrantyOption) => {
       let currentEmptyRowIdx = 0;
 
       newItems.forEach((item) => {
-        const rate = parseFloat(String((item.sales_rate || item.sales_rate) ?? 0));
+        const rate = parseFloat(
+          String((item.sales_rate || item.sales_rate) ?? 0),
+        );
         const qty = item.qty || 1;
         const gstRate = item.gstRate || 0;
 
         const baseData: RowData = {
-          reciss: 'Receipt',
-          select: item.code ?? '',
-          desc: item.name ?? '',
+          reciss: "Receipt",
+          select: item.code ?? "",
+          desc: item.name ?? "",
           unit: getName(item.stock_unit),
-          itemId: item._id || '',
-          hsn: item.gst_classification ?? '',
+          itemId: item._id || "",
+          hsn: item.gst_classification ?? "",
           taxCode: item.hsn_code,
           qty: String(qty),
           rate: String(rate),
@@ -1261,12 +1364,12 @@ const handleWarrantySelect = (w: WarrantyOption) => {
           amount: (qty * rate).toFixed(2),
           taxable: calculateRowTaxable(qty, rate, gstRate),
           taxAmt: calculateRowTaxAmount(qty, rate, gstRate),
-          barcode: item.barcode ?? '',
-          printdesc: item.name ?? '',
+          barcode: item.barcode ?? "",
+          printdesc: item.name ?? "",
           brand: getStringValue(item.brand),
-          netRate: item.netRate || '0',
+          netRate: item.netRate || "0",
           gstRate: String(gstRate),
-          taxRate: item.hsn_description || '',
+          taxRate: item.hsn_description || "",
 
           sale_rate: item.sale_rate || item.sales_rate || 0, // Handle naming variations if any
           wholesale_rate: item.wholesale_rate || 0,
@@ -1285,7 +1388,10 @@ const handleWarrantySelect = (w: WarrantyOption) => {
         }
 
         if (targetRowId) {
-          updatedTableData[targetRowId] = { ...updatedTableData[targetRowId], ...baseData };
+          updatedTableData[targetRowId] = {
+            ...updatedTableData[targetRowId],
+            ...baseData,
+          };
         } else {
           // No empty rows left? Create a new one
           const newId = generateRowId();
@@ -1309,20 +1415,20 @@ const handleWarrantySelect = (w: WarrantyOption) => {
       name: item.name,
       netRate: item.netRate ?? 0,
       gstRate: item.gstRate ?? 0,
-      taxCode: item.taxCode ?? '',
-      hsn_description: item.hsn_description ?? '',
+      taxCode: item.taxCode ?? "",
+      hsn_description: item.hsn_description ?? "",
       last_purchase_rate: item.last_purchase_rate ?? item.purchase_rate ?? 0,
       stock_unit: item.unit ?? null,
       brand: item.brand ?? null,
       category: item.category ?? null,
-      gst_classification: item.hsn_code ?? '',
+      gst_classification: item.hsn_code ?? "",
       sales_rate: item.last_sales_rate ?? 0,
       purchase_rate: item.last_sales_rate ?? 0,
       mrp: item.mrp ?? 0,
-      barcode: item.barcode ?? '',
+      barcode: item.barcode ?? "",
       qty: item.quantity || 1, // Pass the user-typed quantity
       warranty: false,
-      firstyearwarranty: '',
+      firstyearwarranty: "",
       customWarranty: [],
     }));
 
@@ -1335,14 +1441,17 @@ const handleWarrantySelect = (w: WarrantyOption) => {
   return (
     <div
       className="relative z-0 flex h-auto flex-col overflow-hidden font-sans text-sm"
-      style={{ backgroundColor: COLORS.background }}>
+      style={{ backgroundColor: COLORS.background }}
+    >
       <div
         className="relative z-10 flex flex-none items-center justify-between border-b bg-white p-2"
-        style={{ borderColor: COLORS.border }}>
+        style={{ borderColor: COLORS.border }}
+      >
         <div className="flex items-center gap-4">
           <div
             className="flex h-9 w-72 items-center rounded-sm border bg-white"
-            style={{ borderColor: COLORS.borderDark }}>
+            style={{ borderColor: COLORS.borderDark }}
+          >
             <div className="flex h-full items-center justify-center border-r bg-gray-50 px-2">
               <ScanLine className="h-6 w-6 text-orange-500" />
             </div>
@@ -1362,7 +1471,8 @@ const handleWarrantySelect = (w: WarrantyOption) => {
           <button
             onClick={() => setItemBalListOpen(true)}
             className="rounded border border-transparent p-1.5 text-gray-600 transition-all hover:border-gray-300 hover:bg-gray-100"
-            title="Select multiple items from list for fast billing">
+            title="Select multiple items from list for fast billing"
+          >
             <List size={18} />
           </button>
           <button
@@ -1385,7 +1495,8 @@ const handleWarrantySelect = (w: WarrantyOption) => {
           <button
             onClick={() => setConfigOpen(true)}
             className="rounded border border-transparent p-1.5 text-gray-600 transition-all hover:border-gray-300 hover:bg-gray-100"
-            title="Configure Table Columns">
+            title="Configure Table Columns"
+          >
             <Settings size={18} />
           </button>
 
@@ -1396,7 +1507,8 @@ const handleWarrantySelect = (w: WarrantyOption) => {
               onClick={() => {
                 const currentData = getTableData();
                 props.onAnalyze!(currentData.visibleRows);
-              }}>
+              }}
+            >
               <BarChart2 size={14} />
               Analyze Profit
             </button>
@@ -1407,9 +1519,15 @@ const handleWarrantySelect = (w: WarrantyOption) => {
       <div className="relative z-0 flex flex-1 flex-col p-2">
         <div
           className="relative w-full overflow-hidden border bg-white shadow-sm"
-          style={{ borderColor: COLORS.borderDark }}>
-          <div className="custom-scrollbar w-full overflow-auto" style={{ height: '400px' }}>
-            <div style={{ width: visibleColumns.reduce((a, c) => a + c.width, 0) }}>
+          style={{ borderColor: COLORS.borderDark }}
+        >
+          <div
+            className="custom-scrollbar w-full overflow-auto"
+            style={{ height: "400px" }}
+          >
+            <div
+              style={{ width: visibleColumns.reduce((a, c) => a + c.width, 0) }}
+            >
               <table className="w-full table-fixed border-collapse">
                 <thead className="sticky top-0 z-20">
                   <tr className="h-6">
@@ -1418,22 +1536,30 @@ const handleWarrantySelect = (w: WarrantyOption) => {
                         key={col.id}
                         style={{
                           width: col.width,
-                          left: col.sticky === 'left' ? getStickyLeft(idx) : undefined,
-                          position: col.sticky === 'left' ? 'sticky' : 'relative',
-                          zIndex: col.sticky === 'left' ? 30 : 20,
+                          left:
+                            col.sticky === "left"
+                              ? getStickyLeft(idx)
+                              : undefined,
+                          position:
+                            col.sticky === "left" ? "sticky" : "relative",
+                          zIndex: col.sticky === "left" ? 30 : 20,
                           backgroundColor: COLORS.primary,
-                          color: 'white',
+                          color: "white",
                           borderColor: COLORS.primaryHover,
                         }}
                         className="group relative cursor-pointer border-r px-1 text-xs font-normal"
-                        onClick={() => handleHeaderClick(col.id)}>
+                        onClick={() => handleHeaderClick(col.id)}
+                      >
                         <div
                           className={`flex h-full w-full items-center ${
-                            col.align === 'center' ? 'justify-center' : 'justify-between px-1'
-                          }`}>
+                            col.align === "center"
+                              ? "justify-center"
+                              : "justify-between px-1"
+                          }`}
+                        >
                           <span className="truncate">{col.label}</span>
                           {sortConfig?.key === col.id &&
-                            (sortConfig.direction === 'asc' ? (
+                            (sortConfig.direction === "asc" ? (
                               <ArrowUp size={10} />
                             ) : (
                               <ArrowDown size={10} />
@@ -1457,14 +1583,17 @@ const handleWarrantySelect = (w: WarrantyOption) => {
                       <tr
                         key={rowId}
                         className="h-6 border-b hover:bg-blue-50"
-                        style={{ borderColor: COLORS.border }}>
+                        style={{ borderColor: COLORS.border }}
+                      >
                         {visibleColumns.map((col, cIdx) => {
-                          const isLeft = col.sticky === 'left';
+                          const isLeft = col.sticky === "left";
                           let content: React.ReactNode = null;
 
-                          if (col.id === 'sno')
-                            content = <span className="text-gray-500">{vIdx + 1}</span>;
-                          else if (col.id === 'add')
+                          if (col.id === "sno")
+                            content = (
+                              <span className="text-gray-500">{vIdx + 1}</span>
+                            );
+                          else if (col.id === "add")
                             content = (
                               <Plus
                                 size={12}
@@ -1472,7 +1601,7 @@ const handleWarrantySelect = (w: WarrantyOption) => {
                                 onClick={() => handleAddRow(rowId)}
                               />
                             );
-                          else if (col.id === 'del')
+                          else if (col.id === "del")
                             content = (
                               <X
                                 size={12}
@@ -1480,11 +1609,14 @@ const handleWarrantySelect = (w: WarrantyOption) => {
                                 onClick={() => handleDeleteRow(rowId)}
                               />
                             );
-                          else if (col.id === 'srch')
+                          else if (col.id === "srch")
                             content = (
-                              <Search size={12} className="mx-auto cursor-pointer text-blue-500" />
+                              <Search
+                                size={12}
+                                className="mx-auto cursor-pointer text-blue-500"
+                              />
                             );
-                          else if (col.id === 'copy')
+                          else if (col.id === "copy")
                             content = (
                               <Copy
                                 size={12}
@@ -1492,7 +1624,7 @@ const handleWarrantySelect = (w: WarrantyOption) => {
                                 onClick={() => handleCopyRow(rowId)}
                               />
                             );
-                          else if (col.id === 'attr')
+                          else if (col.id === "attr")
                             content = (
                               <FileText
                                 size={12}
@@ -1500,65 +1632,95 @@ const handleWarrantySelect = (w: WarrantyOption) => {
                                 onClick={() => handleAttributeClick(rowId)}
                               />
                             );
-                          else if (col.id === 'widg')
-                            content = <BarChart2 size={12} className="mx-auto text-blue-400" />;
-                          else if (col.id === 'batch')
-                            content = <Table size={12} className="mx-auto text-blue-600" />;
-                          else if (col.id === 'select') {
+                          else if (col.id === "widg")
+                            content = (
+                              <BarChart2
+                                size={12}
+                                className="mx-auto text-blue-400"
+                              />
+                            );
+                          else if (col.id === "batch")
+                            content = (
+                              <Table
+                                size={12}
+                                className="mx-auto text-blue-600"
+                              />
+                            );
+                          else if (col.id === "select") {
                             content = (
                               <div
                                 className="flex h-full cursor-pointer items-center justify-between px-1 text-[10px] italic text-gray-400 hover:bg-gray-100"
-                                onClick={(e) => handleSelectClick(e, rowId)}>
-                                {rowData.select || 'Select...'} <span>▶</span>
+                                onClick={(e) => handleSelectClick(e, rowId)}
+                              >
+                                {rowData.select || "Select..."} <span>▶</span>
                               </div>
                             );
-                          } else if (col.id === 'warranty') {
-                            const displayValue = rowData.warranty || 'Select';
+                          } else if (col.id === "warranty") {
+                            const displayValue = rowData.warranty || "Select";
                             const hasSelection = !!rowData.warranty;
                             content = (
                               <div
                                 className="flex h-full w-full cursor-pointer items-center justify-between px-1 text-[10px] text-gray-700 hover:bg-gray-100"
-                                onClick={(e) => handleWarrantyClick(e, rowId)}>
+                                onClick={(e) => handleWarrantyClick(e, rowId)}
+                              >
                                 <span
                                   className={
                                     hasSelection
-                                      ? 'font-medium text-blue-700'
-                                      : 'italic text-gray-400'
-                                  }>
+                                      ? "font-medium text-blue-700"
+                                      : "italic text-gray-400"
+                                  }
+                                >
                                   {displayValue}
                                 </span>
-                                <ChevronDown size={10} className="text-gray-400" />
+                                <ChevronDown
+                                  size={10}
+                                  className="text-gray-400"
+                                />
                               </div>
                             );
-                          } else if (col.id === 'amount') {
+                          } else if (col.id === "amount") {
                             content = (
                               <input
                                 type="text"
                                 className="h-full w-full bg-transparent px-1 text-right font-medium outline-none"
-                                value={rowData[col.id] || ''}
-                                onChange={(e) => handleInputChange(rowId, col.id, e.target.value)}
+                                value={rowData[col.id] || ""}
+                                onChange={(e) =>
+                                  handleInputChange(
+                                    rowId,
+                                    col.id,
+                                    e.target.value,
+                                  )
+                                }
                               />
                             );
                           } else if (
                             [
-                              'qty',
-                              'rate',
-                              'mrp',
-                              'pqty',
-                              'minrate',
-                              'netRate',
-                              'bdsalerate',
-                              'taxable',
-                              'taxAmt',
+                              "qty",
+                              "rate",
+                              "mrp",
+                              "pqty",
+                              "minrate",
+                              "netRate",
+                              "bdsalerate",
+                              "taxable",
+                              "taxAmt",
                             ].includes(col.id)
                           ) {
                             content = (
                               <input
                                 type="text"
                                 className="h-full w-full bg-transparent px-1 text-right outline-none"
-                                value={rowData[col.id] || ''} 
-                                readOnly={col.id === 'taxAmt'}
-                                onChange={(e) => handleInputChange(rowId, col.id, e.target.value)}
+                                value={rowData[col.id] || ""}
+                                readOnly={
+                                  col.id === "taxAmt" || col.id === "netRate"
+                                }
+                                onChange={(e) =>
+                                  handleInputChange(
+                                    rowId,
+                                    col.id,
+                                    e.target.value,
+                                  )
+                                }
                               />
                             );
                           } else {
@@ -1566,8 +1728,14 @@ const handleWarrantySelect = (w: WarrantyOption) => {
                               <input
                                 type="text"
                                 className="h-full w-full bg-transparent px-1 outline-none"
-                                value={rowData[col.id] || ''}
-                                onChange={(e) => handleInputChange(rowId, col.id, e.target.value)}
+                                value={rowData[col.id] || ""}
+                                onChange={(e) =>
+                                  handleInputChange(
+                                    rowId,
+                                    col.id,
+                                    e.target.value,
+                                  )
+                                }
                               />
                             );
                           }
@@ -1575,29 +1743,32 @@ const handleWarrantySelect = (w: WarrantyOption) => {
                           const isReadOnly =
                             !col.resizable &&
                             !col.sticky &&
-                            col.id !== 'warranty' &&
-                            col.id !== 'amount' &&
-                            col.id !== 'qty' &&
-                            col.id !== 'rate' &&
-                            col.id !== 'taxable';
+                            col.id !== "warranty" &&
+                            col.id !== "amount" &&
+                            col.id !== "qty" &&
+                            col.id !== "rate" &&
+                            col.id !== "taxable";
                           return (
                             <td
                               key={col.id}
                               style={{
                                 width: col.width,
                                 left: isLeft ? getStickyLeft(cIdx) : undefined,
-                                position: isLeft ? 'sticky' : 'static',
-                                zIndex: isLeft ? 10 : 'auto',
-                                backgroundColor: isReadOnly ? '#FAFAFA' : 'white',
+                                position: isLeft ? "sticky" : "static",
+                                zIndex: isLeft ? 10 : "auto",
+                                backgroundColor: isReadOnly
+                                  ? "#FAFAFA"
+                                  : "white",
                                 borderColor: COLORS.border,
                               }}
                               className={`overflow-hidden whitespace-nowrap border-r px-1 text-xs ${
-                                col.align === 'center'
-                                  ? 'text-center'
-                                  : col.align === 'right'
-                                    ? 'text-right'
-                                    : 'text-left'
-                              } ${isReadOnly ? 'text-gray-500' : ''}`}>
+                                col.align === "center"
+                                  ? "text-center"
+                                  : col.align === "right"
+                                    ? "text-right"
+                                    : "text-left"
+                              } ${isReadOnly ? "text-gray-500" : ""}`}
+                            >
                               {content}
                             </td>
                           );
@@ -1609,20 +1780,25 @@ const handleWarrantySelect = (w: WarrantyOption) => {
                 <tfoot className="sticky bottom-0 z-20 bg-gray-50">
                   <tr className="h-9 font-bold">
                     {visibleColumns.map((col, idx) => {
-                      let content: React.ReactNode = '';
-                      if (col.id === 'desc') content = 'TOTAL';
-                      else if (col.id === 'qty') content = totals.qty;
-                      else if (col.id === 'amount') content = totals.amount;
+                      let content: React.ReactNode = "";
+                      if (col.id === "desc") content = "TOTAL";
+                      else if (col.id === "qty") content = totals.qty;
+                      else if (col.id === "amount") content = totals.amount;
                       return (
                         <td
                           key={col.id}
                           style={{
-                            left: col.sticky === 'left' ? getStickyLeft(idx) : undefined,
-                            position: col.sticky === 'left' ? 'sticky' : 'static',
-                            zIndex: col.sticky === 'left' ? 30 : 20,
+                            left:
+                              col.sticky === "left"
+                                ? getStickyLeft(idx)
+                                : undefined,
+                            position:
+                              col.sticky === "left" ? "sticky" : "static",
+                            zIndex: col.sticky === "left" ? 30 : 20,
                             backgroundColor: COLORS.background,
                           }}
-                          className="border-r border-t-2 px-1 text-right text-xs">
+                          className="border-r border-t-2 px-1 text-right text-xs"
+                        >
                           {content}
                         </td>
                       );
@@ -1638,26 +1814,33 @@ const handleWarrantySelect = (w: WarrantyOption) => {
       {configOpen &&
         ReactDOM.createPortal(
           <div className="animate-in fade-in fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm duration-200">
-            <div className="absolute inset-0" onClick={() => setConfigOpen(false)} />
+            <div
+              className="absolute inset-0"
+              onClick={() => setConfigOpen(false)}
+            />
             <div
               className="relative flex h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl border shadow-2xl"
               style={{
                 backgroundColor: COLORS.white,
                 borderColor: COLORS.border,
-                maxHeight: '85vh',
-              }}>
+                maxHeight: "85vh",
+              }}
+            >
               <div
                 className="flex items-center justify-between border-b px-6 py-4"
-                style={{ borderColor: COLORS.border }}>
+                style={{ borderColor: COLORS.border }}
+              >
                 <h3
                   className="flex items-center gap-2 text-xl font-bold"
-                  style={{ color: COLORS.textPrimary }}>
+                  style={{ color: COLORS.textPrimary }}
+                >
                   <Settings size={20} style={{ color: COLORS.primary }} />
                   Table Configuration
                 </h3>
                 <button
                   onClick={() => setConfigOpen(false)}
-                  className="rounded-full p-1 transition-colors hover:bg-gray-100">
+                  className="rounded-full p-1 transition-colors hover:bg-gray-100"
+                >
                   <X size={22} style={{ color: COLORS.textSecondary }} />
                 </button>
               </div>
@@ -1667,7 +1850,8 @@ const handleWarrantySelect = (w: WarrantyOption) => {
                 style={{
                   backgroundColor: COLORS.background,
                   borderColor: COLORS.border,
-                }}>
+                }}
+              >
                 <div className="group relative">
                   <Search
                     size={18}
@@ -1687,23 +1871,40 @@ const handleWarrantySelect = (w: WarrantyOption) => {
               <div className="custom-scrollbar flex-1 overflow-y-auto p-6">
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
                   {columns
-                    .filter((c) => !['sno', 'add', 'del', 'srch', 'copy'].includes(c.id))
-                    .filter((c) => c.label.toLowerCase().includes(configSearch.toLowerCase()))
+                    .filter(
+                      (c) =>
+                        !["sno", "add", "del", "srch", "copy"].includes(c.id),
+                    )
+                    .filter((c) =>
+                      c.label
+                        .toLowerCase()
+                        .includes(configSearch.toLowerCase()),
+                    )
                     .map((col) => (
                       <div
                         key={col.id}
                         onClick={() => toggleColumnVisibility(col.id)}
                         className="flex cursor-pointer select-none items-center gap-3 rounded-lg border p-3 transition-all hover:shadow-sm"
                         style={{
-                          backgroundColor: col.visible ? `${COLORS.primary}10` : COLORS.white,
-                          borderColor: col.visible ? COLORS.primary : COLORS.border,
-                        }}>
+                          backgroundColor: col.visible
+                            ? `${COLORS.primary}10`
+                            : COLORS.white,
+                          borderColor: col.visible
+                            ? COLORS.primary
+                            : COLORS.border,
+                        }}
+                      >
                         <div
                           className="flex h-5 w-5 items-center justify-center rounded border transition-colors"
                           style={{
-                            backgroundColor: col.visible ? COLORS.primary : COLORS.white,
-                            borderColor: col.visible ? COLORS.primary : '#e5e7eb',
-                          }}>
+                            backgroundColor: col.visible
+                              ? COLORS.primary
+                              : COLORS.white,
+                            borderColor: col.visible
+                              ? COLORS.primary
+                              : "#e5e7eb",
+                          }}
+                        >
                           <Check
                             size={14}
                             className="transition-opacity"
@@ -1716,8 +1917,11 @@ const handleWarrantySelect = (w: WarrantyOption) => {
                         <span
                           className="truncate text-sm font-medium"
                           style={{
-                            color: col.visible ? COLORS.textPrimary : COLORS.textSecondary,
-                          }}>
+                            color: col.visible
+                              ? COLORS.textPrimary
+                              : COLORS.textSecondary,
+                          }}
+                        >
                           {col.label}
                         </span>
                       </div>
@@ -1727,11 +1931,13 @@ const handleWarrantySelect = (w: WarrantyOption) => {
 
               <div
                 className="flex items-center justify-between border-t bg-gray-50 px-6 py-4"
-                style={{ borderColor: COLORS.border }}>
+                style={{ borderColor: COLORS.border }}
+              >
                 <button
                   onClick={handleResetDefault}
                   className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-200"
-                  style={{ color: COLORS.textSecondary }}>
+                  style={{ color: COLORS.textSecondary }}
+                >
                   <RotateCcw size={16} /> Reset to Default
                 </button>
 
@@ -1742,19 +1948,22 @@ const handleWarrantySelect = (w: WarrantyOption) => {
                 <button
                   className="flex items-center gap-2 rounded px-6 py-1.5 text-xs font-bold text-white shadow-sm"
                   style={{ backgroundColor: COLORS.primary }}
-                  onClick={() => setConfigOpen(false)}>
+                  onClick={() => setConfigOpen(false)}
+                >
                   Apply
                 </button>
               </div>
             </div>
           </div>,
-          document.body
+          document.body,
         )}
 
       <AttributePanel
         isOpen={attributePanelState.visible}
         billType="SALE"
-        onClose={() => setAttributePanelState({ ...attributePanelState, visible: false })}
+        onClose={() =>
+          setAttributePanelState({ ...attributePanelState, visible: false })
+        }
         onSave={handleAttributeSave}
         initialData={attributePanelState.tempItemData}
       />
@@ -1772,14 +1981,21 @@ const handleWarrantySelect = (w: WarrantyOption) => {
                 top: popupState.top,
                 left: popupState.left,
                 borderColor: COLORS.borderDark,
-                width: '600px',
-                maxHeight: '300px',
-                transform: popupState.top + 300 > window.innerHeight ? 'translateY(-100%)' : 'none',
-              }}>
+                width: "600px",
+                maxHeight: "300px",
+                transform:
+                  popupState.top + 300 > window.innerHeight
+                    ? "translateY(-100%)"
+                    : "none",
+              }}
+            >
               <div
                 className="flex h-8 items-center justify-between border-b p-2"
-                style={{ backgroundColor: COLORS.primary, color: COLORS.white }}>
-                <span className="pl-1 text-xs font-bold">Select Item (Vendor: {vendorCode})</span>
+                style={{ backgroundColor: COLORS.primary, color: COLORS.white }}
+              >
+                <span className="pl-1 text-xs font-bold">
+                  Select Item (Vendor: {vendorCode})
+                </span>
                 <button onClick={closePopup}>
                   <X size={14} />
                 </button>
@@ -1797,18 +2013,26 @@ const handleWarrantySelect = (w: WarrantyOption) => {
                       <tr
                         key={item._id || idx}
                         className="cursor-pointer border-b hover:bg-blue-50"
-                        onClick={() => handleItemSelect(item)}>
+                        onClick={() => handleItemSelect(item)}
+                      >
                         <td className="border p-1.5">{item.code}</td>
-                        <td className="border p-1.5 font-medium">{item.name}</td>
-                        <td className="border p-1.5 text-right font-bold text-blue-600">
-                          {item.netRate || '0.00'}
+                        <td className="border p-1.5 font-medium">
+                          {item.name}
                         </td>
-                        <td className="border p-1.5 text-right">{item.gstRate || '0'}%</td>
+                        <td className="border p-1.5 text-right font-bold text-blue-600">
+                          {item.netRate || "0.00"}
+                        </td>
+                        <td className="border p-1.5 text-right">
+                          {item.gstRate || "0"}%
+                        </td>
                       </tr>
                     ))}
                     {items.length === 0 && (
                       <tr>
-                        <td colSpan={4} className="p-4 text-center italic text-gray-400">
+                        <td
+                          colSpan={4}
+                          className="p-4 text-center italic text-gray-400"
+                        >
                           No items found for this vendor.
                         </td>
                       </tr>
@@ -1818,7 +2042,7 @@ const handleWarrantySelect = (w: WarrantyOption) => {
               </div>
             </div>
           </>,
-          document.body
+          document.body,
         )}
 
       {warrantyPopup.visible &&
@@ -1834,15 +2058,22 @@ const handleWarrantySelect = (w: WarrantyOption) => {
                 top: warrantyPopup.top,
                 left: warrantyPopup.left,
                 borderColor: COLORS.borderDark,
-                width: '300px',
+                width: "300px",
                 transform:
-                  warrantyPopup.top + 350 > window.innerHeight ? 'translateY(-100%)' : 'none',
-              }}>
+                  warrantyPopup.top + 350 > window.innerHeight
+                    ? "translateY(-100%)"
+                    : "none",
+              }}
+            >
               <div className="flex items-center justify-between border-b bg-gray-50 px-3 py-2">
                 <span className="flex items-center gap-1 text-xs font-bold text-gray-700">
-                  <ShieldCheck size={14} className="text-blue-600" /> Select Warranty
+                  <ShieldCheck size={14} className="text-blue-600" /> Select
+                  Warranty
                 </span>
-                <button onClick={closeWarrantyPopup} className="text-gray-400 hover:text-red-500">
+                <button
+                  onClick={closeWarrantyPopup}
+                  className="text-gray-400 hover:text-red-500"
+                >
                   <X size={16} />
                 </button>
               </div>
@@ -1853,8 +2084,11 @@ const handleWarrantySelect = (w: WarrantyOption) => {
                     <div
                       key={opt.id}
                       className="group flex cursor-pointer items-center justify-between border-b px-3 py-2 text-xs hover:bg-blue-50"
-                      onClick={() => handleWarrantySelect(opt)}>
-                      <span className="font-medium text-gray-700">{opt.label}</span>
+                      onClick={() => handleWarrantySelect(opt)}
+                    >
+                      <span className="font-medium text-gray-700">
+                        {opt.label}
+                      </span>
                       {opt.price > 0 && (
                         <span className="rounded bg-green-50 px-1.5 py-0.5 font-bold text-green-600">
                           +₹{opt.price}
@@ -1911,14 +2145,15 @@ const handleWarrantySelect = (w: WarrantyOption) => {
                   <button
                     className="w-full rounded bg-blue-600 py-2 text-xs font-bold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
                     onClick={handleAddCustomWarranty}
-                    disabled={!newWarranty.duration}>
+                    disabled={!newWarranty.duration}
+                  >
                     Add & Apply
                   </button>
                 </div>
               </div>
             </div>
           </>,
-          document.body
+          document.body,
         )}
 
       {isImportModalOpen &&
@@ -1927,33 +2162,34 @@ const handleWarrantySelect = (w: WarrantyOption) => {
             isOpen={isImportModalOpen}
             onClose={() => setIsImportModalOpen(false)}
           />,
-          document.body
+          document.body,
         )}
 
       {isItemBalListOpen &&
         ReactDOM.createPortal(
           <div className="animate-in fade-in fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm duration-200">
             {/* Clickable overlay to close */}
-            <div className="absolute inset-0" onClick={() => setItemBalListOpen(false)} />
+            <div
+              className="absolute inset-0"
+              onClick={() => setItemBalListOpen(false)}
+            />
 
             {/* Component Container */}
             <div className="relative w-full max-w-7xl shadow-2xl">
-             {
-              storeCode &&  <ItemWithBalance
-                isOpen={isItemBalListOpen}
-                onClose={() => setItemBalListOpen(false)}
-                storeCode={storeCode}
-                onConfirm={handleItemBalConfirm}
-              />
-             } 
-             <div>
-              {
-                storeCode ? storeCode : "Please Select again Cash/Credit" 
-              }
-             </div>
+              {storeCode && (
+                <ItemWithBalance
+                  isOpen={isItemBalListOpen}
+                  onClose={() => setItemBalListOpen(false)}
+                  storeCode={storeCode}
+                  onConfirm={handleItemBalConfirm}
+                />
+              )}
+              <div>
+                {storeCode ? storeCode : "Please Select again Cash/Credit"}
+              </div>
             </div>
           </div>,
-          document.body
+          document.body,
         )}
 
       <style>{`
