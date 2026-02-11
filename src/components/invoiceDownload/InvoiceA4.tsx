@@ -1,8 +1,7 @@
 import React, { useRef } from 'react';
-import { PrintIcon } from '../function/functions'; // Assuming this is a custom icon component
+import { PrintIcon } from '../function/functions';
 import { Share2 } from 'lucide-react';
 
-// --- Types ---
 interface InvoiceItem {
   id: string | number;
   description: string;
@@ -58,7 +57,6 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
     if (printWindow) {
       printWindow.document.write('<html><head><title>Print Invoice</title>');
 
-      // Append all stylesheet links
       const links = document.querySelectorAll('link[rel="stylesheet"]');
       links.forEach((link) => {
         const newLink = printWindow.document.createElement('link');
@@ -67,13 +65,11 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
         printWindow.document.head.appendChild(newLink);
       });
 
-      // Append all inline styles
       const styles = document.querySelectorAll('style');
       styles.forEach((style) => {
         printWindow.document.head.appendChild(style.cloneNode(true));
       });
 
-      // Custom print styles for perfect A4 sizing
       const customStyle = printWindow.document.createElement('style');
       customStyle.innerHTML = `
         @page { size: A4 portrait; margin: 0; }
@@ -87,13 +83,10 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
       printWindow.document.write('</body></html>');
       printWindow.document.close();
 
-      // Wait for content to load before printing
       printWindow.onload = () => {
         printWindow.focus();
         setTimeout(() => {
           printWindow.print();
-          // Optionally close the window after print, but better to let user handle
-          // printWindow.close();
         }, 500);
       };
     }
@@ -108,7 +101,7 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
         await navigator.share({
           title: `Invoice ${activeData.invoiceNo}`,
           text: `Invoice from ${activeData.storeName || 'Store'}. Total: ₹${totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-          url: window.location.href, // Consider generating a shareable PDF URL if possible
+          url: window.location.href,
         });
       } catch (error) {
         console.error('Error sharing:', error);
@@ -151,7 +144,6 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
 
   return (
     <div className="flex min-h-screen w-auto flex-col items-center bg-gray-100 pb-7 font-sans">
-      {/* Buttons for Print and Share */}
       <div className="mb-4 mt-4 flex gap-2">
         <button
           onClick={handlePrint}
@@ -167,13 +159,10 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
         </button>
       </div>
 
-      {/* Invoice Content - Sized exactly for A4 */}
       <div
         ref={componentRef}
         className="relative box-border min-h-[297mm] w-[210mm] overflow-hidden bg-white text-sm text-black shadow-lg print:m-0 print:h-auto print:w-auto print:p-0 print:shadow-none"
-        style={{ padding: '10mm', boxSizing: 'border-box' }} // Internal padding acts as margin
-      >
-        {/* Header */}
+        style={{ padding: '10mm', boxSizing: 'border-box' }}>
         <div className="flex items-start justify-between p-2">
           <div>
             <span className="font-bold">GSTIN: 10HACPS7876F1ZF</span>
@@ -184,14 +173,10 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
           <div className="text-right text-xs">Original For Recipient</div>
         </div>
 
-        {/* Branding */}
         <div className="relative py-2 text-center">
           <div className="px-24">
             <h1 className="text-3xl font-bold uppercase tracking-wide">{activeData.storeName}</h1>
-            <p className="text-[14px] font-extrabold">
-              {/* Registered under {activeData.storeName} */}
-              Registered Under Chandan Khel Ghar
-            </p>
+            <p className="text-[14px] font-extrabold">Registered Under Chandan Khel Ghar</p>
             <p className="text-[14px] font-medium">
               VIP ROAD, Laheriasarai, Darbhanga, Bihar 846001
             </p>
@@ -205,22 +190,19 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
           <div className="absolute right-2 top-[4vh] flex -translate-y-1/2 transform flex-col items-end">
             <div className="mb-2 text-right text-xs font-semibold">Scan for Payment</div>
             <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(activeData.invoiceNo)}`} // Encoded for safety
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(activeData.invoiceNo)}`}
               alt="QR Code"
               className="h-20 w-20 object-contain"
             />
           </div>
         </div>
 
-        {/* State Code */}
         <div className="-mt-5 mb-1 flex w-full justify-end">
           <div className="mr-1 font-semibold">State Code:</div>
           <div>{activeData.stateCode}</div>
         </div>
 
-        {/* Invoice Details Border */}
         <div className="border border-black">
-          {/* Invoice Info Grid */}
           <div className="grid grid-cols-4 text-sm">
             <div className="pl-2 font-semibold">Invoice No.</div>
             <div className="pl-2">{activeData.invoiceNo}</div>
@@ -236,7 +218,6 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
             <div className="border-b border-black pl-2">{activeData.destination || '-'}</div>
           </div>
 
-          {/* Addresses */}
           <div className="border-b border-black text-sm">
             <div className="flex w-full border-b border-black">
               <p className="w-1/2 border-r border-black p-2 font-bold">
@@ -271,7 +252,6 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
             </div>
           </div>
 
-          {/* Items Table */}
           <div className="w-full">
             <table className="w-full border-collapse text-xs">
               <thead>
@@ -285,34 +265,70 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
                 </tr>
               </thead>
               <tbody>
-                {activeData.items.map((item, index) => (
-                  <tr key={index}>
-                    <td className="border-r border-black p-1 text-center">{index + 1}</td>
-                    <td className="border-r border-black p-1 font-medium">
-                      <div>{item.description}</div>
-                      {item.warranty && (
-                        <div className="mt-0.5 text-[10px] font-normal text-gray-600">
-                          ({item.warranty})
+                {activeData.items.map((item, index) => {
+                  // Robust parsing for warranty price – handles formats like:
+                  // "(12 Months Warranty ₹320)", "1 Year (+₹500)", "6 Months Warranty (₹200)", etc.
+                  let warrantyLabel = '';
+                  let warrantyPrice = 0;
+
+                  if (item.warranty) {
+                    // Extract price (supports ₹320, +₹320, ₹ 320, etc.)
+                    const priceMatch = item.warranty.match(/[+₹]?\s*₹\s*([\d.,]+)/);
+                    if (priceMatch) {
+                      warrantyPrice = parseFloat(priceMatch[1].replace(/,/g, ''));
+                    }
+
+                    // Clean label: remove price, parentheses, and optional +
+                    warrantyLabel = item.warranty
+                      .replace(/[\(\)]/g, '')
+                      .replace(/[+₹]?\s*₹\s*[\d.,]+/g, '')
+                      .replace(/^\s*[+]?\s*/, '')
+                      .trim();
+
+                    // Fallback: if label is empty after cleaning, use "Warranty"
+                    if (!warrantyLabel) warrantyLabel = 'Warranty';
+                  }
+
+                  return (
+                    <tr key={index}>
+                      <td className="border-r border-black p-1 text-center">{index + 1}</td>
+                      <td className="border-r border-black p-1 font-medium">
+                        <div>{item.description}</div>
+                        {warrantyLabel && (
+                          <div className="mt-0.5 text-[10px] font-normal text-gray-600">
+                            ({warrantyLabel})
+                          </div>
+                        )}
+                      </td>
+                      <td className="border-r border-black p-1 text-center">{item.qty}</td>
+                      <td className="border-r border-black p-1 text-center">{item.uom}</td>
+                      <td className="border-r border-black p-1 text-right">
+                        {item.rate.toLocaleString('en-IN', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                        {warrantyPrice > 0 && (
+                          <div className="text-[10px] font-medium text-gray-600">
+                            +₹
+                            {warrantyPrice.toLocaleString('en-IN', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </div>
+                        )}
+                      </td>
+                      <td className="p-1 text-right">
+                        {/* Main item amount (unchanged) */}
+                        <div className="font-bold">
+                          {item.amount.toLocaleString('en-IN', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
                         </div>
-                      )}
-                    </td>
-                    <td className="border-r border-black p-1 text-center">{item.qty}</td>
-                    <td className="border-r border-black p-1 text-center">{item.uom}</td>
-                    <td className="border-r border-black p-1 text-right">
-                      {item.rate.toLocaleString('en-IN', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </td>
-                    <td className="p-1 text-right font-bold">
-                      {item.amount.toLocaleString('en-IN', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </td>
-                  </tr>
-                ))}
-                {/* Empty rows to maintain consistent height (up to 15 items) */}
+                      </td>
+                    </tr>
+                  );
+                })}
                 {activeData.items.length < 15 &&
                   Array.from({ length: 15 - activeData.items.length }).map((_, i) => (
                     <tr key={`empty-${i}`} className="h-6">
@@ -324,7 +340,6 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
                       <td></td>
                     </tr>
                   ))}
-                {/* Total Row */}
                 <tr className="border-t border-black">
                   <td className="border-r border-black p-1 text-center"></td>
                   <td className="border-r border-black p-1 font-bold">Total</td>
@@ -344,12 +359,10 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
             </table>
           </div>
 
-          {/* Amount in Words and Totals */}
           <div className="flex border-t border-black">
             <div className="flex-grow border-r border-black p-2">
               <p className="text-xs font-bold">Amount In Words:</p>
               <p className="text-sm uppercase italic">{activeData.amountInWords}</p>
-              {/* Remarks */}
               {activeData.remarks && (
                 <div className="mt-2">
                   <p className="text-xs font-bold">Remarks:</p>
@@ -379,7 +392,6 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
             </div>
           </div>
 
-          {/* Bank Details, Terms, and Signatory */}
           <div className="grid grid-cols-2 border-t border-black">
             <div className="border-r border-black p-2 text-xs">
               {activeData.bankDetails && (
@@ -403,7 +415,7 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
               </div>
               <div>
                 <p className="mb-8 text-xs">For {activeData.storeName}</p>
-                <div className="h-10"></div> {/* Space for signature */}
+                <div className="h-10"></div>
                 <p className="inline-block border-t border-black/50 px-8 pt-1 text-xs font-bold">
                   Authorized Signatory
                 </p>
@@ -411,11 +423,6 @@ const InvoiceA4: React.FC<InvoiceProps> = ({ data }) => {
             </div>
           </div>
         </div>
-
-        {/* Footer */}
-        {/* <div className="text-center text-[10px] mt-2 text-gray-500">
-          THANKS VISIT AGAIN
-        </div> */}
       </div>
     </div>
   );

@@ -39,6 +39,7 @@ export interface PosInvoiceItem {
   taxAmount: number;
   netRate: number;
   netAmount: number;
+  group: string;
 
   batchNo: string;
   warehouse: string;

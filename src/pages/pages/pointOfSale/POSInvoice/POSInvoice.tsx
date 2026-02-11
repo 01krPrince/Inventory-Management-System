@@ -229,9 +229,6 @@ const POSInvoice: React.FC = () => {
     [updateActiveTabData]
   );
 
-  // ────────────────────────────────────────────────
-  //  Tab CRUD Operations
-  // ────────────────────────────────────────────────
   const handleNewTab = useCallback(() => {
     const newId = uuidv4();
     const newName = `Invoice #${tabs.length + 1}`;
@@ -320,6 +317,20 @@ const POSInvoice: React.FC = () => {
         (data.itemsTotal.total - totalDiscount + Number(data.roundOff || 0)).toFixed(2)
       );
 
+      const totalPaid =
+        data.payments?.reduce((sum: number, p: any) => sum + (parseFloat(p.netAmount) || 0), 0) ||
+        0;
+
+      // Allow a tiny margin for floating point errors (0.01)
+      const leftBalance = docAmount - totalPaid;
+
+      if (leftBalance > 0.01) {
+        alert(
+          `Payment Incomplete!\n\nTotal Payable: ₹${docAmount.toFixed(2)}\nTotal Paid: ₹${totalPaid.toFixed(2)}\nRemaining Balance: ₹${leftBalance.toFixed(2)}\n\nPlease process the full payment before saving.`
+        );
+        return; // Stop the execution
+      }
+
       // 2. Map Items
       const formattedItems = data.items.map((item) => ({
         item: item.item,
@@ -333,6 +344,7 @@ const POSInvoice: React.FC = () => {
         mrp: item.mrp,
         unit: item.unit,
         brand: item.brand,
+        group: item.group,
         barCode: item.barCode,
         hsn: item.hsn,
         taxCode: item.taxCode,
@@ -344,7 +356,6 @@ const POSInvoice: React.FC = () => {
         warehouse: item.warehouse || 'Main Store',
       }));
 
-      // 3. Construct Payload
       const payload: PosInvoicePayload = {
         store: data.store || '00002',
         billDate: new Date(data.billDate).toISOString(),
@@ -414,7 +425,7 @@ const POSInvoice: React.FC = () => {
   return (
     <div
       style={{ backgroundColor: COLORS.background }}
-      className="min-h-auto flex flex-col overflow-hidden">
+      className="flex h-auto flex-col overflow-hidden">
       <POSInvoiceHeader
         tabs={tabs}
         activeTabId={activeTabId}
@@ -427,7 +438,7 @@ const POSInvoice: React.FC = () => {
         onCloseSpecificTab={handleCloseTab}
       />
 
-      <div className="flex-1 overflow-auto p-4 pb-24">
+      <div className="flex-1 overflow-auto p-4 pb-5">
         <div className="mx-auto flex max-w-[1600px] flex-col gap-4">
           <POSInvoiceForm data={activeData} onChange={handleFieldChange} />
 
@@ -449,6 +460,11 @@ const POSInvoice: React.FC = () => {
           <div
             className="fixed bottom-0 left-0 right-0 z-50 flex h-16 items-center justify-end border-t bg-white px-6 shadow-[0_-6px_10px_-4px_rgba(0,0,0,0.15)]"
             style={{ borderColor: COLORS.borderDark || '#e5e7eb' }}>
+            <button
+              className="mx-[5vw] flex items-center gap-2 rounded px-6 py-2 text-sm font-bold text-white shadow-md transition-all active:scale-95"
+              style={{ backgroundColor: COLORS.primaryLight, color: COLORS.textSecondary }}>
+              Run Promotion
+            </button>
             <button
               onClick={handleSaveInvoice}
               className="flex items-center gap-2 rounded px-6 py-2 text-sm font-bold text-white shadow-md transition-all active:scale-95"

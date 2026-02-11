@@ -44,20 +44,27 @@ import OpeningStock from '../pages/pages/header/openingTransaction/OpeningStock.
 import CustomerDirectory from '../pages/pages/sales/customer/Customer.tsx';
 import EcomProductDetail from '../pages/pages/e-commerce/EcommerceProductDetail.tsx';
 import WishlistStockManager from '../pages/pages/e-commerce/WishlistManager.tsx';
-import ReportDashboard from '../pages/pages/report/ReportDashboard.tsx';
+import ReportDashboard from '../pages/pages/reports/allReport/ReportDashboard.tsx';
 
-import PlaceholderPage from '../pages/pages/report/PlaceholderPage';
-import CustomerReport from '../pages/pages/report/reportPages/CustomerReport.tsx';
-import VendorReport from '../pages/pages/report/reportPages/VendorReport.tsx';
-import PurchaseBillReport from '../pages/pages/report/reportPages/PurchaseBillReport.tsx';
-import ItemReport from '../pages/pages/report/reportPages/ItemReport.tsx';
-import GstMasterReport from '../pages/pages/report/reportPages/GstMasterReport.tsx';
-import SalesInvoiceReport from '../pages/pages/report/reportPages/SalesInvoiceReport.tsx';
-import StockSummary from '../pages/pages/report/reportPages/StockSummary.tsx';
+import PlaceholderPage from '../pages/pages/reports/allReport/PlaceholderPage.tsx';
+import CustomerReport from '../pages/pages/reports/allReport/allReportPages/CustomerReport.tsx';
+import VendorReport from '../pages/pages/reports/allReport/allReportPages/VendorReport.tsx';
+import PurchaseBillReport from '../pages/pages/reports/allReport/allReportPages/PurchaseBillReport.tsx';
+import ItemReport from '../pages/pages/reports/allReport/allReportPages/ItemReport.tsx';
+import GstMasterReport from '../pages/pages/reports/allReport/allReportPages/GstMasterReport.tsx';
+import SalesInvoiceReport from '../pages/pages/reports/allReport/allReportPages/SalesInvoiceReport.tsx';
+import StockSummary from '../pages/pages/reports/allReport/allReportPages/StockSummary.tsx';
 import ChartOfAccountPage from '../pages/pages/finance/ChartOfAccount.tsx';
 import RecieptPaymentVoucher from '../pages/pages/finance/VoucherEntryForm.tsx';
-import StockTrail from '../pages/pages/report/reportPages/StockTrial.tsx';
-import StockTrial from '../pages/pages/report/reportPages/StockTrial.tsx';
+import StockTrial from '../pages/pages/reports/stockTrials/StockTrial.tsx';
+import StockLedger from '../pages/pages/reports/stockTrials/StockLedger.tsx';
+import VendorTrial from '../pages/pages/reports/VendorTrial.tsx';
+import TrialBalance from '../pages/pages/reports/TrialBalance.tsx';
+import CustomerTrial from '../pages/pages/reports/customerTrials/CustomerTrail.tsx';
+import SalesCreditNote from '../pages/pages/sales/salesCreditNote.tsx/SalesCreditNote.tsx';
+import SaleReturn from '../pages/pages/sales/salseReturn/SaleReturn.tsx';
+import PaymentReciept from '../pages/pages/sales/paymentReciept/paymentReciept.tsx';
+import CustomerLedger from '../pages/pages/reports/customerTrials/CustomerLedger.tsx';
 
 const useSidebar = () => ({
   isExpanded: false,
@@ -226,11 +233,16 @@ const ReportPageRoutes: { [key: string]: React.FC } = {
 
   // --- Country Specification ---
   '/report/nepal': () => <PlaceholderPage title="Nepal Reports" />,
-
-  '/report/stock-trial': StockTrail,
 };
+export interface TabItem {
+  name: string;
+  path: string;
+  // Add these two lines:
+  data?: any; // To hold the itemCode or other dynamic data
+  componentKey?: string; // To tell AppLayout which base component to load
+}
 
-const ComponentMap: { [key: string]: React.FC } = {
+const ComponentMap: { [key: string]: React.FC<any> } = {
   '/welcome': Welcome,
   '/customer': CustomerDirectory,
   '/price-list': PriceList,
@@ -271,12 +283,22 @@ const ComponentMap: { [key: string]: React.FC } = {
   '/sales-return-challan': SaleReturnChallan,
   '/chart-of-accounts': ChartOfAccountPage,
   '/reciept-payment-voucher': RecieptPaymentVoucher,
+  '/sales-credit-note': SalesCreditNote,
+  '/sales-debit-note': SalesCreditNote,
+  '/sales-return': SaleReturn,
+  '/payment-receipt': PaymentReciept,
   //
   '/wishlist': WishlistStockManager,
   '/ecom-products': EcomProductDetail,
   //
   '/opening-stock': OpeningStock,
-  '/stock-trial': StockTrial,
+  //
+  '/report/stock-trial': StockTrial,
+  '/report/stock-trial/ledger': StockLedger,
+  //
+  //
+  //
+  //
   '/opening-outstanding-customer': () => (
     <div className="p-10 text-center">
       <h1 className="mb-4 text-3xl font-bold text-[#003f6b] dark:text-white">
@@ -345,7 +367,17 @@ const ComponentMap: { [key: string]: React.FC } = {
   ),
   //
   '/all-report': ReportDashboard,
-  // "/place-holder-page": PlaceholderPage,
+  '/vendor-trial': VendorTrial,
+  '/report/customer-trial': CustomerTrial,
+  '/report/customer-trial/ledger': CustomerLedger,
+  '/trial-balance': TrialBalance,
+
+  //
+  //
+  //
+  //
+  //
+  '/place-holder-page': PlaceholderPage,
 
   // SPREAD ROUTES HERE:
   ...ReportPageRoutes,
@@ -399,10 +431,13 @@ const LayoutContent: React.FC = () => {
           <main className="hidden-scrollbar flex-grow overflow-y-auto px-5">
             <div className="mx-auto w-full max-w-[1600px] pb-10 pt-0">
               {openTabs.map((tab) => {
-                const TabComponent = ComponentMap[tab.path] || ComponentMap['/fallback'];
+                const lookupKey = tab.componentKey || tab.path;
+                const TabComponent = ComponentMap[lookupKey] || ComponentMap['/fallback'];
+
                 return (
                   <div key={tab.path} className={tab.path === activeTabPath ? 'block' : 'hidden'}>
-                    <TabComponent />
+                    {/* 2. Pass the data from the tab object as props */}
+                    <TabComponent tabData={tab.data} />
                   </div>
                 );
               })}

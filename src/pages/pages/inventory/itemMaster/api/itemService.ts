@@ -27,9 +27,8 @@ export const getItemByCodeAndBarcode = async (
   const response = await api.get(`${ENDPOINT}/get_by_code/${code}`);
 
   console.log("Item Code:", code);
-  console.log("Response:", response.data); // best way
+  console.log("Response:", response.data);
 
-  // OR if you want formatted JSON
   console.log("Response JSON:", JSON.stringify(response.data, null, 2));
 
   return response.data;

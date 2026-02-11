@@ -83,6 +83,7 @@ export interface ItemApiData {
   taxCode: string;
   hsn_description: string;
   last_purchase_rate: string;
+  group: string;
   stock_unit: { _id: string; code: string; name: string } | null;
   brand: { _id: string; name: string; code: string } | null;
   category: { _id: string; name: string; code: string } | null;

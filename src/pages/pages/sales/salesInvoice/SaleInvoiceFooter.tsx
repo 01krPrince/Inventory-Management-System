@@ -64,7 +64,7 @@ const glColumns: ColumnDef<any>[] = [
 ];
 
 const SaleInvoiceFooter = forwardRef<SaleInvoiceFooterRef, InvoiceFooterProps>(
-  ({  currentItems, onExpenseChange }, ref) => {
+  ({ currentItems, onExpenseChange }, ref) => {
     const remarksRef = useRef<HTMLTextAreaElement>(null);
 
     const itemValueRef = useRef<HTMLInputElement>(null);
@@ -133,11 +133,11 @@ const SaleInvoiceFooter = forwardRef<SaleInvoiceFooterRef, InvoiceFooterProps>(
       }
 
       if (onExpenseChange) {
-       // Sum up what you consider "Extra Expense" for Net Rate calculation
-       // Usually: Transport + Adjustment (Discount usually reduces rate, but depends on your logic)
-       const totalExpense = transport + adjustment; // Add/Remove fields as per your logic
-       onExpenseChange(totalExpense);
-    }
+        // Sum up what you consider "Extra Expense" for Net Rate calculation
+        // Usually: Transport + Adjustment (Discount usually reduces rate, but depends on your logic)
+        const totalExpense = transport + adjustment; // Add/Remove fields as per your logic
+        onExpenseChange(totalExpense);
+      }
 
       setTotalDocAmount(finalTotal);
 
@@ -270,24 +270,24 @@ const SaleInvoiceFooter = forwardRef<SaleInvoiceFooterRef, InvoiceFooterProps>(
         resetRef(docAmountRef);
       },
       validatePayment: () => {
-    // We use a small tolerance (0.01) to avoid issues with tiny decimal differences
-    if (remainingBalance > 0.01) {
-      return { 
-        isValid: false, 
-        message: `Outstanding Balance of ₹${remainingBalance.toFixed(2)} remains. Please add the payment.` 
-      };
-    }
-    
-    // Optional: Check if the user typed an amount but forgot to click "ADD"
-    if (paymentAmount > 0 && payments.length === 0) {
-       return {
-         isValid: false,
-         message: `You entered ₹${paymentAmount} but didn't click the 'ADD +' button.`
-       };
-    }
+        // We use a small tolerance (0.01) to avoid issues with tiny decimal differences
+        if (remainingBalance > 0.01) {
+          return {
+            isValid: false,
+            message: `Outstanding Balance of ₹${remainingBalance.toFixed(2)} remains. Please add the payment.`,
+          };
+        }
 
-    return { isValid: true, message: '' };
-  }
+        // Optional: Check if the user typed an amount but forgot to click "ADD"
+        if (paymentAmount > 0 && payments.length === 0) {
+          return {
+            isValid: false,
+            message: `You entered ₹${paymentAmount} but didn't click the 'ADD +' button.`,
+          };
+        }
+
+        return { isValid: true, message: '' };
+      },
     }));
 
     const handleOpenCOA = () => {

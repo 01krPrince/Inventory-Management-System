@@ -579,9 +579,9 @@ export const navItems = [
         path: '/trial-balance',
         pro: false,
       },
-      { name: 'Customer Trial', path: '/customer-trial', pro: false },
+      { name: 'Customer Trial', path: '/report/customer-trial', pro: false },
       { name: 'Vendor Trial', path: '/vendor-trial', pro: false },
-      { name: 'Stock Trial', path: '/stock-trial', pro: false },
+      { name: 'Stock Trial', path: '/report/stock-trial', pro: false },
     ],
   },
 ];

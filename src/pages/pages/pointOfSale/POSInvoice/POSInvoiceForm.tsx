@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { DocumentIcon, ChevronDownIcon, ChevronUpIcon } from '../../../../components/icons';
 import {
-  Search,
   EditIcon,
   FileText,
   Minimize2,
   ExternalLink,
   ChevronUp,
   ChevronDown,
+  PlusCircle,
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
-import CustomerService from '../../../../services/posCustomerService';
+import PosCustomerService from '../../../../services/pos/posCustomer';
 import { fetchAllLocations } from '../../inventory/stockAdjustment/api/LocationMaster';
 import PriceCategoryService from '../../../../services/price-category.service';
 import Dropdown, { ColumnDef } from '../../../../components/Dropdown';
@@ -19,7 +19,9 @@ import CounterMaster from '../../../../components/CounterMaster';
 import SalesExecutiveMaster from '../../../../components/SalesExecutiveMaster';
 import TenderTypeMaster from '../../../../components/TenderTypeMaster';
 import State from '../../../../components/State';
+import POSCustomerMaster from '../../../../components/POSCustomerMaster';
 
+// --- Types ---
 interface DropdownItem {
   name: string;
   code?: string;
@@ -43,29 +45,15 @@ interface MockData {
   states: DropdownItem[];
 }
 
-const codeNameColumns: ColumnDef<DropdownItem>[] = [
-  { header: 'Code', key: 'code', width: 'w-20' },
-  { header: 'Name', key: 'name', width: 'w-full' },
-];
+interface InputProps {
+  value?: string;
+  placeholder?: string;
+  readOnly?: boolean;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  className?: string;
+}
 
-const simpleColumns: ColumnDef<SimpleOption>[] = [
-  { header: 'Code', key: 'code', width: 'w-20' },
-  { header: 'Name', key: 'name', width: 'flex-1' },
-];
-
-const mockData: MockData = {
-  salesmen: [
-    { name: 'Alice', code: 'SM01' },
-    { name: 'Bob', code: 'SM02' },
-    { name: 'Charlie', code: 'SM03' },
-  ],
-  states: [
-    { name: 'Delhi', code: 'DL' },
-    { name: 'Haryana', code: 'HR' },
-    { name: 'Uttar Pradesh', code: 'UP' },
-    { name: 'Maharashtra', code: 'MH' },
-  ],
-};
+// --- Helper Components (Moved Outside to fix Focus Loss) ---
 
 const Label: React.FC<{ children: React.ReactNode; required?: boolean }> = ({
   children,
@@ -79,14 +67,6 @@ const Label: React.FC<{ children: React.ReactNode; required?: boolean }> = ({
 const InputGroup: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div className="relative flex w-full items-center gap-1">{children}</div>
 );
-
-interface InputProps {
-  value?: string;
-  placeholder?: string;
-  readOnly?: boolean;
-  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  className?: string;
-}
 
 const Input: React.FC<InputProps> = ({ value, placeholder, readOnly, onChange, className }) => (
   <input
@@ -137,6 +117,34 @@ const AccordionSection: React.FC<{
   );
 };
 
+// --- Static / Shared Logic ---
+
+const codeNameColumns: ColumnDef<DropdownItem>[] = [
+  { header: 'Code', key: 'code', width: 'w-20' },
+  { header: 'Name', key: 'name', width: 'w-full' },
+];
+
+const simpleColumns: ColumnDef<SimpleOption>[] = [
+  { header: 'Code', key: 'code', width: 'w-20' },
+  { header: 'Name', key: 'name', width: 'flex-1' },
+];
+
+const mockData: MockData = {
+  salesmen: [
+    { name: 'Alice', code: 'SM01' },
+    { name: 'Bob', code: 'SM02' },
+    { name: 'Charlie', code: 'SM03' },
+  ],
+  states: [
+    { name: 'Delhi', code: 'DL' },
+    { name: 'Haryana', code: 'HR' },
+    { name: 'Uttar Pradesh', code: 'UP' },
+    { name: 'Maharashtra', code: 'MH' },
+  ],
+};
+
+// --- Customer Selector Component ---
+
 interface CustomerSelectorProps {
   customers: any[];
   selected: any | null;
@@ -154,15 +162,18 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
 }) => {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
   const portalRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [position, setPosition] = useState<{ top: number; left: number; width: number } | null>(
     null
   );
+  const [isPOSCustoemerOpen, setIsPOSCustoemerOpen] = useState<boolean>(false);
 
-  // Click outside handler
+  const getDisplayName = (item: any) => {
+    return item?.print_name || item?.cust_name || item?.name || '';
+  };
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -172,8 +183,6 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
         !portalRef.current.contains(e.target as Node)
       ) {
         setOpen(false);
-        // Optional: clear search when closing
-        // setSearchTerm('');
       }
     };
     if (open) {
@@ -182,36 +191,25 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
     }
   }, [open]);
 
-  // Focus search input when opened
   useEffect(() => {
     if (open && searchInputRef.current) {
       searchInputRef.current.focus();
     }
   }, [open]);
 
-  // Calculate position
   useEffect(() => {
     const recalculatePosition = () => {
       if (open && triggerRef.current) {
         const rect = triggerRef.current.getBoundingClientRect();
         const gap = 4;
-        const estimatedHeight = 400; // approx max height of dropdown
+        const estimatedHeight = 320;
         const spaceBelow = window.innerHeight - rect.bottom;
+        let top =
+          spaceBelow < estimatedHeight && rect.top > estimatedHeight
+            ? rect.top + window.pageYOffset - estimatedHeight - gap
+            : rect.bottom + window.pageYOffset + gap;
 
-        let top;
-        if (spaceBelow < estimatedHeight && rect.top > estimatedHeight) {
-          top = rect.top + window.pageYOffset - estimatedHeight - gap;
-        } else {
-          top = rect.bottom + window.pageYOffset + gap;
-        }
-
-        setPosition({
-          top,
-          left: rect.left + window.pageXOffset,
-          width: rect.width,
-        });
-      } else {
-        setPosition(null);
+        setPosition({ top, left: rect.left + window.pageXOffset, width: rect.width });
       }
     };
 
@@ -226,67 +224,44 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
     }
   }, [open]);
 
-  const lowerTerm = searchTerm.toLowerCase().trim();
-
-  const getMatchScore = (item: any, term: string): number => {
-    if (!term) return 0;
-    const nameLower = (item.print_name || '').toLowerCase();
-    const phoneStr = item.phone || '';
-    let score = 0;
-    if (nameLower === term) score += 100;
-    if (nameLower.startsWith(term)) score += 50;
-    if (nameLower.includes(term)) score += 10;
-    if (phoneStr === searchTerm) score += 95;
-    if (phoneStr.startsWith(searchTerm)) score += 45;
-    if (phoneStr.includes(searchTerm)) score += 5;
-    return score;
-  };
-
   const filteredCustomers = useMemo(() => {
+    const term = searchTerm.toLowerCase().trim();
     let list = customers;
-    if (lowerTerm || searchTerm) {
+    if (term) {
       list = customers.filter((item) => {
-        const nameMatch = (item.print_name || '').toLowerCase().includes(lowerTerm);
-        const phoneMatch = (item.phone || '').includes(searchTerm);
+        const nameMatch = getDisplayName(item).toLowerCase().includes(term);
+        const phoneMatch = (item.phone || '').includes(term);
         return nameMatch || phoneMatch;
       });
     }
-    return [...list].sort((a, b) => {
-      const scoreA = getMatchScore(a, lowerTerm);
-      const scoreB = getMatchScore(b, lowerTerm);
-      if (scoreA !== scoreB) return scoreB - scoreA;
-      return (a.print_name || '').localeCompare(b.print_name || '');
-    });
-  }, [customers, lowerTerm, searchTerm]);
-
-  const displayInput = (
-    <input
-      type="text"
-      readOnly
-      value={selected?.print_name || ''}
-      placeholder={placeholder}
-      onClick={() => setOpen(true)}
-      className="h-[30px] w-full cursor-pointer rounded-sm border border-gray-300 bg-white px-2 text-[13px] text-gray-700 focus:border-[var(--theme-focus)] focus:outline-none focus:ring-1 focus:ring-[var(--theme-focus)]"
-    />
-  );
+    return [...list].sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b)));
+  }, [customers, searchTerm]);
 
   return (
-    <div ref={containerRef} className="w-full">
+    <div className="w-full">
       <div ref={triggerRef} className="relative w-full">
-        {withSearchButton ? (
-          <div className="flex w-full items-center">
-            {displayInput}
-            <ActionBtn icon={<Search size={16} />} onClick={() => setOpen(true)} />
-          </div>
-        ) : (
-          <>
-            {displayInput}
+        <div className="flex w-full items-center">
+          <input
+            type="text"
+            readOnly
+            value={getDisplayName(selected)}
+            placeholder={placeholder}
+            onClick={() => setOpen(true)}
+            className="h-[30px] w-full cursor-pointer rounded-sm border border-gray-300 bg-white px-2 text-[13px] text-gray-700 focus:border-[var(--theme-focus)] focus:outline-none focus:ring-1 focus:ring-[var(--theme-focus)]"
+          />
+          {withSearchButton && (
+            <ActionBtn
+              icon={<PlusCircle size={14} />}
+              onClick={() => setIsPOSCustoemerOpen(true)}
+            />
+          )}
+          {!withSearchButton && (
             <ChevronDown
               size={16}
               className={`pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
             />
-          </>
-        )}
+          )}
+        </div>
       </div>
 
       {open &&
@@ -294,34 +269,30 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
         createPortal(
           <div
             ref={portalRef}
-            className="fixed z-[10000] max-h-96 w-auto overflow-y-auto rounded-md border border-gray-300 bg-white shadow-xl"
-            style={{
-              top: position.top,
-              left: position.left,
-              width: position.width,
-            }}>
-            <div className="sticky top-0 border-b border-gray-200 bg-white">
+            className="fixed z-[10000] max-h-[320px] overflow-hidden rounded-md border border-gray-200 bg-white shadow-2xl"
+            style={{ top: position.top, left: position.left, width: position.width }}>
+            <div className="sticky top-0 border-b border-gray-100 bg-gray-50 px-1 py-1">
               <input
                 ref={searchInputRef}
                 type="text"
                 placeholder="Search by name or phone..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="h-[30px] w-full px-3 text-[13px] outline-none"
+                className="h-[28px] w-full rounded border border-gray-300 px-2 text-[12px] focus:border-[var(--theme-focus)] focus:ring-1"
               />
             </div>
-            <div className="max-h-[352px] overflow-y-auto">
+            <div className="max-h-[260px] w-full overflow-y-auto text-[12px]">
               {selected && (
-                <div
+                <button
+                  type="button"
                   onClick={() => {
                     onSelect(null);
                     setOpen(false);
                     setSearchTerm('');
                   }}
-                  className="flex cursor-pointer items-center px-3 py-2 text-[13px] text-red-600 hover:bg-red-50">
-                  <div className="w-32 shrink-0"></div>
-                  <div className="flex-1 italic">-- Clear selection --</div>
-                </div>
+                  className="flex w-full items-center gap-2 px-2 py-1 text-[12px] text-red-500 hover:bg-red-50">
+                  <span className="flex-1 text-left italic">-- Clear selection --</span>
+                </button>
               )}
               {filteredCustomers.length === 0 ? (
                 <div className="px-3 py-2 text-sm text-gray-500">No customers found</div>
@@ -334,9 +305,12 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
                       setOpen(false);
                       setSearchTerm('');
                     }}
-                    className="flex cursor-pointer items-center px-3 py-1.5 text-[13px] hover:bg-gray-100">
-                    <div className="w-28 shrink-0 text-gray-600">{item.phone || '-'}</div>
-                    <div className="flex-1 truncate">{item.print_name}</div>
+                    className="flex cursor-pointer items-center gap-2 px-2 py-1 text-[12px] transition-colors hover:bg-blue-50 hover:text-[var(--theme-primary)]">
+                    <div className="w-20 shrink-0 truncate font-medium">{item.code}</div>
+                    <div className="flex-1 truncate">{getDisplayName(item)}</div>
+                    <div className="w-24 shrink-0 text-right text-gray-500">
+                      {item.phone || '-'}
+                    </div>
                   </div>
                 ))
               )}
@@ -344,9 +318,17 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
           </div>,
           document.body
         )}
+
+      {isPOSCustoemerOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <POSCustomerMaster onClose={() => setIsPOSCustoemerOpen(false)} index={20} />
+        </div>
+      )}
     </div>
   );
 };
+
+// --- Main Form Component ---
 
 const POSInvoiceForm: React.FC<POSInvoiceFormProps> = ({
   data,
@@ -355,9 +337,8 @@ const POSInvoiceForm: React.FC<POSInvoiceFormProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(true);
   const [isExpanded, setIsExpanded] = useState(false);
-
   const [isBillToOpen, setBillToOpen] = useState<boolean>(true);
-  const [isShipToOpen, setShipToOpen] = useState<boolean>(false);
+  // const [isShipToOpen, setShipToOpen] = useState<boolean>(false);
   const [isCustomerOpen, setIsCustomerOpen] = useState<boolean>(true);
   const [isDetailsOpen, setIsDetailsOpen] = useState<boolean>(true);
 
@@ -367,9 +348,8 @@ const POSInvoiceForm: React.FC<POSInvoiceFormProps> = ({
   const [isTenderTypeOpen, setIsTenderTypeOpen] = useState(false);
 
   const [storeOptions, setStoreOptions] = useState<SimpleOption[]>([]);
-  const [priceCategoryOptions, setPriceCategoryOptions] = useState<SimpleOption[]>([]);
+  const [, setPriceCategoryOptions] = useState<SimpleOption[]>([]);
   const [posCustomerOptions, setPosCustomerOptions] = useState<any[]>([]);
-
   const [selectedCustomerUI, setSelectedCustomerUI] = useState<any>(null);
 
   const nestedModalZIndex = 30;
@@ -384,84 +364,69 @@ const POSInvoiceForm: React.FC<POSInvoiceFormProps> = ({
     const loadInitialData = async () => {
       try {
         const storeData = await fetchAllLocations();
-        const mappedStores = storeData.map((loc: any) => ({
-          name: loc.name,
-          code: loc.code,
-          id: loc._id,
-        }));
-        setStoreOptions(mappedStores);
+        setStoreOptions(
+          storeData.map((loc: any) => ({ name: loc.name, code: loc.code, id: loc._id }))
+        );
 
         const priceCategoryRes = await PriceCategoryService.getAllPriceCategories();
-        const mappedPriceCategories = priceCategoryRes.data.map((cat) => ({
-          name: cat.name,
-          code: cat.code,
-          id: cat._id,
-        }));
-        setPriceCategoryOptions(mappedPriceCategories);
+        setPriceCategoryOptions(
+          priceCategoryRes.data.map((cat) => ({ name: cat.name, code: cat.code, id: cat._id }))
+        );
 
-        const posCustomerRes = await CustomerService.getAllCustomers();
-        const mappedPosCustomers = posCustomerRes.data.map((cust) => ({
-          id: cust._id,
-          print_name: cust.print_name || cust.cust_name,
-          name: cust.cust_name,
-          code: cust.code,
-          phone: cust.phone,
-          address: cust.address,
-          city: cust.city,
-          state: cust.state,
-          pin: cust.pin,
-          gst_category: cust.gst_category,
-          // gst_no: cust.gst_no,
-        }));
-        setPosCustomerOptions(mappedPosCustomers);
+        const posCustomerRes = await PosCustomerService.getAllCustomers();
+        setPosCustomerOptions(
+          posCustomerRes.data.map((cust) => ({
+            id: cust._id,
+            print_name: cust.print_name,
+            cust_name: cust.cust_name,
+            name: cust.name,
+            code: cust.code,
+            phone: cust.phone,
+            address: cust.address,
+            city: cust.city,
+            state: cust.state,
+            pin: cust.pin,
+            gst_category: cust.gst_category,
+          }))
+        );
       } catch (error) {
         console.error('Error loading initial form data:', error);
       }
     };
-
     loadInitialData();
-  }, []);
+  }, [isCustomerOpen]);
 
   useEffect(() => {
     if (!data.customerName) {
       setSelectedCustomerUI(null);
     } else {
       const matchingCustomer = posCustomerOptions.find(
-        (cust) => cust.print_name === data.customerName || cust.code === data.customerCode
+        (cust) =>
+          (cust.print_name || cust.cust_name || cust.name) === data.customerName ||
+          cust.code === data.customerCode
       );
-
-      if (matchingCustomer) {
-        setSelectedCustomerUI(matchingCustomer);
-      } else {
-        setSelectedCustomerUI(null);
-      }
+      setSelectedCustomerUI(matchingCustomer || null);
     }
   }, [data.customerName, data.customerCode, posCustomerOptions]);
 
   const handleCustomerChange = (item: any | null) => {
     if (!item) {
-      onChange('customerName', '');
-      onChange('customerCode', '');
-      onChange('customerPhone', '');
-      onChange('gstNo', '');
-      onChange('billingAddress', '');
+      ['customerName', 'customerCode', 'customerPhone', 'gstNo', 'billingAddress'].forEach((k) =>
+        onChange(k, '')
+      );
       setSelectedCustomerUI(null);
       return;
     }
-
-    onChange('customerName', item.print_name);
+    const name = item.print_name || item.cust_name || item.name || '';
+    onChange('customerName', name);
     onChange('customerCode', item.code);
     onChange('customerPhone', item.phone);
     onChange('gstNo', item.gst_category === 'Unregistered' ? '' : item.gst_no || '');
-
-    const fullAddress = [item.address, item.city, item.state, item.pin].filter(Boolean).join(', ');
-    onChange('billingAddress', fullAddress);
-
+    onChange(
+      'billingAddress',
+      [item.address, item.city, item.state, item.pin].filter(Boolean).join(', ')
+    );
     setSelectedCustomerUI(item);
-  };
-
-  const handleStoreChange = (item: SimpleOption | null) => {
-    onChange('store', item?.name || '');
   };
 
   return (
@@ -483,12 +448,11 @@ const POSInvoiceForm: React.FC<POSInvoiceFormProps> = ({
             <FileText className="text-[var(--theme-primary)]" size={16} />
             <h3 className="text-sm font-semibold text-[var(--theme-primary)]">POS Order</h3>
           </div>
-
           <div className="flex items-center gap-4">
             {isOpen && (
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="flex items-center gap-1 text-xs font-medium text-gray-700 transition-colors hover:text-gray-800">
+                className="flex items-center gap-1 text-xs font-medium text-gray-700 hover:text-gray-800">
                 {isExpanded ? (
                   <>
                     <Minimize2 size={12} /> Collapse
@@ -500,7 +464,6 @@ const POSInvoiceForm: React.FC<POSInvoiceFormProps> = ({
                 )}
               </button>
             )}
-
             <div className="cursor-pointer text-gray-500" onClick={() => setIsOpen(!isOpen)}>
               {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </div>
@@ -510,12 +473,12 @@ const POSInvoiceForm: React.FC<POSInvoiceFormProps> = ({
         {isOpen && (
           <div className={isExpanded ? 'p-5' : 'p-2'}>
             {!isExpanded && (
-              <div className="animate-in fade-in grid grid-cols-1 gap-3 rounded-md border border-gray-100 bg-gray-50 p-2 duration-300 md:grid-cols-3">
+              <div className="animate-in fade-in grid grid-cols-1 gap-3 rounded-md border border-gray-100 bg-gray-50 p-2 md:grid-cols-3">
                 <div className="grid grid-cols-12 gap-2">
-                  <div className="col-span-4">
+                  <div className="col-span-3">
                     <Label required>Customer</Label>
                   </div>
-                  <div className="col-span-8">
+                  <div className="col-span-9">
                     <CustomerSelector
                       customers={posCustomerOptions}
                       selected={selectedCustomerUI}
@@ -525,7 +488,6 @@ const POSInvoiceForm: React.FC<POSInvoiceFormProps> = ({
                     />
                   </div>
                 </div>
-
                 <div className="flex items-center gap-2">
                   <div className="w-[80px] shrink-0">
                     <Label>Voucher No</Label>
@@ -539,7 +501,6 @@ const POSInvoiceForm: React.FC<POSInvoiceFormProps> = ({
                     />
                   </div>
                 </div>
-
                 <div className="flex items-center gap-2">
                   <div className="w-[40px] shrink-0">
                     <Label>Date</Label>
@@ -555,7 +516,7 @@ const POSInvoiceForm: React.FC<POSInvoiceFormProps> = ({
             )}
 
             {isExpanded && (
-              <div className="animate-in fade-in slide-in-from-top-2 grid grid-cols-12 gap-8 duration-300">
+              <div className="animate-in fade-in slide-in-from-top-2 grid grid-cols-12 gap-8">
                 <div className="col-span-4 space-y-1">
                   <div className="grid grid-cols-12 gap-2">
                     <div className="col-span-4">
@@ -568,8 +529,8 @@ const POSInvoiceForm: React.FC<POSInvoiceFormProps> = ({
                           columns={simpleColumns}
                           value={data.store}
                           valueKey="name"
-                          onChange={handleStoreChange}
-                          placeholder="Select Store/Counter..."
+                          onChange={(item) => onChange('store', item?.name || '')}
+                          placeholder="Select Store..."
                         />
                         <ActionBtn
                           icon={<EditIcon size={14} />}
@@ -578,7 +539,6 @@ const POSInvoiceForm: React.FC<POSInvoiceFormProps> = ({
                       </InputGroup>
                     </div>
                   </div>
-
                   <div className="grid grid-cols-12 gap-2">
                     <div className="col-span-4">
                       <Label>Salesman</Label>
@@ -600,25 +560,6 @@ const POSInvoiceForm: React.FC<POSInvoiceFormProps> = ({
                       </InputGroup>
                     </div>
                   </div>
-
-                  <div className="grid grid-cols-12 gap-2">
-                    <div className="col-span-4">
-                      <Label>Price Category</Label>
-                    </div>
-                    <div className="col-span-8">
-                      <InputGroup>
-                        <Dropdown
-                          data={priceCategoryOptions}
-                          columns={codeNameColumns}
-                          value={data.priceCategory}
-                          valueKey="name"
-                          onChange={(item) => onChange('priceCategory', item?.name || '')}
-                          placeholder="Select Price Category..."
-                        />
-                      </InputGroup>
-                    </div>
-                  </div>
-
                   <div className="grid grid-cols-12 gap-2">
                     <div className="col-span-4">
                       <Label>Ref No</Label>
@@ -627,42 +568,6 @@ const POSInvoiceForm: React.FC<POSInvoiceFormProps> = ({
                       <Input
                         value={data.refNo}
                         onChange={(e) => onChange('refNo', e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-12 gap-2">
-                    <div className="col-span-4">
-                      <Label>GST No (If B2B)</Label>
-                    </div>
-                    <div className="col-span-8">
-                      <Input
-                        value={data.gstNo}
-                        onChange={(e) => onChange('gstNo', e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-12 gap-2">
-                    <div className="col-span-4">
-                      <Label>Delivery Type</Label>
-                    </div>
-                    <div className="col-span-8">
-                      <Input
-                        value={data.deliveryType}
-                        onChange={(e) => onChange('deliveryType', e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-12 gap-2">
-                    <div className="col-span-4">
-                      <Label>Ref.Date</Label>
-                    </div>
-                    <div className="col-span-8">
-                      <DateInput
-                        value={data.refDate}
-                        onChange={(e) => onChange('refDate', e.target.value)}
                       />
                     </div>
                   </div>
@@ -676,30 +581,6 @@ const POSInvoiceForm: React.FC<POSInvoiceFormProps> = ({
                     <div className="space-y-1">
                       <div className="grid grid-cols-12 gap-2">
                         <div className="col-span-4">
-                          <Label>Voucher No</Label>
-                        </div>
-                        <div className="col-span-8">
-                          <Input
-                            readOnly
-                            value={data.voucherNo}
-                            placeholder="N/A"
-                            onChange={(e) => onChange('voucherNo', e.target.value)}
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-12 gap-2">
-                        <div className="col-span-4">
-                          <Label>Date</Label>
-                        </div>
-                        <div className="col-span-8">
-                          <DateInput
-                            value={data.billDate}
-                            onChange={(e) => onChange('billDate', e.target.value)}
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-12 gap-2">
-                        <div className="col-span-4">
                           <Label required>Customer</Label>
                         </div>
                         <div className="col-span-8">
@@ -708,7 +589,7 @@ const POSInvoiceForm: React.FC<POSInvoiceFormProps> = ({
                             selected={selectedCustomerUI}
                             onSelect={handleCustomerChange}
                             placeholder="Select Customer..."
-                            withSearchButton={false}
+                            withSearchButton={true}
                           />
                         </div>
                       </div>
@@ -724,15 +605,18 @@ const POSInvoiceForm: React.FC<POSInvoiceFormProps> = ({
                     <div className="grid grid-cols-1 gap-x-10 gap-y-3 text-sm text-gray-700 md:grid-cols-2">
                       <div className="flex gap-2">
                         <span className="font-medium">Name:</span>
-                        <span className="truncate" title={selectedCustomerUI?.print_name || 'N/A'}>
-                          {selectedCustomerUI?.print_name || data.customerName || 'N/A'}
+                        <span className="truncate">
+                          {selectedCustomerUI?.print_name ||
+                            selectedCustomerUI?.cust_name ||
+                            selectedCustomerUI?.name ||
+                            data.customerName ||
+                            'N/A'}
                         </span>
                       </div>
                       <div className="flex gap-2">
                         <span className="font-medium">Phone:</span>
                         <span>{selectedCustomerUI?.phone || data.customerPhone || 'N/A'}</span>
                       </div>
-
                       <div className="col-span-2 flex gap-2">
                         <span className="font-medium">Address:</span>
                         <span className="truncate">
@@ -741,7 +625,6 @@ const POSInvoiceForm: React.FC<POSInvoiceFormProps> = ({
                       </div>
                     </div>
                   </AccordionSection>
-
                   <AccordionSection
                     title="Bill To"
                     isOpen={isBillToOpen}
@@ -750,28 +633,8 @@ const POSInvoiceForm: React.FC<POSInvoiceFormProps> = ({
                       placeholder="Billing Address..."
                       value={data.billingAddress || ''}
                       onChange={(e) => onChange('billingAddress', e.target.value)}
-                      className="h-24 w-full resize-none rounded border border-gray-300 p-2 text-[13px] outline-none focus:border-[var(--theme-focus)] focus:ring-1"
+                      className="h-24 w-full resize-none rounded border border-gray-300 p-2 text-[13px] outline-none focus:ring-1"
                     />
-                  </AccordionSection>
-
-                  <AccordionSection
-                    title="Ship To"
-                    isOpen={isShipToOpen}
-                    onToggle={() => setShipToOpen(!isShipToOpen)}>
-                    <div className="relative mb-2">
-                      <textarea
-                        placeholder="Shipping Address..."
-                        value={data.shippingAddress?.fullAddress || ''}
-                        onChange={(e) => {
-                          const updatedShip = {
-                            ...data.shippingAddress,
-                            fullAddress: e.target.value,
-                          };
-                          onChange('shippingAddress', updatedShip);
-                        }}
-                        className="h-24 w-full resize-none rounded border border-gray-300 p-2 text-[13px] outline-none focus:border-[var(--theme-focus)] focus:ring-1"
-                      />
-                    </div>
                   </AccordionSection>
                 </div>
               </div>

@@ -280,13 +280,11 @@ const PurchaseBill: React.FC = () => {
     if (data.storeCode !== undefined) setCurrentStoreCode(data.storeCode);
   };
 
-  // Footer Expense Change Handler
   const handleFooterExpenseChange = (val: number) => {
     console.log('Footer Expense Changed to:', val);
     setFooterExpenseTotal(val);
   };
 
-  // 2. Helper to calculate total from Logistics Data
   const calculateLogisticsTotal = (data: LogisticsData) => {
     return (
       Number(data.freight || 0) +
@@ -302,12 +300,10 @@ const PurchaseBill: React.FC = () => {
     );
   };
 
-  // onClick={() => toast("Hello World")}
   const handleAnalyzeProfit = async (tableRows: any[]) => {
     if (!tableRows || tableRows.length === 0) {
-      // alert('Please add items to the table first.');
       toast.error('Please add items to the table first.', {
-        duration: 4000,
+        duration: 3000,
         position: 'top-center',
       });
 
@@ -319,7 +315,7 @@ const PurchaseBill: React.FC = () => {
 
     if (!storeId) {
       toast.error('Please select a Store in the form.', {
-        duration: 4000,
+        duration: 3000,
         position: 'top-center',
       });
       return;
@@ -354,7 +350,7 @@ const PurchaseBill: React.FC = () => {
     } catch (error: any) {
       console.error('Analysis Error:', error);
       toast.error(error.message || 'Failed to fetch profit analysis.', {
-        duration: 4000,
+        duration: 3000,
         position: 'top-center',
       });
     }
@@ -365,7 +361,7 @@ const PurchaseBill: React.FC = () => {
 
     if (!data) {
       toast.error('No bill data available to download.', {
-        duration: 4000,
+        duration: 3000,
         position: 'top-center',
       });
       return;
@@ -403,7 +399,6 @@ const PurchaseBill: React.FC = () => {
         return;
       }
 
-      // --- B. CALCULATE TOTAL ITEM VALUE ---
       const rawRows = tableSource?.visibleRows || [];
       let totalItemValue = 0;
       rawRows.forEach((row: any) => {
@@ -414,7 +409,6 @@ const PurchaseBill: React.FC = () => {
       if (footerRef.current) {
         const validation = footerRef.current.validatePayment();
 
-        // This says: "If NOT valid, stop and alert."
         if (!validation.isValid) {
           toast.error(validation.message, {
             duration: 4000,
@@ -423,14 +417,12 @@ const PurchaseBill: React.FC = () => {
           return;
         }
       }
-      // --- C. CALCULATE RATIO ---
+
       const expenseRatio = totalItemValue > 0 ? grandTotalExpense / totalItemValue : 0;
 
-      // --- D. MAP ITEMS ---
       const apiItems = rawRows.map((row: any) => {
         const item = row.data || row;
 
-        // 1. Get Base Rate
         const rate = Number(item.rate || 0);
         const qty = Number(item.qty || 0);
 
@@ -438,14 +430,12 @@ const PurchaseBill: React.FC = () => {
 
         const expenseShare = taxableAmount * expenseRatio;
 
-        // 2. Calculate Net Rate (FIX IS HERE)
         const calculatedNetRate = qty > 0 ? (taxableAmount + expenseShare) / qty : rate;
         return {
           itemCode: item.select || item.itemCode || '',
           quantity: Number(item.qty || 0),
           rate: rate,
-
-          // 3. Send Calculated Net Rate
+          group: row.data.group || 'Default',
           netRate: Number(calculatedNetRate.toFixed(2)),
 
           hsn_code: item.hsn || '',
@@ -562,7 +552,7 @@ const PurchaseBill: React.FC = () => {
 
       if (finalBillData) {
         toast.success('✅ Invoice Saved Successfully!', {
-          duration: 4000,
+          duration: 3000,
           position: 'top-center',
         });
         setGeneratedBillData(finalBillData);
@@ -588,7 +578,7 @@ const PurchaseBill: React.FC = () => {
     } catch (error) {
       console.error('❌ API ERROR:', error);
       toast.error('Failed to save. Check console for details.', {
-        duration: 4000,
+        duration: 3000,
         position: 'top-center',
       });
     } finally {
@@ -635,17 +625,6 @@ const PurchaseBill: React.FC = () => {
         style={{ borderColor: COLORS.borderDark }}>
         <div className="flex items-center gap-4">
           <div className="share-dropdown-container relative">
-            {/* <button
-              onClick={() => setIsShareOpen(!isShareOpen)}
-              className="flex items-center gap-2 rounded border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50">
-              <Share2 size={18} />
-              Share
-              <ChevronUp
-                size={16}
-                className={`transition-transform duration-200 ${isShareOpen ? 'rotate-180' : ''}`}
-              />
-            </button> */}
-
             {isShareOpen && (
               <div className="animate-in fade-in slide-in-from-bottom-2 absolute bottom-full right-0 z-[100] mb-2 w-56 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl">
                 <button
@@ -655,21 +634,6 @@ const PurchaseBill: React.FC = () => {
                   Download PDF
                 </button>
                 <div className="h-[1px] bg-gray-100"></div>
-
-                {/* <button
-                  onClick={() => handleShare('whatsapp')}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-gray-700 transition-colors hover:bg-green-50 hover:text-green-700">
-                  <MessageCircle size={18} />
-                  Share on WhatsApp
-                </button>
-                <div className="h-[1px] bg-gray-100"></div>
-
-                <button
-                  onClick={() => handleShare('email')}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-gray-700 transition-colors hover:bg-blue-50 hover:text-blue-700">
-                  <Mail size={18} />
-                  Share on Email
-                </button> */}
               </div>
             )}
           </div>
@@ -697,13 +661,6 @@ const PurchaseBill: React.FC = () => {
             <div className="flex items-center justify-between border-b bg-gray-100 px-4 py-3">
               <h3 className="font-bold text-gray-700">Purchase Bill Generated</h3>
               <div className="flex items-center gap-2">
-                {/* <button
-                  onClick={() => handleDownloadPdf(generatedBillData)}
-                  className="rounded-full bg-blue-500 p-1.5 text-white transition-colors hover:bg-blue-600"
-                  title="Download PDF">
-                  <Download size={18} />
-                </button> */}
-
                 <button
                   onClick={() => setShowBillPreview(false)}
                   className="rounded-full bg-red-500 p-1.5 text-white transition-colors hover:bg-red-600">
@@ -712,14 +669,7 @@ const PurchaseBill: React.FC = () => {
               </div>
             </div>
             <div className="custom-scrollbar flex-1 overflow-auto bg-gray-50 p-6">
-              <PurchaseBillInvoice
-                data={generatedBillData}
-                // data={sampleInvoiceResponse.data}
-                // onDownload={() => handleDownloadPdf(generatedBillData)}
-                // onShareWhatsApp={() => handleShare('whatsapp')}
-                // onShareEmail={() => handleShare('email')}
-              />
-              {/* <PurchaseBillInvoice data={sampleInvoiceResponse.data} /> */}
+              <PurchaseBillInvoice data={generatedBillData} />
             </div>
           </div>
         </div>

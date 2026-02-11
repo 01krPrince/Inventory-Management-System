@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { COLORS } from '../../../../constants/colors';
 import PaymentType from '../../../../components/PaymentType';
 import { ChevronRight, CreditCard } from 'lucide-react';
+import Attachment from '../../../../components/Attachment';
 
 interface POSInvoiceFooterProps {
   data: any;
@@ -31,18 +32,16 @@ const POSInvoiceFooter: React.FC<POSInvoiceFooterProps> = ({
 
   const totalPaid =
     data.payments?.reduce((sum: number, p: any) => sum + (parseFloat(p.netAmount) || 0), 0) || 0;
-  const balance = docAmount - totalPaid;
+  const leftBalance = docAmount - totalPaid; // if totle not paid then do not acess click submit from footer show a popup
 
-  const isAdvance = balance < 0;
-  const isDue = balance > 0.01;
-
-  const statusText = isAdvance ? 'Advance Paid' : isDue ? 'Due Amount' : 'Fully Paid';
-
-  const statusColor = isAdvance
-    ? 'text-green-700 bg-green-50 border-green-200'
-    : isDue
+  const statusText = leftBalance > 0.01 ? 'Due Amount' : 'Fully Paid';
+  const statusColor =
+    leftBalance > 0.01
       ? 'text-red-700 bg-red-50 border-red-200'
-      : 'text-gray-700 bg-gray-50 border-gray-200';
+      : 'text-green-700 bg-green-50 border-green-200';
+
+  const isAdvance = 0;
+  // const isDue = balance > 0.01;
 
   const handleDiscountPercentChange = (val: string) => {
     const percent = parseFloat(val) || 0;
@@ -76,87 +75,94 @@ const POSInvoiceFooter: React.FC<POSInvoiceFooterProps> = ({
         zIndex={zIndex + 50}
       />
 
-      <div className="mb-6 grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2 lg:grid-cols-4">
-        <TotalRow label="Item Value (Taxable)" value={totals.amount.toFixed(2)} readOnly />
+      <div className="mb-3 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-3">
+            <TotalRow label="Item Value (Taxable)" value={totals.amount.toFixed(2)} readOnly />
 
-        <ReadOnlyRow label="Promo Discount" value={data.promoDiscount || '0.00'} />
+            <ReadOnlyRow label="Promo Discount" value={data.promoDiscount || '0.00'} />
 
-        <div className="flex flex-col gap-1">
-          <label className="select-none text-[10px] font-bold uppercase text-transparent">
-            Action
-          </label>
-          <button
-            onClick={() => setIsPaymentOpen(true)}
-            style={{ backgroundColor: COLORS.primary, color: COLORS.white }}
-            className="group flex h-[34px] w-full items-center justify-center gap-2 rounded-sm text-xs font-bold uppercase tracking-widest text-white shadow-sm transition-all duration-200 hover:bg-green-700 hover:shadow-md active:scale-[0.98]">
-            <CreditCard
-              size={14}
-              className="opacity-80 transition-transform group-hover:scale-110"
+            <TotalRow
+              label="Taxable Total"
+              value={(totals.amount - totalDiscount).toFixed(2)}
+              readOnly
             />
-            <span>Process Pay</span>
-            <ChevronRight
-              size={14}
-              className="opacity-60 transition-transform group-hover:translate-x-1"
-            />
-          </button>
-        </div>
+          </div>
+          <div className="grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-3">
+            <ReadOnlyRow label="Coupon Discount" value={data.couponDiscount || '0.00'} />
 
-        <TotalRow label="Doc Amount" value={docAmount.toFixed(2)} isBold readOnly />
+            <TotalRow label="Tax Amount" value={totals.tax.toFixed(2)} readOnly />
 
-        <TotalRow
-          label="Taxable Total"
-          value={(totals.amount - totalDiscount).toFixed(2)}
-          readOnly
-        />
-
-        <TotalRow label="Tax Amount" value={totals.tax.toFixed(2)} readOnly />
-
-        <ReadOnlyRow label="Promo Discount 2" value={data.promoDiscount2 || '0.00'} />
-
-        <div className="flex flex-col gap-1">
-          <label className="text-[10px] font-bold uppercase text-gray-500">Payment Status</label>
-          <div
-            className={`flex h-[34px] items-center justify-between rounded-sm border px-3 text-[11px] font-bold ${statusColor}`}>
-            <span>{statusText}</span>
-            <span>Bal: {Math.abs(balance).toFixed(0)}</span>
+            <ReadOnlyRow label="Promo Discount 2" value={data.promoDiscount2 || '0.00'} />
           </div>
         </div>
+        <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-3">
+            <DualInputRow
+              label="Bill Discount"
+              percent={data.billDiscountPercent || '0.00'}
+              amount={data.billDiscountAmount || '0.00'}
+              onPercentChange={handleDiscountPercentChange}
+              onAmountChange={handleDiscountAmountChange}
+            />
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold uppercase text-gray-500">Coupon Code</label>
+              <input
+                type="text"
+                value={data.couponCode || ''}
+                onChange={(e) => onChange('couponCode', e.target.value)}
+                className="w-full rounded-sm border bg-white px-2 py-1.5 text-right text-xs outline-none focus:border-blue-400"
+                style={{ borderColor: COLORS.borderDark }}
+              />
+            </div>
 
-        <ReadOnlyRow label="Coupon Discount" value={data.couponDiscount || '0.00'} />
+            <EditableRow
+              label="Round Off"
+              value={data.roundOff || '0.00'}
+              onChange={(val) => onChange('roundOff', val)}
+            />
+          </div>
+          <div className="grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-3">
+            <TotalRow label="Doc Amount" value={docAmount.toFixed(2)} isBold readOnly />
+            <div className="flex flex-col gap-1">
+              <label className="select-none text-[10px] font-bold uppercase text-transparent">
+                Action
+              </label>
+              <button
+                onClick={() => setIsPaymentOpen(true)}
+                style={{ backgroundColor: COLORS.primary, color: COLORS.white }}
+                className="group flex h-[34px] w-full items-center justify-center gap-2 rounded-sm text-xs font-bold uppercase tracking-widest text-white shadow-sm transition-all duration-200 hover:bg-green-700 hover:shadow-md active:scale-[0.98]">
+                <CreditCard
+                  size={14}
+                  className="opacity-80 transition-transform group-hover:scale-110"
+                />
+                <span>Process Pay</span>
+                <ChevronRight
+                  size={14}
+                  className="opacity-60 transition-transform group-hover:translate-x-1"
+                />
+              </button>
+            </div>
 
-        <EditableRow
-          label="Round Off"
-          value={data.roundOff || '0.00'}
-          onChange={(val) => onChange('roundOff', val)}
-        />
-
-        <DualInputRow
-          label="Bill Discount"
-          percent={data.billDiscountPercent || '0.00'}
-          amount={data.billDiscountAmount || '0.00'}
-          onPercentChange={handleDiscountPercentChange}
-          onAmountChange={handleDiscountAmountChange}
-        />
-
-        <div className="flex flex-col gap-1">
-          <label className="text-[10px] font-bold uppercase text-gray-500">Coupon Code</label>
-          <input
-            type="text"
-            value={data.couponCode || ''}
-            onChange={(e) => onChange('couponCode', e.target.value)}
-            className="w-full rounded-sm border bg-white px-2 py-1.5 text-right text-xs outline-none focus:border-blue-400"
-            style={{ borderColor: COLORS.borderDark }}
-          />
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold uppercase text-gray-500">
+                Payment Status
+              </label>
+              <div
+                className={`flex h-[34px] items-center justify-between rounded-sm border px-3 text-[11px] font-bold ${statusColor}`}>
+                <span>{statusText}</span>
+                <span>Bal: {isAdvance !== 0 ? Math.abs(isAdvance).toFixed(0) : 'N/A'}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="flex flex-col gap-4 border-t border-dashed border-gray-200 pt-4 lg:flex-row">
-        {/* Attachment - LEFT side */}
+      <div className="flex flex-col gap-4  lg:flex-row">
         <div className="flex w-full flex-col gap-1 lg:order-1 lg:w-1/2">
-          <label className="text-[10px] font-bold uppercase text-gray-500">Attachment</label>
+          <Attachment />
         </div>
 
-        {/* Remarks - RIGHT side (half space) */}
         <div className="flex w-full flex-col gap-1 lg:order-2 lg:w-1/2">
           <div className="flex items-center justify-between px-1">
             <label className="flex items-center gap-2 text-[10px] font-bold uppercase text-gray-400">
@@ -282,7 +288,7 @@ const DualInputRow: React.FC<{
         placeholder="%"
         value={percent}
         onChange={(e) => onPercentChange(e.target.value)}
-        className="w-12 rounded-sm border bg-white py-1 text-center text-xs outline-none focus:border-blue-400"
+        className="w-20 rounded-sm border bg-white py-1 text-center text-xs outline-none focus:border-blue-400"
         style={{ borderColor: COLORS.borderDark }}
       />
       <div className="relative flex-1">

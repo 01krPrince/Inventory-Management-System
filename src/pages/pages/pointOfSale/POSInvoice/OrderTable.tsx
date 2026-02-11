@@ -151,8 +151,8 @@ const DEFAULT_COLUMNS: Column[] = [
   { id: 'taxable', label: 'Taxable', width: 80, align: 'right', resizable: true, visible: true },
   { id: 'taxAmt', label: 'Tax Amount', width: 80, align: 'right', resizable: true, visible: true },
   { id: 'mrp', label: 'MRP', width: 80, align: 'right', resizable: true, visible: true },
-  { id: 'taxCode', label: 'Tax Code', width: 120, align: 'left', resizable: true, visible: true },
-  { id: 'taxRate', label: 'Tax Rate', width: 120, align: 'left', resizable: true, visible: true },
+  { id: 'taxCode', label: 'Tax Rate', width: 120, align: 'left', resizable: true, visible: true },
+  // { id: 'taxRate', label: 'Tax Rate', width: 120, align: 'left', resizable: true, visible: true },
   { id: 'remark', label: 'Remark', width: 120, align: 'left', resizable: true, visible: true },
   {
     id: 'printdesc',
@@ -160,11 +160,11 @@ const DEFAULT_COLUMNS: Column[] = [
     width: 150,
     align: 'left',
     resizable: true,
-    visible: true,
+    visible: false,
   },
   { id: 'barcode', label: 'Barcode', width: 100, align: 'left', resizable: true, visible: true },
   { id: 'brand', label: 'Brand', width: 100, align: 'left', resizable: true, visible: true },
-  { id: 'netRate', label: 'Net Rate', width: 80, align: 'left', resizable: true, visible: true },
+  { id: 'netRate', label: 'Net Rate', width: 80, align: 'left', resizable: true, visible: false },
 ];
 
 const OrderTable: React.FC<OrderTableProps> = ({
@@ -199,14 +199,18 @@ const OrderTable: React.FC<OrderTableProps> = ({
   const calculateRowTaxable = (qty: number, rate: number, gst: number) => {
     const total = qty * rate;
     const taxable = total / (1 + gst / 100);
-    return isNaN(taxable) ? '' : cleanVal(taxable);
+
+    // Use .toFixed(2) and convert back to Number to keep it as a numeric type
+    return isNaN(taxable) ? 0 : Number(taxable.toFixed(2));
   };
 
   const calculateRowTaxAmount = (qty: number, rate: number, gst: number) => {
     const total = qty * rate;
-    const taxable = total / (1 + gst / 100);
+    const taxable = calculateRowTaxable(qty, rate, gst);
+
     const taxAmt = total - taxable;
-    return isNaN(taxAmt) ? '' : cleanVal(taxAmt);
+    // Rounding to 2 decimal places
+    return isNaN(taxAmt) ? 0 : Number(taxAmt.toFixed(2));
   };
 
   const [warrantyPopup, setWarrantyPopup] = useState<{
@@ -363,6 +367,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
 
         rate: unitTaxable,
         amount: uiTaxableTotal,
+        group: String(row.group || ''),
 
         netRate: uiRateInclusive,
         netAmount: uiAmountInclusive,
@@ -373,7 +378,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
         barCode: String(row.barcode || ''),
         hsn: String(row.hsn || ''),
 
-        taxCode: String(row.taxCode || ''),
+        taxCode: String(row.taxRate || ''),
         taxRate: uiGstPercent,
         taxAmount: uiTaxAmount,
 
@@ -467,11 +472,12 @@ const OrderTable: React.FC<OrderTableProps> = ({
       brand: safeString(item.brand),
 
       hsn: item.gst_classification ?? '',
-      taxCode: item.hsn_code || '',
+      taxCode: item.taxRate || '',
 
       qty: String(qty),
       rate: cleanVal(rate),
       mrp: cleanVal(item.mrp ?? 0),
+      group: item.group,
       amount: cleanVal(parseFloat(amount)),
 
       taxable: taxable,
@@ -539,8 +545,8 @@ const OrderTable: React.FC<OrderTableProps> = ({
         brand: String(row.brand || ''),
         barCode: String(row.barcode || ''),
         hsn: String(row.hsn || ''),
-
-        taxCode: String(row.taxCode || ''),
+        group: String(row.group || ''),
+        taxCode: String(row.taxRate || ''),
         taxRate: parseFloat(String(row.gstRate || 0)),
         taxAmount: taxAmt,
 
@@ -572,55 +578,36 @@ const OrderTable: React.FC<OrderTableProps> = ({
       const row = prev[rowId] || {};
       const newData = { ...row, [columnId]: value };
 
-      // 1. Get current base numbers
-      // Use the new value if the user is editing that specific column, otherwise use existing row data
       const qty = parseFloat(columnId === 'qty' ? value : String(row.qty || 0));
       const gst = parseFloat(String(row.gstRate || 0));
 
-      // Initialize calculation variables
       let newRate = parseFloat(columnId === 'rate' ? value : String(row.rate || 0));
       let newAmount = parseFloat(columnId === 'amount' ? value : String(row.amount || 0));
       let newTaxable = parseFloat(columnId === 'taxable' ? value : String(row.taxable || 0));
       let newTaxAmt = 0;
 
-      // 2. Perform Calculations based on what changed
       if (columnId === 'qty' || columnId === 'rate') {
-        // CASE: Forward Calculation
-        // Rate is Inclusive (Gross)
         newAmount = qty * newRate;
 
-        // Taxable = Inclusive / (1 + GST%)
         newTaxable = newAmount / (1 + gst / 100);
 
-        // Tax = Total - Taxable
         newTaxAmt = newAmount - newTaxable;
       } else if (columnId === 'amount') {
-        // CASE: User changed Total Amount (Inclusive)
-        // Back-calculate Rate
         newRate = qty > 0 ? newAmount / qty : 0;
 
-        // Taxable = Inclusive / (1 + GST%)
         newTaxable = newAmount / (1 + gst / 100);
 
-        // Tax = Total - Taxable
         newTaxAmt = newAmount - newTaxable;
       } else if (columnId === 'taxable') {
-        // CASE: User changed Taxable Value
-        // Calculate Tax directly from Taxable
         newTaxAmt = newTaxable * (gst / 100);
 
-        // Total Amount = Taxable + Tax
         newAmount = newTaxable + newTaxAmt;
 
-        // Back-calculate Rate
         newRate = qty > 0 ? newAmount / qty : 0;
       } else {
-        // If editing other columns (like name/desc), preserve existing taxAmt
         newTaxAmt = parseFloat(String(row.taxAmt || 0));
       }
 
-      // 3. Update State with formatted strings
-      // CRITICAL: The key must be 'taxAmt' to match your Column ID
       newData.rate = isNaN(newRate) ? '0.00' : newRate.toFixed(2);
       newData.amount = isNaN(newAmount) ? '0.00' : newAmount.toFixed(2);
       newData.taxable = isNaN(newTaxable) ? '0.00' : newTaxable.toFixed(2);
@@ -672,25 +659,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
     }
   };
 
-  // const handleCopyRow = (sourceRowId: string) => {
-  //   const sourceData = tableData[sourceRowId];
-  //   if (!sourceData) return;
-  //   let targetRowId: string | null = null;
-  //   const sourceIndex = rows.indexOf(sourceRowId);
-  //   for (let i = sourceIndex + 1; i < rows.length; i++) {
-  //     const rId = rows[i];
-  //     if (!tableData[rId]?.select) {
-  //       targetRowId = rId;
-  //       break;
-  //     }
-  //   }
-  //   if (!targetRowId) {
-  //     targetRowId = generateRowId();
-  //     setRows((prev) => [...prev, targetRowId!]);
-  //   }
-  //   setTableData((prev) => ({ ...prev, [targetRowId!]: { ...sourceData } }));
-  // };
-
   const toggleColumnVisibility = (colId: string) => {
     setColumns((prev) =>
       prev.map((col) => (col.id === colId ? { ...col, visible: !col.visible } : col))
@@ -737,9 +705,8 @@ const OrderTable: React.FC<OrderTableProps> = ({
           unit: item.stock_unit || '',
           brand: item.brand || '',
           hsn: item.gst_classification || '',
-          taxCode: item.hsn_code || '',
+          taxCode: item.taxRate + '%' || '',
 
-          gstRate: String(gstRate),
           qty: String(qty),
           rate: cleanVal(rate),
           mrp: cleanVal(mrp),
@@ -1179,26 +1146,15 @@ const OrderTable: React.FC<OrderTableProps> = ({
                                 onChange={(e) => handleInputChange(rowId, col.id, e.target.value)}
                               />
                             );
-                          }
-                          // else {
-                          //   content = (
-                          //     <input
-                          //       type="text"
-                          //       className="h-full w-full bg-transparent px-1 outline-none"
-                          //       value={rowData[col.id] || ''}
-                          //       onChange={(e) => handleInputChange(rowId, col.id, e.target.value)}
-                          //     />
-                          //   );
-                          // }
-                          else if (
+                          } else if (
                             [
-                              'taxCode',
+                              'taxRate',
                               'barcode',
                               'brand',
-                              'printdesc', // Description
+                              'printdesc',
                               'remark',
                               'taxRate',
-                              'mrp', // <--- Moved here (Read Only)
+                              'mrp',
                               'unit',
                             ].includes(col.id)
                           ) {
@@ -1207,8 +1163,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
                                 {rowData[col.id] || ''}
                               </div>
                             );
-
-                            // 4. Catch-all for any other columns (Editable Text)
                           } else {
                             content = (
                               <input
@@ -1303,7 +1257,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
                 </button>
               </div>
 
-              {/* Search Bar Area */}
               <div
                 className="border-b px-6 py-4"
                 style={{
