@@ -64,11 +64,14 @@ export interface ApiResponse<T> {
  * Endpoint: /stockadjustment/create
  */
 export const createStockAdjustment = async (
-  payload: StockAdjustment
+  payload: StockAdjustment,
 ): Promise<ApiResponse<StockAdjustment>> => {
   try {
-    const response = await api.post<ApiResponse<StockAdjustment>>('/stockadjustment/stock-adjustment', payload);  // stockadjustment/stock-adjustment
-    
+    const response = await api.post<ApiResponse<StockAdjustment>>(
+      "/stockadjustment/stock-adjustment",
+      payload,
+    ); // stockadjustment/stock-adjustment
+
     return {
       success: true,
       message: "Stock Adjustment Created Successfully",
@@ -79,33 +82,39 @@ export const createStockAdjustment = async (
     const responseData = error.response?.data;
 
     // --- FIX: Detailed Error Extraction ---
-    
+
     // 1. Check for Duplicate Key Error (E11000)
     // Sometimes backend returns it in 'error', sometimes in 'message'
-    const errorMsg = typeof responseData?.error === 'string' ? responseData.error : JSON.stringify(responseData?.error || "");
-    
-    if (errorMsg.includes("E11000") || (responseData?.message && responseData.message.includes("E11000"))) {
-      return {
-        success: false,
-        message: `Voucher Number "${payload.voucherNo}" already exists.`,
-        error: responseData?.error,
-      };
-    }
+    // const errorMsg =
+    //   typeof responseData?.error === "string"
+    //     ? responseData.error
+    //     : JSON.stringify(responseData?.error || "");
+
+    // if (errorMsg.includes("E11000") || (responseData?.message && responseData.message.includes("E11000"))) {
+    //   return {
+    //     success: false,
+    //     message: `Voucher Number "${payload.voucherNo}" already exists.`,
+    //     error: responseData?.error,
+    //   };
+    // }
 
     // 2. Check for Mongoose Validation Errors
     // These usually come in responseData.error.errors (e.g., { hsnCode: { message: "Path is required" } })
     if (responseData?.error?.errors) {
-       return {
-         success: false,
-         message: "Validation Failed",
-         error: responseData.error // Return the full error object so we can see which field failed
-       };
+      return {
+        success: false,
+        message: "Validation Failed",
+        error: responseData.error, // Return the full error object so we can see which field failed
+      };
     }
 
     // 3. Fallback generic error
     return {
       success: false,
-      message: responseData?.message || error.message || "Failed to create stock adjustment.",
+      message:
+        responseData?.message ||
+        error.message ||
+        "Failed to create stock adjustment.",
       error: responseData,
     };
   }
@@ -115,9 +124,13 @@ export const createStockAdjustment = async (
  * Fetch All Stock Adjustments
  * Endpoint: /stockadjustment/getall
  */
-export const getAllStockAdjustments = async (): Promise<ApiResponse<StockAdjustment[]>> => {
+export const getAllStockAdjustments = async (): Promise<
+  ApiResponse<StockAdjustment[]>
+> => {
   try {
-    const response = await api.get<ApiResponse<StockAdjustment[]>>('/stockadjustment/getall');
+    const response = await api.get<ApiResponse<StockAdjustment[]>>(
+      "/stockadjustment/getall",
+    );
     return {
       success: true,
       data: response.data.data || [],
@@ -135,9 +148,13 @@ export const getAllStockAdjustments = async (): Promise<ApiResponse<StockAdjustm
  * Get Stock Adjustment By ID
  * Endpoint: /stockadjustment/getbyid/:id
  */
-export const getStockAdjustmentById = async (id: string): Promise<ApiResponse<StockAdjustment>> => {
+export const getStockAdjustmentById = async (
+  id: string,
+): Promise<ApiResponse<StockAdjustment>> => {
   try {
-    const response = await api.get<ApiResponse<StockAdjustment>>(`/stockadjustment/getbyid/${id}`);
+    const response = await api.get<ApiResponse<StockAdjustment>>(
+      `/stockadjustment/getbyid/${id}`,
+    );
     return {
       success: true,
       data: response.data.data,
@@ -157,10 +174,13 @@ export const getStockAdjustmentById = async (id: string): Promise<ApiResponse<St
  */
 export const updateStockAdjustment = async (
   id: string,
-  payload: StockAdjustment
+  payload: StockAdjustment,
 ): Promise<ApiResponse<StockAdjustment>> => {
   try {
-    const response = await api.put<ApiResponse<StockAdjustment>>(`/stockadjustment/updatebyid/${id}`, payload);
+    const response = await api.put<ApiResponse<StockAdjustment>>(
+      `/stockadjustment/updatebyid/${id}`,
+      payload,
+    );
     return {
       success: true,
       message: "Stock Adjustment Updated Successfully",
@@ -180,7 +200,9 @@ export const updateStockAdjustment = async (
  * Delete Stock Adjustment By ID
  * Endpoint: /stockadjustment/deletebyid/:id
  */
-export const deleteStockAdjustment = async (id: string): Promise<ApiResponse<null>> => {
+export const deleteStockAdjustment = async (
+  id: string,
+): Promise<ApiResponse<null>> => {
   try {
     await api.delete<ApiResponse<null>>(`/stockadjustment/deletebyid/${id}`);
     return {

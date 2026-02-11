@@ -54,17 +54,22 @@ import ItemReport from '../pages/pages/reports/allReport/allReportPages/ItemRepo
 import GstMasterReport from '../pages/pages/reports/allReport/allReportPages/GstMasterReport.tsx';
 import SalesInvoiceReport from '../pages/pages/reports/allReport/allReportPages/SalesInvoiceReport.tsx';
 import StockSummary from '../pages/pages/reports/allReport/allReportPages/StockSummary.tsx';
-import ChartOfAccountPage from '../pages/pages/finance/ChartOfAccount.tsx';
-import RecieptPaymentVoucher from '../pages/pages/finance/VoucherEntryForm.tsx';
+import ChartOfAccountPage from '../pages/pages/finance/chartOfAccount/ChartOfAccount.tsx';
+import RecieptPaymentVoucher from '../pages/pages/finance/recieptPaymentVoucher/VoucherEntryForm.tsx';
 import StockTrial from '../pages/pages/reports/stockTrials/StockTrial.tsx';
 import StockLedger from '../pages/pages/reports/stockTrials/StockLedger.tsx';
-import VendorTrial from '../pages/pages/reports/VendorTrial.tsx';
+import VendorTrial from '../pages/pages/reports/vendorTrials/VendorTrial.tsx';
 import TrialBalance from '../pages/pages/reports/TrialBalance.tsx';
 import CustomerTrial from '../pages/pages/reports/customerTrials/CustomerTrail.tsx';
 import SalesCreditNote from '../pages/pages/sales/salesCreditNote.tsx/SalesCreditNote.tsx';
 import SaleReturn from '../pages/pages/sales/salseReturn/SaleReturn.tsx';
 import PaymentReciept from '../pages/pages/sales/paymentReciept/paymentReciept.tsx';
 import CustomerLedger from '../pages/pages/reports/customerTrials/CustomerLedger.tsx';
+import TransferJournal from '../pages/pages/finance/transferJournal/TransferJournal.tsx';
+import ReversalJournal from '../pages/pages/finance/reversalJournal/ReversalJournal.tsx';
+import JournalVoucher from '../pages/pages/finance/journalVoucher/JournalVoucher.tsx';
+import VendorLedger from '../pages/pages/reports/vendorTrials/VendorLedger.tsx';
+import ExpenceVoucher from '../pages/pages/finance/expenceVoucher/ExpenceVoucher.tsx';
 
 const useSidebar = () => ({
   isExpanded: false,
@@ -287,11 +292,15 @@ const ComponentMap: { [key: string]: React.FC<any> } = {
   '/sales-debit-note': SalesCreditNote,
   '/sales-return': SaleReturn,
   '/payment-receipt': PaymentReciept,
+  '/transfer-journal': TransferJournal,
   //
   '/wishlist': WishlistStockManager,
   '/ecom-products': EcomProductDetail,
   //
   '/opening-stock': OpeningStock,
+  '/reversal-journal': ReversalJournal,
+  '/journal-voucher': JournalVoucher,
+  '/expense-journal': ExpenceVoucher,
   //
   '/report/stock-trial': StockTrial,
   '/report/stock-trial/ledger': StockLedger,
@@ -367,7 +376,8 @@ const ComponentMap: { [key: string]: React.FC<any> } = {
   ),
   //
   '/all-report': ReportDashboard,
-  '/vendor-trial': VendorTrial,
+  '/report/vendor-trial': VendorTrial,
+  '/report/vendor-trial/ledger': VendorLedger,
   '/report/customer-trial': CustomerTrial,
   '/report/customer-trial/ledger': CustomerLedger,
   '/trial-balance': TrialBalance,

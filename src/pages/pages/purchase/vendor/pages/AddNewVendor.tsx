@@ -1,4 +1,4 @@
-import React, { useState, ChangeEvent, useEffect } from "react";
+import React, { useState, ChangeEvent, useEffect } from 'react';
 import {
   Globe,
   Clock,
@@ -19,7 +19,7 @@ import {
   Mail,
   User,
   Briefcase,
-} from "lucide-react";
+} from 'lucide-react';
 
 import {
   addVendor,
@@ -27,17 +27,17 @@ import {
   fetchBankDetailsApi,
   VendorPayload,
   VendorContact,
-} from "../api/vendorService";
+} from '../api/vendorService';
 
-import Attachment from "../../../../../components/Attachment";
-import Dropdown, { ColumnDef } from "../../../../../components/Dropdown";
+import Attachment from '../../../../../components/Attachment';
+import Dropdown, { ColumnDef } from '../../../../../components/Dropdown';
 
 // Replaced SalesAndPurchaseGL with ChartOfAccount service
-import ChartOfAccounts from "../../../../../components/ChartOfAccount";
+import ChartOfAccounts from '../../../../../components/ChartOfAccount';
 import {
   ChartOfAccount,
   getAllChartOfAccounts,
-} from "../../../../../services/chartOfAccountService";
+} from '../../../../../services/chartOfAccountService';
 
 // --- Types ---
 
@@ -110,83 +110,77 @@ interface FormData {
 
 const INITIAL_DATA: FormData = {
   // Basic
-  gstNo: "",
-  name: "",
-  printName: "",
-  identification: "",
-  code: "",
-  underLedger: "",
+  gstNo: '',
+  name: '',
+  printName: '',
+  identification: '',
+  code: '',
+  underLedger: '',
   isCustomerCommon: false,
   isSubCustomer: false,
-  underCustomer: "",
+  underCustomer: '',
   profileImage: null,
   // Statutory
-  gstRegDate: "",
-  cin: "",
-  pan: "",
-  goodsService: "Service",
-  gstCategory: "Regular",
+  gstRegDate: '',
+  cin: '',
+  pan: '',
+  goodsService: 'Service',
+  gstCategory: 'Regular',
   gstSuspend: false,
-  distance: "0",
+  distance: '0',
   tdsApplicable: false,
   // Communication
-  billingAddress: "",
-  billingCountry: "India",
-  billingState: "",
-  billingCity: "",
-  billingPin: "",
-  billingPhone: "",
-  billingEmail: "",
+  billingAddress: '',
+  billingCountry: 'India',
+  billingState: '',
+  billingCity: '',
+  billingPin: '',
+  billingPhone: '',
+  billingEmail: '',
   // Social
-  website: "",
-  facebook: "",
-  skype: "",
-  twitter: "",
-  linkedin: "",
+  website: '',
+  facebook: '',
+  skype: '',
+  twitter: '',
+  linkedin: '',
   // Defaults
-  paymentTerms: "",
-  priceCategory: "Retail",
-  salesExecutive: "",
-  transporter: "",
-  creditLimit: "0",
-  maxCreditLimit: "0",
-  maxCreditDays: "0",
-  interestRateYearly: "0",
+  paymentTerms: '',
+  priceCategory: 'Retail',
+  salesExecutive: '',
+  transporter: '',
+  creditLimit: '0',
+  maxCreditLimit: '0',
+  maxCreditDays: '0',
+  interestRateYearly: '0',
   customerOnWatch: false,
-  firmStatus: "Active",
-  territory: "Default",
-  customerCategory: "General",
+  firmStatus: 'Active',
+  territory: 'Default',
+  customerCategory: 'General',
   registeredInMSME: false,
   // Bank
-  ifscCode: "",
-  accountNo: "",
-  bankName: "",
-  branch: "",
-  contactPersonName: "",
+  ifscCode: '',
+  accountNo: '',
+  bankName: '',
+  branch: '',
+  contactPersonName: '',
   contact: [],
 };
 
 const STEPS = [
-  { id: 0, label: "Basic Details" },
-  { id: 1, label: "Statutory" },
-  { id: 2, label: "Communication" },
-  { id: 3, label: "Social Profile" },
-  { id: 4, label: "Defaults" },
-  { id: 5, label: "Bank Detail" },
-  { id: 6, label: "Contact Person" },
-  { id: 7, label: "Attachments" },
+  { id: 0, label: 'Basic Details' },
+  { id: 1, label: 'Statutory' },
+  { id: 2, label: 'Communication' },
+  { id: 3, label: 'Social Profile' },
+  { id: 4, label: 'Defaults' },
+  { id: 5, label: 'Bank Detail' },
+  { id: 6, label: 'Contact Person' },
+  { id: 7, label: 'Attachments' },
 ];
 
 // --- Components ---
 
-const FormLabel = ({
-  required,
-  children,
-}: {
-  required?: boolean;
-  children: React.ReactNode;
-}) => (
-  <label className="block text-xs font-medium text-gray-700 mb-1">
+const FormLabel = ({ required, children }: { required?: boolean; children: React.ReactNode }) => (
+  <label className="mb-1 block text-xs font-medium text-gray-700">
     {children} {required && <span className="text-red-500">*</span>}
   </label>
 );
@@ -200,26 +194,25 @@ const ToggleSwitch = ({
   onChange: any;
   name: string;
 }) => (
-  <div className="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+  <div className="relative mr-2 inline-block w-10 select-none align-middle transition duration-200 ease-in">
     <input
       type="checkbox"
       name={name}
       id={name}
-      className="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300"
+      className="toggle-checkbox absolute block h-5 w-5 cursor-pointer appearance-none rounded-full border-4 bg-white transition-all duration-300"
       style={{
-        right: checked ? "0" : "auto",
-        left: checked ? "auto" : "0",
-        borderColor: checked ? "#1e40af" : "#d1d5db",
+        right: checked ? '0' : 'auto',
+        left: checked ? 'auto' : '0',
+        borderColor: checked ? '#1e40af' : '#d1d5db',
       }}
       checked={checked}
       onChange={onChange}
     />
     <label
       htmlFor={name}
-      className={`toggle-label block overflow-hidden h-5 rounded-full cursor-pointer ${
-        checked ? "bg-[#0c5888]" : "bg-gray-300"
-      }`}
-    ></label>
+      className={`toggle-label block h-5 cursor-pointer overflow-hidden rounded-full ${
+        checked ? 'bg-[#0c5888]' : 'bg-gray-300'
+      }`}></label>
   </div>
 );
 
@@ -228,10 +221,10 @@ const InputField = ({
   name,
   value,
   onChange,
-  type = "text",
+  type = 'text',
   required = false,
-  className = "",
-  placeholder = "",
+  className = '',
+  placeholder = '',
 }: any) => (
   <div className={`mb-3 ${className}`}>
     <FormLabel required={required}>{label}</FormLabel>
@@ -241,7 +234,7 @@ const InputField = ({
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-[#0c5888]"
+      className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:border-[#0c5888] focus:outline-none"
     />
   </div>
 );
@@ -253,7 +246,7 @@ const SelectField = ({
   onChange,
   options,
   required = false,
-  className = "",
+  className = '',
 }: any) => (
   <div className={`mb-3 ${className}`}>
     <FormLabel required={required}>{label}</FormLabel>
@@ -261,8 +254,7 @@ const SelectField = ({
       name={name}
       value={value}
       onChange={onChange}
-      className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm bg-white focus:outline-none focus:border-[#0c5888]"
-    >
+      className="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm focus:border-[#0c5888] focus:outline-none">
       <option value="">Select...</option>
       {options.map((opt: string) => (
         <option key={opt} value={opt}>
@@ -273,16 +265,10 @@ const SelectField = ({
   </div>
 );
 
-const SocialInput = ({
-  icon: Icon,
-  name,
-  value,
-  placeholder,
-  onChange,
-}: any) => (
-  <div className="flex items-center mb-4">
-    <div className="w-10 h-10 flex items-center justify-center bg-gray-100 rounded-l border-y border-l border-gray-300">
-      <Icon className="w-5 h-5 text-gray-600" />
+const SocialInput = ({ icon: Icon, name, value, placeholder, onChange }: any) => (
+  <div className="mb-4 flex items-center">
+    <div className="flex h-10 w-10 items-center justify-center rounded-l border-y border-l border-gray-300 bg-gray-100">
+      <Icon className="h-5 w-5 text-gray-600" />
     </div>
     <div className="flex-1">
       <input
@@ -291,15 +277,15 @@ const SocialInput = ({
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className="w-full border border-gray-300 rounded-r px-3 py-2 text-sm focus:outline-none focus:border-[#0c5888]"
+        className="w-full rounded-r border border-gray-300 px-3 py-2 text-sm focus:border-[#0c5888] focus:outline-none"
       />
     </div>
   </div>
 );
 
 const underLedgerColumns: ColumnDef<ChartOfAccount>[] = [
-  { header: "Code", key: "code", width: "w-24" },
-  { header: "Name", key: "name", width: "w-full" },
+  { header: 'Code', key: 'code', width: 'w-24' },
+  { header: 'Name', key: 'name', width: 'w-full' },
 ];
 
 interface AddNewVendorProps {
@@ -331,14 +317,12 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
   // Contact Modal State
   const [showContactModal, setShowContactModal] = useState(false);
   const [currentContact, setCurrentContact] = useState<VendorContact>({
-    name: "",
-    email: "",
-    phone: "",
-    designation: "",
+    name: '',
+    email: '',
+    phone: '',
+    designation: '',
   });
-  const [editingContactIndex, setEditingContactIndex] = useState<number | null>(
-    null,
-  );
+  const [editingContactIndex, setEditingContactIndex] = useState<number | null>(null);
 
   const handleOpenCOA = () => setShowChartOfAccounts(true);
   const isEditMode = !!initialData && !!initialData._id;
@@ -348,19 +332,15 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
     const loadData = async () => {
       try {
         const response = await getAllChartOfAccounts();
-        if (
-          response.data &&
-          response.data.success &&
-          Array.isArray(response.data.data)
-        ) {
-          console.log("Loaded COA Data:", response.data.data);
-          setCoaDataFull(response.data.data);
+        if (response.data && response.data != null && Array.isArray(response.data)) {
+          console.log('Loaded COA Data:', response.data);
+          setCoaDataFull(response.data);
         } else if (Array.isArray(response.data)) {
           // Fallback in case the API structure is direct array
           setCoaDataFull(response.data);
         }
       } catch (error) {
-        console.error("Failed to load chart of accounts data", error);
+        console.error('Failed to load chart of accounts data', error);
       }
     };
     loadData();
@@ -369,63 +349,61 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
   // Populate Form on Edit
   useEffect(() => {
     if (initialData) {
-      console.log("Initial Data:", initialData);
-      const val = (v: any) => (v !== null && v !== undefined ? String(v) : "");
+      console.log('Initial Data:', initialData);
+      const val = (v: any) => (v !== null && v !== undefined ? String(v) : '');
 
       setFormData({
-        gstNo: initialData.gst_no || "",
-        name: initialData.vend_name || initialData.cust_name || "",
-        printName: initialData.print_name || "",
-        identification: initialData.identification || "",
-        code: initialData.code || "",
+        gstNo: initialData.gst_no || '',
+        name: initialData.vend_name || initialData.cust_name || '',
+        printName: initialData.print_name || '',
+        identification: initialData.identification || '',
+        code: initialData.code || '',
 
-        underLedger: initialData.under_ledger || "",
+        underLedger: initialData.under_ledger || '',
 
         isCustomerCommon: initialData.Vendor_comman || false,
         isSubCustomer: initialData.is_sub_customer || false,
         underCustomer:
-          typeof initialData.under_customer === "string"
-            ? initialData.under_customer
-            : "",
+          typeof initialData.under_customer === 'string' ? initialData.under_customer : '',
         profileImage: initialData.profile_photo || null,
-        gstRegDate: initialData.registration_date || "",
-        cin: initialData.cin || "",
-        pan: initialData.pan || "",
-        goodsService: initialData.goods_service || "Service",
-        gstCategory: initialData.gst_category || "Regular",
+        gstRegDate: initialData.registration_date || '',
+        cin: initialData.cin || '',
+        pan: initialData.pan || '',
+        goodsService: initialData.goods_service || 'Service',
+        gstCategory: initialData.gst_category || 'Regular',
         gstSuspend: initialData.gst_suspend || false,
         distance: val(initialData.distance),
         tdsApplicable: initialData.tds_on_gst_applicable || false,
-        billingAddress: initialData.address || "",
-        billingCountry: initialData.country || "India",
-        billingState: initialData.state || "",
-        billingCity: initialData.city || "",
-        billingPin: initialData.pin_code || "",
-        billingPhone: initialData.phone || "",
-        billingEmail: initialData.email || "",
-        website: initialData.website || "",
-        facebook: initialData.facebook || "",
-        skype: initialData.skype || "",
-        twitter: initialData.twitter || "",
-        linkedin: initialData.linkedin || "",
-        paymentTerms: initialData.payment_term || "",
-        priceCategory: initialData.price_category || "Retail",
-        salesExecutive: initialData.sales_executive || "",
-        transporter: initialData.transporter || "",
+        billingAddress: initialData.address || '',
+        billingCountry: initialData.country || 'India',
+        billingState: initialData.state || '',
+        billingCity: initialData.city || '',
+        billingPin: initialData.pin_code || '',
+        billingPhone: initialData.phone || '',
+        billingEmail: initialData.email || '',
+        website: initialData.website || '',
+        facebook: initialData.facebook || '',
+        skype: initialData.skype || '',
+        twitter: initialData.twitter || '',
+        linkedin: initialData.linkedin || '',
+        paymentTerms: initialData.payment_term || '',
+        priceCategory: initialData.price_category || 'Retail',
+        salesExecutive: initialData.sales_executive || '',
+        transporter: initialData.transporter || '',
         creditLimit: val(initialData.credit_limit),
         maxCreditLimit: val(initialData.max_credit_limit),
         maxCreditDays: val(initialData.max_credit_days),
         interestRateYearly: val(initialData.interest_rate_yearly),
-        customerOnWatch: initialData.customer_on_watch === "Yes",
-        firmStatus: initialData.firm_status || "Active",
-        territory: initialData.territory || "Default",
-        customerCategory: initialData.customer_category || "General",
+        customerOnWatch: initialData.customer_on_watch === 'Yes',
+        firmStatus: initialData.firm_status || 'Active',
+        territory: initialData.territory || 'Default',
+        customerCategory: initialData.customer_category || 'General',
         registeredInMSME: false,
-        ifscCode: initialData.ifsc_code || "",
-        accountNo: initialData.account_number || "",
-        bankName: initialData.bank_name || "",
-        branch: initialData.branch || "",
-        contactPersonName: initialData.contact_person || "",
+        ifscCode: initialData.ifsc_code || '',
+        accountNo: initialData.account_number || '',
+        bankName: initialData.bank_name || '',
+        branch: initialData.branch || '',
+        contactPersonName: initialData.contact_person || '',
         contact: initialData.contact || [],
       });
 
@@ -433,8 +411,7 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
         // Find the full object from COA list
         const selectedLedger = coaDataFull.find(
           (item: any) =>
-            item._id === initialData.under_ledger ||
-            item.name === initialData.under_ledger,
+            item._id === initialData.under_ledger || item.name === initialData.under_ledger
         );
         if (selectedLedger) {
           setCoaFormData(selectedLedger);
@@ -452,30 +429,30 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
       const bankData = await fetchBankDetailsApi(formData.ifscCode);
       setFormData((prev) => ({ ...prev, ...bankData }));
     } catch (error) {
-      alert("Failed to fetch bank details");
+      alert('Failed to fetch bank details');
     }
   };
 
   const handleInputChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: type === 'checkbox' ? checked : value,
     }));
   };
 
   const handleDropdownChange = (fieldName: string, value: any) => {
-    if (fieldName === "underLedger") {
+    if (fieldName === 'underLedger') {
       const selectedObject = value?._id
         ? value
         : coaDataFull.find((g) => g.name === value || g.name === value?.name);
 
-      const displayName = selectedObject?.name || value?.name || value || "";
+      const displayName = selectedObject?.name || value?.name || value || '';
 
-      console.log("🟢 Selected Ledger Object:", selectedObject);
+      console.log('🟢 Selected Ledger Object:', selectedObject);
 
       setFormData((prev) => ({ ...prev, underLedger: displayName }));
       setCoaFormData(selectedObject || null);
@@ -492,7 +469,7 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
   };
 
   const openAddContact = () => {
-    setCurrentContact({ name: "", email: "", phone: "", designation: "" });
+    setCurrentContact({ name: '', email: '', phone: '', designation: '' });
     setEditingContactIndex(null);
     setShowContactModal(true);
   };
@@ -505,7 +482,7 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
 
   const saveContact = () => {
     if (!currentContact.name) {
-      alert("Contact Name is required");
+      alert('Contact Name is required');
       return;
     }
 
@@ -534,16 +511,15 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
     } else {
       setIsSubmitting(true);
 
-      const val = (v: string | null | undefined) =>
-        v && v.trim() !== "" ? v : "NA";
+      const val = (v: string | null | undefined) => (v && v.trim() !== '' ? v : 'NA');
 
       if (!formData.name) {
-        alert("Name is required");
+        alert('Name is required');
         setIsSubmitting(false);
         return;
       }
       if (!formData.underLedger) {
-        alert("Under Ledger is required");
+        alert('Under Ledger is required');
         setIsSubmitting(false);
         return;
       }
@@ -560,7 +536,7 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
       }
 
       if (!underLedgerId) {
-        alert("Error: Invalid Under Ledger selection. Please re-select.");
+        alert('Error: Invalid Under Ledger selection. Please re-select.');
         setIsSubmitting(false);
         return;
       }
@@ -577,12 +553,9 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
 
           Vendor_comman: formData.isCustomerCommon,
           is_sub_customer: formData.isSubCustomer,
-          under_customer: formData.isSubCustomer
-            ? formData.underCustomer || "NA"
-            : false,
+          under_customer: formData.isSubCustomer ? formData.underCustomer || 'NA' : false,
           gst: val(formData.firmStatus),
-          registration_date:
-            formData.gstRegDate || new Date().toISOString().split("T")[0],
+          registration_date: formData.gstRegDate || new Date().toISOString().split('T')[0],
           cin: val(formData.cin),
           pan: val(formData.pan),
           goods_service: val(formData.goodsService),
@@ -601,13 +574,13 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
           facebook: val(formData.facebook),
           payment_term: val(formData.paymentTerms),
           price_category: val(formData.priceCategory),
-          batch_rate_category: "NA",
+          batch_rate_category: 'NA',
           sales_executive: val(formData.salesExecutive),
           transporter: val(formData.transporter),
           credit_limit: val(formData.creditLimit),
           max_credit_days: val(formData.maxCreditDays),
-          interest_rate_yearly: val(formData.interestRateYearly) + "%",
-          customer_on_watch: formData.customerOnWatch ? "Yes" : "No",
+          interest_rate_yearly: val(formData.interestRateYearly) + '%',
+          customer_on_watch: formData.customerOnWatch ? 'Yes' : 'No',
           firm_status: val(formData.firmStatus),
           territory: val(formData.territory),
           customer_category: val(formData.customerCategory),
@@ -629,18 +602,17 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
 
         if (
           response.success ||
-          (response.message &&
-            response.message.toLowerCase().includes("success"))
+          (response.message && response.message.toLowerCase().includes('success'))
         ) {
-          alert(response.message || "Vendor Saved Successfully!");
+          alert(response.message || 'Vendor Saved Successfully!');
           if (onSuccess) onSuccess();
           onClose(false);
         } else {
-          alert("Operation failed: " + (response.message || "Unknown error"));
+          alert('Operation failed: ' + (response.message || 'Unknown error'));
         }
       } catch (error) {
-        console.error("Error submitting form:", error);
-        alert("An error occurred while saving the vendor.");
+        console.error('Error submitting form:', error);
+        alert('An error occurred while saving the vendor.');
       } finally {
         setIsSubmitting(false);
       }
@@ -658,9 +630,7 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
       setCoaDataFull((prev) => {
         const exists = prev.find((item) => item.name === savedData.name);
         return exists
-          ? prev.map((item) =>
-              item.name === savedData.name ? savedData : item,
-            )
+          ? prev.map((item) => (item.name === savedData.name ? savedData : item))
           : [...prev, savedData];
       });
 
@@ -672,8 +642,8 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
 
   const renderBasicDetails = () => (
     <div className="grid grid-cols-12 gap-6">
-      <div className="col-span-12 md:col-span-8 space-y-3">
-        <div className="grid grid-cols-12 gap-4 items-center">
+      <div className="col-span-12 space-y-3 md:col-span-8">
+        <div className="grid grid-cols-12 items-center gap-4">
           <div className="col-span-3">
             <FormLabel>GST No</FormLabel>
           </div>
@@ -683,16 +653,16 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
               name="gstNo"
               value={formData.gstNo}
               onChange={handleInputChange}
-              className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+              className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
             />
           </div>
           <div className="col-span-2">
-            <button className="bg-[#0c5888] text-white text-xs px-3 py-1.5 rounded hover:bg-[#0a4a70] w-full">
+            <button className="w-full rounded bg-[#0c5888] px-3 py-1.5 text-xs text-white hover:bg-[#0a4a70]">
               Fetch-Info
             </button>
           </div>
         </div>
-        <div className="grid grid-cols-12 gap-4 items-center">
+        <div className="grid grid-cols-12 items-center gap-4">
           <div className="col-span-3">
             <FormLabel required>Name</FormLabel>
           </div>
@@ -702,11 +672,11 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
               name="name"
               value={formData.name}
               onChange={handleInputChange}
-              className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+              className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
             />
           </div>
         </div>
-        <div className="grid grid-cols-12 gap-4 items-center">
+        <div className="grid grid-cols-12 items-center gap-4">
           <div className="col-span-3">
             <FormLabel required>Print Name</FormLabel>
           </div>
@@ -716,11 +686,11 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
               name="printName"
               value={formData.printName}
               onChange={handleInputChange}
-              className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+              className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
             />
           </div>
         </div>
-        <div className="grid grid-cols-12 gap-4 items-center">
+        <div className="grid grid-cols-12 items-center gap-4">
           <div className="col-span-3">
             <FormLabel>Identification</FormLabel>
           </div>
@@ -730,36 +700,36 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
               name="identification"
               value={formData.identification}
               onChange={handleInputChange}
-              className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+              className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
             />
           </div>
         </div>
-        <div className="grid grid-cols-12 gap-4 items-center">
+        <div className="grid grid-cols-12 items-center gap-4">
           <div className="col-span-3">
             <FormLabel>Code</FormLabel>
           </div>
-          <div className="col-span-9 relative">
+          <div className="relative col-span-9">
             <input
               disabled
               type="text"
               name="code"
               value={formData.code}
               onChange={handleInputChange}
-              className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+              className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
             />
-            <Clock className="w-4 h-4 text-[#0c5888] absolute right-2 top-1.5" />
+            <Clock className="absolute right-2 top-1.5 h-4 w-4 text-[#0c5888]" />
           </div>
         </div>
         <div className="mb-3">
           <FormLabel required>Under Ledger</FormLabel>
           <div className="flex w-full">
-            <div className="flex-1 min-w-0">
+            <div className="min-w-0 flex-1">
               <Dropdown
                 data={coaDataFull}
                 columns={underLedgerColumns}
                 value={formData.underLedger}
                 valueKey="name"
-                onChange={(item) => handleDropdownChange("underLedger", item)}
+                onChange={(item) => handleDropdownChange('underLedger', item)}
                 placeholder="Select..."
                 zIndex={dropdownZIndex}
               />
@@ -769,13 +739,12 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
                 e.preventDefault();
                 handleOpenCOA();
               }}
-              className="bg-[#0c5888] text-white px-2 rounded-r hover:bg-[#0a4a70] transition-colors ml-[1px]"
-            >
-              <Edit className="w-4 h-4" />
+              className="ml-[1px] rounded-r bg-[#0c5888] px-2 text-white transition-colors hover:bg-[#0a4a70]">
+              <Edit className="h-4 w-4" />
             </button>
           </div>
         </div>
-        <div className="grid grid-cols-12 gap-4 items-center">
+        <div className="grid grid-cols-12 items-center gap-4">
           <div className="col-span-3">
             <FormLabel>Vendor Common</FormLabel>
           </div>
@@ -786,11 +755,11 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
               onChange={handleInputChange}
             />
             <span className="text-xs font-bold text-gray-600">
-              {formData.isCustomerCommon ? "ON" : "OFF"}
+              {formData.isCustomerCommon ? 'ON' : 'OFF'}
             </span>
           </div>
         </div>
-        <div className="grid grid-cols-12 gap-4 items-center">
+        <div className="grid grid-cols-12 items-center gap-4">
           <div className="col-span-3">
             <FormLabel>Is Sub Vendor</FormLabel>
           </div>
@@ -801,65 +770,56 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
               onChange={handleInputChange}
             />
             <span className="text-xs font-bold text-gray-600">
-              {formData.isSubCustomer ? "ON" : "OFF"}
+              {formData.isSubCustomer ? 'ON' : 'OFF'}
             </span>
           </div>
         </div>
         {formData.isSubCustomer && (
-          <div className="grid grid-cols-12 gap-4 items-center">
+          <div className="grid grid-cols-12 items-center gap-4">
             <div className="col-span-3">
               <FormLabel required>Under Vendor</FormLabel>
             </div>
-            <div className="col-span-9 relative">
+            <div className="relative col-span-9">
               <select
                 name="underCustomer"
                 value={formData.underCustomer}
                 onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-gray-500 appearance-none bg-white"
-              >
+                className="w-full appearance-none rounded border border-gray-300 bg-white px-2 py-1 text-sm text-gray-500">
                 <option>Select...</option>
               </select>
-              <ChevronRight className="w-4 h-4 absolute right-2 top-1.5 text-gray-500 pointer-events-none" />
+              <ChevronRight className="pointer-events-none absolute right-2 top-1.5 h-4 w-4 text-gray-500" />
             </div>
           </div>
         )}
       </div>
-      <div className="col-span-12 md:col-span-4 flex flex-col items-center justify-start mt-2">
-        <div className="w-56 h-56 bg-gray-200 border-2 border-dashed border-gray-400 rounded-lg flex flex-col items-center justify-center relative overflow-hidden group">
+      <div className="col-span-12 mt-2 flex flex-col items-center justify-start md:col-span-4">
+        <div className="group relative flex h-56 w-56 flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-gray-400 bg-gray-200">
           {formData.profileImage ? (
             <>
               <img
                 src={formData.profileImage}
                 alt="Profile"
-                className="w-full h-full object-cover"
+                className="h-full w-full object-cover"
               />
               <button
-                onClick={() =>
-                  setFormData((prev) => ({ ...prev, profileImage: null }))
-                }
-                className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full"
-              >
-                <X className="w-3 h-3" />
+                onClick={() => setFormData((prev) => ({ ...prev, profileImage: null }))}
+                className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white">
+                <X className="h-3 w-3" />
               </button>
             </>
           ) : (
             <div className="flex flex-col items-center text-blue-500">
-              <div className="w-32 h-32 bg-blue-400 rounded-full flex items-center justify-center mb-2">
-                <div className="w-20 h-20 bg-[#0c5888] rounded-full mt-[-10px]"></div>
-                <div className="absolute w-28 h-16 bg-[#0c5888] rounded-t-full bottom-10"></div>
+              <div className="mb-2 flex h-32 w-32 items-center justify-center rounded-full bg-blue-400">
+                <div className="mt-[-10px] h-20 w-20 rounded-full bg-[#0c5888]"></div>
+                <div className="absolute bottom-10 h-16 w-28 rounded-t-full bg-[#0c5888]"></div>
               </div>
             </div>
           )}
         </div>
         <div className="mt-4 w-56">
-          <label className="cursor-pointer bg-[#0c5888] hover:bg-[#0a4a70] text-white text-xs font-bold py-2 px-4 rounded shadow block text-center">
-            Browse{" "}
-            <input
-              type="file"
-              className="hidden"
-              onChange={handleImageUpload}
-              accept="image/*"
-            />
+          <label className="block cursor-pointer rounded bg-[#0c5888] px-4 py-2 text-center text-xs font-bold text-white shadow hover:bg-[#0a4a70]">
+            Browse{' '}
+            <input type="file" className="hidden" onChange={handleImageUpload} accept="image/*" />
           </label>
         </div>
       </div>
@@ -867,8 +827,8 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
   );
 
   const renderStatutory = () => (
-    <div className="bg-white border rounded-lg p-6 shadow-sm mt-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+    <div className="mt-4 rounded-lg border bg-white p-6 shadow-sm">
+      <div className="grid grid-cols-1 gap-x-8 gap-y-4 md:grid-cols-2">
         <div className="space-y-4">
           <InputField
             label="GST"
@@ -876,17 +836,17 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
             value={formData.gstNo}
             onChange={handleInputChange}
           />
-          <div className="grid grid-cols-12 gap-2 items-center">
+          <div className="grid grid-cols-12 items-center gap-2">
             <div className="col-span-4">
               <FormLabel>Registration Date</FormLabel>
             </div>
-            <div className="col-span-8 relative">
+            <div className="relative col-span-8">
               <input
                 type="date"
                 name="gstRegDate"
                 value={formData.gstRegDate}
                 onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
+                className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm"
               />
             </div>
           </div>
@@ -897,18 +857,13 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
             value={formData.cin}
             onChange={handleInputChange}
           />
-          <InputField
-            label="PAN"
-            name="pan"
-            value={formData.pan}
-            onChange={handleInputChange}
-          />
+          <InputField label="PAN" name="pan" value={formData.pan} onChange={handleInputChange} />
           <SelectField
             label="Goods Service"
             name="goodsService"
             value={formData.goodsService}
             onChange={handleInputChange}
-            options={["Goods", "Service"]}
+            options={['Goods', 'Service']}
           />
         </div>
         <div className="space-y-4">
@@ -917,9 +872,9 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
             name="gstCategory"
             value={formData.gstCategory}
             onChange={handleInputChange}
-            options={["Registered", "Unregistered", "Composite"]}
+            options={['Registered', 'Unregistered', 'Composite']}
           />
-          <div className="grid grid-cols-12 gap-2 items-center">
+          <div className="grid grid-cols-12 items-center gap-2">
             <div className="col-span-4">
               <FormLabel>GST Suspend</FormLabel>
             </div>
@@ -929,11 +884,11 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
                 name="gstSuspend"
                 checked={formData.gstSuspend}
                 onChange={handleInputChange}
-                className="w-5 h-5 border-gray-300 rounded text-[#0c5888]"
+                className="h-5 w-5 rounded border-gray-300 text-[#0c5888]"
               />
             </div>
           </div>
-          <div className="h-8 hidden md:block"></div>
+          <div className="hidden h-8 md:block"></div>
           <InputField
             label="Distance"
             name="distance"
@@ -942,7 +897,7 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
             onChange={handleInputChange}
             className="text-right"
           />
-          <div className="grid grid-cols-12 gap-2 items-center">
+          <div className="grid grid-cols-12 items-center gap-2">
             <div className="col-span-4">
               <FormLabel>TDS On GST Applicable</FormLabel>
             </div>
@@ -952,7 +907,7 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
                 name="tdsApplicable"
                 checked={formData.tdsApplicable}
                 onChange={handleInputChange}
-                className="w-5 h-5 border-gray-300 rounded text-[#0c5888]"
+                className="h-5 w-5 rounded border-gray-300 text-[#0c5888]"
               />
             </div>
           </div>
@@ -962,10 +917,10 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
   );
 
   const renderCommunication = () => (
-    <div className="bg-white border rounded-lg px-6 py-2 shadow-sm mt-4">
+    <div className="mt-4 rounded-lg border bg-white px-6 py-2 shadow-sm">
       <div className="grid grid-cols-1">
         <div>
-          <h3 className="text-sm font-bold text-[#0c5888] mb-4 border-b pb-2">
+          <h3 className="mb-4 border-b pb-2 text-sm font-bold text-[#0c5888]">
             Address Information
           </h3>
           <div className="space-y-3">
@@ -976,7 +931,7 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
                 value={formData.billingAddress}
                 onChange={handleInputChange}
                 rows={3}
-                className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm resize-none focus:outline-none focus:border-[#0c5888]"
+                className="w-full resize-none rounded border border-gray-300 px-2 py-1.5 text-sm focus:border-[#0c5888] focus:outline-none"
               />
             </div>
             <InputField
@@ -1024,10 +979,8 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
   );
 
   const renderSocialProfile = () => (
-    <div className="bg-white border rounded-lg p-8 shadow-sm mt-4 max-w-3xl mx-auto">
-      <h3 className="text-lg font-medium text-gray-700 mb-6">
-        Social Media Links
-      </h3>
+    <div className="mx-auto mt-4 max-w-3xl rounded-lg border bg-white p-8 shadow-sm">
+      <h3 className="mb-6 text-lg font-medium text-gray-700">Social Media Links</h3>
       <div className="space-y-2">
         <SocialInput
           icon={Globe}
@@ -1074,35 +1027,35 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
   );
 
   const renderDefaults = () => (
-    <div className="bg-white border rounded-lg p-6 shadow-sm mt-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="mt-4 rounded-lg border bg-white p-6 shadow-sm">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         <SelectField
           label="Payment Terms"
           name="paymentTerms"
           value={formData.paymentTerms}
           onChange={handleInputChange}
-          options={["Due on Receipt", "Net 15", "Net 30", "Net 60"]}
+          options={['Due on Receipt', 'Net 15', 'Net 30', 'Net 60']}
         />
         <SelectField
           label="Price Category"
           name="priceCategory"
           value={formData.priceCategory}
           onChange={handleInputChange}
-          options={["Retail", "Wholesale", "Distributor"]}
+          options={['Retail', 'Wholesale', 'Distributor']}
         />
         <SelectField
           label="Sales Executive"
           name="salesExecutive"
           value={formData.salesExecutive}
           onChange={handleInputChange}
-          options={["Select...", "Rohit", "Jane Smith"]}
+          options={['Select...', 'Rohit', 'Jane Smith']}
         />
         <SelectField
           label="Transporter"
           name="transporter"
           value={formData.transporter}
           onChange={handleInputChange}
-          options={["Select...", "DHL", "FedEx", "Local"]}
+          options={['Select...', 'DHL', 'FedEx', 'Local']}
         />
         <InputField
           label="Credit Limit"
@@ -1132,19 +1085,16 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
           value={formData.interestRateYearly}
           onChange={handleInputChange}
         />
-        <div className="flex items-center h-full pt-4">
+        <div className="flex h-full items-center pt-4">
           <input
             type="checkbox"
             id="customerOnWatch"
             name="customerOnWatch"
             checked={formData.customerOnWatch}
             onChange={handleInputChange}
-            className="w-5 h-5 mr-2 text-[#0c5888] rounded border-gray-300 focus:ring-[#0c5888]"
+            className="mr-2 h-5 w-5 rounded border-gray-300 text-[#0c5888] focus:ring-[#0c5888]"
           />
-          <label
-            htmlFor="customerOnWatch"
-            className="text-sm font-medium text-gray-700"
-          >
+          <label htmlFor="customerOnWatch" className="text-sm font-medium text-gray-700">
             Vendor On Watch
           </label>
         </div>
@@ -1153,21 +1103,21 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
           name="firmStatus"
           value={formData.firmStatus}
           onChange={handleInputChange}
-          options={["Active", "Inactive", "Suspended"]}
+          options={['Active', 'Inactive', 'Suspended']}
         />
         <SelectField
           label="Territory"
           name="territory"
           value={formData.territory}
           onChange={handleInputChange}
-          options={["Default", "North", "South", "East", "West", "Patna"]}
+          options={['Default', 'North', 'South', 'East', 'West', 'Patna']}
         />
         <SelectField
           label="Vendor Category"
           name="customerCategory"
           value={formData.customerCategory}
           onChange={handleInputChange}
-          options={["General", "VIP", "Reseller", "Service Provider"]}
+          options={['General', 'VIP', 'Reseller', 'Service Provider']}
         />
         <InputField
           label="Contact Person"
@@ -1176,19 +1126,16 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
           value={formData.contactPersonName}
           onChange={handleInputChange}
         />
-        <div className="flex items-center h-full pt-4">
+        <div className="flex h-full items-center pt-4">
           <input
             type="checkbox"
             id="registeredInMSME"
             name="registeredInMSME"
             checked={formData.registeredInMSME}
             onChange={handleInputChange}
-            className="w-5 h-5 mr-2 text-[#0c5888] rounded border-gray-300 focus:ring-[#0c5888]"
+            className="mr-2 h-5 w-5 rounded border-gray-300 text-[#0c5888] focus:ring-[#0c5888]"
           />
-          <label
-            htmlFor="registeredInMSME"
-            className="text-sm font-medium text-gray-700"
-          >
+          <label htmlFor="registeredInMSME" className="text-sm font-medium text-gray-700">
             Registered in MSME
           </label>
         </div>
@@ -1197,31 +1144,28 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
   );
 
   const renderBankDetail = () => (
-    <div className="bg-white border rounded-lg p-6 shadow-sm mt-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center mb-6 pb-2 border-b">
-          <Landmark className="w-5 h-5 text-[#0c5888] mr-2" />
-          <h3 className="text-lg font-medium text-gray-800">
-            Banking Information
-          </h3>
+    <div className="mt-4 rounded-lg border bg-white p-6 shadow-sm">
+      <div className="mx-auto max-w-4xl">
+        <div className="mb-6 flex items-center border-b pb-2">
+          <Landmark className="mr-2 h-5 w-5 text-[#0c5888]" />
+          <h3 className="text-lg font-medium text-gray-800">Banking Information</h3>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <div className="mb-3">
             <FormLabel>RTGS/IFSC Code</FormLabel>
-            <div className="flex relative">
+            <div className="relative flex">
               <input
                 type="text"
                 name="ifscCode"
                 value={formData.ifscCode}
                 onChange={handleInputChange}
                 placeholder="e.g., HDFC0001234"
-                className="w-full border border-gray-300 rounded-l px-2 py-1.5 text-sm focus:outline-none focus:border-[#0c5888]"
+                className="w-full rounded-l border border-gray-300 px-2 py-1.5 text-sm focus:border-[#0c5888] focus:outline-none"
               />
               <button
                 type="button"
                 onClick={fetchBankDetails}
-                className="bg-[#0c5888] text-white text-xs px-4 rounded-r hover:bg-[#0a4a70] font-medium transition-colors"
-              >
+                className="rounded-r bg-[#0c5888] px-4 text-xs font-medium text-white transition-colors hover:bg-[#0a4a70]">
                 Fetch
               </button>
             </div>
@@ -1251,74 +1195,68 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
   );
 
   const renderContactPerson = () => (
-    <div className="bg-white border rounded-lg p-6 shadow-sm mt-4">
-      <div className="flex justify-between items-center mb-4">
+    <div className="mt-4 rounded-lg border bg-white p-6 shadow-sm">
+      <div className="mb-4 flex items-center justify-between">
         <h3 className="text-lg font-medium text-gray-700">Contact Persons</h3>
         <button
           onClick={openAddContact}
-          className="flex items-center bg-[#0c5888] text-white px-3 py-2 rounded text-sm hover:bg-[#0a4a70]"
-        >
-          <Plus className="w-4 h-4 mr-1" /> Add Contact
+          className="flex items-center rounded bg-[#0c5888] px-3 py-2 text-sm text-white hover:bg-[#0a4a70]">
+          <Plus className="mr-1 h-4 w-4" /> Add Contact
         </button>
       </div>
-      <div className="overflow-x-auto border rounded-lg">
+      <div className="overflow-x-auto rounded-lg border">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">
                 Name
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">
                 Designation
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">
                 Mobile
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">
                 Email
               </th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">
+              <th className="px-4 py-3 text-center text-xs font-semibold uppercase text-gray-600">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="divide-y divide-gray-200 bg-white">
             {formData.contact.map((contact, idx) => (
               <tr key={idx} className="hover:bg-blue-50">
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">
                   {contact.name}
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600">
                   {contact.designation}
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600">
                   {contact.phone}
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600">
                   {contact.email}
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap text-center text-sm font-medium">
+                <td className="whitespace-nowrap px-4 py-3 text-center text-sm font-medium">
                   <button
                     onClick={() => openEditContact(idx)}
-                    className="text-[#0c5888] hover:text-[#0a4a70] mr-3"
-                  >
-                    <Edit className="w-4 h-4" />
+                    className="mr-3 text-[#0c5888] hover:text-[#0a4a70]">
+                    <Edit className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => deleteContact(idx)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    <Trash2 className="w-4 h-4" />
+                    className="text-red-500 hover:text-red-700">
+                    <Trash2 className="h-4 w-4" />
                   </button>
                 </td>
               </tr>
             ))}
             {formData.contact.length === 0 && (
               <tr>
-                <td
-                  colSpan={5}
-                  className="px-4 py-8 text-center text-gray-500 text-sm"
-                >
+                <td colSpan={5} className="px-4 py-8 text-center text-sm text-gray-500">
                   No contact persons added yet.
                 </td>
               </tr>
@@ -1330,40 +1268,36 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
   );
 
   const Attachments = () => (
-    <div className="bg-white border rounded-lg p-6 shadow-sm mt-4">
+    <div className="mt-4 rounded-lg border bg-white p-6 shadow-sm">
       <Attachment />
     </div>
   );
 
   return (
     <div
-      className="fixed inset-0 flex items-center justify-center bg-transparent backdrop-blur-sm p-4 font-sans text-gray-800"
-      style={{ zIndex: overlayZIndex }}
-    >
-      <div className="max-w-6xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
-        <div className="bg-[#0c5888] px-6 py-4 text-white flex justify-between items-center">
+      className="fixed inset-0 flex items-center justify-center bg-transparent p-4 font-sans text-gray-800 backdrop-blur-sm"
+      style={{ zIndex: overlayZIndex }}>
+      <div className="mx-auto max-w-6xl overflow-hidden rounded-lg bg-white shadow-lg">
+        <div className="flex items-center justify-between bg-[#0c5888] px-6 py-4 text-white">
           <h1 className="text-xl font-semibold tracking-wide">
-            {isEditMode ? "EDIT VENDOR" : "ADD NEW VENDOR"}
+            {isEditMode ? 'EDIT VENDOR' : 'ADD NEW VENDOR'}
           </h1>
           <button
             onClick={() => onClose(false)}
-            className="text-white hover:text-gray-200 transition-colors"
-          >
-            <X className="w-6 h-6 cursor-pointer" />
+            className="text-white transition-colors hover:text-gray-200">
+            <X className="h-6 w-6 cursor-pointer" />
           </button>
         </div>
 
-        <div className="bg-gray-100 border-b overflow-x-auto">
+        <div className="overflow-x-auto border-b bg-gray-100">
           <div className="flex min-w-max px-4">
             {STEPS.map((step, index) => (
               <div
                 key={step.id}
-                className={`relative py-3 px-4 text-sm font-medium cursor-pointer transition-colors duration-200 flex items-center ${index === activeStep ? "text-[#0c5888] border-b-2 border-[#0c5888] bg-white" : ""} ${index < activeStep ? "text-green-600" : ""} ${index > activeStep ? "text-gray-400 hover:text-gray-600" : ""}`}
-                onClick={() => setActiveStep(index)}
-              >
+                className={`relative flex cursor-pointer items-center px-4 py-3 text-sm font-medium transition-colors duration-200 ${index === activeStep ? 'border-b-2 border-[#0c5888] bg-white text-[#0c5888]' : ''} ${index < activeStep ? 'text-green-600' : ''} ${index > activeStep ? 'text-gray-400 hover:text-gray-600' : ''}`}
+                onClick={() => setActiveStep(index)}>
                 <span
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs mr-2 border ${index === activeStep ? "bg-[#0c5888] text-white border-[#0c5888]" : ""} ${index < activeStep ? "bg-green-100 text-green-600 border-green-600" : ""} ${index > activeStep ? "bg-gray-100 border-gray-300" : ""}`}
-                >
+                  className={`mr-2 flex h-6 w-6 items-center justify-center rounded-full border text-xs ${index === activeStep ? 'border-[#0c5888] bg-[#0c5888] text-white' : ''} ${index < activeStep ? 'border-green-600 bg-green-100 text-green-600' : ''} ${index > activeStep ? 'border-gray-300 bg-gray-100' : ''}`}>
                   {index + 1}
                 </span>
                 {step.label}
@@ -1372,7 +1306,7 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
           </div>
         </div>
 
-        <div className="px-6 py-0 bg-white h-[50vh] overflow-y-scroll">
+        <div className="h-[50vh] overflow-y-scroll bg-white px-6 py-0">
           {activeStep === 0 && renderBasicDetails()}
           {activeStep === 1 && renderStatutory()}
           {activeStep === 2 && renderCommunication()}
@@ -1383,35 +1317,28 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
           {activeStep === 7 && Attachments()}
         </div>
 
-        <div className="bg-gray-50 px-6 py-4 border-t flex justify-between items-center">
-          <div className="text-sm text-gray-600 font-medium">
+        <div className="flex items-center justify-between border-t bg-gray-50 px-6 py-4">
+          <div className="text-sm font-medium text-gray-600">
             Step {activeStep + 1} of {STEPS.length}
           </div>
           <div className="flex gap-3">
             <button
               onClick={handleBack}
-              className="flex items-center px-4 py-2 rounded border font-medium transition-colors text-gray-700 border-gray-300 hover:bg-gray-100 bg-white"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />{" "}
-              {activeStep > 0 ? "Back" : "Close"}
+              className="flex items-center rounded border border-gray-300 bg-white px-4 py-2 font-medium text-gray-700 transition-colors hover:bg-gray-100">
+              <ArrowLeft className="mr-2 h-4 w-4" /> {activeStep > 0 ? 'Back' : 'Close'}
             </button>
             <button
               onClick={handleNext}
               disabled={isSubmitting}
-              className={`flex items-center px-6 py-2 bg-[#0c5888] text-white rounded hover:bg-[#0a4a70] font-medium shadow-sm ${isSubmitting ? "opacity-70 cursor-not-allowed" : ""}`}
-            >
+              className={`flex items-center rounded bg-[#0c5888] px-6 py-2 font-medium text-white shadow-sm hover:bg-[#0a4a70] ${isSubmitting ? 'cursor-not-allowed opacity-70' : ''}`}>
               {activeStep === STEPS.length - 1 ? (
                 <>
-                  <Save className="w-4 h-4 mr-2" />{" "}
-                  {isSubmitting
-                    ? "Processing..."
-                    : isEditMode
-                      ? "Update"
-                      : "Submit"}
+                  <Save className="mr-2 h-4 w-4" />{' '}
+                  {isSubmitting ? 'Processing...' : isEditMode ? 'Update' : 'Submit'}
                 </>
               ) : (
                 <>
-                  Save & Next <ArrowRight className="w-4 h-4 ml-2" />
+                  Save & Next <ArrowRight className="ml-2 h-4 w-4" />
                 </>
               )}
             </button>
@@ -1425,9 +1352,8 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
       {showChartOfAccounts && (
         <div
           className="fixed inset-0 flex items-center justify-center bg-black/50 p-4"
-          style={{ zIndex: nestedModalZIndex }}
-        >
-          <div className="bg-white rounded shadow-lg w-full max-w-4xl max-h-[90vh] overflow-auto">
+          style={{ zIndex: nestedModalZIndex }}>
+          <div className="max-h-[90vh] w-full max-w-4xl overflow-auto rounded bg-white shadow-lg">
             <ChartOfAccounts
               isOpen={showChartOfAccounts}
               onClose={() => setShowChartOfAccounts(false)}
@@ -1443,23 +1369,21 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
       {showContactModal && (
         <div
           className="fixed inset-0 flex items-center justify-center bg-black/50 p-4"
-          style={{ zIndex: nestedModalZIndex + 10 }}
-        >
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <div className="flex justify-between items-center mb-4 border-b pb-2">
+          style={{ zIndex: nestedModalZIndex + 10 }}>
+          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+            <div className="mb-4 flex items-center justify-between border-b pb-2">
               <h3 className="text-lg font-bold text-gray-800">
-                {editingContactIndex !== null ? "Edit Contact" : "Add Contact"}
+                {editingContactIndex !== null ? 'Edit Contact' : 'Add Contact'}
               </h3>
               <button
                 onClick={() => setShowContactModal(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X className="w-5 h-5" />
+                className="text-gray-500 hover:text-gray-700">
+                <X className="h-5 w-5" />
               </button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
+                <label className="mb-1 block text-xs font-medium text-gray-700">
                   Name <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
@@ -1472,16 +1396,14 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
                         name: e.target.value,
                       })
                     }
-                    className="w-full border border-gray-300 rounded pl-9 pr-2 py-1.5 text-sm focus:outline-none focus:border-[#0c5888]"
+                    className="w-full rounded border border-gray-300 py-1.5 pl-9 pr-2 text-sm focus:border-[#0c5888] focus:outline-none"
                     placeholder="Contact Name"
                   />
-                  <User className="w-4 h-4 absolute left-2.5 top-2 text-gray-400" />
+                  <User className="absolute left-2.5 top-2 h-4 w-4 text-gray-400" />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Designation
-                </label>
+                <label className="mb-1 block text-xs font-medium text-gray-700">Designation</label>
                 <div className="relative">
                   <input
                     type="text"
@@ -1492,16 +1414,14 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
                         designation: e.target.value,
                       })
                     }
-                    className="w-full border border-gray-300 rounded pl-9 pr-2 py-1.5 text-sm focus:outline-none focus:border-[#0c5888]"
+                    className="w-full rounded border border-gray-300 py-1.5 pl-9 pr-2 text-sm focus:border-[#0c5888] focus:outline-none"
                     placeholder="Role / Position"
                   />
-                  <Briefcase className="w-4 h-4 absolute left-2.5 top-2 text-gray-400" />
+                  <Briefcase className="absolute left-2.5 top-2 h-4 w-4 text-gray-400" />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Mobile
-                </label>
+                <label className="mb-1 block text-xs font-medium text-gray-700">Mobile</label>
                 <div className="relative">
                   <input
                     type="text"
@@ -1512,16 +1432,14 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
                         phone: e.target.value,
                       })
                     }
-                    className="w-full border border-gray-300 rounded pl-9 pr-2 py-1.5 text-sm focus:outline-none focus:border-[#0c5888]"
+                    className="w-full rounded border border-gray-300 py-1.5 pl-9 pr-2 text-sm focus:border-[#0c5888] focus:outline-none"
                     placeholder="Phone Number"
                   />
-                  <Phone className="w-4 h-4 absolute left-2.5 top-2 text-gray-400" />
+                  <Phone className="absolute left-2.5 top-2 h-4 w-4 text-gray-400" />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Email
-                </label>
+                <label className="mb-1 block text-xs font-medium text-gray-700">Email</label>
                 <div className="relative">
                   <input
                     type="email"
@@ -1532,24 +1450,22 @@ const CrudVendor: React.FC<AddNewVendorProps> = ({
                         email: e.target.value,
                       })
                     }
-                    className="w-full border border-gray-300 rounded pl-9 pr-2 py-1.5 text-sm focus:outline-none focus:border-[#0c5888]"
+                    className="w-full rounded border border-gray-300 py-1.5 pl-9 pr-2 text-sm focus:border-[#0c5888] focus:outline-none"
                     placeholder="Email Address"
                   />
-                  <Mail className="w-4 h-4 absolute left-2.5 top-2 text-gray-400" />
+                  <Mail className="absolute left-2.5 top-2 h-4 w-4 text-gray-400" />
                 </div>
               </div>
             </div>
-            <div className="flex justify-end mt-6 gap-2">
+            <div className="mt-6 flex justify-end gap-2">
               <button
                 onClick={() => setShowContactModal(false)}
-                className="px-4 py-2 text-sm text-gray-600 border rounded hover:bg-gray-100"
-              >
+                className="rounded border px-4 py-2 text-sm text-gray-600 hover:bg-gray-100">
                 Cancel
               </button>
               <button
                 onClick={saveContact}
-                className="px-4 py-2 text-sm text-white bg-[#0c5888] rounded hover:bg-[#0a4a70]"
-              >
+                className="rounded bg-[#0c5888] px-4 py-2 text-sm text-white hover:bg-[#0a4a70]">
                 Save Contact
               </button>
             </div>

@@ -302,7 +302,7 @@ const StockSummary: React.FC = () => {
                             />
                           </td>
                           <td className="border-r px-2" style={{ borderColor: COLORS.border }}>
-                            {row.name || row.description}
+                            {row.name || row.description || 'N/A'}
                           </td>
                           <td
                             className="border-r px-2 text-gray-400"
@@ -313,13 +313,13 @@ const StockSummary: React.FC = () => {
                             {row.unit}
                           </td>
                           <td className="border-r px-2" style={{ borderColor: COLORS.border }}>
-                            {row.hsn_code}
+                            {row.hsn_code || 'N/A'}
                           </td>
                           <td className="border-r px-2" style={{ borderColor: COLORS.border }}>
-                            {row.tax_category}
+                            {row.tax_category || 'N/A'}
                           </td>
                           <td className="border-r px-2" style={{ borderColor: COLORS.border }}>
-                            {row.tax_category}
+                            {row.tax_category || 'N/A'}
                           </td>
                           <td
                             className="border-r px-2 text-right"

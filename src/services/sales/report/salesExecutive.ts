@@ -55,6 +55,7 @@ const stockSummaryService = {
       "/stocksummery/stocksummary",
       { params }
     );
+    console.log(response.data);
     return response.data;
   },
 

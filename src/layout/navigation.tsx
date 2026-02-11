@@ -201,7 +201,7 @@ export const navItems = [
       { name: 'Transfer Journal', path: '/transfer-journal', pro: false },
       { name: 'Reversal Journal', path: '/reversal-journal', pro: false },
       { name: 'Journal Voucher', path: '/journal-voucher', pro: false },
-      { name: 'Expenses Journal', path: '/expenses-journal', pro: false },
+      { name: 'Expenses Journal', path: '/expense-journal', pro: false },
       {
         name: 'GST Adjustment Voucher',
         path: '/gst-adjustment-voucher',
@@ -580,7 +580,7 @@ export const navItems = [
         pro: false,
       },
       { name: 'Customer Trial', path: '/report/customer-trial', pro: false },
-      { name: 'Vendor Trial', path: '/vendor-trial', pro: false },
+      { name: 'Vendor Trial', path: '/report/vendor-trial', pro: false },
       { name: 'Stock Trial', path: '/report/stock-trial', pro: false },
     ],
   },

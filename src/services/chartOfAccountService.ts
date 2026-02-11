@@ -52,7 +52,7 @@ const BASE_PATH = "/chartofaccount";
 
 /** Get all chart of accounts */
 export const getAllChartOfAccounts = (): Promise<
-  AxiosResponse<ApiResponse<ChartOfAccount[]>>
+  AxiosResponse<ChartOfAccount[]>
 > => {
   return api.get(`${BASE_PATH}/all/`); // Added trailing slash to match screenshot
 };

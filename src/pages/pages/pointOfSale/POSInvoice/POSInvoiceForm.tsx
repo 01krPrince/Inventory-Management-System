@@ -53,8 +53,6 @@ interface InputProps {
   className?: string;
 }
 
-// --- Helper Components (Moved Outside to fix Focus Loss) ---
-
 const Label: React.FC<{ children: React.ReactNode; required?: boolean }> = ({
   children,
   required,
@@ -429,6 +427,9 @@ const POSInvoiceForm: React.FC<POSInvoiceFormProps> = ({
     setSelectedCustomerUI(item);
   };
 
+  const selectedStoreName =
+    storeOptions.find((loc) => loc.code === data.store)?.name || data.store || '';
+
   return (
     <div style={themeStyles} className="w-full">
       {isCounterMasterOpen && <CounterMaster onClose={() => setIsCounterMasterOpen(false)} />}
@@ -527,9 +528,9 @@ const POSInvoiceForm: React.FC<POSInvoiceFormProps> = ({
                         <Dropdown
                           data={storeOptions}
                           columns={simpleColumns}
-                          value={data.store}
+                          value={selectedStoreName} // Pass the derived NAME for the UI display
                           valueKey="name"
-                          onChange={(item) => onChange('store', item?.name || '')}
+                          onChange={(item) => onChange('store', item?.code || '')} // Send the CODE to your payload
                           placeholder="Select Store..."
                         />
                         <ActionBtn
