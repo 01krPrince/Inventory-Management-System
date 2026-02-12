@@ -42,8 +42,6 @@ interface ReportSection {
   isFavourite?: boolean;
 }
 
-// --- Initial Data (Updated with Nesting) ---
-
 const INITIAL_DATA: ReportSection[] = [
   {
     id: 'fav',
@@ -60,7 +58,23 @@ const INITIAL_DATA: ReportSection[] = [
       {
         label: 'Financial Statements',
         type: 'folder',
-        path: '/report/financial-statements',
+        children: [
+          {
+            label: 'Profit & Loss Statement',
+            type: 'link',
+            path: '/report/profit-loss-statement',
+          },
+          {
+            label: 'Profit & Loss Statement TView',
+            type: 'link',
+            path: '/report/profit-loss-statement-tview',
+          },
+          {
+            label: 'Trading and Profit & Loss Statement',
+            type: 'link',
+            path: '/report/trading-profit-loss-statement',
+          },
+        ],
       },
       {
         label: 'Financial Analysis',
@@ -628,14 +642,12 @@ const INITIAL_DATA: ReportSection[] = [
   },
 ];
 
-// --- Sub-Component: Recursive Item Renderer ---
-
 interface ReportItemViewProps {
   item: ReportItem;
   isFavouriteSection: boolean;
   onDragStart: (e: React.DragEvent, item: ReportItem) => void;
   onClick: (item: ReportItem) => void;
-  level?: number; // To handle indentation for nested items
+  level?: number;
 }
 
 const ReportItemView: React.FC<ReportItemViewProps> = ({
@@ -647,7 +659,6 @@ const ReportItemView: React.FC<ReportItemViewProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  // LOGIC: If children exist and length == 1, Flatten (Recursively render the child directly)
   if (item.children && item.children.length === 1) {
     return (
       <ReportItemView

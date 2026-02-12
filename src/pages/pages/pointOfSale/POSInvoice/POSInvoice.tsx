@@ -301,6 +301,16 @@ const POSInvoice: React.FC = () => {
     try {
       const data = activeData;
 
+      if (!data.customerCode) {
+        alert('Please select customer before saving.');
+        return;
+      }
+
+      if (!data.store) {
+        data.store = '00001';
+        return;
+      }
+
       if (!data.items || data.items.length === 0) {
         alert('Please add items to the invoice before saving.');
         return;

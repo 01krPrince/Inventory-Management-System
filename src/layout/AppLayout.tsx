@@ -70,6 +70,9 @@ import ReversalJournal from '../pages/pages/finance/reversalJournal/ReversalJour
 import JournalVoucher from '../pages/pages/finance/journalVoucher/JournalVoucher.tsx';
 import VendorLedger from '../pages/pages/reports/vendorTrials/VendorLedger.tsx';
 import ExpenceVoucher from '../pages/pages/finance/expenceVoucher/ExpenceVoucher.tsx';
+import ProfitLossStatement from '../pages/pages/reports/allReport/allReportPages/misReports/ProfitLossStatement/ProfitLossStatement.tsx';
+import ProfitLossStatementTView from '../pages/pages/reports/allReport/allReportPages/misReports/ProfitLossStatementTView/ProfitLossStatementTView.tsx';
+// import TradingProfitLossStatement from '../pages/pages/reports/allReport/allReportPages/misReports/TradingProfitLossStatement/TradingProfitLossStatement.tsx';
 
 const useSidebar = () => ({
   isExpanded: false,
@@ -304,6 +307,10 @@ const ComponentMap: { [key: string]: React.FC<any> } = {
   //
   '/report/stock-trial': StockTrial,
   '/report/stock-trial/ledger': StockLedger,
+  '/report/profit-loss-statement': ProfitLossStatement,
+  '/report/profit-loss-statement-tview': ProfitLossStatementTView,
+  // '/report/trading-profit-loss-statement': TradingProfitLossStatement,
+
   //
   //
   //

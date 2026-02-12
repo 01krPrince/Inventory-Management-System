@@ -81,25 +81,6 @@ export const createStockAdjustment = async (
     console.error("API Error (Create):", error);
     const responseData = error.response?.data;
 
-    // --- FIX: Detailed Error Extraction ---
-
-    // 1. Check for Duplicate Key Error (E11000)
-    // Sometimes backend returns it in 'error', sometimes in 'message'
-    // const errorMsg =
-    //   typeof responseData?.error === "string"
-    //     ? responseData.error
-    //     : JSON.stringify(responseData?.error || "");
-
-    // if (errorMsg.includes("E11000") || (responseData?.message && responseData.message.includes("E11000"))) {
-    //   return {
-    //     success: false,
-    //     message: `Voucher Number "${payload.voucherNo}" already exists.`,
-    //     error: responseData?.error,
-    //   };
-    // }
-
-    // 2. Check for Mongoose Validation Errors
-    // These usually come in responseData.error.errors (e.g., { hsnCode: { message: "Path is required" } })
     if (responseData?.error?.errors) {
       return {
         success: false,

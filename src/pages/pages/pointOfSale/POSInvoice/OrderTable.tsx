@@ -728,7 +728,27 @@ const OrderTable: React.FC<OrderTableProps> = ({
   const handleWarrantyClick = (e: React.MouseEvent<HTMLDivElement>, rowId: string) => {
     e.stopPropagation();
     const rowData = tableData[rowId];
-    const options = getStandardWarranties(String(rowData?.select || ''));
+
+    // 1. Find the original item object from your master list to access hidden fields like customWarranty
+    const originalItem = items.find((i) => i._id === rowData.itemId || i.code === rowData.select);
+
+    let options: WarrantyOption[] = [];
+
+    // 2. Check if the item has custom warranties
+    // We cast to 'any' here just in case ItemApiData interface isn't updated in your file yet
+    const customWarranties = (originalItem as any)?.customWarranty;
+
+    if (Array.isArray(customWarranties) && customWarranties.length > 0) {
+      // 3. Map your API response to the table's Option format
+      options = customWarranties.map((w: any) => ({
+        id: w._id,
+        label: `${w.duration} Months`, // Added "Months" for clarity
+        price: parseFloat(w.price) || 0,
+      }));
+    } else {
+      // 4. Fallback: Use the old standard logic if no custom warranty exists
+      options = getStandardWarranties(String(rowData?.select || ''));
+    }
 
     const rect = e.currentTarget.getBoundingClientRect();
     setWarrantyPopup({

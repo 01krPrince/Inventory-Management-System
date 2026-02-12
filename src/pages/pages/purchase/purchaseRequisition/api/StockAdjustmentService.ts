@@ -81,7 +81,7 @@ export const createStockAdjustment = async (
     const responseData = error.response?.data;
 
     // Handle Duplicate Key Error
-    if (responseData?.error && typeof responseData.error === 'string' && responseData.error.includes("E11000 duplicate key")) {
+    if (responseData?.error && typeof responseData.error === 'string' && responseData.error.includes("duplicate key")) {
       return {
         success: false,
         message: `Voucher Number "${payload.voucherNo}" already exists.`,
