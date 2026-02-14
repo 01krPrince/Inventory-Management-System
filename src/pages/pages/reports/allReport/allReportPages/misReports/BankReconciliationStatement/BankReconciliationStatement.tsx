@@ -1,18 +1,17 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Search,
   Printer,
   Download,
   Filter,
-  Landmark, // Icon for Bank
+  Landmark,
   Loader2,
   Calendar,
   Building2,
   RefreshCw,
-  Eye, // Zoom icon if needed
+  Eye,
 } from 'lucide-react';
 
-// --- TYPES ---
 type BRSItem = {
   id: string;
   ledger: string;
@@ -20,10 +19,9 @@ type BRSItem = {
   chequeNo: string;
   date: string;
   amount: number;
-  status: 'cleared' | 'pending'; // For logic, though UI just shows listing based on screenshot
+  status: 'cleared' | 'pending';
 };
 
-// --- HELPER: FORMAT CURRENCY ---
 const formatCurrency = (amount: number) => {
   if (amount === 0) return '₹0.00';
   const absAmount = Math.abs(amount).toLocaleString('en-IN', {
@@ -33,7 +31,6 @@ const formatCurrency = (amount: number) => {
   return amount < 0 ? `(${absAmount})` : `${absAmount}`;
 };
 
-// --- MOCK DATA GENERATOR ---
 const generateMockData = (): BRSItem[] => {
   return [
     {
@@ -85,13 +82,11 @@ const generateMockData = (): BRSItem[] => {
 };
 
 export default function BankReconciliationStatement() {
-  // --- STATE ---
   const [data, setData] = useState<BRSItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [filterStore, setFilterStore] = useState('00002');
   const [dateRange, setDateRange] = useState({ from: '2026-02-01', to: '2026-02-28' });
 
-  // --- INITIAL LOAD ---
   useEffect(() => {
     setLoading(true);
     setTimeout(() => {
@@ -100,10 +95,8 @@ export default function BankReconciliationStatement() {
     }, 600);
   }, []);
 
-  // --- TOTALS ---
   const totalAmount = useMemo(() => data.reduce((sum, item) => sum + item.amount, 0), [data]);
 
-  // --- HEADER CELL COMPONENT ---
   const HeaderCell = ({ label, showFilter = true, align = 'left', className = '' }: any) => (
     <div
       className={`flex items-center ${align === 'right' ? 'justify-end' : 'justify-between'} h-full gap-1 px-2 ${className}`}>
@@ -116,7 +109,6 @@ export default function BankReconciliationStatement() {
 
   return (
     <div className="flex h-screen select-none flex-col overflow-hidden bg-[#f8fafc] font-sans text-sm">
-      {/* --- CONTROL BAR --- */}
       <div className="no-print flex shrink-0 flex-col border-b bg-white shadow-sm">
         <div className="flex items-center justify-between p-2">
           <div className="flex items-center gap-2">
@@ -150,7 +142,6 @@ export default function BankReconciliationStatement() {
           </div>
         </div>
 
-        {/* --- FILTERS --- */}
         <div className="flex items-center gap-3 border-t bg-gray-50/50 px-3 py-1.5 text-[11px]">
           <div className="flex items-center gap-2">
             <Building2 size={12} className="text-gray-400" />
@@ -190,7 +181,6 @@ export default function BankReconciliationStatement() {
         </div>
       </div>
 
-      {/* --- TABLE AREA --- */}
       <div className="shadow-inner relative m-2 flex-grow overflow-auto rounded border bg-white">
         {loading && (
           <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/60 backdrop-blur-[1px]">
@@ -203,7 +193,6 @@ export default function BankReconciliationStatement() {
 
         <table className="w-full min-w-[1000px] border-collapse text-left">
           <thead className="sticky top-0 z-30 bg-[#084164] text-[10px] font-bold uppercase text-white shadow-md">
-            {/* Top Header Row (Based on Screenshot: Zoom | - | Filler) */}
             <tr className="border-b border-white/10">
               <th className="sticky left-0 z-40 w-10 border-r border-white/10 bg-[#084164] py-1 text-center">
                 Zoom
@@ -211,14 +200,11 @@ export default function BankReconciliationStatement() {
               <th className="w-[60%] border-r border-white/10 px-2 text-left" colSpan={5}>
                 -
               </th>
-              <th className="w-full bg-[#084164]"></th> {/* Right filler */}
+              <th className="w-full bg-[#084164]"></th>
             </tr>
 
-            {/* Sub Header Row */}
             <tr className="h-8 bg-[#0c5888]">
-              {/* Zoom Column */}
               <th className="sticky left-0 z-40 w-10 border-r border-white/10 bg-[#0c5888]"></th>
-              {/* Data Columns */}
               <th className="w-[30%] border-r border-white/10 p-0">
                 <HeaderCell label="Ledger" align="left" />
               </th>
@@ -234,17 +220,16 @@ export default function BankReconciliationStatement() {
               <th className="w-[15%] border-r border-white/10 bg-[#0a4e7a] p-0">
                 <HeaderCell label="Amount(₹)" align="right" />
               </th>
-              <th className="bg-[#0c5888]"></th> {/* Right filler */}
+              <th className="bg-[#0c5888]"></th>
             </tr>
           </thead>
 
           <tbody className="text-[11px] text-gray-700">
             {data.length > 0
-              ? data.map((row, idx) => (
+              ? data.map((row) => (
                   <tr
                     key={row.id}
                     className="group h-7 border-b border-gray-100 transition-colors hover:bg-blue-50/50">
-                    {/* Zoom Icon */}
                     <td className="sticky left-0 z-20 w-10 border-r border-gray-200 bg-gray-50 text-center group-hover:bg-blue-100/50">
                       <Eye
                         size={12}
@@ -281,7 +266,6 @@ export default function BankReconciliationStatement() {
                   </tr>
                 )}
 
-            {/* Empty Row Fillers */}
             {!loading &&
               data.length < 10 &&
               Array.from({ length: 10 - data.length }).map((_, i) => (
@@ -291,7 +275,6 @@ export default function BankReconciliationStatement() {
               ))}
           </tbody>
 
-          {/* --- FOOTER --- */}
           {data.length > 0 && (
             <tfoot className="sticky bottom-0 z-30 border-t-2 border-white/20 bg-[#0c5888] text-[11px] font-bold text-white shadow-lg">
               <tr className="h-8">

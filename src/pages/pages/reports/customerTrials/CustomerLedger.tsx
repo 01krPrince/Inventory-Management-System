@@ -4,7 +4,7 @@ import {
   Printer,
   ChevronLeft,
   ChevronRight as ChevronRightIcon,
-  User, // Changed icon to User for customers
+  User,
   Loader2,
   Filter,
 } from 'lucide-react';
@@ -17,7 +17,6 @@ import customerTrialService, {
 
 import { fetchAllLocations } from '../../inventory/stockAdjustment/api/LocationMaster';
 
-// --- PROPS INTERFACE ---
 interface CustomerLedgerProps {
   customerCode?: string;
   storeCode?: string;
@@ -31,7 +30,6 @@ interface CustomerLedgerProps {
   };
 }
 
-// --- UI DATA TYPE ---
 type LedgerRow = {
   id: string;
   date: string;
@@ -41,7 +39,7 @@ type LedgerRow = {
   debit: number;
   credit: number;
   balance: number;
-  isOpening?: boolean; // Helper to style opening row differently
+  isOpening?: boolean;
 };
 
 type StoreOption = {
@@ -50,13 +48,11 @@ type StoreOption = {
   code: string;
 };
 
-// --- HELPER: Safe Math ---
 const safeFloat = (num: number) => parseFloat((num || 0).toFixed(2));
 
 export default function CustomerLedger(props: CustomerLedgerProps) {
   const [searchParams] = useSearchParams();
 
-  // --- 1. INITIALIZATION HELPERS ---
   const getPropCustomerCode = () =>
     props.customerCode ||
     props.data?.customerCode ||
@@ -71,7 +67,6 @@ export default function CustomerLedger(props: CustomerLedgerProps) {
     searchParams.get('store') ||
     '';
 
-  // --- STATE ---
   const [targetCustomerCode, setTargetCustomerCode] = useState(getPropCustomerCode());
   const [filters, setFilters] = useState<ICustomerStatementParams>({
     storeCode: getPropStoreCode(),
@@ -79,12 +74,10 @@ export default function CustomerLedger(props: CustomerLedgerProps) {
     toDate: '2026-02-10',
   });
 
-  // Data State
   const [rows, setRows] = useState<LedgerRow[]>([]);
   const [metaData, setMetaData] = useState<ICustomerStatementResponse['meta'] | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // UI State
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(25);
@@ -93,7 +86,6 @@ export default function CustomerLedger(props: CustomerLedgerProps) {
   const [isPrinting, setIsPrinting] = useState(false);
   const [prePrintRows, setPrePrintRows] = useState(25);
 
-  // --- 2. SYNC PROPS ---
   useEffect(() => {
     const incomingCustomer = getPropCustomerCode();
     const incomingStore = getPropStoreCode();
@@ -106,7 +98,6 @@ export default function CustomerLedger(props: CustomerLedgerProps) {
     }
   }, [props.customerCode, props.storeCode, props.data, props.tabData, searchParams]);
 
-  // --- 3. FETCH STORES ---
   useEffect(() => {
     const loadStoreData = async () => {
       setLoadingStores(true);
@@ -127,7 +118,6 @@ export default function CustomerLedger(props: CustomerLedgerProps) {
     loadStoreData();
   }, []);
 
-  // --- 4. FETCH LEDGER DATA ---
   const fetchData = async () => {
     if (!targetCustomerCode) return;
 
@@ -145,7 +135,6 @@ export default function CustomerLedger(props: CustomerLedgerProps) {
       if (response.success) {
         setMetaData(response.meta);
 
-        // 1. Create Opening Balance Row
         const openingRow: LedgerRow = {
           id: 'OPENING',
           date: response.meta.fromDate,
@@ -158,7 +147,6 @@ export default function CustomerLedger(props: CustomerLedgerProps) {
           isOpening: true,
         };
 
-        // 2. Map Transactions
         const txnRows: LedgerRow[] = response.data.map((txn: ICustomerTransaction) => ({
           id: txn._id || 'N/A',
           date: txn.date || 'N/A',
@@ -171,7 +159,6 @@ export default function CustomerLedger(props: CustomerLedgerProps) {
           isOpening: false,
         }));
 
-        // Combine
         setRows([openingRow, ...txnRows]);
       } else {
         setRows([]);
@@ -189,22 +176,17 @@ export default function CustomerLedger(props: CustomerLedgerProps) {
     if (targetCustomerCode) {
       fetchData();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetCustomerCode, filters.storeCode, filters.fromDate, filters.toDate]);
 
-  // --- CALCULATION LOGIC ---
   const filteredData = useMemo(() => {
     return rows.filter((r) =>
       Object.values(r).some((v) => String(v).toLowerCase().includes(searchTerm.toLowerCase()))
     );
   }, [rows, searchTerm]);
 
-  // Calculate Running Totals for Footer (Debit/Credit)
-  // Note: We use the META totals for accuracy if available, otherwise sum rows
   const footerTotals = useMemo(() => {
     if (!metaData) return { totalDebit: 0, totalCredit: 0, closingBalance: 0 };
 
-    // You can stick to meta totals for the period
     return {
       totalDebit: metaData.totalDebitInPeriod,
       totalCredit: metaData.totalCreditInPeriod,
@@ -219,7 +201,6 @@ export default function CustomerLedger(props: CustomerLedgerProps) {
     return filteredData.slice(start, start + rowsPerPage);
   }, [filteredData, currentPage, rowsPerPage]);
 
-  // --- PRINT LOGIC ---
   const handlePrintRequest = () => {
     setPrePrintRows(rowsPerPage);
     setRowsPerPage(filteredData.length);
@@ -237,7 +218,6 @@ export default function CustomerLedger(props: CustomerLedgerProps) {
     }
   }, [isPrinting, paginatedData.length, filteredData.length, prePrintRows]);
 
-  // --- RENDER HELPERS ---
   const TableHeader = ({ label, colSpan = 1, className = '', isSubHeader = false }: any) => (
     <th
       colSpan={colSpan}
@@ -262,7 +242,6 @@ export default function CustomerLedger(props: CustomerLedgerProps) {
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-[#f8fafc] font-sans">
-      {/* HEADER SECTION */}
       <div className="no-print flex flex-col border-b bg-white shadow-sm">
         <div className="flex items-center justify-between p-2">
           <div className="flex items-center gap-2">
@@ -298,7 +277,6 @@ export default function CustomerLedger(props: CustomerLedgerProps) {
           </div>
         </div>
 
-        {/* FILTERS */}
         <div className="flex items-center gap-3 border-t bg-gray-50/50 px-3 py-2">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-bold uppercase text-gray-500">Store:</span>
@@ -350,7 +328,6 @@ export default function CustomerLedger(props: CustomerLedgerProps) {
         </div>
       </div>
 
-      {/* TABLE AREA */}
       <div className="shadow-inner relative m-2 flex-grow overflow-auto rounded border border-gray-200 bg-white">
         {loading && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-[1px]">
@@ -377,13 +354,11 @@ export default function CustomerLedger(props: CustomerLedgerProps) {
 
             <tr>
               <th className="no-print sticky top-6 z-20 h-10 border-r border-white/10 bg-[#0c5888]"></th>
-              {/* Transaction Columns */}
               <TableHeader label="Date" isSubHeader />
               <TableHeader label="Vch No" isSubHeader />
               <TableHeader label="Type" isSubHeader />
               <TableHeader label="Particulars" isSubHeader />
 
-              {/* Amount Columns */}
               <TableHeader label="Debit (₹)" isSubHeader className="bg-[#0e6ba5]" />
               <TableHeader label="Credit (₹)" isSubHeader className="bg-[#0a4e7a]" />
               <TableHeader label="Balance (₹)" isSubHeader className="bg-[#084164]" />
@@ -399,16 +374,13 @@ export default function CustomerLedger(props: CustomerLedgerProps) {
                       row.isOpening ? 'bg-yellow-50/50 font-medium' : ''
                     }`}>
                     <td className="no-print border-r text-center">
-                      {/* Only show view icon for real transactions */}
                       {!row.isOpening && (
                         <div className="flex justify-center">
-                          {/* Placeholder for action, maybe view voucher details */}
                           <div className="h-2 w-2 rounded-full bg-blue-400"></div>
                         </div>
                       )}
                     </td>
 
-                    {/* Transaction Details */}
                     <td className="whitespace-nowrap border-r px-2 text-gray-700">
                       {formatDate(row.date)}
                     </td>
@@ -422,7 +394,6 @@ export default function CustomerLedger(props: CustomerLedgerProps) {
                       {row.particulars}
                     </td>
 
-                    {/* Amounts */}
                     <td className="border-r bg-blue-50/10 px-2 text-right text-gray-700">
                       {row.debit > 0
                         ? row.debit.toLocaleString(undefined, {
@@ -453,7 +424,6 @@ export default function CustomerLedger(props: CustomerLedgerProps) {
                 )}
           </tbody>
 
-          {/* --- GRAND TOTAL FOOTER --- */}
           {rows.length > 0 && (
             <tfoot className="sticky bottom-0 z-20 border-t-2 border-white/20 bg-[#0c5888] text-[11px] font-bold text-white shadow-lg">
               <tr>
@@ -475,7 +445,6 @@ export default function CustomerLedger(props: CustomerLedgerProps) {
                   })}
                 </td>
 
-                {/* Closing Balance */}
                 <td className="border-l border-white/10 bg-[#0a4e7a] px-2 text-right font-extrabold text-yellow-300">
                   ₹
                   {footerTotals.closingBalance.toLocaleString(undefined, {
@@ -488,7 +457,6 @@ export default function CustomerLedger(props: CustomerLedgerProps) {
         </table>
       </div>
 
-      {/* PAGINATION */}
       <div className="no-print flex items-center justify-between border-t bg-white p-2 shadow-sm">
         <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
           Total Transactions: <span className="text-[#0c5888]">{filteredData.length}</span>

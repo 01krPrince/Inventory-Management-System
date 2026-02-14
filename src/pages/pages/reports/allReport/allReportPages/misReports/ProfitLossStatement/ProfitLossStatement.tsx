@@ -8,12 +8,11 @@ import {
   Download,
   ChevronLeft,
   ChevronRight as ChevronRightIcon,
-  TrendingUp, // Icon for Profit & Loss
+  TrendingUp,
   Loader2,
   Filter,
 } from 'lucide-react';
 
-// --- MOCK SERVICE (Replace with actual API) ---
 const mockService = {
   getProfitLoss: async (params: any) => {
     console.log(params);
@@ -21,7 +20,6 @@ const mockService = {
       setTimeout(() => {
         resolve({
           data: Array.from({ length: 40 }).map((_, i) => {
-            // Simulate Income vs Expense groups
             const isIncome = i % 3 === 0;
             const group = isIncome
               ? 'Direct Incomes'
@@ -58,7 +56,6 @@ interface IProfitLossParams {
 }
 
 export default function ProfitLossStatement() {
-  // --- STATE MANAGEMENT ---
   const [items, setItems] = useState<ProfitLossItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
@@ -112,11 +109,8 @@ export default function ProfitLossStatement() {
     );
   }, [items, searchTerm]);
 
-  // Calculate Totals (Net Profit logic approximation for UI demo)
   const totalClosing = useMemo(() => {
     return filteredData.reduce((acc, curr) => {
-      // In P&L, Credit (Income) is usually positive, Debit (Expense) negative for calculation
-      // For this UI, we just sum the absolute values per the screenshot's likely display
       return acc + curr.closing_amount;
     }, 0);
   }, [filteredData]);
@@ -153,7 +147,6 @@ export default function ProfitLossStatement() {
     setIsPrinting(true);
   };
 
-  // Reusable Header Component
   const TableHeader = ({
     label,
     colSpan = 1,
@@ -261,7 +254,6 @@ export default function ProfitLossStatement() {
         </div>
       </div>
 
-      {/* Main Table Container */}
       <div className="shadow-inner relative m-2 flex-grow overflow-auto rounded border border-gray-200 bg-white">
         {loading && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-[1px]">
@@ -412,7 +404,6 @@ export default function ProfitLossStatement() {
         </table>
       </div>
 
-      {/* Pagination Footer */}
       <div className="no-print flex items-center justify-between border-t bg-white p-2 shadow-sm">
         <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
           Total Records: <span className="text-[#0c5888]">{filteredData.length}</span>

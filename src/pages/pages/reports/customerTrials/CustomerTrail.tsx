@@ -43,7 +43,6 @@ export default function CustomerTrial() {
 
   const { addTab } = useTabs();
 
-  // Store Dropdown State
   const [storeOptions, setStoreOptions] = useState<StoreOption[]>([]);
   const [, setLoadingStores] = useState(false);
 
@@ -58,7 +57,6 @@ export default function CustomerTrial() {
   const [isPrinting, setIsPrinting] = useState(false);
   const [prePrintRows, setPrePrintRows] = useState(25);
 
-  // --- FETCH STORES ---
   useEffect(() => {
     const loadStores = async () => {
       setLoadingStores(true);
@@ -82,7 +80,6 @@ export default function CustomerTrial() {
     loadStores();
   }, []);
 
-  // --- FETCH DATA ---
   const fetchData = async () => {
     if (!filters.storeCode) return;
     setLoading(true);
@@ -90,7 +87,6 @@ export default function CustomerTrial() {
       const response = await customerTrialService.getAllCustomerTrials(filters);
 
       const mappedData: CustomerTrialItem[] = (response.data || []).map((raw) => ({
-        // Using 'state' as the group since JSON doesn't have a group field
         group: raw.state || 'General',
         name: raw.name || 'N/A',
         code: raw.code || 'N/A',
@@ -118,21 +114,16 @@ export default function CustomerTrial() {
     if (filters.storeCode) fetchData();
   }, [filters.storeCode]);
 
-  /// for the code sending purpose
   const handleViewLedger = (e: CustomerTrialItem) => {
     console.log('Item and Store code ' + e.code + '\t' + filters.storeCode);
     addTab({
       name: `Ledger: ${e.name}`,
-      // Unique path ensures the TabBar creates a new tab for each item
       path: `/report/customer-trial/ledger/${e.code}`,
-      // componentKey tells AppLayout to render the 'StockLedger' component
       componentKey: '/report/customer-trial/ledger',
-      // data carries the dynamic parameter
       data: { customerCode: e.code, storeCode: filters.storeCode },
     });
   };
 
-  // --- TABLE LOGIC (Filtering, Pagination, Grouping) ---
   const filteredData = useMemo(() => {
     return items.filter((r) =>
       Object.values(r).some((v) => String(v).toLowerCase().includes(searchTerm.toLowerCase()))
@@ -153,7 +144,6 @@ export default function CustomerTrial() {
     }, {});
   }, [paginatedData]);
 
-  // Print logic
   useEffect(() => {
     if (isPrinting && paginatedData.length === filteredData.length) {
       setTimeout(() => {
@@ -344,7 +334,6 @@ export default function CustomerTrial() {
         </table>
       </div>
 
-      {/* Pagination Footer matches your StockTrial */}
       <div className="no-print flex items-center justify-between border-t bg-white p-2 text-[10px] font-bold">
         <span className="uppercase text-gray-500">
           Total: <span className="text-[#0c5888]">{filteredData.length}</span>

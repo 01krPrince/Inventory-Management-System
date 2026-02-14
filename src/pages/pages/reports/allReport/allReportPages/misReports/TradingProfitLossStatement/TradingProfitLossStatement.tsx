@@ -14,19 +14,16 @@ import {
   RefreshCw,
 } from 'lucide-react';
 
-// --- TYPES ---
 type PLNode = {
   id: string;
   name: string;
   code: string;
   amount: number;
-  type: 'group' | 'ledger'; // To determine if zoom icon shows
+  type: 'group' | 'ledger';
   children?: PLNode[];
   level?: number;
 };
 
-// --- HELPER: FORMAT CURRENCY ---
-// Formats negative numbers with parentheses: (1,000.00)
 const formatCurrency = (amount: number) => {
   if (amount === 0) return '₹0.00';
   const absAmount = Math.abs(amount).toLocaleString('en-IN', {
@@ -35,14 +32,11 @@ const formatCurrency = (amount: number) => {
     style: 'currency',
     currency: 'INR',
   });
-  // Remove the default symbol to handle manually or keep consistent
   const cleanAmount = absAmount.replace('₹', '');
   return amount < 0 ? `(${cleanAmount})` : `${cleanAmount}`;
 };
 
-// --- MOCK DATA GENERATOR ---
 const generateMockData = () => {
-  // 1. TRADING ACCOUNT (Direct)
   const tradingExpenses: PLNode[] = [
     {
       id: 'EXP-DIRECT-ROOT',
@@ -163,7 +157,6 @@ const generateMockData = () => {
     },
   ];
 
-  // 2. P&L ACCOUNT (Indirect)
   const plExpenses: PLNode[] = [
     {
       id: 'EXP-INDIRECT-ROOT',
@@ -247,14 +240,13 @@ const generateMockData = () => {
       code: '32000000',
       amount: 0.0,
       type: 'group',
-      children: [], // Placeholder for Indirect Income
+      children: [],
     },
   ];
 
   return { tradingExpenses, tradingIncome, plExpenses, plIncome };
 };
 
-// --- FLATTEN LOGIC ---
 const flattenTree = (
   nodes: PLNode[],
   expandedIds: Record<string, boolean>,
@@ -271,7 +263,6 @@ const flattenTree = (
 };
 
 export default function TradingProfitLossStatement() {
-  // --- STATE ---
   const [data, setData] = useState<ReturnType<typeof generateMockData>>({
     tradingExpenses: [],
     tradingIncome: [],
@@ -280,19 +271,16 @@ export default function TradingProfitLossStatement() {
   });
   const [loading, setLoading] = useState(false);
 
-  // Controls which rows are open.
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const [filterStore, setFilterStore] = useState('00002');
   const [dateRange, setDateRange] = useState({ from: '2025-04-01', to: '2026-03-31' });
 
-  // --- INITIAL LOAD ---
   useEffect(() => {
     setLoading(true);
     setTimeout(() => {
       const mock = generateMockData();
       setData(mock);
-      // Auto-expand root and 2nd level nodes for demo
       const autoExpand = {
         'EXP-DIRECT-ROOT': true,
         'INC-REV-ROOT': true,
@@ -312,12 +300,10 @@ export default function TradingProfitLossStatement() {
     }, 600);
   }, []);
 
-  // --- TOGGLE HANDLER ---
   const toggleRow = (id: string) => {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  // --- PREPARE DATA FOR RENDER ---
   const visibleTradingExp = useMemo(
     () => flattenTree(data.tradingExpenses, expanded),
     [data.tradingExpenses, expanded]
@@ -336,11 +322,9 @@ export default function TradingProfitLossStatement() {
     [data.plIncome, expanded]
   );
 
-  // Determine row counts
   const tradingRowsCount = Math.max(visibleTradingExp.length, visibleTradingInc.length);
   const plRowsCount = Math.max(visiblePLExp.length, visiblePLInc.length);
 
-  // Combine into unified row arrays
   const tradingRows = Array.from({ length: tradingRowsCount }).map((_, i) => ({
     exp: visibleTradingExp[i] || null,
     inc: visibleTradingInc[i] || null,
@@ -351,18 +335,15 @@ export default function TradingProfitLossStatement() {
     inc: visiblePLInc[i] || null,
   }));
 
-  // Totals Calculation
   const totalDirectExp = data.tradingExpenses.reduce((sum, n) => sum + n.amount, 0);
   const totalDirectInc = data.tradingIncome.reduce((sum, n) => sum + n.amount, 0);
-  const grossProfit = totalDirectInc - totalDirectExp; // If positive, Credit side > Debit side
+  const grossProfit = totalDirectInc - totalDirectExp;
 
   const totalIndirectExp = data.plExpenses.reduce((sum, n) => sum + n.amount, 0);
   const totalIndirectInc = data.plIncome.reduce((sum, n) => sum + n.amount, 0);
 
-  // Net Profit = Gross Profit + Indirect Income - Indirect Expenses
   const netProfit = grossProfit + totalIndirectInc - totalIndirectExp;
 
-  // --- COMPONENTS ---
   const HeaderCell = ({ label, width, align = 'left', filter = false, className = '' }: any) => (
     <div
       className={`flex items-center ${align === 'right' ? 'justify-end' : 'justify-between'} h-full gap-1 border-r border-white/10 px-2 py-1.5 ${className}`}
@@ -385,14 +366,12 @@ export default function TradingProfitLossStatement() {
   }) => (
     <tr
       className={`group h-7 border-b border-gray-100 transition-colors hover:bg-blue-50/30 ${isLast ? 'border-b-0' : ''}`}>
-      {/* Zoom Column - Check EITHER side for 'ledger' type */}
       <td className="w-10 border-r border-gray-200 bg-gray-50/30 text-center">
         {(leftNode?.type === 'ledger' || rightNode?.type === 'ledger') && (
           <Eye size={12} className="mx-auto cursor-pointer text-blue-600" />
         )}
       </td>
 
-      {/* --- LEFT (EXPENSES) --- */}
       <td
         className="relative border-r border-gray-200 px-2 align-middle"
         style={{ paddingLeft: leftNode ? `${(leftNode.level || 0) * 20 + 8}px` : undefined }}>
@@ -425,7 +404,6 @@ export default function TradingProfitLossStatement() {
         {leftNode ? `₹${formatCurrency(leftNode.amount)}` : ''}
       </td>
 
-      {/* --- RIGHT (INCOME) --- */}
       <td
         className="relative border-r border-gray-200 px-2 align-middle"
         style={{ paddingLeft: rightNode ? `${(rightNode.level || 0) * 20 + 8}px` : undefined }}>
@@ -462,7 +440,6 @@ export default function TradingProfitLossStatement() {
 
   return (
     <div className="flex h-screen select-none flex-col overflow-hidden bg-[#f8fafc] font-sans text-sm">
-      {/* --- TOP HEADER --- */}
       <div className="no-print flex shrink-0 flex-col border-b bg-white shadow-sm">
         <div className="flex items-center justify-between p-2">
           <div className="flex items-center gap-2">
@@ -496,7 +473,6 @@ export default function TradingProfitLossStatement() {
           </div>
         </div>
 
-        {/* --- FILTERS --- */}
         <div className="flex items-center gap-3 border-t bg-gray-50/50 px-3 py-1.5 text-[11px]">
           <div className="flex items-center gap-2">
             <Building2 size={12} className="text-gray-400" />
@@ -536,7 +512,6 @@ export default function TradingProfitLossStatement() {
         </div>
       </div>
 
-      {/* --- TABLE AREA --- */}
       <div className="shadow-inner relative m-2 flex-grow overflow-auto rounded border bg-white">
         {loading && (
           <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/60 backdrop-blur-[1px]">
@@ -549,7 +524,6 @@ export default function TradingProfitLossStatement() {
 
         <table className="w-full min-w-[1000px] border-collapse text-left">
           <thead className="sticky top-0 z-20 shadow-md">
-            {/* Main Header */}
             <tr className="bg-[#084164] text-[10px] font-bold uppercase tracking-widest text-white">
               <th className="w-10 border-r border-white/10 py-1 text-center">Zoom</th>
               <th className="border-r border-white/10 px-2 py-1" colSpan={3}>
@@ -559,11 +533,9 @@ export default function TradingProfitLossStatement() {
                 Income
               </th>
             </tr>
-            {/* Sub Header */}
             <tr className="h-8 bg-[#0c5888] text-[10px] font-bold uppercase tracking-tight text-white">
               <th className="w-10 border-r border-white/10 bg-[#0a4e7a]"></th>
 
-              {/* Expenses Headers */}
               <th className="border-r border-white/10 p-0">
                 <HeaderCell label="Name" width="100%" filter />
               </th>
@@ -574,7 +546,6 @@ export default function TradingProfitLossStatement() {
                 <HeaderCell label="Amount(₹)" width="100%" align="right" filter />
               </th>
 
-              {/* Income Headers */}
               <th className="border-r border-white/10 p-0">
                 <HeaderCell label="Name" width="100%" filter />
               </th>
@@ -588,7 +559,6 @@ export default function TradingProfitLossStatement() {
           </thead>
 
           <tbody className="text-[11px] text-gray-700">
-            {/* 1. TRADING SECTION */}
             <tr className="border-b bg-gray-100/80 text-xs font-bold uppercase tracking-wider text-gray-500">
               <td className="border-r border-white bg-gray-200 py-1 text-center">-</td>
               <td colSpan={3} className="border-r border-gray-300 px-2">
@@ -603,7 +573,6 @@ export default function TradingProfitLossStatement() {
               <TableRow key={`trad-${idx}`} leftNode={row.exp} rightNode={row.inc} />
             ))}
 
-            {/* GROSS PROFIT ROW */}
             <tr className="h-8 border-b border-t border-yellow-200 bg-yellow-50 font-bold">
               <td className="border-r border-yellow-200"></td>
               <td className="border-r border-yellow-200 px-2 text-gray-800">
@@ -623,7 +592,6 @@ export default function TradingProfitLossStatement() {
               </td>
             </tr>
 
-            {/* 2. P&L SECTION */}
             <tr className="border-b border-t border-gray-300 bg-gray-100/80 text-xs font-bold uppercase tracking-wider text-gray-500">
               <td className="border-r border-white bg-gray-200 py-1 text-center">-</td>
               <td colSpan={3} className="border-r border-gray-300 px-2">
@@ -634,7 +602,6 @@ export default function TradingProfitLossStatement() {
               </td>
             </tr>
 
-            {/* Bring Down Gross Profit */}
             <tr className="h-7 border-b border-gray-100 bg-white italic text-gray-500">
               <td className="border-r border-gray-200"></td>
               <td className="border-r border-gray-200 px-2">
@@ -658,7 +625,6 @@ export default function TradingProfitLossStatement() {
               <TableRow key={`pl-${idx}`} leftNode={row.exp} rightNode={row.inc} />
             ))}
 
-            {/* Spacer Rows to Fill Height if needed */}
             {plRows.length < 3 && (
               <tr className="h-10">
                 <td></td>
@@ -666,7 +632,6 @@ export default function TradingProfitLossStatement() {
             )}
           </tbody>
 
-          {/* NET PROFIT FOOTER */}
           <tfoot className="sticky bottom-0 z-20 border-t-2 border-white/20 bg-[#0c5888] text-[11px] font-bold text-white shadow-lg">
             <tr className="h-9">
               <td className="border-r border-white/10"></td>
@@ -685,7 +650,6 @@ export default function TradingProfitLossStatement() {
               </td>
               <td className="border-r border-white/10"></td>
               <td className="flex h-full items-center justify-end bg-white/10 px-2 text-right font-mono text-[12px]">
-                {/* Total Right Side (Gross + Indirect Inc) for balancing visual */}₹
                 {formatCurrency(Math.max(grossProfit + totalIndirectInc, totalIndirectExp))}
               </td>
             </tr>

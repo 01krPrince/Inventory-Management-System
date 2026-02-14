@@ -13,19 +13,16 @@ import {
   Building2,
 } from 'lucide-react';
 
-// --- TYPES ---
 type PLNode = {
   id: string;
   name: string;
   code: string;
   amount: number;
   children?: PLNode[];
-  level?: number; // Helper for indentation
+  level?: number;
 };
 
-// --- MOCK DATA GENERATOR ---
 const generateMockData = () => {
-  // Expenses Tree
   const expenses: PLNode[] = [
     {
       id: 'EXP-ROOT',
@@ -120,9 +117,6 @@ const generateMockData = () => {
   return { expenses, income };
 };
 
-// --- HELPER: FLATTEN TREE BASED ON EXPANSION ---
-// This function converts the nested tree into a flat list for rendering,
-// respecting the expanded/collapsed state.
 const flattenTree = (
   nodes: PLNode[],
   expandedIds: Record<string, boolean>,
@@ -130,10 +124,8 @@ const flattenTree = (
 ): PLNode[] => {
   let flat: PLNode[] = [];
   nodes.forEach((node) => {
-    // Add current node with level info
     flat.push({ ...node, level });
 
-    // If expanded and has children, recurse
     if (expandedIds[node.id] && node.children && node.children.length > 0) {
       flat = flat.concat(flattenTree(node.children, expandedIds, level + 1));
     }
@@ -142,14 +134,12 @@ const flattenTree = (
 };
 
 export default function ProfitLossStatementTView() {
-  // --- STATE ---
   const [data, setData] = useState<{ expenses: PLNode[]; income: PLNode[] }>({
     expenses: [],
     income: [],
   });
   const [loading, setLoading] = useState(false);
 
-  // Controls which rows are open. Initialize with Root IDs open by default.
   const [expanded, setExpanded] = useState<Record<string, boolean>>({
     'EXP-ROOT': true,
     'INC-ROOT': true,
@@ -162,23 +152,18 @@ export default function ProfitLossStatementTView() {
   const [filterStore, setFilterStore] = useState('00002');
   const [dateRange, setDateRange] = useState({ from: '2025-04-01', to: '2026-03-31' });
 
-  // --- INITIAL LOAD ---
   useEffect(() => {
     setLoading(true);
-    // Simulate API call
     setTimeout(() => {
       setData(generateMockData());
       setLoading(false);
     }, 600);
   }, []);
 
-  // --- TOGGLE HANDLER ---
   const toggleRow = (id: string) => {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  // --- PREPARE RENDER DATA ---
-  // 1. Flatten both trees into arrays based on current expansion state
   const visibleExpenses = useMemo(
     () => flattenTree(data.expenses, expanded),
     [data.expenses, expanded]
@@ -186,22 +171,19 @@ export default function ProfitLossStatementTView() {
 
   const visibleIncome = useMemo(() => flattenTree(data.income, expanded), [data.income, expanded]);
 
-  // 2. Determine the total rows needed (Max of left or right side)
   const totalRows = Math.max(visibleExpenses.length, visibleIncome.length);
 
-  // 3. Create paired rows for the table
   const rows = useMemo(() => {
     const result = [];
     for (let i = 0; i < totalRows; i++) {
       result.push({
-        expense: visibleExpenses[i] || null, // Might be undefined if list is shorter
-        income: visibleIncome[i] || null, // Might be undefined if list is shorter
+        expense: visibleExpenses[i] || null,
+        income: visibleIncome[i] || null,
       });
     }
     return result;
   }, [visibleExpenses, visibleIncome, totalRows]);
 
-  // --- HEADER COMPONENT ---
   const HeaderCell = ({ label, width, align = 'left', filter = false }: any) => (
     <div
       className={`flex items-center ${align === 'right' ? 'justify-end' : 'justify-start'} gap-1 border-r border-white/10 px-2 py-1.5`}
@@ -213,7 +195,6 @@ export default function ProfitLossStatementTView() {
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-[#f8fafc] font-sans text-sm">
-      {/* --- TOP CONTROL BAR --- */}
       <div className="no-print flex shrink-0 flex-col border-b bg-white shadow-sm">
         <div className="flex items-center justify-between p-2">
           <div className="flex items-center gap-2">
@@ -237,7 +218,6 @@ export default function ProfitLossStatementTView() {
             </button>
           </div>
 
-          {/* Search */}
           <div className="relative">
             <Search className="absolute left-2.5 top-2 text-gray-400" size={13} />
             <input
@@ -248,7 +228,6 @@ export default function ProfitLossStatementTView() {
           </div>
         </div>
 
-        {/* Filters */}
         <div className="flex items-center gap-3 border-t bg-gray-50/50 px-3 py-2 text-[11px]">
           <div className="flex items-center gap-2">
             <Building2 size={12} className="text-gray-400" />
@@ -278,14 +257,13 @@ export default function ProfitLossStatementTView() {
             />
           </div>
           <button
-            onClick={() => setLoading(true)} // Mock refresh
+            onClick={() => setLoading(true)}
             className="ml-auto rounded bg-gray-800 px-3 py-1 text-[10px] font-bold uppercase text-white hover:bg-black">
             Apply
           </button>
         </div>
       </div>
 
-      {/* --- MAIN CONTENT AREA --- */}
       <div className="shadow-inner relative m-2 flex-grow overflow-auto rounded border bg-white">
         {loading && (
           <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/60 backdrop-blur-[1px]">
@@ -298,7 +276,6 @@ export default function ProfitLossStatementTView() {
 
         <table className="w-full min-w-[1000px] border-collapse text-left">
           <thead className="sticky top-0 z-20 shadow-md">
-            {/* Row 1: Main Headers (Expenses vs Income) */}
             <tr className="bg-[#084164] text-[10px] font-bold uppercase tracking-widest text-white">
               <th className="w-10 border-r border-white/10 py-1 text-center">Zoom</th>
               <th className="border-r border-white/10 px-2 py-1" colSpan={3}>
@@ -308,12 +285,9 @@ export default function ProfitLossStatementTView() {
                 Income
               </th>
             </tr>
-            {/* Row 2: Sub Headers (Name, Code, Amount) */}
             <tr className="bg-[#0c5888] text-[10px] font-bold uppercase tracking-tight text-white">
-              {/* Zoom Column */}
               <th className="w-10 border-r border-white/10"></th>
 
-              {/* Expenses Columns */}
               <th className="p-0">
                 <HeaderCell label="Name" width="100%" filter />
               </th>
@@ -324,7 +298,6 @@ export default function ProfitLossStatementTView() {
                 <HeaderCell label="Amount(₹)" width="100%" align="right" filter />
               </th>
 
-              {/* Income Columns */}
               <th className="p-0">
                 <HeaderCell label="Name" width="100%" filter />
               </th>
@@ -345,7 +318,6 @@ export default function ProfitLossStatementTView() {
                 <tr
                   key={index}
                   className="group h-7 border-b border-gray-100 transition-colors hover:bg-blue-50/30">
-                  {/* --- ZOOM COLUMN --- */}
                   <td className="border-r border-gray-200 bg-gray-50/50 text-center">
                     <Eye
                       size={12}
@@ -353,7 +325,6 @@ export default function ProfitLossStatementTView() {
                     />
                   </td>
 
-                  {/* --- LEFT SIDE: EXPENSES --- */}
                   <td
                     className="relative border-r border-gray-200 px-2"
                     style={{
@@ -372,7 +343,6 @@ export default function ProfitLossStatementTView() {
                             )}
                           </button>
                         ) : (
-                          // Spacer for leaf nodes to align text
                           <span className="inline-block w-3" />
                         )}
                         <span
@@ -391,7 +361,6 @@ export default function ProfitLossStatementTView() {
                       : ''}
                   </td>
 
-                  {/* --- RIGHT SIDE: INCOME --- */}
                   <td
                     className="relative border-r border-gray-200 px-2"
                     style={{
@@ -431,7 +400,6 @@ export default function ProfitLossStatementTView() {
               );
             })}
 
-            {/* Empty State Fillers (optional visual polish) */}
             {rows.length === 0 && !loading && (
               <tr>
                 <td colSpan={7} className="py-12 text-center italic text-gray-400">
@@ -441,7 +409,6 @@ export default function ProfitLossStatementTView() {
             )}
           </tbody>
 
-          {/* --- FOOTER TOTALS --- */}
           <tfoot className="sticky bottom-0 z-20 border-t-2 border-white/20 bg-[#0c5888] text-[11px] font-bold text-white">
             <tr>
               <td className="border-r border-white/10"></td>
@@ -466,7 +433,6 @@ export default function ProfitLossStatementTView() {
         </table>
       </div>
 
-      {/* Styles for print hiding */}
       <style>{`
         @media print {
           .no-print { display: none !important; }

@@ -8,12 +8,11 @@ import {
   Download,
   ChevronLeft,
   ChevronRight as ChevronRightIcon,
-  Scale, // Used Scale icon for Trial Balance
+  Scale,
   Loader2,
   Filter,
 } from 'lucide-react';
 
-// --- MOCK SERVICE (Remove this when integrating real API) ---
 const mockService = {
   getTrialBalance: async (params: any) => {
     confirm;
@@ -26,7 +25,7 @@ const mockService = {
             code: `ACC-${1000 + i}`,
             identification: `ID-${500 + i}`,
             name: `Ledger Account ${i + 1}`,
-            type: 'Dr', // The ":" column data
+            type: 'Dr',
             closing_debit: Math.random() > 0.5 ? Math.floor(Math.random() * 50000) : 0,
             closing_credit: Math.random() > 0.5 ? 0 : Math.floor(Math.random() * 50000),
             opening_debit: Math.floor(Math.random() * 10000),
@@ -39,7 +38,6 @@ const mockService = {
     });
   },
 };
-// -----------------------------------------------------------
 
 type TrialBalanceItem = {
   group: string;
@@ -62,7 +60,6 @@ interface ITrialBalanceParams {
 }
 
 export default function TrialBalance() {
-  // --- STATE MANAGEMENT ---
   const [items, setItems] = useState<TrialBalanceItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
@@ -269,7 +266,6 @@ export default function TrialBalance() {
 
         <table className="w-full border-collapse text-left" id="trial-balance-table">
           <thead className="sticky top-0 z-30">
-            {/* Top Header Row based on screenshot */}
             <tr className="bg-[#084164] text-[9px] uppercase tracking-widest text-white">
               <TableHeader label="Zoom" className="no-print" />
               <TableHeader label="Particulars" colSpan={2} className="bg-black/10 text-center" />
@@ -279,27 +275,21 @@ export default function TrialBalance() {
               <TableHeader label="During" colSpan={2} className="bg-black/10 text-center" />
             </tr>
 
-            {/* Sub Header Row */}
             <tr>
               <th className="no-print sticky top-6 z-20 h-7 border-r border-white/10 bg-[#0c5888]"></th>
 
-              {/* Particulars Group */}
               <TableHeader label="Code" isSubHeader={true} showFilterIcon />
               <TableHeader label="Identification" isSubHeader={true} showFilterIcon />
 
-              {/* "-" Group */}
               <TableHeader label="Name" isSubHeader={true} showFilterIcon />
               <TableHeader label=":" isSubHeader={true} showFilterIcon />
 
-              {/* Closing Group */}
               <TableHeader label="Debit(₹)" isSubHeader={true} className="bg-[#0a4d78]" />
               <TableHeader label="Credit(₹)" isSubHeader={true} className="bg-[#0a4d78]" />
 
-              {/* Opening Group */}
               <TableHeader label="Debit(₹)" isSubHeader={true} />
               <TableHeader label="Credit(₹)" isSubHeader={true} />
 
-              {/* During Group */}
               <TableHeader label="Debit(₹)" isSubHeader={true} className="bg-[#0a4d78]" />
               <TableHeader label="Credit(₹)" isSubHeader={true} className="bg-[#0a4d78]" />
             </tr>
@@ -339,7 +329,6 @@ export default function TrialBalance() {
                           <td className="border-r px-2 font-medium text-gray-700">{r.name}</td>
                           <td className="border-r px-2 text-center text-gray-400">{r.type}</td>
 
-                          {/* Closing */}
                           <td className="border-r bg-blue-50/20 px-2 text-right font-mono text-gray-800">
                             {r.closing_debit > 0 ? `₹${r.closing_debit.toLocaleString()}` : '-'}
                           </td>
@@ -347,7 +336,6 @@ export default function TrialBalance() {
                             {r.closing_credit > 0 ? `₹${r.closing_credit.toLocaleString()}` : '-'}
                           </td>
 
-                          {/* Opening */}
                           <td className="border-r px-2 text-right font-mono text-gray-500">
                             {r.opening_debit > 0 ? `₹${r.opening_debit.toLocaleString()}` : '-'}
                           </td>
@@ -355,7 +343,6 @@ export default function TrialBalance() {
                             {r.opening_credit > 0 ? `₹${r.opening_credit.toLocaleString()}` : '-'}
                           </td>
 
-                          {/* During */}
                           <td className="border-r px-2 text-right font-mono text-gray-500">
                             {r.during_debit > 0 ? `₹${r.during_debit.toLocaleString()}` : '-'}
                           </td>

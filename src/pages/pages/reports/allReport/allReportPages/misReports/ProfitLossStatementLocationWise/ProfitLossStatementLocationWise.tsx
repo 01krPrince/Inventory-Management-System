@@ -1,7 +1,6 @@
 import { Search, Printer, Download, FileText, ZoomIn, Filter } from 'lucide-react';
 
 export default function ProfitLossStatementLocationWise() {
-  // Static headers based on your image
   const locations = [
     'CHANDAN K...',
     'GODOWN',
@@ -17,7 +16,6 @@ export default function ProfitLossStatementLocationWise() {
 
   return (
     <div className="flex h-screen flex-col bg-[#f8fafc] font-sans">
-      {/* Report Header Bar */}
       <div className="no-print flex items-center justify-between border-b bg-white p-2 shadow-sm">
         <div className="flex items-center gap-2">
           <div className="rounded bg-blue-50 p-1.5">
@@ -48,25 +46,20 @@ export default function ProfitLossStatementLocationWise() {
         </div>
       </div>
 
-      {/* Main Report Table Area */}
       <div className="shadow-inner relative m-2 flex-grow overflow-auto rounded border border-gray-300 bg-white">
         <table className="w-full border-collapse text-left">
           <thead className="sticky top-0 z-30">
-            {/* Primary Header Row */}
             <tr className="bg-[#084164] text-[9px] uppercase tracking-widest text-white">
-              <th className="w-10 border-r border-white/10 px-2 py-1 text-center">Zo...</th>
+              <th className="w-10 border-r border-white/10 px-2 py-1 text-center">Zoom</th>
               <th className="w-80 border-r border-white/10 px-2 py-1 text-center">Voucher</th>
               <th className="px-2 py-1 text-center" colSpan={locations.length + 1}>
                 Location
               </th>
             </tr>
 
-            {/* Secondary Header Row */}
             <tr className="bg-[#0c5888] text-[10px] font-bold uppercase text-white">
-              {/* Zoom Column Placeholder */}
               <th className="sticky top-6 z-20 border-r border-white/10 bg-[#0c5888] px-2 py-1.5"></th>
 
-              {/* Voucher Group Headers */}
               <th className="sticky top-6 z-20 border-r border-white/10 bg-[#0c5888] px-2 py-1.5">
                 <div className="flex items-center justify-between">
                   <span>Name</span>
@@ -80,7 +73,6 @@ export default function ProfitLossStatementLocationWise() {
                 </div>
               </th>
 
-              {/* Dynamic Location Headers */}
               {locations.map((loc, index) => (
                 <th
                   key={index}
@@ -92,7 +84,6 @@ export default function ProfitLossStatementLocationWise() {
                 </th>
               ))}
 
-              {/* Grand Total Column Header */}
               <th className="sticky top-6 z-20 w-32 bg-[#0c5888] px-2 py-1.5 text-right">
                 Total(₹)
               </th>
@@ -100,7 +91,6 @@ export default function ProfitLossStatementLocationWise() {
           </thead>
 
           <tbody className="text-[11px]">
-            {/* Row 1: Opening Stock */}
             <tr className="border-b transition-colors hover:bg-gray-50">
               <td className="border-r p-1.5 text-center">
                 <ZoomIn
@@ -127,7 +117,6 @@ export default function ProfitLossStatementLocationWise() {
               </td>
             </tr>
 
-            {/* Row 2: Closing Stock (Negative) */}
             <tr className="border-b transition-colors hover:bg-gray-50">
               <td className="border-r p-1.5 text-center">
                 <ZoomIn
@@ -154,7 +143,6 @@ export default function ProfitLossStatementLocationWise() {
               </td>
             </tr>
 
-            {/* Grand Total Row */}
             <tr className="sticky bottom-0 bg-gray-100 font-bold uppercase tracking-tight text-[#0c5888]">
               <td className="border-r px-2 py-1.5 text-center"></td>
               <td className="border-r px-4 py-1.5">Total</td>
@@ -172,7 +160,6 @@ export default function ProfitLossStatementLocationWise() {
         </table>
       </div>
 
-      {/* Footer Summary */}
       <div className="no-print border-t bg-white p-2 px-4 shadow-sm">
         <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-gray-500">
           <span>Statement Type: Location-wise P&L</span>

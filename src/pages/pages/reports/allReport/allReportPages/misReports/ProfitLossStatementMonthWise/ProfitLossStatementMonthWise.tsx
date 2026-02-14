@@ -11,7 +11,6 @@ import {
   RefreshCw,
 } from 'lucide-react';
 
-// --- TYPES ---
 type MonthlyValues = {
   apr: number;
   may: number;
@@ -37,22 +36,16 @@ type PLMonthNode = {
   level?: number;
 };
 
-// --- HELPER: FORMAT CURRENCY ---
-// Formats: 0 -> ₹0.00, Positive -> ₹1,000.00, Negative -> (1,000.00)
 const formatCurrency = (amount: number) => {
   if (amount === 0) return '₹0.00';
   const absAmount = Math.abs(amount).toLocaleString('en-IN', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-    // style: 'currency', // Manual symbol placement for better alignment
-    // currency: 'INR',
   });
   return amount < 0 ? `(${absAmount})` : `${absAmount}`;
 };
 
-// --- MOCK DATA GENERATOR ---
 const generateMockData = (): PLMonthNode[] => {
-  // Helper to create empty months
   const zeroMonths = {
     apr: 0,
     may: 0,
@@ -74,7 +67,7 @@ const generateMockData = (): PLMonthNode[] => {
       name: 'Direct Operational Expenses',
       code: '41000000',
       type: 'group',
-      values: { ...zeroMonths, feb: 2120556.34 }, // Aggregate
+      values: { ...zeroMonths, feb: 2120556.34 },
       children: [
         {
           id: 'EXP-CHANGE-INV',
@@ -88,14 +81,14 @@ const generateMockData = (): PLMonthNode[] => {
               name: 'Opening Stock-In-Trade-P&L',
               code: '41300002',
               type: 'ledger',
-              values: { ...zeroMonths, feb: 2120556.34 }, // Matches screenshot
+              values: { ...zeroMonths, feb: 2120556.34 },
             },
             {
               id: 'L-41370001',
               name: 'Closing Stock-In-Trade',
               code: '41370001',
               type: 'ledger',
-              values: { ...zeroMonths, feb: -2120556.34 }, // Matches screenshot (negative)
+              values: { ...zeroMonths, feb: -2120556.34 },
             },
           ],
         },
@@ -151,7 +144,6 @@ const generateMockData = (): PLMonthNode[] => {
   ];
 };
 
-// --- FLATTEN LOGIC ---
 const flattenTree = (
   nodes: PLMonthNode[],
   expandedIds: Record<string, boolean>,
@@ -167,19 +159,18 @@ const flattenTree = (
   return flat;
 };
 
-// --- COMPONENT ---
 export default function ProfitLossStatementMonthWise() {
   const [data, setData] = useState<PLMonthNode[]>([]);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [filterStore, setFilterStore] = useState('00002');
-  const [dateRange] = useState({ from: '2026-02-13', to: '2026-02-13' }); // Default to user query
+  const [dateRange] = useState({ from: '2026-02-13', to: '2026-02-13' });
 
   useEffect(() => {
     setLoading(true);
     setTimeout(() => {
       setData(generateMockData());
-      setExpanded({ 'EXP-DIRECT': true, 'EXP-CHANGE-INV': true }); // Auto open for demo
+      setExpanded({ 'EXP-DIRECT': true, 'EXP-CHANGE-INV': true });
       setLoading(false);
     }, 600);
   }, []);
@@ -190,7 +181,6 @@ export default function ProfitLossStatementMonthWise() {
 
   const visibleRows = useMemo(() => flattenTree(data, expanded), [data, expanded]);
 
-  // Calculate Column Totals
   const totals = useMemo(() => {
     const sum = {
       apr: 0,
@@ -208,17 +198,11 @@ export default function ProfitLossStatementMonthWise() {
       total: 0,
     };
     visibleRows.forEach((row) => {
-      // Only sum root nodes or logical logic.
-      // For simple visual demo, we'll just sum rows with level 0 to avoid double counting
       if (row.level === 0) {
-        // Note: Logic depends on Income (Credit) vs Expense (Debit).
-        // For a month-wise grid, usually simple summation of displayed numbers or specific GL logic applies.
-        // We will just sum up whatever is in the data for the footer.
         Object.keys(row.values).forEach((key) => {
           const k = key as keyof MonthlyValues;
           sum[k] += row.values[k];
         });
-        // Add to Grand Total
         const rowTotal = Object.values(row.values).reduce((a, b) => a + b, 0);
         sum.total += rowTotal;
       }
@@ -226,7 +210,6 @@ export default function ProfitLossStatementMonthWise() {
     return sum;
   }, [visibleRows]);
 
-  // --- HEADER CELL COMPONENT ---
   const HeaderCell = ({ label, showFilter = true, align = 'right', className = '' }: any) => (
     <div
       className={`flex items-center ${align === 'right' ? 'justify-end' : 'justify-between'} h-full gap-1 px-2 ${className}`}>
@@ -239,7 +222,6 @@ export default function ProfitLossStatementMonthWise() {
 
   return (
     <div className="flex h-screen select-none flex-col overflow-hidden bg-[#f8fafc] font-sans text-sm">
-      {/* --- CONTROL BAR --- */}
       <div className="no-print flex shrink-0 flex-col border-b bg-white shadow-sm">
         <div className="flex items-center justify-between p-2">
           <div className="flex items-center gap-2">
@@ -284,7 +266,6 @@ export default function ProfitLossStatementMonthWise() {
         </div>
       </div>
 
-      {/* --- MAIN TABLE AREA --- */}
       <div className="shadow-inner relative m-2 flex-grow overflow-auto rounded border bg-white">
         {loading && (
           <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/60 backdrop-blur-[1px]">
@@ -297,7 +278,6 @@ export default function ProfitLossStatementMonthWise() {
 
         <table className="w-full min-w-[1600px] border-collapse text-left">
           <thead className="sticky top-0 z-30 bg-[#084164] text-[10px] font-bold uppercase text-white shadow-md">
-            {/* TOP HEADER ROW */}
             <tr className="border-b border-white/10">
               <th className="sticky left-0 z-40 w-10 border-r border-white/10 bg-[#084164] py-1 text-center">
                 Zoom
@@ -307,16 +287,13 @@ export default function ProfitLossStatementMonthWise() {
                 colSpan={2}>
                 Voucher
               </th>
-              {/* Closing Header spans all months + total */}
               <th className="border-r border-white/10 px-2 text-left" colSpan={13}>
                 Closing
               </th>
-              <th className="w-full bg-[#084164]">-</th> {/* Filler */}
+              <th className="w-full bg-[#084164]">-</th>
             </tr>
 
-            {/* SUB HEADER ROW */}
             <tr className="h-8 bg-[#0c5888]">
-              {/* Sticky Columns: Zoom, Name, Code */}
               <th className="sticky left-0 z-40 w-10 border-r border-white/10 bg-[#0c5888]"></th>
               <th className="sticky left-10 z-40 min-w-[250px] border-r border-white/10 bg-[#0c5888] p-0">
                 <HeaderCell label="Name" align="left" />
@@ -325,7 +302,6 @@ export default function ProfitLossStatementMonthWise() {
                 <HeaderCell label="Code" align="left" />
               </th>
 
-              {/* Month Columns */}
               {[
                 'Apr',
                 'May',
@@ -345,7 +321,6 @@ export default function ProfitLossStatementMonthWise() {
                 </th>
               ))}
 
-              {/* Total Column */}
               <th className="w-32 border-r border-white/10 bg-[#0a4e7a] p-0">
                 <HeaderCell label="Closing Total..." />
               </th>
@@ -363,7 +338,6 @@ export default function ProfitLossStatementMonthWise() {
                     <tr
                       key={`${row.id}-${idx}`}
                       className="group h-7 border-b border-gray-100 transition-colors hover:bg-blue-50/50">
-                      {/* Sticky Zoom */}
                       <td className="sticky left-0 z-20 w-10 border-r border-gray-200 bg-gray-50 text-center group-hover:bg-blue-100/50">
                         <Eye
                           size={12}
@@ -371,7 +345,6 @@ export default function ProfitLossStatementMonthWise() {
                         />
                       </td>
 
-                      {/* Sticky Name */}
                       <td className="sticky left-10 z-20 border-r border-gray-200 bg-white px-2 align-middle group-hover:bg-blue-50/50">
                         <div
                           className="flex items-center gap-1"
@@ -396,12 +369,10 @@ export default function ProfitLossStatementMonthWise() {
                         </div>
                       </td>
 
-                      {/* Sticky Code */}
                       <td className="sticky left-[290px] z-20 border-r border-gray-200 bg-white px-2 align-middle font-mono text-[10px] text-gray-500 shadow-[4px_0_5px_-2px_rgba(0,0,0,0.1)] group-hover:bg-blue-50/50">
                         {row.code}
                       </td>
 
-                      {/* Monthly Values */}
                       {[
                         'apr',
                         'may',
@@ -430,7 +401,6 @@ export default function ProfitLossStatementMonthWise() {
                         );
                       })}
 
-                      {/* Row Total */}
                       <td className="border-r border-gray-200 bg-gray-50/30 px-2 text-right align-middle font-mono font-bold text-gray-900">
                         {formatCurrency(rowTotal)}
                       </td>
@@ -448,7 +418,6 @@ export default function ProfitLossStatementMonthWise() {
                 )}
           </tbody>
 
-          {/* --- FOOTER --- */}
           {visibleRows.length > 0 && (
             <tfoot className="sticky bottom-0 z-30 border-t-2 border-white/20 bg-[#0c5888] text-[11px] font-bold text-white shadow-lg">
               <tr className="h-8">
