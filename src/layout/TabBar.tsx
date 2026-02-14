@@ -39,7 +39,7 @@ export const TabBar: React.FC = React.memo(() => {
                         : 'text-gray-600 hover:text-[#0c5888] dark:text-gray-300'
                     }`}
                     onClick={() => setActiveTab(tab.path)}>
-                    <span className="max-w-40 truncate">{tab.name}</span>
+                    <span className="w-auto">{tab.name}</span>
                     {tab.path !== '/welcome' && (
                       <button
                         className="ml-2 rounded-full p-0.5 text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700"
@@ -83,7 +83,7 @@ export const TabBar: React.FC = React.memo(() => {
       </style>
 
       {activeTabPath !== '/welcome' ? (
-        <div className="py-auto flex h-6 justify-center bg-[#0c5888] align-bottom text-amber-50">
+        <div className="py-auto flex h-6 w-auto justify-center bg-[#0c5888] align-bottom text-amber-50">
           {openTabs.find((t) => t.path === activeTabPath)?.name}
         </div>
       ) : (

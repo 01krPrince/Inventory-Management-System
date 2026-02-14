@@ -315,24 +315,24 @@ export default function ProfitLossStatementTView() {
 
               {/* Expenses Columns */}
               <th className="p-0">
-                <HeaderCell label="Name" width="60%" filter />
+                <HeaderCell label="Name" width="100%" filter />
               </th>
               <th className="p-0">
-                <HeaderCell label="Code" width="20%" filter />
+                <HeaderCell label="Code" width="100%" filter />
               </th>
               <th className="p-0">
-                <HeaderCell label="Amount(₹)" width="20%" align="right" filter />
+                <HeaderCell label="Amount(₹)" width="100%" align="right" filter />
               </th>
 
               {/* Income Columns */}
               <th className="p-0">
-                <HeaderCell label="Name" width="60%" filter />
+                <HeaderCell label="Name" width="100%" filter />
               </th>
               <th className="p-0">
-                <HeaderCell label="Code" width="20%" filter />
+                <HeaderCell label="Code" width="100%" filter />
               </th>
               <th className="p-0">
-                <HeaderCell label="Amount(₹)" width="20%" align="right" filter />
+                <HeaderCell label="Amount(₹)" width="100%" align="right" filter />
               </th>
             </tr>
           </thead>

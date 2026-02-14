@@ -23,14 +23,11 @@ import {
 } from 'lucide-react';
 import { useTabs } from '../../../../context/TabContext';
 
-// --- Types ---
-
 interface ReportItem {
   label: string;
   type: 'folder' | 'link';
   date?: string;
   path?: string;
-  // New: Allow nesting
   children?: ReportItem[];
 }
 
@@ -62,60 +59,234 @@ const INITIAL_DATA: ReportSection[] = [
           {
             label: 'Profit & Loss Statement',
             type: 'link',
-            path: '/report/profit-loss-statement',
+            path: '/report/mis/financial-statement/profit-loss-statement',
           },
           {
             label: 'Profit & Loss Statement TView',
             type: 'link',
-            path: '/report/profit-loss-statement-tview',
+            path: '/report/mis/financial-statement/profit-loss-statement-tview',
           },
           {
             label: 'Trading and Profit & Loss Statement',
             type: 'link',
-            path: '/report/trading-profit-loss-statement',
+            path: '/report/mis/financial-statement/trading-profit-loss-statement',
+          },
+          {
+            label: 'Profit & Loss Statement Month wise',
+            type: 'link',
+            path: '/report/mis/financial-statement/profit-loss-statement-month-wise',
+          },
+          {
+            label: 'Profit & Loss Statement Location wise',
+            type: 'link',
+            path: '/report/mis/financial-statement/profit-loss-statement-location-wise',
+          },
+          {
+            label: 'Balance Sheet',
+            type: 'link',
+            path: '/report/mis/financial-statement/balance-sheet',
+          },
+          {
+            label: 'Balance Sheet TView',
+            type: 'link',
+            path: '/report/mis/financial-statement/balance-sheet-tview',
+          },
+          {
+            label: 'Cash Flow Statement',
+            type: 'link',
+            path: '/report/mis/financial-statement/cash-flow-statement',
+          },
+          {
+            label: 'Fund Flow Statement',
+            type: 'link',
+            path: '/report/mis/financial-statement/fund-flow-statement',
+          },
+          {
+            label: 'Deprecation Statement',
+            type: 'link',
+            path: '/report/mis/financial-statement/depreciation-statement-statement',
+          },
+          {
+            label: 'Bank Reconciliation Statement',
+            type: 'link',
+            path: '/report/mis/financial-statement/bank-reconciliation-statement',
+          },
+          {
+            label: 'TDS Register',
+            type: 'link',
+            path: '/report/mis/financial-statement/tds-register',
           },
         ],
       },
       {
-        label: 'Financial Analysis',
+        label: 'Financial Analyses',
         type: 'folder',
-        path: '/report/financial-analysis',
+        children: [
+          {
+            label: 'Ratio Analyses',
+            type: 'link',
+            path: '/report/',
+          },
+          {
+            label: 'GL Attribute based Analyses',
+            type: 'link',
+            path: '/report/',
+          },
+          {
+            label: 'Voucher Type wise Party Summary',
+            type: 'link',
+            path: '/report/',
+          },
+          {
+            label: 'Customer-Currency Fluctuation Gain Loss-Acred',
+            type: 'link',
+            path: '/report/',
+          },
+          {
+            label: 'Vendor-Currency Fluctuation Gain Loss-Acred',
+            type: 'link',
+            path: '/report/',
+          },
+          {
+            label: 'Customer-Currency Fluctuation Gain Loss-Realised',
+            type: 'link',
+            path: '/report/',
+          },
+          {
+            label: 'Vendor-Currency Fluctuation Gain Loss-Realised',
+            type: 'link',
+            path: '/report/',
+          },
+          {
+            label: 'Budget v/s Actual',
+            type: 'link',
+            path: '/report/',
+          },
+        ],
       },
       {
-        label: 'Stock Analysis',
+        label: 'Stock Analyses',
         type: 'folder',
         children: [
           {
             label: 'Stock Summary',
             type: 'link',
-            path: '/report/stock-analysis/stock-summary',
+            path: '/report/stock-analyses/stock-summary',
           },
           {
             label: 'Stock In/Out Analyses',
             type: 'link',
-            path: '/report/stock-analysis/in-out',
+            path: '/report/stock-analyses/in-out',
+          },
+          {
+            label: 'Stock Ageing',
+            type: 'link',
+            path: '/report/stock-analyses/stock-summary',
+          },
+          {
+            label: 'Rate Analyses',
+            type: 'link',
+            path: '/report/stock-analyses/in-out',
           },
         ],
       },
       {
-        label: 'Sales Analysis',
+        label: 'Sale Analyses',
         type: 'folder',
-        path: '/report/sales-analysis',
+        children: [
+          {
+            label: 'Estimate Analyses',
+            type: 'link',
+            path: '/report/sales-analyses',
+          },
+          {
+            label: 'Order Analyses - Sales',
+            type: 'link',
+            path: '/report/purchase-analyses',
+          },
+          {
+            label: 'Dispatch Analyses',
+            type: 'link',
+            path: '/report/enterprise-analyses',
+          },
+          {
+            label: 'Sales Analyses',
+            type: 'link',
+            path: '/report/business-insight',
+          },
+          {
+            label: 'Sales Return Challan Analyses',
+            type: 'link',
+            path: '/report/enterprise-analyses',
+          },
+          {
+            label: 'Customerwise Transection Statistics',
+            type: 'link',
+            path: '/report/business-insight',
+          },
+          {
+            label: 'Year on Year Sales Comparision',
+            type: 'link',
+            path: '/report/business-insight',
+          },
+        ],
       },
       {
-        label: 'Purchase Analysis',
+        label: 'Purchase Analyses',
         type: 'folder',
-        path: '/report/purchase-analysis',
+        children: [
+          {
+            label: 'Order Analyses - Purchase',
+            type: 'link',
+            path: '/report/sales-analyses',
+          },
+          {
+            label: 'GRN Analyses',
+            type: 'link',
+            path: '/report/purchase-analyses',
+          },
+          {
+            label: 'Purchase Return Challan Analyses',
+            type: 'link',
+            path: '/report/enterprise-analyses',
+          },
+          {
+            label: 'Purchase Analyses',
+            type: 'link',
+            path: '/report/business-insight',
+          },
+          {
+            label: 'Year on Year Purchase Comparision',
+            type: 'link',
+            path: '/report/business-insight',
+          },
+        ],
       },
       {
-        label: 'Enterprise Analysis',
+        label: 'Enterprise Analyses',
         type: 'folder',
-        path: '/report/enterprise-analysis',
+        children: [],
       },
       {
-        label: 'Buisness Insight',
+        label: 'Business Insight',
         type: 'folder',
-        path: '/report/business-insight',
+        children: [
+          {
+            label: 'Top N Analyses',
+            type: 'link',
+            path: '/report/sales-analyses',
+          },
+          {
+            label: 'Sales Summary Analyses',
+            type: 'link',
+            path: '/report/sales-analyses',
+          },
+          {
+            label: 'Purchase Summary Analyses',
+            type: 'link',
+            path: '/report/sales-analyses',
+          },
+        ],
       },
     ],
   },
@@ -124,11 +295,94 @@ const INITIAL_DATA: ReportSection[] = [
     title: 'Finance',
     icon: <BarChart3 size={18} className="text-white" />,
     items: [
-      { label: 'Primary Books', type: 'folder', path: '/report/primary-books' },
-      // SCENARIO: Folder with ONLY ONE file (Flattening Test)
-      // The "Ledgers Folder" wrapper will be ignored, and "Main Ledger" will show directly.
       {
-        label: 'Ledgers Folder',
+        label: 'Primary Books',
+        type: 'folder',
+        children: [
+          {
+            label: 'Receipt Payment Voucher Register',
+            type: 'link',
+            path: '/report/primary-books',
+          },
+          {
+            label: 'Journal Book',
+            type: 'link',
+            path: '/report/primary-books',
+          },
+          {
+            label: 'Bank Receipt Journal Book',
+            type: 'link',
+            path: '/report/primary-books',
+          },
+          {
+            label: 'Bank Payment Journal Book',
+            type: 'link',
+            path: '/report/primary-books',
+          },
+          {
+            label: 'Reversal Journal Book',
+            type: 'link',
+            path: '/report/primary-books',
+          },
+          {
+            label: 'Day Book',
+            type: 'link',
+            path: '/report/primary-books',
+          },
+          {
+            label: 'Day Book Summary',
+            type: 'link',
+            path: '/report/primary-books',
+          },
+          {
+            label: 'Cash Book',
+            type: 'link',
+            path: '/report/primary-books',
+          },
+          {
+            label: 'Bank Book',
+            type: 'link',
+            path: '/report/primary-books',
+          },
+          {
+            label: 'Cash Bank Summary',
+            type: 'link',
+            path: '/report/primary-books',
+          },
+          {
+            label: 'Countra Journal Register',
+            type: 'link',
+            path: '/report/primary-books',
+          },
+          {
+            label: 'Expense Journal Register',
+            type: 'link',
+            path: '/report/primary-books',
+          },
+          {
+            label: 'PDC Receipt Register',
+            type: 'link',
+            path: '/report/primary-books',
+          },
+          {
+            label: 'PDC Issued Register',
+            type: 'link',
+            path: '/report/primary-books',
+          },
+          {
+            label: 'Inter Branch Fund Transfer',
+            type: 'link',
+            path: '/report/primary-books',
+          },
+          {
+            label: 'Bank Online Payment Register',
+            type: 'link',
+            path: '/report/primary-books',
+          },
+        ],
+      },
+      {
+        label: 'Ledgers',
         type: 'folder',
         children: [
           {
@@ -383,9 +637,9 @@ const INITIAL_DATA: ReportSection[] = [
         path: '/report/tender-wise-summary',
       },
       {
-        label: 'POS Sales Analysis',
+        label: 'POS Sales Analyses',
         type: 'link',
-        path: '/report/pos-sales-analysis',
+        path: '/report/pos-sales-analyses',
       },
       {
         label: 'POS Party Trial',

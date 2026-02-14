@@ -72,7 +72,12 @@ import VendorLedger from '../pages/pages/reports/vendorTrials/VendorLedger.tsx';
 import ExpenceVoucher from '../pages/pages/finance/expenceVoucher/ExpenceVoucher.tsx';
 import ProfitLossStatement from '../pages/pages/reports/allReport/allReportPages/misReports/ProfitLossStatement/ProfitLossStatement.tsx';
 import ProfitLossStatementTView from '../pages/pages/reports/allReport/allReportPages/misReports/ProfitLossStatementTView/ProfitLossStatementTView.tsx';
-// import TradingProfitLossStatement from '../pages/pages/reports/allReport/allReportPages/misReports/TradingProfitLossStatement/TradingProfitLossStatement.tsx';
+import TradingProfitLossStatement from '../pages/pages/reports/allReport/allReportPages/misReports/TradingProfitLossStatement/TradingProfitLossStatement.tsx';
+import ProfitLossStatementMonthWise from '../pages/pages/reports/allReport/allReportPages/misReports/ProfitLossStatementMonthWise/ProfitLossStatementMonthWise.tsx';
+import ProfitLossStatementLocationWise from '../pages/pages/reports/allReport/allReportPages/misReports/ProfitLossStatementLocationWise/ProfitLossStatementLocationWise.tsx';
+import DepreciationStatement from '../pages/pages/reports/allReport/allReportPages/misReports/DeprecationStatement/DepreciationStatement.tsx';
+import BankReconciliationStatement from '../pages/pages/reports/allReport/allReportPages/misReports/BankReconciliationStatement/BankReconciliationStatement.tsx';
+import TDSRegister from '../pages/pages/reports/allReport/allReportPages/misReports/TDSRegister/TDSRegister.tsx';
 
 const useSidebar = () => ({
   isExpanded: false,
@@ -83,13 +88,19 @@ const Backdrop = () => null;
 
 const ReportPageRoutes: { [key: string]: React.FC } = {
   // --- MIS Reports ---
-  '/report/financial-statements': () => <PlaceholderPage title="Financial Statements" />,
-  '/report/financial-analysis': () => <PlaceholderPage title="Financial Analysis" />,
-  '/report/stock-analysis': () => <PlaceholderPage title="Stock Analysis" />,
-  '/report/sales-analysis': () => <PlaceholderPage title="Sales Analysis" />,
-  '/report/purchase-analysis': () => <PlaceholderPage title="Purchase Analysis" />,
-  '/report/enterprise-analysis': () => <PlaceholderPage title="Enterprise Analysis" />,
-  '/report/business-insight': () => <PlaceholderPage title="Business Insight" />,
+  '/report/mis/financial-statement/profit-loss-statement': ProfitLossStatement,
+  '/report/mis/financial-statement/profit-loss-statement-tview': ProfitLossStatementTView,
+  '/report/mis/financial-statement/trading-profit-loss-statement': TradingProfitLossStatement,
+  '/report/mis/financial-statement/profit-loss-statement-month-wise': ProfitLossStatementMonthWise,
+  '/report/mis/financial-statement/profit-loss-statement-location-wise':
+    ProfitLossStatementLocationWise,
+  '/report/mis/financial-statement/balance-sheet': ProfitLossStatement,
+  '/report/mis/financial-statement/balance-sheet-tview': ProfitLossStatementTView,
+  '/report/mis/financial-statement/cash-flow-statement': ProfitLossStatementTView,
+  '/report/mis/financial-statement/fund-flow-statement': ProfitLossStatementTView,
+  '/report/mis/financial-statement/depreciation-statement-statement': DepreciationStatement,
+  '/report/mis/financial-statement/bank-reconciliation-statement': BankReconciliationStatement,
+  '/report/mis/financial-statement/tds-register': TDSRegister,
 
   // --- Finance ---
   '/report/primary-books': () => <PlaceholderPage title="Primary Books" />,
@@ -115,7 +126,7 @@ const ReportPageRoutes: { [key: string]: React.FC } = {
 
   // --- Inventory ---
   '/report/item-master': ItemReport,
-  '/report/stock-analysis/stock-summary': StockSummary,
+  '/report/stock-analyses/stock-summary': StockSummary,
   '/report/primary-stock': () => <PlaceholderPage title="Primary Stock Reports" />,
   '/report/stock-adjustment': () => <PlaceholderPage title="Stock Adjustment" />,
   '/report/store-transfer': () => <PlaceholderPage title="Store Transfer" />,
@@ -239,15 +250,13 @@ const ReportPageRoutes: { [key: string]: React.FC } = {
     <PlaceholderPage title="Cost Sheet Project Contract" />
   ),
 
-  // --- Country Specification ---
   '/report/nepal': () => <PlaceholderPage title="Nepal Reports" />,
 };
 export interface TabItem {
   name: string;
   path: string;
-  // Add these two lines:
-  data?: any; // To hold the itemCode or other dynamic data
-  componentKey?: string; // To tell AppLayout which base component to load
+  data?: any;
+  componentKey?: string;
 }
 
 const ComponentMap: { [key: string]: React.FC<any> } = {
@@ -300,16 +309,13 @@ const ComponentMap: { [key: string]: React.FC<any> } = {
   '/wishlist': WishlistStockManager,
   '/ecom-products': EcomProductDetail,
   //
+  '/report/stock-trial': StockTrial,
+  '/report/stock-trial/ledger': StockLedger,
   '/opening-stock': OpeningStock,
   '/reversal-journal': ReversalJournal,
   '/journal-voucher': JournalVoucher,
   '/expense-journal': ExpenceVoucher,
   //
-  '/report/stock-trial': StockTrial,
-  '/report/stock-trial/ledger': StockLedger,
-  '/report/profit-loss-statement': ProfitLossStatement,
-  '/report/profit-loss-statement-tview': ProfitLossStatementTView,
-  // '/report/trading-profit-loss-statement': TradingProfitLossStatement,
 
   //
   //
