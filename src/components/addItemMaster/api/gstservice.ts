@@ -22,7 +22,7 @@ export interface ApiResponse {
 export const fetchGstClassifications = async (): Promise<GstClassificationData[]> => {
   try {
     const response = await api.get<ListResponse<GstClassificationData>>(
-      "/gstclassification/get_gst_classification"
+      "" // /gstclassification/get_gst_classification
     );
     return response.data.data || [];
   } catch { return []; }
@@ -30,7 +30,7 @@ export const fetchGstClassifications = async (): Promise<GstClassificationData[]
 
 // CREATE
 export const createGstClassification = async (payload: CreateGstClassificationPayload): Promise<ApiResponse> => {
-  const response = await api.post<ApiResponse>("/gstclassification/create_gst_classification", payload);
+  const response = await api.post<ApiResponse>("", payload); // /gstclassification/create_gst_classification
   return response.data;
 };
 
@@ -41,7 +41,7 @@ export const updateGstClassification = async (
 ): Promise<ApiResponse> => {
   // Ensure the URL matches your backend endpoint
   const response = await api.put<ApiResponse>(
-    `/gstclassification/update_gst_classification_by_id/${id}`,
+    `${id}`, // /gstclassification/update_gst_classification_by_id/${id}
     payload
   );
   return response.data;
@@ -49,6 +49,6 @@ export const updateGstClassification = async (
 
 // DELETE
 export const deleteGstClassification = async (id: string | number): Promise<ApiResponse> => {
-  const response = await api.delete<ApiResponse>(`/gstclassification/delete_gst_classification/${id}`);
+  const response = await api.delete<ApiResponse>(`${id}`); // /gstclassification/delete_gst_classification/${id}
   return response.data;
 };

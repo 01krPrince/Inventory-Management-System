@@ -111,7 +111,7 @@ const BillPaymentForm: React.FC<BillPaymentFormProps> = ({ themeColor = '#0f3c63
 
   // Form Data State matching screenshot fields
   const [formData, setFormData] = useState({
-    store: 'SPORTS HUB',
+    store: 'INVENTORY',
     date: '31/12/2025',
     voucherNo: '00073',
     vendor: '',
@@ -136,7 +136,7 @@ const BillPaymentForm: React.FC<BillPaymentFormProps> = ({ themeColor = '#0f3c63
     } catch (err) {
       console.error(err);
       setLocationList([
-        { code: 'ST01', name: 'SPORTS HUB' },
+        { code: 'ST01', name: 'INVENTORY' },
         { code: 'ST02', name: 'WAREHOUSE A' },
       ] as any);
     }

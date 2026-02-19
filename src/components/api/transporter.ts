@@ -34,7 +34,7 @@ const TransporterService = {
    * GET /transporter/getall/
    */
   getAllTransporters: async (): Promise<ApiResponse<Transporter[]>> => {
-    const response = await api.get("/transporter/getall/");
+    const response = await api.get(""); // /transporter/getall/
     return response.data;
   },
 
@@ -45,7 +45,7 @@ const TransporterService = {
   createTransporter: async (
     data: TransporterPayload
   ): Promise<ApiResponse<Transporter>> => {
-    const response = await api.post("/transporter/create/", data);
+    const response = await api.post("", data); // /transporter/create/
     return response.data;
   },
 
@@ -56,7 +56,7 @@ const TransporterService = {
   getTransporterById: async (
     id: string
   ): Promise<ApiResponse<Transporter>> => {
-    const response = await api.get(`/transporter/getbyid/${id}`);
+    const response = await api.get(`/${id}`); // /transporter/getbyid/${id}
     return response.data;
   },
 
@@ -68,7 +68,7 @@ const TransporterService = {
     id: string,
     data: Partial<TransporterPayload>
   ): Promise<ApiResponse<Transporter>> => {
-    const response = await api.put(`/transporter/updatebyid/${id}`, data);
+    const response = await api.put(`/${id}`, data); // /transporter/updatebyid/${id}
     return response.data;
   },
 
@@ -79,7 +79,7 @@ const TransporterService = {
   getTransporterByCode: async (
     code: string
   ): Promise<ApiResponse<Transporter>> => {
-    const response = await api.get(`/transporter/getbycode/${code}`);
+    const response = await api.get(`/${code}`); // /transporter/getbycode/${code}
     return response.data;
   },
 };

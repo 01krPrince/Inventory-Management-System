@@ -17,11 +17,11 @@ const AppFooter = () => {
           <strong className="inline font-bold" style={{ color: brandColor }}>
             Inventory
           </strong>
-          . All Rights Reserved. Developed by
+          . All Rights are not Reserved. Developed with ❤️ by 😎
           <a target="_blank" href="https://infoerasoftware.com/">
             <span className="font-medium text-gray-700 dark:text-gray-300">
               {" "}
-              Info Era Software Services Pvt. Ltd.
+              INVENTORY Software Services Pvt. Ltd.
             </span>
           </a>
         </span>

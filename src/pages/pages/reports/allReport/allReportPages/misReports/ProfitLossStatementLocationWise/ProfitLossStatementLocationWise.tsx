@@ -4,7 +4,7 @@ export default function ProfitLossStatementLocationWise() {
   const locations = [
     'CHANDAN K...',
     'GODOWN',
-    'SPORTS HUB',
+    'INVENTORY',
     '',
     'Closing_5(₹)',
     'Closing_6(₹)',

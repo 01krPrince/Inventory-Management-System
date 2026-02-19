@@ -9,7 +9,7 @@ export interface ColumnDef<T> {
 }
 
 interface TableDropdownProps<T> {
-  data: T[];
+  data?: T[];
   columns: ColumnDef<T>[];
   value: string | number | undefined;
   onChange: (item: T | null) => void;
@@ -98,29 +98,26 @@ const Dropdown = <T extends object>({
     };
   }, [isOpen]);
 
-  const filteredData = useMemo(() => {
-    // 1. Clean the search term (remove spaces, make lowercase)
-    const normalizedSearch = searchTerm.trim().toLowerCase();
-    if (!normalizedSearch) return data;
+const safeData = Array.isArray(data) ? data : [];
 
-    return data.filter((item) => {
-      // 2. Search across ALL columns defined in 'columns' prop
-      return columns.some((col) => {
-        const val = item[col.key];
+const filteredData = useMemo(() => {
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  if (!normalizedSearch) return safeData;
 
-        // 3. Safe string conversion
-        // Converts null/undefined to "" so they don't match text like "null"
-        const strVal = val === null || val === undefined ? '' : String(val);
-
-        // 4. Check if this specific column value contains the search term
-        return strVal.toLowerCase().includes(normalizedSearch);
-      });
+  return safeData.filter((item) => {
+    return columns.some((col) => {
+      const val = item[col.key];
+      const strVal = val == null ? '' : String(val);
+      return strVal.toLowerCase().includes(normalizedSearch);
     });
-  }, [data, columns, searchTerm]);
+  });
+}, [safeData, columns, searchTerm]);
 
-  const selectedItemObj = useMemo(() => {
-    return data.find((item) => String(item[valueKey]) === String(value));
-  }, [data, value, valueKey]);
+
+const selectedItemObj = useMemo(() => {
+  return safeData.find((item) => String(item[valueKey]) === String(value));
+}, [safeData, value, valueKey]);
+
 
   const displayLabel = selectedItemObj
     ? String(selectedItemObj[columns[1]?.key || columns[0]?.key])

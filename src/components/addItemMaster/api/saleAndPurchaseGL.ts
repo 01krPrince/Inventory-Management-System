@@ -46,7 +46,7 @@ export interface CreateSalesGlResponse {
 
 export const fetchSalesAndPurchaseGL = async (): Promise<SalesAndPurchaseGL[]> => {
   try {
-    const response = await api.get<GetSalesGlResponse>('/salespurchasegl/get_salespurchasegl_all');
+    const response = await api.get<GetSalesGlResponse>(''); // /salespurchasegl/get_salespurchasegl_all
     return response.data.data || [];
   } catch (error) {
     console.error("Error fetching Sales and Purchase GL:", error);
@@ -59,7 +59,7 @@ export const createSalesAndPurchaseGL = async (
 ): Promise<CreateSalesGlResponse | null> => {
   try {
     const response = await api.post<CreateSalesGlResponse>(
-      '/salespurchasegl/create_salespurchasegl', 
+      '', // /salespurchasegl/create_salespurchasegl
       formData
     );
     
@@ -77,7 +77,7 @@ export const updateSalesAndPurchaseGL = async (
   payload: any
 ) => {
   try {
-    const response = await api.put(`/salespurchasegl/update_salespurchasegl_by_id/${id}`, payload);
+    const response = await api.put(`${id}`, payload); // /salespurchasegl/update_salespurchasegl_by_id/${id}
     return response.data;
   } catch (error: any) {
     console.error("Error updating GL:", error);

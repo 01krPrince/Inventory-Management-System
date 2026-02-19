@@ -99,7 +99,11 @@ const useCustomerTableLogic = (
   initialData: DataItem[],
   initialSize: number,
 ) => {
-  const [data, setData] = useState<DataItem[]>(initialData);
+  // const [data, setData] = useState<DataItem[]>(initialData);
+  const [data, setData] = useState<DataItem[]>(
+  Array.isArray(initialData) ? initialData : []
+);
+
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [pageSize, setPageSize] = useState<number>(initialSize);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -109,11 +113,12 @@ const useCustomerTableLogic = (
     direction: "ascending",
   });
 
-  useEffect(() => {
-    setData(initialData);
-    setCurrentPage(1);
-    setSelectedRows([]);
-  }, [initialData]);
+useEffect(() => {
+  setData(Array.isArray(initialData) ? initialData : []);
+  setCurrentPage(1);
+  setSelectedRows([]);
+}, [initialData]);
+
 
   useEffect(() => {
     setCurrentPage(1);

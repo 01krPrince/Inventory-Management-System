@@ -119,7 +119,7 @@ export interface PosInvoiceResponse {
    SERVICE
 ======================= */
 
-const POS_INVOICE_ENDPOINT = "/posinvoice/create";
+const POS_INVOICE_ENDPOINT = ""; // /posinvoice/create
 
 export const PosInvoiceService = {
   createInvoice: async (

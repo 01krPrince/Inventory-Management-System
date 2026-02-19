@@ -42,7 +42,7 @@ const salesExecutiveService = {
    */
   getAllSalesExecutives: async (): Promise<ApiResponse<SalesExecutive[]>> => {
     const response = await api.get<ApiResponse<SalesExecutive[]>>(
-      "/salesexecutive/getall/"
+      "" // /salesexecutive/getall/
     );
     console.log(response.data);
     return response.data;
@@ -56,7 +56,7 @@ const salesExecutiveService = {
     code: string
   ): Promise<ApiResponse<SalesExecutive>> => {
     const response = await api.get<ApiResponse<SalesExecutive>>(
-      `/salesexecutive/getbycode/${code}`
+      `/${code}` // /salesexecutive/getbycode/${code}
     );
     return response.data;
   },
@@ -69,7 +69,7 @@ const salesExecutiveService = {
     data: CreateSalesExecutivePayload
   ): Promise<ApiResponse<SalesExecutive>> => {
     const response = await api.post<ApiResponse<SalesExecutive>>(
-      "/api/salesexecutive/create/",
+      "", // /api/salesexecutive/create/
       data
     );
     return response.data;
@@ -83,7 +83,7 @@ const salesExecutiveService = {
     id: string
   ): Promise<ApiResponse<SalesExecutive>> => {
     const response = await api.get<ApiResponse<SalesExecutive>>(
-      `/api/salesexecutive/getbyid/${id}`
+      `/${id}` // /api/salesexecutive/getbyid/${id}
     );
     return response.data;
   },
@@ -97,7 +97,7 @@ const salesExecutiveService = {
     data: UpdateSalesExecutivePayload
   ): Promise<ApiResponse<SalesExecutive>> => {
     const response = await api.put<ApiResponse<SalesExecutive>>(
-      `/api/salesexecutive/update/${id}`,
+      `/${id}`, // /api/salesexecutive/update/${id}
       data
     );
     return response.data;
@@ -109,7 +109,7 @@ const salesExecutiveService = {
    */
   deleteSalesExecutive: async (id: string): Promise<ApiResponse<null>> => {
     const response = await api.delete<ApiResponse<null>>(
-      `/api/salesexecutive/delete/${id}`
+      `/${id}` // /api/salesexecutive/delete/${id}
     );
     return response.data;
   },

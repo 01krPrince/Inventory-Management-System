@@ -78,7 +78,7 @@ export interface ItemGroupApiPayload {
  */
 export const fetchStockUnits = async (): Promise<StockUnitData[]> => {
   try {
-    const response = await api.get<ApiResponse<StockUnitData[]>>("/stock-unit/get");
+    const response = await api.get<ApiResponse<StockUnitData[]>>(""); // /stock-unit/get
     if (response.data && response.data.success) {
       return response.data.data || [];
     }
@@ -94,7 +94,7 @@ export const fetchStockUnits = async (): Promise<StockUnitData[]> => {
  */
 export const fetchGstClassifications = async (): Promise<GstClassificationData[]> => {
   try {
-    const response = await api.get<ApiResponse<GstClassificationData[]>>("/gst-classification/get");
+    const response = await api.get<ApiResponse<GstClassificationData[]>>(""); // /gst-classification/get
     if (response.data && response.data.success) {
       return response.data.data || [];
     }
@@ -110,7 +110,7 @@ export const fetchGstClassifications = async (): Promise<GstClassificationData[]
  */
 export const fetchUnderGroup = async (): Promise<UnderGroupData[]> => {
   try {
-    const response = await api.get<ApiResponse<UnderGroupData[]>>("/item/get");
+    const response = await api.get<ApiResponse<UnderGroupData[]>>(""); // /item/get
     if (response.data && response.data.success) {
       return response.data.data || [];
     }
@@ -129,7 +129,7 @@ export const createUnderGroup = async (
   payload: ItemGroupApiPayload
 ): Promise<ApiResponse> => {
   try {
-    const response = await api.post<ApiResponse>("/item/create", payload);
+    const response = await api.post<ApiResponse>("", payload); // /item/create
     return response.data;
   } catch (error: any) {
     return {
@@ -147,7 +147,7 @@ export const updateUnderGroup = async (
   payload: ItemGroupApiPayload
 ): Promise<ApiResponse> => {
   try {
-    const response = await api.put<ApiResponse>(`/item/update_item/${id}`, payload);
+    const response = await api.put<ApiResponse>(`/${id}`, payload); // /item/update_item/${id}
     return response.data;
   } catch (error: any) {
     return {
@@ -162,7 +162,7 @@ export const updateUnderGroup = async (
  */
 export const deleteUnderGroup = async (id: string): Promise<ApiResponse> => {
   try {
-    const response = await api.delete<ApiResponse>(`/item/delete_by/${id}`);
+    const response = await api.delete<ApiResponse>(`/${id}`); // /item/delete_by/${id}
     return response.data;
   } catch (error: any) {
     return {

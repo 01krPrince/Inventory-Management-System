@@ -65,7 +65,7 @@ export class PosCustomerService {
    */
   static async getAllCustomers(): Promise<CustomerResponse> {
     const response = await api.get<CustomerResponse>(
-      "/poscustomermaster/getall"
+      "" // /poscustomermaster/getall
     );
     return response.data;
   }
@@ -75,7 +75,7 @@ export class PosCustomerService {
    */
   static async createPosCustomer(customerData: PosCustomer) {
     try {
-      const response = await api.post("/poscustomermaster/create", customerData);
+      const response = await api.post("", customerData); // /poscustomermaster/create
       return response.data;
     } catch (error) {
       console.error("Error creating POS customer:", error);

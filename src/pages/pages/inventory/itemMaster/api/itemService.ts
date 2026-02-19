@@ -5,7 +5,7 @@ const ENDPOINT = "/item_master";
 
 export const fetchItems = async (): Promise<ItemApiData[]> => {
   try {
-    const response = await api.get<ItemResponse>(`${ENDPOINT}/get_all_item`); 
+    const response = await api.get<ItemResponse>(`${ENDPOINT}`); // /get_all_item 
     const result = response.data;
     
     if (result.success && result.data) {
@@ -24,7 +24,7 @@ export const fetchItems = async (): Promise<ItemApiData[]> => {
 export const getItemByCodeAndBarcode = async (
   code: string
 ): Promise<ItemResponse> => {
-  const response = await api.get(`${ENDPOINT}/get_by_code/${code}`);
+  const response = await api.get(`${ENDPOINT}//${code}`); ///get_by_code/${code}
 
   console.log("Item Code:", code);
   console.log("Response:", response.data);
@@ -37,7 +37,7 @@ export const getItemByCodeAndBarcode = async (
 
 export const deleteItemApi = async (id: string): Promise<ItemResponse> => {
   try {
-    const response = await api.delete<ItemResponse>(`${ENDPOINT}/delete_item/${id}`);
+    const response = await api.delete<ItemResponse>(`${ENDPOINT}//${id}`); // delete_item
     return response.data;
   } catch (error) {
     console.error("Error deleting item:", error);
@@ -49,7 +49,7 @@ export const deleteItemApi = async (id: string): Promise<ItemResponse> => {
 export const fetchItemsByVendorCode = async (vendorCode: string): Promise<ItemApiData[]> => {
   try {
     const response = await api.get<ItemResponse>(
-      `/purchasebill/with-rates?vendorCode=${vendorCode}`
+      `${vendorCode}` // /purchasebill/with-rates?vendorCode=
     ); 
     const result = response.data;
     

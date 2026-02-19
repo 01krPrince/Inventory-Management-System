@@ -32,7 +32,7 @@ interface SalesInvoiceResponse {
 
 export const createSalesInvoice = async (payload: any) => {
   try {
-    const response = await api.post("/salesinvoice/invoice_create", payload);
+    const response = await api.post("", payload); // /salesinvoice/invoice_create
     return response.data;
   } catch (error: any) {
     return error.response?.data || { success: false, message: "Network Error" };
@@ -41,7 +41,7 @@ export const createSalesInvoice = async (payload: any) => {
 
 export const getAllSalesInvoices = async (): Promise<SalesInvoiceResponse> => {
   try {
-    const response = await api.get("/salesinvoice/get_invoice_all");
+    const response = await api.get(""); // /salesinvoice/get_invoice_all
     return response.data;
   } catch (error: any) {
     console.error("Error fetching sales invoices:", error);

@@ -423,7 +423,7 @@ const defaultInvoiceData: InvoiceData = {
       "https://img.freepik.com/free-vector/dragon-logo-template_23-2149021422.jpg?w=200",
   },
   seller: {
-    name: "SPORTS HUB",
+    name: "INVENTORY",
     addressLine1: "VIP Road, Laheriasarai",
     cityStateZip: "Darbhanga, Bihar - 846001, India",
     gstin: "10HACPS7876F1ZF",
@@ -446,7 +446,7 @@ const defaultInvoiceData: InvoiceData = {
     contactPerson: "DELTA SOUVENIRS PRIVATE LIMITED",
   },
   shipping: {
-    name: "SPORTS HUB",
+    name: "INVENTORY",
     addressLine1: "VIP Road, Laheriasarai",
     cityStateZip: "Darbhanga, Bihar - 846001,",
     gstin: "10HACPS7876F1ZF",

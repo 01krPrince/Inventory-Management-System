@@ -52,7 +52,7 @@ const stockSummaryService = {
    */
   getStockSummary: async (params?: any): Promise<StockSummaryResponse> => {
     const response = await api.get<StockSummaryResponse>(
-      "/stocksummery/stocksummary",
+      "", // /stocksummery/stocksummary
       { params }
     );
     console.log(response.data);
@@ -65,7 +65,7 @@ const stockSummaryService = {
    */
   getStockItemById: async (id: string): Promise<ApiResponse<StockItem>> => {
     const response = await api.get<ApiResponse<StockItem>>(
-      `/stocksummery/getbyid/${id}`
+      `/${id}` // /stocksummery/getbyid/${id}
     );
     return response.data;
   },
@@ -76,7 +76,7 @@ const stockSummaryService = {
    */
   getStockByStore: async (storeId: string): Promise<ApiResponse<StockItem[]>> => {
     const response = await api.get<ApiResponse<StockItem[]>>(
-      `/stocksummery/getbystore/${storeId}`
+      `/${storeId}`  // /stocksummery/getbystore/${storeId}
     );
     return response.data;
   }

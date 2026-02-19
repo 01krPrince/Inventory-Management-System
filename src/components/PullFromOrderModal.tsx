@@ -135,7 +135,7 @@ const PullFromOrderModal: React.FC<PullFromOrderModalProps> = ({
                 Item Profit Analysis
               </h2>
               <p className="text-[10px] text-blue-200">
-                Reviewing PO-2026-882 • Sports Hub Enterprises
+                Reviewing PO-2026-882 • INVENTORY Enterprises
               </p>
             </div>
           </div>

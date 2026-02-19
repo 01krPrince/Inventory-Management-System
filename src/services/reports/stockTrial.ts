@@ -76,7 +76,7 @@ const stockTrialService = {
   getAllStockTrials: async (
     params?: IStockTrialParams,
   ): Promise<IStockTrialResponse> => {
-    const response = await api.get<IStockTrialResponse>("/stocktrails/all", {
+    const response = await api.get<IStockTrialResponse>("", { // /stocktrails/all
       params: params,
     });
     return response.data;
@@ -85,7 +85,7 @@ const stockTrialService = {
     params: IStockLedgerParams,
   ): Promise<IStockLedgerResponse> => {
     const response = await api.get<IStockLedgerResponse>(
-      "/stocktrails/ledger",
+      "", // /stocktrails/ledger
       {
         params: params,
       },

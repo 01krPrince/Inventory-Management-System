@@ -86,8 +86,13 @@ const VendorColumns: Column[] = [
 const pageSizeOptions = [5, 10, 20, 50];
 const initialPageSize = 5;
 
-const useVendorTableLogic = (initialData: DataItem[], initialSize: number) => {
-  const [data, setData] = useState<DataItem[]>(initialData);
+const useVendorTableLogic = (
+  initialData: DataItem[] = [],
+  initialSize: number,
+) => {
+const [data, setData] = useState<DataItem[]>(
+  Array.isArray(initialData) ? initialData : []
+);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [pageSize, setPageSize] = useState<number>(initialSize);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -97,15 +102,16 @@ const useVendorTableLogic = (initialData: DataItem[], initialSize: number) => {
     direction: "ascending",
   });
 
-  useEffect(() => {
-    setData(initialData);
-    setCurrentPage(1);
-    setSelectedRows([]);
-  }, [initialData]);
+useEffect(() => {
+  setData(Array.isArray(initialData) ? initialData : []);
+  setCurrentPage(1);
+  setSelectedRows([]);
+}, [initialData]);
+
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, pageSize, data.length]);
+}, [searchTerm, pageSize, data?.length ?? 0]);
 
   const sortedAndFilteredData = useMemo(() => {
     let sortableData = [...data];
@@ -374,7 +380,7 @@ export default function VendorDirectory() {
     try {
       // --- CHANGED: Call Vendor Service ---
       const responseData = await getAllVendors();
-      setApiData(responseData);
+setApiData(Array.isArray(responseData) ? responseData : []);
     } catch (err) {
       console.error("Failed to fetch vendor data:", err);
       setError(

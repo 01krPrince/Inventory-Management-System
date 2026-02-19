@@ -78,7 +78,7 @@ const vendorTrialService = {
     params: IVendorTrialParams,
   ): Promise<IVendorTrialResponse> => {
     const response = await api.get<IVendorTrialResponse>(
-      "/vendorledger/all-ledger-report",
+      "", // /vendorledger/all-ledger-report
       { params },
     );
     return response.data;
@@ -88,7 +88,7 @@ const vendorTrialService = {
     params: IVendorLedgerParams,
   ): Promise<IVendorLedgerResponse> => {
     const response = await api.get<IVendorLedgerResponse>(
-      "/vendorledger/statement",
+      "", // /vendorledger/statement
       { params },
     );
     return response.data;

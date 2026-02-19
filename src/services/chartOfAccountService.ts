@@ -48,34 +48,34 @@ export interface ApiResponse<T> {
   message?: string;
 }
 
-const BASE_PATH = "/chartofaccount";
+const BASE_PATH = ""; // /chartofaccount
 
 /** Get all chart of accounts */
 export const getAllChartOfAccounts = (): Promise<
   AxiosResponse<ChartOfAccount[]>
 > => {
-  return api.get(`${BASE_PATH}/all/`); // Added trailing slash to match screenshot
+  return api.get(`${BASE_PATH}/`); // all/`);
 };
 
 /** Create chart of account */
 export const createChartOfAccount = (
   payload: ChartOfAccount
 ): Promise<AxiosResponse<ApiResponse<ChartOfAccount>>> => {
-  return api.post(`${BASE_PATH}/create/`, payload); // Added trailing slash to match screenshot
+  return api.post(`${BASE_PATH}/`, payload); // create
 };
 
 /** Get chart of account by ID */
 export const getChartOfAccountById = (
   id: string
 ): Promise<AxiosResponse<ApiResponse<ChartOfAccount>>> => {
-  return api.get(`${BASE_PATH}/getbyid/${id}`);
+  return api.get(`${BASE_PATH}/${id}`); // ${BASE_PATH}/getbyid/${id}
 };
 
 /** Get chart of account by Code */
 export const getChartOfAccountByCode = (
   code: string
 ): Promise<AxiosResponse<ApiResponse<ChartOfAccount>>> => {
-  return api.get(`${BASE_PATH}/getbycode/${code}`);
+  return api.get(`${BASE_PATH}/${code}`); // ${BASE_PATH}/getbycode/${code}
 };
 
 /** Update chart of account by ID */
@@ -83,14 +83,14 @@ export const updateChartOfAccountById = (
   id: string,
   payload: Partial<ChartOfAccount>
 ): Promise<AxiosResponse<ApiResponse<ChartOfAccount>>> => {
-  return api.put(`${BASE_PATH}/updatebyid/${id}`, payload);
+  return api.put(`${BASE_PATH}/${id}`, payload); // ${BASE_PATH}/updatebyid/${id}
 };
 
 /** Delete chart of account by ID */
 export const deleteChartOfAccountById = (
   id: string
 ): Promise<AxiosResponse<ApiResponse<null>>> => {
-  return api.delete(`${BASE_PATH}/deletebyid/${id}`);
+  return api.delete(`${BASE_PATH}/${id}`); // ${BASE_PATH}/deletebyid/${id}
 };
 
 const chartOfAccountService = {

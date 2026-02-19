@@ -209,8 +209,8 @@ const AppHeader: React.FC = () => {
       }}
       className="animate-in fade-in zoom-in-95 w-48 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-2xl duration-100 dark:border-gray-700 dark:bg-gray-800">
       <div className="border-b border-gray-100 px-4 py-2 dark:border-gray-700">
-        <p className="text-sm font-medium dark:text-white">Admin User</p>
-        <p className="truncate text-xs text-gray-500">admin@example.com</p>
+        <p className="text-sm font-medium dark:text-white">Test Inv</p>
+        <p className="truncate text-xs text-gray-500">test@inv.com</p>
       </div>
       <button className="w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-[#0c5888]/10 dark:text-gray-300">
         Account
@@ -228,13 +228,13 @@ const AppHeader: React.FC = () => {
       <div className="flex w-full grow flex-col lg:flex-row lg:px-6">
         {/* === HEADER TOP ROW (Brand + Mobile Icons) === */}
         <div className="flex w-full items-center justify-between gap-2 px-3 sm:gap-4 lg:w-auto lg:justify-normal lg:py-1">
-          <a href="https://solution.alignbooks.com/#/login" target="_blank" rel="noreferrer">
+          {/* <a href="https://solution.inventory.com/#/login" target="_blank" rel="noreferrer"> */}
             <div className="ml-3 flex h-10 items-center justify-center p-2">
               <span className="w-auto whitespace-nowrap text-xl font-bold text-[#0c5888] dark:text-white">
-                SPORTS HUB
+                INVENTORY
               </span>
             </div>
-          </a>
+          {/* </a> */}
 
           {/* === MOBILE ICONS === */}
           <div className="flex items-center gap-3 lg:hidden">

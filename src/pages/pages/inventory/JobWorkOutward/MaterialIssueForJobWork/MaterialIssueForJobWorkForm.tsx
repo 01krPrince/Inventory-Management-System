@@ -39,7 +39,7 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
 
 // --- Mock Data ---
 const mockData = {
-  stores: ["SPORTS HUB", "TECH WORLD"],
+  stores: ["INVENTORY", "TECH WORLD"],
   customers: [
     { id: 101, name: "John Doe", code: "C001" },
     { id: 102, name: "Jane Smith", code: "C002" },
@@ -315,7 +315,7 @@ const MaterialIssueForJobWorkForm: React.FC<SalesInvoiceFormProps> = ({
               </div>
               <div className="col-span-8">
                 <InputGroup>
-                  <Select options={mockData.stores} defaultValue="SPORTS HUB" />
+                  <Select options={mockData.stores} defaultValue="INVENTORY" />
                   <ActionBtn icon={<EditIcon size={14} />} />
                 </InputGroup>
               </div>

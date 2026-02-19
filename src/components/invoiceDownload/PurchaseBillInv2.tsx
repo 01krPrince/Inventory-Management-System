@@ -431,7 +431,7 @@ const defaultPurchaseBillData: PurchaseBillData = {
     addressLine2: "Subhash Place,",
     cityStateZip: "New Delhi, Delhi - 110034, India",
     phone: "9169171616",
-    email: "support@alignbooks.com",
+    email: "support@inventory.com",
     gstNo: "07AAPPK4961R1ZR",
     panNo: "AAPPK4961R",
     logoUrl: "https://cdn-icons-png.flaticon.com/512/55/55283.png",

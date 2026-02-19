@@ -129,7 +129,7 @@ export interface PurchaseBillReportResponse {
 const createPurchaseBill = async (data: PurchaseBillPayload) => {
   try {
     console.log(data);
-    const response = await api.post("/purchasebill/create", data);
+    const response = await api.post("", data); // /purchasebill/create
     return response.data;
   } catch (error) {
     throw error;
@@ -138,7 +138,7 @@ const createPurchaseBill = async (data: PurchaseBillPayload) => {
 
 const getAllPurchaseBills = async (): Promise<GetAllPurchaseBillsResponse> => {
   try {
-    const response = await api.get("/purchasebill/getallpurchasebill");
+    const response = await api.get(""); // /purchasebill/getallpurchasebill
     return response.data;
   } catch (error) {
     throw error;
@@ -147,7 +147,7 @@ const getAllPurchaseBills = async (): Promise<GetAllPurchaseBillsResponse> => {
 
 const getPurchaseBillReport = async (): Promise<PurchaseBillReportResponse> => {
   try {
-    const response = await api.get("/purchasebill/purchasebillreport");
+    const response = await api.get(""); // /purchasebill/purchasebillreport
     return response.data;
   } catch (error) {
     throw error;

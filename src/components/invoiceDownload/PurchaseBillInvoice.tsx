@@ -742,7 +742,7 @@ const PurchaseBillInvoice: React.FC<PurchaseBillInvoiceProps> = ({ data }) => {
 };
 
 const defaultInvoiceData: InvoiceData = {
-  storeName: 'SPORTS HUB',
+  storeName: 'INVENTORY',
   header: {
     title: 'PURCHASE INVOICE',
     subTitle: '',

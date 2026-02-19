@@ -15,7 +15,7 @@ export interface ProfitAnalysisPayload {
 
 export const fetchProfitAnalysis = async (payload: ProfitAnalysisPayload) => {
   try {
-    const response = await api.post("/salesinvoice/profit-preview", payload);
+    const response = await api.post("", payload); // /salesinvoice/profit-preview
     return response.data;
   } catch (error: any) {
     throw error.response?.data || { message: "Analysis Failed" };

@@ -162,7 +162,7 @@ export const sampleInvoiceResponse = {
     createdAt: '2026-02-06T05:52:04.638Z',
     updatedAt: '2026-02-06T05:52:04.638Z',
     __v: 0,
-    storeName: 'SPORTS HUB',
+    storeName: 'INVENTORY',
     vendorName: 'S.S TRENDY SPORTS',
     netAmount: 3150,
     totalLogistics: 1020,

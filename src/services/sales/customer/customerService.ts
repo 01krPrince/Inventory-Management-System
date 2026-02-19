@@ -35,7 +35,7 @@ interface CustomerApiResponse {
 
 export const getAllCustomers = async (): Promise<Customer[]> => {
   const response: AxiosResponse<CustomerApiResponse> =
-    await api.get("/customer/get_all_customer");
+    await api.get(""); // /customer/get_all_customer
 
   return response.data.data;
 };
@@ -48,7 +48,7 @@ export const addCustomer = async (
   payload: FormData
 ): Promise<{ success: boolean; message: string }> => {
   try {
-    const response = await api.post("/customer/add-customer", payload);
+    const response = await api.post("", payload); // /customer/add-customer
 
     return response.data;
     
@@ -77,7 +77,7 @@ export const customerDeleteApi = async (
   }
 
   const response = await api.delete(
-    `/customer/deleteCustomer/${customerId}`
+    `/${customerId}` // /customer/deleteCustomer/${customerId}
   );
 
   return response.data;
@@ -120,7 +120,7 @@ export const customerUpdateApi = async (
 
   try {
     const response = await api.put(
-      `/customer/updateCustomer/${customerId}`, 
+      `/${customerId}`,  // /customer/updateCustomer/${customerId}
       payload
     );
     

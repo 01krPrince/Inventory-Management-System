@@ -1,25 +1,31 @@
-// src/context/AuthContext.tsx
 import React, { createContext, useContext, useState } from "react";
+import { speakGreeting } from "../services/greetingService";
 
 type AuthContextType = {
   isLoggedIn: boolean;
-  login: () => void;
+  login: (name: string) => void;
   logout: () => void;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("token"));
+  const [isLoggedIn, setIsLoggedIn] = useState(
+    !!sessionStorage.getItem("token")
+  );
 
-  const login = () => {
+  const login = (name: string) => {
     setIsLoggedIn(true);
-    localStorage.setItem("token", "dummy-token");
+    sessionStorage.setItem("token", "dummy-token");
+
+    // 🔊 Speak greeting after login
+    speakGreeting(name);
   };
 
   const logout = () => {
     setIsLoggedIn(false);
-    localStorage.removeItem("token");
+    sessionStorage.removeItem("token");
+    window.speechSynthesis.cancel();
   };
 
   return (

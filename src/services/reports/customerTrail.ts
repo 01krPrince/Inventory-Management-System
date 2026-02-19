@@ -71,7 +71,7 @@ const customerTrialService = {
     params: ICustomerTrialParams,
   ): Promise<ICustomerTrialResponse> => {
     const response = await api.get<ICustomerTrialResponse>(
-      "/customertrail/all-ledger-report",
+      "", // /customertrail/all-ledger-report
       { params },
     );
     return response.data;
@@ -81,7 +81,7 @@ const customerTrialService = {
     params: ICustomerStatementParams,
   ): Promise<ICustomerStatementResponse> => {
     const response = await api.get<ICustomerStatementResponse>(
-      "/customertrail/statement",
+      "", // /customertrail/statement
       { params },
     );
     return response.data;

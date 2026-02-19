@@ -25,7 +25,7 @@ const itemBalanceService = {
   
   getBalanceByStore: async (storeCode: string): Promise<ItemBalanceResponse> => {
     const response = await api.get<ItemBalanceResponse>(
-      '/itembalance/balance-by-store',
+      '', // /itembalance/balance-by-store
       {
         params: { storeCode }, 
       }

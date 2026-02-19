@@ -46,7 +46,7 @@ export interface CreateDocumentCategoryInventoryResponse {
  */
 export const fetchDocumentCategoryInventory = async (): Promise<DocumentCategoryInventory[]> => {
   try {
-    const response = await api.get<GetDocumentCategoryInventoryResponse>('/documentcategoryinventory/getall');
+    const response = await api.get<GetDocumentCategoryInventoryResponse>(''); // /documentcategoryinventory/getall
     return response.data.data || [];
   } catch (error) {
     console.error("Error fetching Document Category Inventory:", error);
@@ -62,7 +62,7 @@ export const createDocumentCategoryInventory = async (
 ): Promise<CreateDocumentCategoryInventoryResponse | null> => {
   try {
     const response = await api.post<CreateDocumentCategoryInventoryResponse>(
-      '/documentcategoryinventory/create', 
+      '', // /documentcategoryinventory/create
       formData
     );
     
@@ -88,7 +88,7 @@ export const updateDocumentCategoryInventory = async (
 ): Promise<CreateDocumentCategoryInventoryResponse | null> => {
   try {
     const response = await api.put<CreateDocumentCategoryInventoryResponse>(
-      `/documentcategoryinventory/updatebyid/${id}`, 
+      `/${id}`, // /documentcategoryinventory/updatebyid/${id}
       formData
     );
     
@@ -108,7 +108,7 @@ export const updateDocumentCategoryInventory = async (
  */
 export const deleteDocumentCategoryInventory = async (id: string): Promise<boolean> => {
     try {
-        await api.delete(`/documentcategoryinventory/deletebyid/${id}`);
+        await api.delete(`/${id}`); // /documentcategoryinventory/deletebyid/${id}
         return true;
     } catch (error) {
         console.error("Error deleting item:", error);

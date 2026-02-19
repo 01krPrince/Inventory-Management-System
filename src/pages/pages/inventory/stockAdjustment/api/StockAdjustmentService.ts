@@ -68,7 +68,7 @@ export const createStockAdjustment = async (
 ): Promise<ApiResponse<StockAdjustment>> => {
   try {
     const response = await api.post<ApiResponse<StockAdjustment>>(
-      "/stockadjustment/stock-adjustment",
+      "", // /stockadjustment/stock-adjustment
       payload,
     ); // stockadjustment/stock-adjustment
 
@@ -110,7 +110,7 @@ export const getAllStockAdjustments = async (): Promise<
 > => {
   try {
     const response = await api.get<ApiResponse<StockAdjustment[]>>(
-      "/stockadjustment/getall",
+      "", // /stockadjustment/getall
     );
     return {
       success: true,
@@ -134,7 +134,7 @@ export const getStockAdjustmentById = async (
 ): Promise<ApiResponse<StockAdjustment>> => {
   try {
     const response = await api.get<ApiResponse<StockAdjustment>>(
-      `/stockadjustment/getbyid/${id}`,
+      `/${id}`, // /stockadjustment/getbyid/${id}
     );
     return {
       success: true,
@@ -159,7 +159,7 @@ export const updateStockAdjustment = async (
 ): Promise<ApiResponse<StockAdjustment>> => {
   try {
     const response = await api.put<ApiResponse<StockAdjustment>>(
-      `/stockadjustment/updatebyid/${id}`,
+      `/${id}`, // /stockadjustment/updatebyid/${id}
       payload,
     );
     return {
@@ -185,7 +185,7 @@ export const deleteStockAdjustment = async (
   id: string,
 ): Promise<ApiResponse<null>> => {
   try {
-    await api.delete<ApiResponse<null>>(`/stockadjustment/deletebyid/${id}`);
+    await api.delete<ApiResponse<null>>(`/${id}`); // /stockadjustment/deletebyid/${id}
     return {
       success: true,
       message: "Stock Adjustment Deleted Successfully",

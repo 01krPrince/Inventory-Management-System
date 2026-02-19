@@ -56,7 +56,7 @@ const mockData: MockData = {
     { name: 'Maharashtra', code: 'MH' },
   ],
   creditTypes: ['Credit', 'Cash'],
-  stores: ['SPORTS HUB', 'TECH WORLD', 'FASHION POINT'],
+  stores: ['INVENTORY', 'TECH WORLD', 'FASHION POINT'],
   customers: ['John Doe', 'Jane Smith', 'Acme Corp'],
   paymentLinks: ['PayTM', 'Razorpay', 'Stripe', 'Direct Transfer'],
   shipToOptions: ['Warehouse A', 'Warehouse B', 'Store Front'],
