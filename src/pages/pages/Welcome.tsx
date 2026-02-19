@@ -9,8 +9,6 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
-  RadialBarChart,
-  RadialBar,
   Cell,
   PieChart,
   Pie,
@@ -31,9 +29,7 @@ import {
   Shirt,
   Armchair,
   Watch,
-  MoreHorizontal,
   RefreshCw,
-  Bell,
   ShoppingCart,
   Boxes,
 } from 'lucide-react';
@@ -89,12 +85,12 @@ const topProducts = [
   { rank: 5, name: 'Men\'s Slim Chinos', sku: 'MW-2210', sold: 74, revenue: 11100, trend: '-3%' },
 ];
 
-const radialData = [
-  { name: 'Electronics', value: 82, fill: COLORS.primary },
-  { name: "Men's Wear", value: 65, fill: '#7c3aed' },
-  { name: 'Home Decor', value: 44, fill: COLORS.success },
-  { name: 'Accessories', value: 91, fill: COLORS.warning },
-];
+// const radialData = [
+//   { name: 'Electronics', value: 82, fill: COLORS.primary },
+//   { name: "Men's Wear", value: 65, fill: '#7c3aed' },
+//   { name: 'Home Decor', value: 44, fill: COLORS.success },
+//   { name: 'Accessories', value: 91, fill: COLORS.warning },
+// ];
 
 // ── CUSTOM TOOLTIP ─────────────────────────────────────────
 const CustomTooltip = ({ active, payload, label }: any) => {

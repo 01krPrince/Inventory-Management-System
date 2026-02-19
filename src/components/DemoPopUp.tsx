@@ -477,7 +477,7 @@ export default function DemoPopup({ show, onClose }: DemoPopupProps) {
 
                     {/* Feature Chips */}
                     <div className="flex flex-wrap gap-2 mb-6">
-                      {sol.chips.map((chip, idx) => (
+                      {sol.chips.map((chip) => (
                         <span
                           key={chip}
                           className="dp-chip text-[12px] font-medium px-3 py-1.5 rounded-full border"
