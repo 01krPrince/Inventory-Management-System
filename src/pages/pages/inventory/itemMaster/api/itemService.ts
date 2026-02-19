@@ -1,7 +1,7 @@
 import api from "../../../../../services/api";
 import { ItemResponse, ItemApiData } from "../models/ItemModel";
 
-const ENDPOINT = "/item_master";
+const ENDPOINT = ""; ///item_master
 
 export const fetchItems = async (): Promise<ItemApiData[]> => {
   try {
