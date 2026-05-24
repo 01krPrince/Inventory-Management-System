@@ -26,6 +26,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { COLORS } from "../constants/colors";
+import { driver } from "driver.js";
+import "driver.js/dist/driver.css";
 
 const UPDATES = [
   { id: 1, version: "v2.5.1", date: "Dec 01, 2025", title: "Android 16KB Page Alignment", status: "Stable", module: "Core Kernel" },
@@ -67,6 +69,8 @@ const LandingPage = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const loginRef = useRef<HTMLDivElement>(null);
+  const tourDriverRef = useRef<ReturnType<typeof driver> | null>(null);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -87,6 +91,65 @@ const LandingPage = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (localStorage.getItem("inv_onboarding_done")) return;
+
+    const tourDriver = driver({
+      overlayColor: "rgba(14, 74, 123, 0.55)",
+      overlayOpacity: 1,
+      popoverClass: "inv-tour-popover",
+      showProgress: true,
+      progressText: "{{current}} / {{total}}",
+      nextBtnText: "Next →",
+      prevBtnText: "← Back",
+      doneBtnText: "✓ Got it",
+      animate: true,
+      smoothScroll: true,
+      allowClose: true,
+      steps: [
+        {
+          element: "#tour-secure-access",
+          popover: {
+            title: "🔐 Secure Access",
+            description: "Click here to login and access the management console.",
+            side: "bottom" as const,
+            align: "end" as const,
+            onNextClick: () => {
+              setIsLoginOpen(true);
+              setEmail("test@inv.com");
+              setPassword("12345");
+              setTimeout(() => tourDriver.moveNext(), 400);
+            },
+          },
+        },
+        {
+          element: "#tour-init-session",
+          popover: {
+            title: "🚀 Initialize Session",
+            description: "Your credentials are pre-filled. Click here to continue.",
+            side: "top" as const,
+            align: "center" as const,
+            onPrevClick: () => {
+              setIsLoginOpen(false);
+              setEmail("");
+              setPassword("");
+              setTimeout(() => tourDriver.movePrevious(), 400);
+            },
+          },
+        },
+      ],
+      onDestroyStarted: () => {
+        localStorage.setItem("inv_onboarding_done", "1");
+        tourDriver.destroy();
+      },
+    });
+
+    tourDriverRef.current = tourDriver;
+    const startTimer = setTimeout(() => tourDriver.drive(), 900);
+    return () => clearTimeout(startTimer);
+  }, []);
+
 
   const handleLoginSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -209,6 +272,7 @@ const LandingPage = () => {
             </div>
 
             <button
+            id="tour-secure-access"
               onClick={() => setIsLoginOpen(!isLoginOpen)}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200"
               style={{
@@ -361,6 +425,7 @@ const LandingPage = () => {
 
                 <button
                   type="submit"
+                  id="tour-init-session"
                   disabled={isLoading}
                   className="w-full font-bold py-3 rounded-xl flex justify-center items-center gap-2 text-sm transition-all duration-200"
                   style={{
@@ -451,9 +516,9 @@ const LandingPage = () => {
             </div>
 
             <h1
-              className="text-5xl lg:text-6xl xl:text-7xl font-bold leading-[1.08] tracking-tight"
-              style={{ color: COLORS.textPrimary }}
-            >
+  className="text-5xl lg:text-6xl xl:text-7xl font-bold leading-[1.08] tracking-tight"
+  style={{ color: COLORS.textPrimary }}
+>
               Inventory{" "}
               <span
                 className="inline-block"
@@ -1085,6 +1150,108 @@ const LandingPage = () => {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.5; }
         }
+          .inv-tour-popover.driver-popover {
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 24px 64px rgba(14,74,123,0.18), 0 4px 16px rgba(0,0,0,0.08);
+    padding: 0;
+    overflow: hidden;
+    font-family: inherit;
+    max-width: 340px;
+    min-width: 300px;
+    animation: inv-tour-in 0.25s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+  @keyframes inv-tour-in {
+    from { opacity: 0; transform: scale(0.92) translateY(6px); }
+    to   { opacity: 1; transform: scale(1)    translateY(0);   }
+  }
+  .inv-tour-popover.driver-popover::before {
+    content: "";
+    display: block;
+    height: 3px;
+    background: linear-gradient(90deg, #1a6fbf, #2196f3);
+  }
+  .inv-tour-popover .driver-popover-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
+    padding: 18px 20px 4px;
+    margin: 0;
+  }
+  .inv-tour-popover .driver-popover-description {
+    font-size: 13px;
+    color: #475569;
+    line-height: 1.6;
+    padding: 0 20px 16px;
+    margin: 0;
+  }
+  .inv-tour-popover .driver-popover-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px 16px;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    gap: 8px;
+  }
+  .inv-tour-popover .driver-popover-progress-text {
+    font-size: 11px;
+    font-weight: 600;
+    color: #94a3b8;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    flex: 1;
+  }
+  .inv-tour-popover .driver-popover-footer button {
+    border: none;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 7px 14px;
+    transition: all 0.15s ease;
+  }
+  .inv-tour-popover .driver-popover-close-btn {
+    position: absolute;
+    top: 12px; right: 14px;
+    width: 26px; height: 26px;
+    border-radius: 6px !important;
+    padding: 0 !important;
+    font-size: 14px !important;
+    background: #f1f5f9 !important;
+    color: #64748b !important;
+  }
+  .inv-tour-popover .driver-popover-close-btn:hover {
+    background: #e2e8f0 !important;
+    color: #1e293b !important;
+  }
+  .inv-tour-popover .driver-popover-prev-btn {
+    background: #f1f5f9;
+    color: #475569;
+  }
+  .inv-tour-popover .driver-popover-prev-btn:hover:not(:disabled) {
+    background: #e2e8f0;
+    color: #0f172a;
+  }
+  .inv-tour-popover .driver-popover-prev-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  .inv-tour-popover .driver-popover-next-btn {
+    background: #1a6fbf;
+    color: #ffffff;
+    box-shadow: 0 4px 10px rgba(26,111,191,0.35);
+  }
+  .inv-tour-popover .driver-popover-next-btn:hover {
+    background: #155fa0;
+    transform: translateY(-1px);
+  }
+  .driver-active-element {
+    border-radius: 10px !important;
+    box-shadow: 0 0 0 3px #1a6fbf, 0 0 0 6px rgba(26,111,191,0.22) !important;
+    transition: box-shadow 0.3s ease !important;
+  }
       `}</style>
     </div>
   );
