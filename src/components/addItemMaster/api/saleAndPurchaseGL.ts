@@ -1,4 +1,7 @@
 import api from "../../../services/api";
+// ==========================================
+// 1. Interfaces
+// ==========================================
 
 export interface SalesAndPurchaseGL {
   _id: string;
@@ -12,7 +15,7 @@ export interface SalesAndPurchaseGL {
   rtgsIfscCode: string;
   classification: string;
   isLoanAccount: boolean;
-  intrestRate: string;
+  intrestRate: string; // "9.5%"
   calculationOn: string;
   tdsSection: string;
   tdsApplicable: boolean;
@@ -44,9 +47,13 @@ export interface CreateSalesGlResponse {
   data: SalesAndPurchaseGL;
 }
 
+// ==========================================
+// 2. API Functions
+// ==========================================
+
 export const fetchSalesAndPurchaseGL = async (): Promise<SalesAndPurchaseGL[]> => {
   try {
-    const response = await api.get<GetSalesGlResponse>(''); // /salespurchasegl/get_salespurchasegl_all
+    const response = await api.get<GetSalesGlResponse>('/salespurchasegl/get_salespurchasegl_all');
     return response.data.data || [];
   } catch (error) {
     console.error("Error fetching Sales and Purchase GL:", error);
@@ -59,7 +66,7 @@ export const createSalesAndPurchaseGL = async (
 ): Promise<CreateSalesGlResponse | null> => {
   try {
     const response = await api.post<CreateSalesGlResponse>(
-      '', // /salespurchasegl/create_salespurchasegl
+      '/salespurchasegl/create_salespurchasegl', 
       formData
     );
     
@@ -74,10 +81,11 @@ export const createSalesAndPurchaseGL = async (
 
 export const updateSalesAndPurchaseGL = async (
   id: string,
-  payload: any
+  payload: any // using 'any' to ensure the strict mapping from component passes through
 ) => {
   try {
-    const response = await api.put(`${id}`, payload); // /salespurchasegl/update_salespurchasegl_by_id/${id}
+    // Matches your Postman URL: /chartofaccount/updatebyid/:id
+    const response = await api.put(`/salespurchasegl/update_salespurchasegl_by_id/${id}`, payload);
     return response.data;
   } catch (error: any) {
     console.error("Error updating GL:", error);

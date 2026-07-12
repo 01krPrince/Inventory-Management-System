@@ -1,9 +1,15 @@
-import React, { useCallback } from 'react';
-import { useTabs } from '../context/TabContext';
-import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import React, { useCallback } from "react";
+import { useTabs } from "../context/TabContext";
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DropResult,
+} from "@hello-pangea/dnd";
 
 export const TabBar: React.FC = React.memo(() => {
-  const { openTabs, activeTabPath, setActiveTab, closeTab, reorderTabs } = useTabs();
+  const { openTabs, activeTabPath, setActiveTab, closeTab, reorderTabs } =
+    useTabs();
 
   const onDragEnd = useCallback(
     (result: DropResult) => {
@@ -25,7 +31,8 @@ export const TabBar: React.FC = React.memo(() => {
           <div
             ref={droppableProvided.innerRef}
             {...droppableProvided.droppableProps}
-            className="flex flex-wrap items-center space-x-1 whitespace-normal border-b border-gray-200 px-4 dark:border-gray-800">
+            className="flex flex-wrap items-center space-x-1 border-b border-gray-200 dark:border-gray-800 px-4 whitespace-normal"
+          >
             {openTabs.map((tab, index) => (
               <Draggable key={tab.path} draggableId={tab.path} index={index}>
                 {(draggableProvided) => (
@@ -33,31 +40,35 @@ export const TabBar: React.FC = React.memo(() => {
                     ref={draggableProvided.innerRef}
                     {...draggableProvided.draggableProps}
                     {...draggableProvided.dragHandleProps}
-                    className={`flex cursor-pointer items-center rounded-t-lg px-4 py-1 text-sm transition-colors duration-150 ${
+                    className={`flex items-center px-4 py-1 text-sm rounded-t-lg transition-colors duration-150 cursor-pointer ${
                       tab.path === activeTabPath
-                        ? 'border-b-2 border-[#0c5888] bg-white font-bold text-[#0c5888]'
-                        : 'text-gray-600 hover:text-[#0c5888] dark:text-gray-300'
+                        ? "bg-white text-[#0c5888] font-bold border-b-2 border-[#0c5888]"
+                        : "text-gray-600 dark:text-gray-300 hover:text-[#0c5888]"
                     }`}
-                    onClick={() => setActiveTab(tab.path)}>
-                    <span className="w-auto">{tab.name}</span>
-                    {tab.path !== '/welcome' && (
+                    onClick={() => setActiveTab(tab.path)}
+                  >
+                    <span className="truncate max-w-40">{tab.name}</span>
+                    {tab.path !== "/welcome" && (
                       <button
-                        className="ml-2 rounded-full p-0.5 text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700"
+                        className="ml-2 p-0.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
                         onClick={(e) => {
                           e.stopPropagation();
                           closeTab(tab.path);
                         }}
-                        aria-label={`Close ${tab.name} tab`}>
+                        aria-label={`Close ${tab.name} tab`}
+                      >
                         <svg
-                          className="h-3 w-3"
+                          className="w-3 h-3"
                           fill="none"
                           stroke="currentColor"
-                          viewBox="0 0 24 24">
+                          viewBox="0 0 24 24"
+                        >
                           <path
                             strokeLinecap="round"
                             strokeLinejoin="round"
                             strokeWidth="2"
-                            d="M6 18L18 6M6 6l12 12"></path>
+                            d="M6 18L18 6M6 6l12 12"
+                          ></path>
                         </svg>
                       </button>
                     )}
@@ -82,12 +93,12 @@ export const TabBar: React.FC = React.memo(() => {
         `}
       </style>
 
-      {activeTabPath !== '/welcome' ? (
-        <div className="py-auto flex h-6 w-auto justify-center bg-[#0c5888] align-bottom text-amber-50">
+      {activeTabPath !== "/welcome" ? (
+        <div className="h-10 p-2 flex align-bottom justify-center bg-[#0c5888] text-amber-50">
           {openTabs.find((t) => t.path === activeTabPath)?.name}
         </div>
       ) : (
-        ''
+        ""
       )}
     </DragDropContext>
   );

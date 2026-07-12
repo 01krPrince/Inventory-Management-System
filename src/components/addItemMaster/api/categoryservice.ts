@@ -17,7 +17,7 @@ export interface ApiResponse {
 export const fetchCategories = async (): Promise<CategoryData[]> => {
   try {
     const response = await api.get<ListResponse<CategoryData>>(
-      "" // /itemcategory/get_all_item_category
+      "/itemcategory/get_all_item_category"
     );
     return response.data.data || [];
   } catch {
@@ -30,7 +30,7 @@ export const createItemCategory = async (
   payload: CreateCategoryPayload
 ): Promise<ApiResponse> => {
   const response = await api.post<ApiResponse>(
-    "", // /itemcategory/add_item_category
+    "/itemcategory/create_item_category",
     payload
   );
   return response.data;
@@ -42,7 +42,7 @@ export const updateItemCategory = async (
   payload: CreateCategoryPayload
 ): Promise<ApiResponse> => {
   const response = await api.put<ApiResponse>(
-    `${id}`, // /itemcategory/update_item_category/${id}
+    `/itemcategory/update_item_category/${id}`,
     payload
   );
   return response.data;
@@ -51,7 +51,7 @@ export const updateItemCategory = async (
 // --- DELETE ---
 export const deleteItemCategory = async (id: string): Promise<ApiResponse> => {
   const response = await api.delete<ApiResponse>(
-    `${id}` // /itemcategory/delete_item_category/${id}
+    `/itemcategory/delete_item_category/${id}`
   );
   return response.data;
 };
@@ -62,7 +62,7 @@ export const getItemCategoryByCode = async (
 ): Promise<CategoryData | null> => {
   try {
     const response = await api.get<ApiResponse>(
-      `${code}` // /itemcategory/get_item_category_by_code/${code}
+      `/itemcategory/get_item_category_by_code/${code}`
     );
     // Assuming the API wraps the single object in the 'data' field of ApiResponse
     return response.data.data || null;
@@ -77,7 +77,7 @@ export const getItemCategoryById = async (
 ): Promise<CategoryData | null> => {
   try {
     const response = await api.get<ApiResponse>(
-      `${id}` // /itemcategory/get_item_category_by_id/${id}
+      `/itemcategory/get_item_category_by_id/${id}`
     );
     return response.data.data || null;
   } catch {

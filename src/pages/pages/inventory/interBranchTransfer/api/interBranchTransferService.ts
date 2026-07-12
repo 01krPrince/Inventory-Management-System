@@ -117,7 +117,7 @@ export const interBranchService = {
    */
   createTransfer: async (payload: CreateInterBranchPayload): Promise<StandardResponse> => {
     try {
-      const response = await api.post<StandardResponse>("", payload); // /interbranch/create/
+      const response = await api.post<StandardResponse>("/interbranch/create/", payload);
       return response.data;
     } catch (error: any) {
       if (error.response && error.response.data) {
@@ -134,7 +134,7 @@ export const interBranchService = {
    */
   getAllTransfers: async (): Promise<InterBranchListResponse> => {
     try {
-      const response = await api.get<InterBranchListResponse>(""); // /interbranch/getall/
+      const response = await api.get<InterBranchListResponse>("/interbranch/getall/");
       return response.data;
     } catch (error: any) {
       if (error.response && error.response.data) {

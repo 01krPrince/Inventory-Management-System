@@ -7,9 +7,6 @@ import {
   Lock,
   Layers,
   CheckCircle2,
-  ArrowUpDown,
-  ChevronUp,
-  ChevronDown,
 } from "lucide-react";
 import Dropdown from "../../../../components/Dropdown";
 import { LocationMaster } from "../../../../components/LocationMaster";
@@ -23,97 +20,41 @@ import {
 } from "../../../../services/header/openingTransaction/openingStockService";
 import { fetchItems } from "../../inventory/itemMaster/api/itemService";
 
-type SortConfig = {
-  key: string;
-  direction: "asc" | "desc" | null;
-};
-
 const OpeningStock: React.FC = () => {
+  // --- State Management ---
   const [formData, setFormData] = useState({
     storeName: "",
-    code: "",
+    storeId: "",
     voucherDate: new Date().toISOString().split("T")[0],
     remarks: "Initial stock entry",
   });
 
   const [storeList, setStoreList] = useState<LocationMasterType[]>([]);
-  const [isLocationMasterOpen, setIsLocationMasterOpen] = useState(false);
+  const [isLocationMasterOpen, setIsLocationMasterOpen] = useState(false); // Modal State
   const [tableItems, setTableItems] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [tableSearch, setTableSearch] = useState("");
   const [isAlreadyCreated, setIsAlreadyCreated] = useState(false);
 
-  // --- Sorting State ---
-  const [sortConfig, setSortConfig] = useState<SortConfig>({
-    key: "",
-    direction: null,
-  });
-
-  // --- Statistics Calculation ---
+  // --- Stats Calculation ---
   const stats = useMemo(() => {
     const filtered = tableItems.filter(
       (i) =>
         i.item_name.toLowerCase().includes(tableSearch.toLowerCase()) ||
-        i.code.toLowerCase().includes(tableSearch.toLowerCase()),
+        i.code.toLowerCase().includes(tableSearch.toLowerCase())
     );
     const totalQty = filtered.reduce(
       (acc, curr) => acc + Number(curr.quantity || 0),
-      0,
+      0
     );
     const totalValue = filtered.reduce(
       (acc, curr) => acc + Number(curr.amount || 0),
-      0,
+      0
     );
     return { count: filtered.length, totalQty, totalValue };
   }, [tableItems, tableSearch]);
 
-  // --- Sorting Logic ---
-  const handleSort = (key: string) => {
-    let direction: "asc" | "desc" | null = "asc";
-    if (sortConfig.key === key && sortConfig.direction === "asc") {
-      direction = "desc";
-    } else if (sortConfig.key === key && sortConfig.direction === "desc") {
-      direction = null; // Reset sort
-    }
-    setSortConfig({ key, direction });
-  };
-
-  const sortedItems = useMemo(() => {
-    // First, apply Search Filter
-    let filtered = tableItems.filter(
-      (i) =>
-        i.item_name.toLowerCase().includes(tableSearch.toLowerCase()) ||
-        i.code.toLowerCase().includes(tableSearch.toLowerCase()),
-    );
-
-    // Second, apply Sorting
-    if (sortConfig.direction !== null) {
-      filtered.sort((a, b) => {
-        const aValue = a[sortConfig.key];
-        const bValue = b[sortConfig.key];
-
-        // Numeric Sorting
-        if (typeof aValue === "number" && typeof bValue === "number") {
-          return sortConfig.direction === "asc"
-            ? aValue - bValue
-            : bValue - aValue;
-        }
-
-        // String Sorting
-        const aStr = String(aValue || "").toLowerCase();
-        const bStr = String(bValue || "").toLowerCase();
-
-        if (sortConfig.direction === "asc") {
-          return aStr.localeCompare(bStr);
-        } else {
-          return bStr.localeCompare(aStr);
-        }
-      });
-    }
-    return filtered;
-  }, [tableItems, tableSearch, sortConfig]);
-
-  // --- Data Loading ---
+  // --- Load Stores Logic ---
   const loadStoreData = async () => {
     try {
       const stores = (await fetchAllLocations()) as any;
@@ -127,33 +68,30 @@ const OpeningStock: React.FC = () => {
     loadStoreData();
   }, [isLocationMasterOpen]);
 
+  // --- Load Items Logic ---
   const handleLoadItems = async () => {
-    if (!formData.code) return alert("Please select a store location first.");
+    if (!formData.storeId)
+      return alert("Please select a store location first.");
     setIsLoading(true);
     try {
-      const res = await openingStockService.getStockByStoreCode(formData.code);
+      const res = await openingStockService.getOpeningStockByStore(
+        formData.storeId
+      );
 
-      if (res.success && res.data?.length > 0) {
+      if (res.success && res.items?.length > 0) {
         setIsAlreadyCreated(true);
         setTableItems(
-          res.data.map((apiItem: any) => ({
-            _id: apiItem._id,
-            item_name: apiItem.description,
-            sub_item: "NA",
-            code: apiItem.itemcode,
-            barcode: apiItem.barcode || "NA",
-            unit: apiItem.unit || "Unit",
+          res.items.map((apiItem: any) => ({
+            _id: apiItem.item?._id,
+            item_name: apiItem.item?.name || apiItem.description,
+            code: apiItem.itemcode || apiItem.item?.code,
+            unit: apiItem.item?.stock_unit?.name || "Unit",
             batch_no: apiItem.batchNo || "NA",
-            pack_qty: apiItem.packQty || 1,
             quantity: apiItem.quantity || 0,
             rate: apiItem.rate || 0,
             amount: apiItem.amount || 0,
-            category_name: "General",
-            mrp: apiItem.mrp || 0,
-            sale_rate: apiItem.sales_rate || 0,
-            wholesale_rate: apiItem.wholesale_rate || 0,
-            dealer_rate: apiItem.dealer_rate || 0,
-          })),
+            category_name: apiItem.item?.category?.name || "General",
+          }))
         );
       } else {
         setIsAlreadyCreated(false);
@@ -162,25 +100,20 @@ const OpeningStock: React.FC = () => {
           masterItems.map((item: any) => ({
             _id: item._id,
             item_name: item.name,
-            sub_item: "NA",
             code: item.code,
-            barcode: item.barcode || "NA",
             unit: item.stock_unit?.name || "Unit",
             batch_no: "NA",
-            pack_qty: item.pack_qty || 1,
             quantity: 0,
             rate: item.purchase_rate || 0,
             amount: 0,
             category_name: item.category?.name || "General",
             mrp: item.mrp || 0,
             sale_rate: item.sales_rate || 0,
-            wholesale_rate: item.wholesale_rate || 0,
-            dealer_rate: item.dealer_rate || 0,
-          })),
+          }))
         );
       }
     } catch (e) {
-      alert("Error loading records.");
+      alert("Failed to fetch store data.");
     } finally {
       setIsLoading(false);
     }
@@ -199,17 +132,17 @@ const OpeningStock: React.FC = () => {
           return updated;
         }
         return item;
-      }),
+      })
     );
   };
 
   const handleSave = async () => {
     const activeItems = tableItems.filter((i) => Number(i.quantity) > 0);
     if (activeItems.length === 0) return alert("No items to save.");
-    if (!formData.code) return alert("Store information missing.");
+    if (!formData.storeId) return alert("Store information missing.");
 
     const payload: OpeningStockPayload = {
-      store: formData.code,
+      store: formData.storeId,
       voucherDate: formData.voucherDate,
       remarks: formData.remarks,
       items: activeItems.map((i) => ({
@@ -217,7 +150,7 @@ const OpeningStock: React.FC = () => {
         itemcode: i.code,
         description: i.item_name,
         batchNo: i.batch_no || "NA",
-        packQty: Number(i.pack_qty) || 1,
+        packQty: 1,
         quantity: Number(i.quantity),
         rate: Number(i.rate),
         amount: Number(i.amount),
@@ -231,40 +164,37 @@ const OpeningStock: React.FC = () => {
     try {
       const res = await openingStockService.createOpeningStock(payload);
       if (res.success || res._id) {
-        alert("Opening stock saved successfully.");
+        alert("Success! Opening stock has been recorded.");
         await handleLoadItems();
       }
     } catch (error: any) {
-      alert("Failed to save stock.");
+      alert("Server Error while saving stock.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Helper to render sort icon
-  const SortIcon = ({ columnKey }: { columnKey: string }) => {
-    if (sortConfig.key !== columnKey)
-      return (
-        <ArrowUpDown size={12} className="opacity-30 group-hover:opacity-100" />
-      );
-    if (sortConfig.direction === "asc")
-      return <ChevronUp size={14} className="text-blue-500" />;
-    if (sortConfig.direction === "desc")
-      return <ChevronDown size={14} className="text-blue-500" />;
-    return <ArrowUpDown size={12} className="opacity-30" />;
-  };
+  const filteredItems = tableItems.filter(
+    (i) =>
+      i.item_name.toLowerCase().includes(tableSearch.toLowerCase()) ||
+      i.code.toLowerCase().includes(tableSearch.toLowerCase())
+  );
 
   return (
     <div className="w-full min-h-screen bg-[#f8fafc] flex flex-col font-sans relative">
-      {/* Header & Filter Bar */}
-      <div className="bg-[#0f3c63] shadow-xl sticky top-0 z-20">
-        <div className="px-4 md:px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-white/10 gap-4">
-          <div className="flex flex-wrap items-center gap-4 md:gap-6">
-            <h1 className="text-white font-black text-xl md:text-2xl tracking-tighter uppercase">
+      {/* --- Dashboard Header --- */}
+      <div className="bg-[#0f3c63] shadow-xl sticky top-0 z-50">
+        <div className="px-6 py-4 flex items-center justify-between border-b border-white/10">
+          <div className="flex items-center gap-6">
+            <h1 className="text-white font-black text-2xl tracking-tighter uppercase">
               Opening Stock
             </h1>
             <div
-              className={`px-4 py-1.5 rounded-full text-[10px] font-black flex items-center gap-2 shadow-inner ${isAlreadyCreated ? "bg-red-500/20 text-red-300 border border-red-500/50" : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/50"}`}
+              className={`px-4 py-1.5 rounded-full text-[10px] font-black flex items-center gap-2 shadow-inner ${
+                isAlreadyCreated
+                  ? "bg-red-500/20 text-red-300 border border-red-500/50"
+                  : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/50"
+              }`}
             >
               {isAlreadyCreated ? (
                 <Lock size={12} />
@@ -277,54 +207,56 @@ const OpeningStock: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4">
-            <div className="flex items-center justify-between md:justify-start gap-4 md:gap-10 bg-black/30 px-6 py-2.5 rounded-2xl border border-white/5 shadow-2xl overflow-x-auto">
-              <div className="text-center border-r border-white/10 pr-4 md:pr-10">
-                <p className="text-[9px] text-sky-300 font-bold uppercase tracking-[0.2em] mb-1">
-                  Items Found
-                </p>
-                <p className="text-lg md:text-xl font-black text-white leading-none">
-                  {stats.count}
-                </p>
-              </div>
-              <div className="text-center border-r border-white/10 pr-4 md:pr-10">
-                <p className="text-[9px] text-sky-300 font-bold uppercase tracking-[0.2em] mb-1">
-                  Total Qty
-                </p>
-                <p className="text-lg md:text-xl font-black text-white leading-none">
-                  {stats.totalQty}
-                </p>
-              </div>
-              <div className="text-center">
-                <p className="text-[9px] text-emerald-400 font-bold uppercase tracking-[0.2em] mb-1">
-                  Total Value
-                </p>
-                <p className="text-lg md:text-xl font-black text-emerald-400 leading-none">
-                  ₹{stats.totalValue.toLocaleString()}
-                </p>
-              </div>
+          {/* Header Stats Dashboard */}
+          <div className="flex items-center gap-10 bg-black/30 px-8 py-2.5 rounded-2xl border border-white/5 shadow-2xl">
+            <div className="text-center border-r border-white/10 pr-10">
+              <p className="text-[9px] text-sky-300 font-bold uppercase tracking-[0.2em] mb-1">
+                Items Found
+              </p>
+              <p className="text-xl font-black text-white leading-none">
+                {stats.count}
+              </p>
             </div>
+            <div className="text-center border-r border-white/10 pr-10">
+              <p className="text-[9px] text-sky-300 font-bold uppercase tracking-[0.2em] mb-1">
+                Total Qty
+              </p>
+              <p className="text-xl font-black text-white leading-none">
+                {stats.totalQty}
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-[9px] text-emerald-400 font-bold uppercase tracking-[0.2em] mb-1">
+                Total Value
+              </p>
+              <p className="text-xl font-black text-emerald-400 leading-none">
+                ₹{stats.totalValue.toLocaleString()}
+              </p>
+            </div>
+          </div>
 
+          <div className="flex items-center gap-3">
             {!isAlreadyCreated && tableItems.length > 0 && (
               <button
                 onClick={handleSave}
                 disabled={isLoading}
-                className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 md:px-8 py-3 rounded-xl font-black text-sm flex items-center justify-center gap-3 shadow-lg transition-all active:scale-95 disabled:opacity-50 uppercase"
+                className="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-3 rounded-xl font-black text-sm flex items-center gap-3 shadow-lg transition-all active:scale-95 disabled:opacity-50 uppercase"
               >
                 {isLoading ? (
                   <Loader2 className="animate-spin" size={20} />
                 ) : (
                   <Save size={20} />
                 )}
-                Save
+                Save Stock
               </button>
             )}
           </div>
         </div>
 
-        <div className="px-4 md:px-6 py-3 bg-[#164e7d] flex flex-col lg:flex-row items-stretch lg:items-center gap-4">
-          <div className="flex items-center gap-2 w-full lg:w-auto">
-            <div className="w-full lg:w-80">
+        {/* --- Controls Bar --- */}
+        <div className="px-6 py-3 bg-[#164e7d] flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-80">
               <Dropdown<LocationMasterType>
                 data={storeList}
                 columns={[
@@ -336,22 +268,23 @@ const OpeningStock: React.FC = () => {
                   setFormData((p) => ({
                     ...p,
                     storeName: item?.name || "",
-                    code: (item as any)?.code || "",
+                    storeId: (item as any)?._id || "",
                   }))
                 }
                 placeholder="Select Warehouse / Store"
               />
             </div>
+            {/* ADD NEW STORE BUTTON */}
             <button
               onClick={() => setIsLocationMasterOpen(true)}
-              className="bg-sky-500 hover:bg-sky-400 text-white p-2.5 rounded-xl shadow-lg transition-all active:scale-90 flex-shrink-0"
+              className="bg-sky-500 hover:bg-sky-400 text-white p-2.5 rounded-xl shadow-lg transition-all active:scale-90"
               title="Add New Store"
             >
               <Plus size={20} strokeWidth={3} />
             </button>
           </div>
 
-          <div className="flex-1 relative w-full">
+          <div className="flex-1 relative">
             <Search
               size={16}
               className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40"
@@ -365,190 +298,100 @@ const OpeningStock: React.FC = () => {
           </div>
           <button
             onClick={handleLoadItems}
-            disabled={isLoading || !formData.code}
-            className="bg-white text-[#0f3c63] px-8 py-2 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-sky-50 transition-all disabled:opacity-50 w-full lg:w-auto"
+            disabled={isLoading || !formData.storeId}
+            className="bg-white text-[#0f3c63] px-8 py-2 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-sky-50 transition-all disabled:opacity-50"
           >
             {isLoading ? "Fetching..." : "Fetch Records"}
           </button>
         </div>
       </div>
 
-      {/* Main Table Content */}
-      <div className="p-4 md:p-6 flex-1 overflow-hidden flex flex-col">
+      {/* --- Data Table Section --- */}
+      <div className="p-6 flex-1">
         {tableItems.length > 0 ? (
-          <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col max-h-[calc(100vh-250px)]">
-            <div className="overflow-x-auto overflow-y-auto w-full">
-              <table className="w-full text-left border-collapse min-w-[1500px]">
-                <thead className="bg-slate-50 text-slate-400 text-[10px] uppercase font-black border-b sticky top-0 z-10 shadow-sm">
+          <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+            <div className="overflow-y-auto max-h-[calc(100vh-280px)]">
+              <table className="w-full text-left border-collapse">
+                <thead className="bg-slate-50 text-slate-400 text-[10px] uppercase font-black border-b sticky top-0 z-10">
                   <tr>
-                    <th className="px-4 py-4 w-12 text-center whitespace-nowrap">
-                      #
+                    <th className="px-6 py-4 w-16 text-center">#</th>
+                    <th className="px-6 py-4">Item Detail</th>
+                    <th className="px-6 py-4">Category</th>
+                    <th className="px-6 py-4 w-52">Batch No.</th>
+                    <th className="px-6 py-4 w-36 text-center">Quantity</th>
+                    <th className="px-6 py-4 w-40 text-right">Purchase Rate</th>
+                    <th className="px-6 py-4 w-44 text-right bg-slate-100/50">
+                      Total Amount
                     </th>
-                    {[
-                      {
-                        label: "Item Name",
-                        key: "item_name",
-                        width: "min-w-[300px]",
-                        align: "text-left",
-                      },
-                      {
-                        label: "Sub Item",
-                        key: "sub_item",
-                        width: "w-24",
-                        align: "text-left",
-                      },
-                      {
-                        label: "Code",
-                        key: "code",
-                        width: "w-24",
-                        align: "text-left",
-                      },
-                      {
-                        label: "Barcode",
-                        key: "barcode",
-                        width: "w-32",
-                        align: "text-left",
-                      },
-                      {
-                        label: "Unit",
-                        key: "unit",
-                        width: "w-32",
-                        align: "text-left",
-                      },
-                      {
-                        label: "Batch No.",
-                        key: "batch_no",
-                        width: "w-32",
-                        align: "text-left",
-                      },
-                      {
-                        label: "Pack Qty",
-                        key: "pack_qty",
-                        width: "w-24",
-                        align: "text-center",
-                      },
-                      {
-                        label: "Quantity",
-                        key: "quantity",
-                        width: "min-w-[120px]",
-                        align: "text-center",
-                      },
-                      {
-                        label: "Rate",
-                        key: "rate",
-                        width: "min-w-[120px]",
-                        align: "text-right",
-                      },
-                      {
-                        label: "Amount",
-                        key: "amount",
-                        width: "min-w-[140px]",
-                        align: "text-right",
-                      },
-                      {
-                        label: "Sales Rate",
-                        key: "sale_rate",
-                        width: "w-28",
-                        align: "text-right",
-                      },
-                      {
-                        label: "Wholesale",
-                        key: "wholesale_rate",
-                        width: "w-28",
-                        align: "text-right",
-                      },
-                      {
-                        label: "Dealer Rate",
-                        key: "dealer_rate",
-                        width: "w-28",
-                        align: "text-right",
-                      },
-                      {
-                        label: "MRP",
-                        key: "mrp",
-                        width: "w-28",
-                        align: "text-right",
-                      },
-                    ].map((col) => (
-                      <th
-                        key={col.key}
-                        onClick={() => handleSort(col.key)}
-                        className={`px-4 py-4 ${col.width} ${col.align} whitespace-nowrap cursor-pointer hover:bg-slate-100 group transition-colors select-none`}
-                      >
-                        <div
-                          className={`flex items-center gap-2 ${col.align === "text-right" ? "justify-end" : col.align === "text-center" ? "justify-center" : "justify-start"}`}
-                        >
-                          {col.label}
-                          <SortIcon columnKey={col.key} />
-                        </div>
-                      </th>
-                    ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {sortedItems.map((item, idx) => (
+                  {filteredItems.map((item, idx) => (
                     <tr
                       key={item.code}
-                      className={`group transition-all ${isAlreadyCreated ? "bg-gray-50/40" : "hover:bg-blue-50/50"}`}
+                      className={`group transition-all ${
+                        isAlreadyCreated
+                          ? "bg-gray-50/40"
+                          : "hover:bg-blue-50/50"
+                      }`}
                     >
-                      <td className="px-4 py-2 text-center text-gray-300 text-[10px] font-bold italic whitespace-nowrap">
+                      <td className="px-6 py-2 text-center text-gray-300 text-[10px] font-bold italic">
                         {idx + 1}
                       </td>
-                      <td className="px-4 py-2">
-                        <div className="font-bold text-gray-800 text-sm leading-tight uppercase min-w-[250px]">
+                      <td className="px-6 py-2">
+                        <div className="font-bold text-gray-800 text-sm leading-tight uppercase">
                           {item.item_name}
                         </div>
+                        <div className="text-[10px] text-gray-400 font-bold mt-1 tracking-tighter">
+                          CODE: {item.code} | UNIT: {item.unit}
+                        </div>
                       </td>
-                      <td className="px-4 py-2 text-xs font-medium text-gray-500 whitespace-nowrap">
-                        {item.sub_item}
-                      </td>
-                      <td className="px-4 py-2 text-xs font-bold text-gray-600 whitespace-nowrap">
-                        {item.code}
-                      </td>
-                      <td className="px-4 py-2 text-xs text-gray-500 whitespace-nowrap">
-                        {item.barcode}
-                      </td>
-                      <td className="px-4 py-2 text-xs font-bold text-gray-500 whitespace-nowrap">
-                        <span className="bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
-                          {item.unit}
+                      <td className="px-6 py-2">
+                        <span className="text-[10px] font-black text-gray-400 border border-gray-200 px-2 py-0.5 rounded-md bg-gray-50">
+                          {item.category_name}
                         </span>
                       </td>
-                      <td className="px-4 py-2 whitespace-nowrap">
+                      <td className="px-6 py-2">
                         <input
-                          className="w-full bg-transparent border-b border-transparent py-1 text-xs font-medium outline-none"
+                          className="w-full bg-transparent border-b border-transparent group-hover:border-gray-300 py-1 text-xs font-medium outline-none focus:border-blue-400 disabled:text-gray-400"
                           value={item.batch_no}
                           disabled={isAlreadyCreated}
                           onChange={(e) =>
                             handleRowChange(
                               item.code,
                               "batch_no",
-                              e.target.value,
+                              e.target.value
                             )
                           }
                         />
                       </td>
-                      <td className="px-4 py-2 text-xs text-center text-gray-600 whitespace-nowrap">
-                        {item.pack_qty}
-                      </td>
-                      <td className="px-4 py-2 whitespace-nowrap">
+                      <td className="px-6 py-2">
                         <input
                           type="number"
-                          className={`w-full text-center py-1.5 rounded-lg text-sm font-black border outline-none ${isAlreadyCreated ? "bg-transparent border-transparent" : "border-gray-200 bg-white"}`}
+                          className={`w-full text-center py-1.5 rounded-lg text-sm font-black border outline-none transition-all ${
+                            isAlreadyCreated
+                              ? "bg-transparent border-transparent"
+                              : "border-gray-200 bg-white focus:border-blue-500"
+                          } ${
+                            Number(item.quantity) > 0 && !isAlreadyCreated
+                              ? "text-blue-600 border-blue-400 bg-blue-50"
+                              : "text-gray-600"
+                          }`}
                           value={item.quantity}
                           disabled={isAlreadyCreated}
                           onChange={(e) =>
                             handleRowChange(
                               item.code,
                               "quantity",
-                              e.target.value,
+                              e.target.value
                             )
                           }
                         />
                       </td>
-                      <td className="px-4 py-2 whitespace-nowrap">
+                      <td className="px-6 py-2">
                         <input
                           type="number"
-                          className="w-full text-right bg-transparent border-b border-transparent py-1 text-xs font-bold outline-none"
+                          className="w-full text-right bg-transparent border-b border-transparent group-hover:border-gray-300 py-1 text-xs font-bold outline-none focus:border-blue-400 disabled:text-gray-400"
                           value={item.rate}
                           disabled={isAlreadyCreated}
                           onChange={(e) =>
@@ -556,25 +399,13 @@ const OpeningStock: React.FC = () => {
                           }
                         />
                       </td>
-                      <td className="px-4 py-2 text-right bg-slate-50/30 whitespace-nowrap">
+                      <td className="px-6 py-2 text-right bg-slate-50/30">
                         <span className="text-sm font-black text-slate-700">
                           ₹
                           {Number(item.amount).toLocaleString(undefined, {
                             minimumFractionDigits: 2,
                           })}
                         </span>
-                      </td>
-                      <td className="px-4 py-2 text-right text-xs text-gray-500 whitespace-nowrap">
-                        {Number(item.sale_rate).toFixed(2)}
-                      </td>
-                      <td className="px-4 py-2 text-right text-xs text-gray-400 whitespace-nowrap">
-                        {item.wholesale_rate}
-                      </td>
-                      <td className="px-4 py-2 text-right text-xs text-gray-400 whitespace-nowrap">
-                        {item.dealer_rate}
-                      </td>
-                      <td className="px-4 py-2 text-right text-xs font-bold text-gray-600 whitespace-nowrap">
-                        {Number(item.mrp).toFixed(2)}
                       </td>
                     </tr>
                   ))}
@@ -596,16 +427,17 @@ const OpeningStock: React.FC = () => {
         )}
       </div>
 
+      {/* --- STORE CREATION MODAL --- */}
       {isLocationMasterOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+          <div className=" rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
             <LocationMaster
               onClose={() => setIsLocationMasterOpen(false)}
               onSuccess={() => {
                 setIsLocationMasterOpen(false);
-                loadStoreData();
+                loadStoreData(); // Refresh dropdown list
               }}
-              index={100}
+              index={100} // Custom index or pass what is required
             />
           </div>
         </div>

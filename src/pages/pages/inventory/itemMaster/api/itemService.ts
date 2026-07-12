@@ -1,11 +1,11 @@
 import api from "../../../../../services/api";
 import { ItemResponse, ItemApiData } from "../models/ItemModel";
 
-const ENDPOINT = ""; ///item_master
+const ENDPOINT = "/item_master";
 
 export const fetchItems = async (): Promise<ItemApiData[]> => {
   try {
-    const response = await api.get<ItemResponse>(`${ENDPOINT}`); // /get_all_item 
+    const response = await api.get<ItemResponse>(`${ENDPOINT}/get_all_item`); 
     const result = response.data;
     
     if (result.success && result.data) {
@@ -20,47 +20,12 @@ export const fetchItems = async (): Promise<ItemApiData[]> => {
   }
 };
 
-
-export const getItemByCodeAndBarcode = async (
-  code: string
-): Promise<ItemResponse> => {
-  const response = await api.get(`${ENDPOINT}//${code}`); ///get_by_code/${code}
-
-  console.log("Item Code:", code);
-  console.log("Response:", response.data);
-
-  console.log("Response JSON:", JSON.stringify(response.data, null, 2));
-
-  return response.data;
-};
-
-
 export const deleteItemApi = async (id: string): Promise<ItemResponse> => {
   try {
-    const response = await api.delete<ItemResponse>(`${ENDPOINT}//${id}`); // delete_item
+    const response = await api.delete<ItemResponse>(`${ENDPOINT}/delete_item/${id}`);
     return response.data;
   } catch (error) {
     console.error("Error deleting item:", error);
-    throw error;
-  }
-};
-
-
-export const fetchItemsByVendorCode = async (vendorCode: string): Promise<ItemApiData[]> => {
-  try {
-    const response = await api.get<ItemResponse>(
-      `${vendorCode}` // /purchasebill/with-rates?vendorCode=
-    ); 
-    const result = response.data;
-    
-    if (result.success && result.data) {
-      return result.data as ItemApiData[]; 
-    } else {
-      console.error("API returned success: false", result.message);
-      return [];
-    }
-  } catch (error) {
-    console.error("Error fetching items with rates:", error);
     throw error;
   }
 };

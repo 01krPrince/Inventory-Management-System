@@ -40,6 +40,7 @@ interface Customer {
   gst_no: string;
   identification: string;
   code: string;
+  // Updated: under_ledger can be an object based on your screenshot
   under_ledger: string | { _id: string; name: string; [key: string]: any };
 
   gst: string;
@@ -78,16 +79,15 @@ interface ResizableHeaderProps {
   columnIndex: number;
 }
 
+// --- COLUMN DEFINITIONS ---
 const CustomerColumns: Column[] = [
   { key: "cust_name", label: "Customer Name", sortable: true },
-  // { key: "print_name", label: "Print Name", sortable: true },
+  { key: "print_name", label: "Print Name", sortable: true },
   { key: "code", label: "Code", sortable: true },
-  { key: "phone", label: "Phone", sortable: true },
   { key: "gst_no", label: "GST No", sortable: true },
-  { key: "city", label: "City", sortable: true },
-  // { key: "identification", label: "Identification", sortable: false },
-  // { key: "under_ledger", label: "Under Ledger", sortable: true },
-  // { key: "gst", label: "GST Type", sortable: true },
+  { key: "identification", label: "Identification", sortable: false },
+  { key: "under_ledger", label: "Under Ledger", sortable: true },
+  { key: "gst", label: "GST Type", sortable: true },
   { key: "registration_date", label: "Reg. Date", sortable: true },
 ];
 
@@ -97,13 +97,9 @@ const initialPageSize = 5;
 // --- CUSTOMER TABLE LOGIC HOOK ---
 const useCustomerTableLogic = (
   initialData: DataItem[],
-  initialSize: number,
+  initialSize: number
 ) => {
-  // const [data, setData] = useState<DataItem[]>(initialData);
-  const [data, setData] = useState<DataItem[]>(
-  Array.isArray(initialData) ? initialData : []
-);
-
+  const [data, setData] = useState<DataItem[]>(initialData);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [pageSize, setPageSize] = useState<number>(initialSize);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -113,12 +109,11 @@ const useCustomerTableLogic = (
     direction: "ascending",
   });
 
-useEffect(() => {
-  setData(Array.isArray(initialData) ? initialData : []);
-  setCurrentPage(1);
-  setSelectedRows([]);
-}, [initialData]);
-
+  useEffect(() => {
+    setData(initialData);
+    setCurrentPage(1);
+    setSelectedRows([]);
+  }, [initialData]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -127,23 +122,27 @@ useEffect(() => {
   const sortedAndFilteredData = useMemo(() => {
     let sortableData = [...data];
 
+    // Filter Logic
     let filteredData = sortableData.filter((item) => {
+      // Helper to safely get string value for search
       const getStringValue = (val: any): string => {
-        if (val && typeof val === "object" && val.name) return String(val.name);
+        if (val && typeof val === "object" && val.name) return String(val.name); // Handle under_ledger object
         return String(val);
       };
 
       return Object.values(item).some((val) =>
-        getStringValue(val).toLowerCase().includes(searchTerm.toLowerCase()),
+        getStringValue(val).toLowerCase().includes(searchTerm.toLowerCase())
       );
     });
 
+    // Sorting Logic
     if (sortConfig.key) {
       filteredData.sort((a, b) => {
         const sortKey = sortConfig.key!;
         let aVal = a[sortKey];
         let bVal = b[sortKey];
 
+        // --- FIX FOR SORTING NESTED OBJECTS (under_ledger) ---
         if (sortKey === "under_ledger") {
           if (typeof aVal === "object" && aVal !== null)
             aVal = (aVal as any).name;
@@ -151,6 +150,7 @@ useEffect(() => {
             bVal = (bVal as any).name;
         }
 
+        // Convert to lowercase string for comparison
         const aStr = String(aVal || "").toLowerCase();
         const bStr = String(bVal || "").toLowerCase();
 
@@ -181,7 +181,7 @@ useEffect(() => {
 
   const startEntry = Math.min(
     sortedDataLength,
-    (currentPage - 1) * pageSize + 1,
+    (currentPage - 1) * pageSize + 1
   );
   const endEntry = Math.min(sortedDataLength, currentPage * pageSize);
 
@@ -273,7 +273,7 @@ const ResizableHeader = ({
       const doResizing = (mouseMoveEvent: MouseEvent) => {
         const newWidth = Math.max(
           initialWidth + (mouseMoveEvent.clientX - startX),
-          100,
+          100
         );
         setColumnWidths((prev: Record<string, number | undefined>) => ({
           ...prev,
@@ -287,7 +287,7 @@ const ResizableHeader = ({
       window.addEventListener("mousemove", doResizing);
       window.addEventListener("mouseup", stopResizing);
     },
-    [keyString, setColumnWidths],
+    [keyString, setColumnWidths]
   );
 
   const handleHeaderClick = () => {
@@ -401,7 +401,7 @@ export default function CustomerDirectory() {
     } catch (err) {
       console.error("Failed to fetch customer data:", err);
       setError(
-        "Failed to load customer data. Please check the network connection.",
+        "Failed to load customer data. Please check the network connection."
       );
     } finally {
       setIsLoading(false);
@@ -450,10 +450,10 @@ export default function CustomerDirectory() {
       if (!draggedKey || !droppedOverKey) return;
 
       const draggedColIndex = currentColumns.findIndex(
-        (col) => col.key === draggedKey,
+        (col) => col.key === draggedKey
       );
       const droppedOverIndex = currentColumns.findIndex(
-        (col) => col.key === droppedOverKey,
+        (col) => col.key === droppedOverKey
       );
 
       if (
@@ -470,7 +470,7 @@ export default function CustomerDirectory() {
 
       setCurrentColumns(newColumns);
     },
-    [currentColumns],
+    [currentColumns]
   );
 
   // --- Data Handlers ---
@@ -479,19 +479,19 @@ export default function CustomerDirectory() {
     setSelectedRows((prev: string[]) =>
       isSelected(row)
         ? prev.filter((id: string) => id !== row._id)
-        : [...prev, row._id],
+        : [...prev, row._id]
     );
   };
 
   const handleSelectAll = () => {
     const allIdsOnPage = paginatedData.map((row: DataItem) => row._id);
     const areAllSelected = allIdsOnPage.every((id: string) =>
-      selectedRows.includes(id),
+      selectedRows.includes(id)
     );
 
     if (areAllSelected) {
       setSelectedRows((prev: string[]) =>
-        prev.filter((id: string) => !allIdsOnPage.includes(id)),
+        prev.filter((id: string) => !allIdsOnPage.includes(id))
       );
     } else {
       setSelectedRows((prev: string[]) => [
@@ -527,7 +527,7 @@ export default function CustomerDirectory() {
   // --- Delete Handlers ---
   const handleDelete = async (user: DataItem) => {
     const confirmDelete = window.confirm(
-      `Are you sure you want to delete Customer: ${user.cust_name}?`,
+      `Are you sure you want to delete Customer: ${user.cust_name}?`
     );
 
     if (!confirmDelete) return;
@@ -536,11 +536,11 @@ export default function CustomerDirectory() {
       await customerDeleteApi(user._id);
 
       setApiData((prev: DataItem[]) =>
-        prev.filter((u: DataItem) => u._id !== user._id),
+        prev.filter((u: DataItem) => u._id !== user._id)
       );
 
       setSelectedRows((prev: string[]) =>
-        prev.filter((id: string) => id !== user._id),
+        prev.filter((id: string) => id !== user._id)
       );
       alert("Customer deleted successfully");
     } catch (error) {
@@ -557,13 +557,13 @@ export default function CustomerDirectory() {
 
     if (
       window.confirm(
-        `Are you sure you want to delete ${selectedRows.length} selected row(s)?`,
+        `Are you sure you want to delete ${selectedRows.length} selected row(s)?`
       )
     ) {
       // In a real app, you would call an API bulk delete function here.
       // For now, optimistic UI update:
       setApiData((prev: DataItem[]) =>
-        prev.filter((u: DataItem) => !selectedRows.includes(u._id)),
+        prev.filter((u: DataItem) => !selectedRows.includes(u._id))
       );
       setSelectedRows([]);
     }
@@ -695,10 +695,12 @@ export default function CustomerDirectory() {
       </div>
       <hr className="mb-4 border-gray-100 dark:border-gray-700" />
 
+      {/* Table Section */}
       <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
         <table className="min-w-full table-fixed" id="printable-table">
           <thead>
             <tr className="bg-gray-50 dark:bg-gray-700/50 text-left text-xs font-semibold uppercase text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700">
+              {/* Checkbox Column */}
               <th
                 className="p-4 w-10 no-print border-r border-dashed border-gray-300 dark:border-gray-600"
                 style={{ width: columnWidths["checkbox"] || "40px" }}
@@ -711,6 +713,7 @@ export default function CustomerDirectory() {
                 />
               </th>
 
+              {/* Data Columns */}
               {currentColumns.map((col: Column, index: number) => (
                 <ResizableHeader
                   key={col.key as string}
@@ -726,6 +729,7 @@ export default function CustomerDirectory() {
                 />
               ))}
 
+              {/* Actions Column */}
               <th
                 className="p-4 text-center whitespace-nowrap no-print border-r border-dashed border-gray-300 dark:border-gray-600"
                 style={{ width: columnWidths["actions"] || "100px" }}
@@ -742,6 +746,7 @@ export default function CustomerDirectory() {
                   key={row._id}
                   className="even:bg-gray-50/50 dark:even:bg-gray-700/10 border-t border-gray-100 dark:border-gray-700/50 text-sm text-gray-800 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700/30 transition duration-150"
                 >
+                  {/* Checkbox Cell */}
                   <td
                     className="p-4 w-10 no-print border-r border-gray-200 dark:border-gray-700"
                     style={{ width: columnWidths["checkbox"] || "40px" }}
@@ -754,9 +759,11 @@ export default function CustomerDirectory() {
                     />
                   </td>
 
+                  {/* Data Cells (With Object Checking Logic) */}
                   {currentColumns.map((col: Column, colIndex: number) => {
                     const value = row[col.key as keyof DataItem];
 
+                    // --- FIX: Check if value is object (under_ledger) ---
                     let displayValue = "N/A";
 
                     if (
@@ -788,6 +795,7 @@ export default function CustomerDirectory() {
                     );
                   })}
 
+                  {/* Actions Cell */}
                   <td
                     className="p-4 text-center space-x-2 whitespace-nowrap no-print border-r border-gray-200 dark:border-gray-700"
                     style={{ width: columnWidths["actions"] || "100px" }}

@@ -9,7 +9,7 @@ const api: AxiosInstance = axios.create({
 // Add auth token to every request
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = sessionStorage.getItem("token");
+    const token = localStorage.getItem("token");
 
     if (token) {
       // FIX: Use the set method on config.headers (which is an AxiosHeaders object)

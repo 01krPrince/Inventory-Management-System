@@ -49,7 +49,7 @@ export interface LocationMasterInput {
   pinCode: string;
   phone: string;
   email: string;
-  code?: string;
+  code?: string; // Optional on input, depends on if backend auto-generates
 }
 
 // API Response Wrappers
@@ -73,7 +73,7 @@ export interface SingleLocationResponse {
  */
 export const fetchAllLocations = async (): Promise<LocationMaster[]> => {
   try {
-    const response = await api.get<GetLocationMasterResponse>(''); // /locationmaster/getall
+    const response = await api.get<GetLocationMasterResponse>('/locationmaster/getall');
     console.log(response);
     return response.data.data || [];
   } catch (error) {
@@ -88,7 +88,7 @@ export const fetchAllLocations = async (): Promise<LocationMaster[]> => {
  */
 export const getLocationById = async (id: string): Promise<LocationMaster | null> => {
   try {
-    const response = await api.get<LocationMaster>(`/${id}`);// /locationmaster/getbyid/${id}
+    const response = await api.get<LocationMaster>(`/locationmaster/getbyid/${id}`);
     return response.data;
   } catch (error) {
     console.error(`Error fetching location by ID (${id}):`, error);
@@ -102,7 +102,7 @@ export const getLocationById = async (id: string): Promise<LocationMaster | null
  */
 export const getLocationByCode = async (code: string): Promise<LocationMaster | null> => {
   try {
-    const response = await api.get<LocationMaster>(`/${code}`); // /locationmaster/getbycode/${code}
+    const response = await api.get<LocationMaster>(`/locationmaster/getbycode/${code}`);
     return response.data;
   } catch (error) {
     console.error(`Error fetching location by Code (${code}):`, error);
@@ -119,7 +119,7 @@ export const createLocation = async (
 ): Promise<LocationMaster | null> => {
   try {
     const response = await api.post<LocationMaster>(
-      '',  // /locationmaster/create
+      '/locationmaster/create', 
       formData
     );
     // Assuming the API returns the created object directly or inside a wrapper
@@ -140,7 +140,7 @@ export const updateLocation = async (
 ): Promise<LocationMaster | null> => {
   try {
     const response = await api.put<LocationMaster>(
-      `/${id}`, // /locationmaster/update/${id}
+      `/locationmaster/update/${id}`, 
       formData
     );
     return response.data;
@@ -156,7 +156,7 @@ export const updateLocation = async (
  */
 export const deleteLocation = async (id: string): Promise<boolean> => {
   try {
-    await api.delete(`/${id}`); // /locationmaster/delete/${id}
+    await api.delete(`/locationmaster/delete/${id}`);
     return true;
   } catch (error) {
     console.error(`Error deleting location (${id}):`, error);

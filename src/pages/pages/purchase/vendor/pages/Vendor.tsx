@@ -21,16 +21,18 @@ import {
 import {
   handlePrint,
   handleExport,
-} from "../../../../../components/function/functions";
+} from "../../../../../components/function/functions"; // Check extension .tsx vs .ts
 
 import { PrintIcon, ExportIcon } from "../../../../../components/icons";
 import CrudVendor from "./AddNewVendor";
 
+// --- CHANGED: Import from Vendor Service ---
 import { getAllVendors, deleteVendor } from "../api/vendorService";
 
+// --- CHANGED: Updated Interface to match Vendor Payload ---
 interface Vendor {
   _id: string;
-  vend_name: string;
+  vend_name: string; // Changed from cust_name
   print_name: string;
   gst_no: string;
   identification: string;
@@ -72,8 +74,9 @@ interface ResizableHeaderProps {
   columnIndex: number;
 }
 
+// --- CHANGED: Column Definitions for Vendors ---
 const VendorColumns: Column[] = [
-  { key: "vend_name", label: "Vendor Name", sortable: true },
+  { key: "vend_name", label: "Vendor Name", sortable: true }, // Key updated
   { key: "print_name", label: "Print Name", sortable: true },
   { key: "code", label: "Code", sortable: true },
   { key: "gst_no", label: "GST No", sortable: true },
@@ -86,13 +89,12 @@ const VendorColumns: Column[] = [
 const pageSizeOptions = [5, 10, 20, 50];
 const initialPageSize = 5;
 
+// --- VENDOR TABLE LOGIC HOOK ---
 const useVendorTableLogic = (
-  initialData: DataItem[] = [],
-  initialSize: number,
+  initialData: DataItem[],
+  initialSize: number
 ) => {
-const [data, setData] = useState<DataItem[]>(
-  Array.isArray(initialData) ? initialData : []
-);
+  const [data, setData] = useState<DataItem[]>(initialData);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [pageSize, setPageSize] = useState<number>(initialSize);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -102,45 +104,35 @@ const [data, setData] = useState<DataItem[]>(
     direction: "ascending",
   });
 
-useEffect(() => {
-  setData(Array.isArray(initialData) ? initialData : []);
-  setCurrentPage(1);
-  setSelectedRows([]);
-}, [initialData]);
-
+  useEffect(() => {
+    setData(initialData);
+    setCurrentPage(1);
+    setSelectedRows([]);
+  }, [initialData]);
 
   useEffect(() => {
     setCurrentPage(1);
-}, [searchTerm, pageSize, data?.length ?? 0]);
+  }, [searchTerm, pageSize, data.length]);
 
   const sortedAndFilteredData = useMemo(() => {
     let sortableData = [...data];
     let filteredData = sortableData.filter((item) =>
       Object.values(item).some((val) =>
-        String(val).toLowerCase().includes(searchTerm.toLowerCase()),
-      ),
+        String(val).toLowerCase().includes(searchTerm.toLowerCase())
+      )
     );
 
-    filteredData.sort((a, b) => {
-      const sortKey = sortConfig.key!;
+    if (sortConfig.key) {
+      filteredData.sort((a, b) => {
+        const sortKey = sortConfig.key!;
+        const aVal = a[sortKey];
+        const bVal = b[sortKey];
 
-      let aVal: any = a[sortKey];
-      let bVal: any = b[sortKey];
-
-      if (sortKey === "under_ledger") {
-        if (typeof aVal === "object" && aVal !== null) {
-          aVal = aVal.name;
-        }
-        if (typeof bVal === "object" && bVal !== null) {
-          bVal = bVal.name;
-        }
-      }
-
-      if (aVal < bVal) return sortConfig.direction === "ascending" ? -1 : 1;
-      if (aVal > bVal) return sortConfig.direction === "ascending" ? 1 : -1;
-      return 0;
-    });
-
+        if (aVal < bVal) return sortConfig.direction === "ascending" ? -1 : 1;
+        if (aVal > bVal) return sortConfig.direction === "ascending" ? 1 : -1;
+        return 0;
+      });
+    }
     return filteredData;
   }, [data, searchTerm, sortConfig]);
 
@@ -163,7 +155,7 @@ useEffect(() => {
 
   const startEntry = Math.min(
     sortedDataLength,
-    (currentPage - 1) * pageSize + 1,
+    (currentPage - 1) * pageSize + 1
   );
   const endEntry = Math.min(sortedDataLength, currentPage * pageSize);
 
@@ -255,7 +247,7 @@ const ResizableHeader = ({
       const doResizing = (mouseMoveEvent: MouseEvent) => {
         const newWidth = Math.max(
           initialWidth + (mouseMoveEvent.clientX - startX),
-          100,
+          100
         );
         setColumnWidths((prev: Record<string, number | undefined>) => ({
           ...prev,
@@ -269,7 +261,7 @@ const ResizableHeader = ({
       window.addEventListener("mousemove", doResizing);
       window.addEventListener("mouseup", stopResizing);
     },
-    [keyString, setColumnWidths],
+    [keyString, setColumnWidths]
   );
 
   const handleHeaderClick = () => {
@@ -380,11 +372,11 @@ export default function VendorDirectory() {
     try {
       // --- CHANGED: Call Vendor Service ---
       const responseData = await getAllVendors();
-setApiData(Array.isArray(responseData) ? responseData : []);
+      setApiData(responseData);
     } catch (err) {
       console.error("Failed to fetch vendor data:", err);
       setError(
-        "Failed to load vendor data. Please check the network connection.",
+        "Failed to load vendor data. Please check the network connection."
       );
     } finally {
       setIsLoading(false);
@@ -400,7 +392,8 @@ setApiData(Array.isArray(responseData) ? responseData : []);
     Record<string, number | undefined>
   >({});
 
-  const [currentColumns, setCurrentColumns] = useState<Column[]>(VendorColumns);
+  const [currentColumns, setCurrentColumns] =
+    useState<Column[]>(VendorColumns);
 
   // Pass the state derived from the API to the logic hook
   const {
@@ -432,10 +425,10 @@ setApiData(Array.isArray(responseData) ? responseData : []);
       if (!draggedKey || !droppedOverKey) return;
 
       const draggedColIndex = currentColumns.findIndex(
-        (col) => col.key === draggedKey,
+        (col) => col.key === draggedKey
       );
       const droppedOverIndex = currentColumns.findIndex(
-        (col) => col.key === droppedOverKey,
+        (col) => col.key === droppedOverKey
       );
 
       if (
@@ -452,7 +445,7 @@ setApiData(Array.isArray(responseData) ? responseData : []);
 
       setCurrentColumns(newColumns);
     },
-    [currentColumns],
+    [currentColumns]
   );
 
   // --- Data Handlers ---
@@ -461,19 +454,19 @@ setApiData(Array.isArray(responseData) ? responseData : []);
     setSelectedRows((prev: string[]) =>
       isSelected(row)
         ? prev.filter((id: string) => id !== row._id)
-        : [...prev, row._id],
+        : [...prev, row._id]
     );
   };
 
   const handleSelectAll = () => {
     const allIdsOnPage = paginatedData.map((row: DataItem) => row._id);
     const areAllSelected = allIdsOnPage.every((id: string) =>
-      selectedRows.includes(id),
+      selectedRows.includes(id)
     );
 
     if (areAllSelected) {
       setSelectedRows((prev: string[]) =>
-        prev.filter((id: string) => !allIdsOnPage.includes(id)),
+        prev.filter((id: string) => !allIdsOnPage.includes(id))
       );
     } else {
       setSelectedRows((prev: string[]) => [
@@ -510,7 +503,7 @@ setApiData(Array.isArray(responseData) ? responseData : []);
   const handleDelete = async (user: DataItem) => {
     const confirmDelete = window.confirm(
       // --- CHANGED: Use vend_name and text ---
-      `Are you sure you want to delete Vendor: ${user.vend_name}?`,
+      `Are you sure you want to delete Vendor: ${user.vend_name}?`
     );
 
     if (!confirmDelete) return;
@@ -520,11 +513,11 @@ setApiData(Array.isArray(responseData) ? responseData : []);
       await deleteVendor(user._id);
 
       setApiData((prev: DataItem[]) =>
-        prev.filter((u: DataItem) => u._id !== user._id),
+        prev.filter((u: DataItem) => u._id !== user._id)
       );
 
       setSelectedRows((prev: string[]) =>
-        prev.filter((id: string) => id !== user._id),
+        prev.filter((id: string) => id !== user._id)
       );
       alert("Vendor deleted successfully");
     } catch (error) {
@@ -541,13 +534,13 @@ setApiData(Array.isArray(responseData) ? responseData : []);
 
     if (
       window.confirm(
-        `Are you sure you want to delete ${selectedRows.length} selected row(s)?`,
+        `Are you sure you want to delete ${selectedRows.length} selected row(s)?`
       )
     ) {
       // In a real app, you would call an API bulk delete function here.
       // For now, optimistic UI update:
       setApiData((prev: DataItem[]) =>
-        prev.filter((u: DataItem) => !selectedRows.includes(u._id)),
+        prev.filter((u: DataItem) => !selectedRows.includes(u._id))
       );
       setSelectedRows([]);
     }
@@ -697,6 +690,7 @@ setApiData(Array.isArray(responseData) ? responseData : []);
                 />
               </th>
 
+              {/* Data Columns */}
               {currentColumns.map((col: Column, index: number) => (
                 <ResizableHeader
                   key={col.key as string}
@@ -712,6 +706,7 @@ setApiData(Array.isArray(responseData) ? responseData : []);
                 />
               ))}
 
+              {/* Actions Column */}
               <th
                 className="p-4 text-center whitespace-nowrap no-print border-r border-dashed border-gray-300 dark:border-gray-600"
                 style={{ width: columnWidths["actions"] || "100px" }}
@@ -741,22 +736,15 @@ setApiData(Array.isArray(responseData) ? responseData : []);
                     />
                   </td>
 
+                  {/* Data Cells (N/A Check) */}
                   {currentColumns.map((col: Column, colIndex: number) => {
                     const value = row[col.key as keyof DataItem];
-
-                    let displayValue = "N/A";
-
-                    if (value !== null && value !== undefined) {
-                      if (
-                        col.key === "under_ledger" &&
-                        typeof value === "object"
-                      ) {
-                        displayValue = (value as any).name ?? "N/A";
-                      } else {
-                        const stringValue = String(value).trim();
-                        displayValue = stringValue !== "" ? stringValue : "N/A";
-                      }
-                    }
+                    const displayValue =
+                      value === null ||
+                      value === undefined ||
+                      String(value).trim() === ""
+                        ? "N/A"
+                        : String(value);
 
                     return (
                       <td

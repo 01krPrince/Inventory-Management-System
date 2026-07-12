@@ -30,7 +30,7 @@ const StockAdjustment: React.FC = () => {
   // --- 1. Header State ---
   const [formData, setFormData] = useState<StockAdjustmentHeaderData>({
     voucherDate: new Date().toISOString().split("T")[0],
-    voucherNo: "54545",
+    voucherNo: "SA-3005",
     category: "",
     store: "",
     party: "",
@@ -67,7 +67,7 @@ const StockAdjustment: React.FC = () => {
     console.log("2. Table Rows IDs:", rows);
     console.log("3. Table Data Content:", tableData);
     console.log("4. Footer Data:", footerData);
-
+    
     // --- Validation ---
     if (rows.length === 0) {
       alert("Please add at least one item to the table.");
@@ -82,41 +82,41 @@ const StockAdjustment: React.FC = () => {
 
     setIsSubmitting(true);
 
-    // Inside handleSave ...
+// Inside handleSave ...
 
     const formattedItems: StockAdjustmentItem[] = rows
-      .map((rowId) => tableData[rowId])
-      .filter((row) => row && row.select && row.select !== "")
+      .map((rowId) => tableData[rowId]) 
+      .filter((row) => row && row.select && row.select !== "") 
       .map((row) => ({
-        adjustmentType: String(row.reciss || "Receipt"),
+        adjustmentType: String(row.reciss || "Receipt"), 
 
         itemcode: String(row.select || ""),
         description: String(row.desc || ""),
         packUnit: String(row.punit || ""),
         packQuantity: Number(row.pqty || 0),
-
+        
         unit: String(row.unit || ""),
         quantity: Number(row.qty || 0),
-
-        ratePer: 1,
+        
+        ratePer: 1, 
         rate: Number(row.rate || 0),
         amount: Number(row.amount || 0),
-
+        
         minRate: Number(row.minrate || 0),
         mrp: Number(row.mrp || 0),
         netRate: Number(row.netrate || 0),
-
+        
         remark: String(row.remark || ""),
         printDesc: String(row.printdesc || row.desc || ""),
-
+        
         serviceLocation: String(row.service || ""),
         itemBarcode: String(row.itembarcode || ""),
-
+        
         bdBatchNo: String(row.bdbatchno || ""),
-        bdMfgDate: "2024-01-01",
+        bdMfgDate: "2024-01-01", 
         bdExpDate: String(row.bdexpdate || "2025-12-12"),
         bdSaleRate: Number(row.bdsalerate || 0),
-
+        
         itemBalance: Number(row.itembalance || 0),
         barcode: String(row.barcode || ""),
         lineLevelBarcode: String(row.linelevel || ""),

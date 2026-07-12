@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from "react";
 import {
   Search,
   Save,
@@ -10,29 +10,30 @@ import {
   Palette,
   ChevronDown,
   ChevronUp,
-} from 'lucide-react';
+} from "lucide-react";
 
-import { fetchItems } from '../inventory/itemMaster/api/itemService';
+import { fetchItems } from "../inventory/itemMaster/api/itemService";
 
 const getDisplayValue = (value: any): string => {
-  if (value === null || value === undefined) return '';
-  if (typeof value === 'object') return value.item_name || value.name || '';
+  if (value === null || value === undefined) return "";
+  if (typeof value === "object") return value.item_name || value.name || "";
   return String(value);
 };
 
 export default function EcomProductDetail() {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  // Track the ID or Code of the currently expanded item
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [currentPage] = useState(1);
   const pageSize = 15;
 
   const [ecoData, setEcoData] = useState({
-    webTitle: '',
-    webDesc: '',
-    colors: '',
-    sizes: '',
+    webTitle: "",
+    webDesc: "",
+    colors: "",
+    sizes: "",
     images: Array(6).fill(null),
   });
 
@@ -59,9 +60,9 @@ export default function EcomProductDetail() {
       setExpandedItemId(item.code);
       setEcoData({
         webTitle: getDisplayValue(item.name || item.item_name),
-        webDesc: '',
-        colors: '',
-        sizes: '',
+        webDesc: "",
+        colors: "",
+        sizes: "",
         images: Array(6).fill(null),
       });
     }
@@ -73,79 +74,104 @@ export default function EcomProductDetail() {
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
       const name = getDisplayValue(item.name || item.item_name).toLowerCase();
-      const code = String(item.code || '').toLowerCase();
-      return name.includes(searchTerm.toLowerCase()) || code.includes(searchTerm.toLowerCase());
+      const code = String(item.code || "").toLowerCase();
+      return (
+        name.includes(searchTerm.toLowerCase()) ||
+        code.includes(searchTerm.toLowerCase())
+      );
     });
   }, [items, searchTerm]);
 
-  const paginatedData = filteredItems.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const paginatedData = filteredItems.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
   if (loading)
     return (
-      <div className="flex h-[90vh] w-full items-center justify-center bg-white">
+      <div className="h-[90vh] w-full flex items-center justify-center bg-white">
         <RefreshCw className="animate-spin text-[#0f3c63]" size={32} />
       </div>
     );
 
   return (
-    <div className="flex h-screen w-full flex-col overflow-hidden bg-[#f4f7f9] font-sans">
-      <div className="flex shrink-0 items-center justify-between border-b bg-white px-6 py-4">
+    <div className="h-screen w-full bg-[#f4f7f9] flex flex-col overflow-hidden font-sans">
+      {/* Header */}
+      <div className="px-6 py-4 flex items-center justify-between bg-white border-b shrink-0">
         <div className="flex items-center gap-3">
-          <div className="rounded-lg bg-[#0f3c63] p-2 text-white">
+          <div className="bg-[#0f3c63] p-2 rounded-lg text-white">
             <ShoppingBag size={20} />
           </div>
-          <h1 className="text-lg font-black tracking-tight text-[#0f3c63]">Inventory Mapping</h1>
+          <h1 className="text-lg font-black text-[#0f3c63] tracking-tight">
+            Inventory Mapping
+          </h1>
         </div>
         <div className="relative w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+          <Search
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            size={16}
+          />
           <input
             type="text"
             placeholder="Search..."
-            className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-[#0f3c63]/20"
+            className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#0f3c63]/20"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
       </div>
 
+      {/* Main List Area */}
       <div className="flex-1 overflow-auto p-4">
-        <div className="mx-auto max-w-6xl space-y-2">
+        <div className="max-w-6xl mx-auto space-y-2">
           {paginatedData.map((item) => {
             const isExpanded = expandedItemId === item.code;
             return (
               <div
                 key={item.code}
-                className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-all">
+                className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm transition-all"
+              >
+                {/* Accordion Header */}
                 <div
                   onClick={() => toggleExpand(item)}
-                  className={`flex cursor-pointer items-center justify-between px-6 py-4 transition-colors hover:bg-gray-50 ${
-                    isExpanded ? 'border-b bg-blue-50/30' : ''
-                  }`}>
-                  <div className="flex items-center gap-10">
+                  className={`px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors ${
+                    isExpanded ? "bg-blue-50/30 border-b" : ""
+                  }`}
+                >
+                  <div className="flex gap-10 items-center">
                     <div className="w-48">
-                      <p className="truncate text-sm font-bold text-gray-800">
+                      <p className="text-sm font-bold text-gray-800 truncate">
                         {getDisplayValue(item.name || item.item_name)}
                       </p>
-                      <p className="font-mono text-[10px] text-gray-400">{item.code}</p>
+                      <p className="text-[10px] font-mono text-gray-400">
+                        {item.code}
+                      </p>
                     </div>
                     <div className="w-32">
-                      <p className="text-[10px] font-black uppercase text-gray-400">Category</p>
-                      <p className="truncate text-xs font-bold text-gray-600">
+                      <p className="text-[10px] uppercase font-black text-gray-400">
+                        Category
+                      </p>
+                      <p className="text-xs font-bold text-gray-600 truncate">
                         {getDisplayValue(item.category)}
                       </p>
                     </div>
                     <div className="w-24 text-right">
-                      <p className="text-[10px] font-black uppercase text-gray-400">Rate</p>
-                      <p className="text-sm font-black text-[#0f3c63]">₹{item.sales_rate || 0}</p>
+                      <p className="text-[10px] uppercase font-black text-gray-400">
+                        Rate
+                      </p>
+                      <p className="text-sm font-black text-[#0f3c63]">
+                        ₹{item.sales_rate || 0}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
                     <span
-                      className={`rounded px-3 py-1 text-[10px] font-black ${
+                      className={`px-3 py-1 rounded text-[10px] font-black ${
                         Number(item.closing_stock) > 0
-                          ? 'bg-green-50 text-green-600'
-                          : 'bg-red-50 text-red-500'
-                      }`}>
+                          ? "bg-green-50 text-green-600"
+                          : "bg-red-50 text-red-500"
+                      }`}
+                    >
                       {item.closing_stock || 0} IN STOCK
                     </span>
                     {isExpanded ? (
@@ -156,59 +182,70 @@ export default function EcomProductDetail() {
                   </div>
                 </div>
 
+                {/* Accordion Body (The "Popup" details moved here) */}
                 {isExpanded && (
-                  <div className="animate-in slide-in-from-top-2 grid grid-cols-12 gap-6 bg-white p-6 duration-200">
+                  <div className="p-6 bg-white grid grid-cols-12 gap-6 animate-in slide-in-from-top-2 duration-200">
+                    {/* Left: Form */}
                     <div className="col-span-8 space-y-4">
                       <div>
-                        <label className="mb-1 block text-[10px] font-black uppercase tracking-widest text-gray-400">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">
                           Web Title
                         </label>
                         <input
-                          className="w-full rounded-lg border border-gray-200 bg-gray-50 p-2.5 text-sm"
+                          className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm"
                           value={ecoData.webTitle}
-                          onChange={(e) => handleUpdate('webTitle', e.target.value)}
+                          onChange={(e) =>
+                            handleUpdate("webTitle", e.target.value)
+                          }
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="mb-1 flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-gray-400">
+                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1 mb-1">
                             <Palette size={12} /> Colors
                           </label>
                           <input
-                            className="w-full rounded-lg border border-gray-200 bg-gray-50 p-2.5 text-sm"
+                            className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm"
                             placeholder="Red, Blue..."
                             value={ecoData.colors}
-                            onChange={(e) => handleUpdate('colors', e.target.value)}
+                            onChange={(e) =>
+                              handleUpdate("colors", e.target.value)
+                            }
                           />
                         </div>
                         <div>
-                          <label className="mb-1 flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-gray-400">
+                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1 mb-1">
                             <Maximize size={12} /> Sizes
                           </label>
                           <input
-                            className="w-full rounded-lg border border-gray-200 bg-gray-50 p-2.5 text-sm"
+                            className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm"
                             placeholder="S, M, L..."
                             value={ecoData.sizes}
-                            onChange={(e) => handleUpdate('sizes', e.target.value)}
+                            onChange={(e) =>
+                              handleUpdate("sizes", e.target.value)
+                            }
                           />
                         </div>
                       </div>
                       <div>
-                        <label className="mb-1 block text-[10px] font-black uppercase tracking-widest text-gray-400">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">
                           Description
                         </label>
                         <textarea
                           rows={3}
-                          className="w-full resize-none rounded-lg border border-gray-200 bg-gray-50 p-2.5 text-sm"
+                          className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm resize-none"
                           value={ecoData.webDesc}
-                          onChange={(e) => handleUpdate('webDesc', e.target.value)}
+                          onChange={(e) =>
+                            handleUpdate("webDesc", e.target.value)
+                          }
                         />
                       </div>
                     </div>
 
+                    {/* Right: Gallery & Action */}
                     <div className="col-span-4 space-y-4">
-                      <div className="rounded-xl bg-[#0f3c63] p-4 text-white">
-                        <div className="mb-2 flex items-center justify-between">
+                      <div className="bg-[#0f3c63] p-4 rounded-xl text-white">
+                        <div className="flex justify-between items-center mb-2">
                           <span className="text-[10px] font-bold text-blue-200">
                             Projected Margin
                           </span>
@@ -217,7 +254,8 @@ export default function EcomProductDetail() {
                         <p className="text-2xl font-black text-yellow-400">
                           ₹
                           {(
-                            Number(item.sales_rate) - Number(item.cost_price || 0)
+                            Number(item.sales_rate) -
+                            Number(item.cost_price || 0)
                           ).toLocaleString()}
                         </p>
                       </div>
@@ -226,13 +264,14 @@ export default function EcomProductDetail() {
                         {ecoData.images.map((_, i) => (
                           <div
                             key={i}
-                            className="flex aspect-square cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 text-gray-300 transition-colors hover:text-[#0f3c63]">
+                            className="aspect-square bg-gray-50 border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center text-gray-300 hover:text-[#0f3c63] cursor-pointer transition-colors"
+                          >
                             <ImageIcon size={16} />
                           </div>
                         ))}
                       </div>
 
-                      <button className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#facc15] py-3 text-xs font-black uppercase text-[#0f3c63] shadow-sm transition-all hover:bg-yellow-300 active:scale-95">
+                      <button className="w-full bg-[#facc15] text-[#0f3c63] py-3 rounded-lg text-xs font-black uppercase flex items-center justify-center gap-2 shadow-sm hover:bg-yellow-300 active:scale-95 transition-all">
                         <Save size={16} /> Save & Sync
                       </button>
                     </div>

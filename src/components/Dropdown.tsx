@@ -1,6 +1,12 @@
-import React, { useState, useRef, useEffect, useMemo, useLayoutEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { ChevronDown, Search, X } from 'lucide-react';
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useMemo,
+  useLayoutEffect,
+} from "react";
+import { createPortal } from "react-dom";
+import { ChevronDown, Search, X } from "lucide-react";
 
 export interface ColumnDef<T> {
   header: string;
@@ -9,7 +15,7 @@ export interface ColumnDef<T> {
 }
 
 interface TableDropdownProps<T> {
-  data?: T[];
+  data: T[];
   columns: ColumnDef<T>[];
   value: string | number | undefined;
   onChange: (item: T | null) => void;
@@ -25,18 +31,18 @@ const Dropdown = <T extends object>({
   columns,
   value,
   onChange,
-  placeholder = 'Select...',
+  placeholder = "Select...",
   valueKey,
-  className = 'w-full',
+  className = "w-full",
   disabled = false,
   zIndex,
 }: TableDropdownProps<T>) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Position and Visibility State
   const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
-  const [menuPosition, setMenuPosition] = useState<'bottom' | 'top'>('bottom');
+  const [menuPosition, setMenuPosition] = useState<"bottom" | "top">("bottom");
   const [isVisible, setIsVisible] = useState(false);
 
   const triggerRef = useRef<HTMLDivElement>(null);
@@ -50,7 +56,7 @@ const Dropdown = <T extends object>({
       const REQUIRED_SPACE = 300;
 
       const isTop = spaceBelow < REQUIRED_SPACE;
-      setMenuPosition(isTop ? 'top' : 'bottom');
+      setMenuPosition(isTop ? "top" : "bottom");
 
       setCoords({
         left: rect.left,
@@ -67,7 +73,7 @@ const Dropdown = <T extends object>({
   // 2. Event Listeners (FIXED SCROLL LOGIC)
   useEffect(() => {
     const handleGlobalEvents = (event: Event) => {
-      if (event.type === 'mousedown') {
+      if (event.type === "mousedown") {
         const mouseEvent = event as MouseEvent;
         if (
           dropdownRef.current?.contains(mouseEvent.target as Node) ||
@@ -76,48 +82,45 @@ const Dropdown = <T extends object>({
           return;
         }
         setIsOpen(false);
-      } else if (event.type === 'scroll') {
+      } else if (event.type === "scroll") {
         // Only close if scrolling something OUTSIDE the dropdown
-        if (isOpen && dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        if (
+          isOpen &&
+          dropdownRef.current &&
+          !dropdownRef.current.contains(event.target as Node)
+        ) {
           setIsOpen(false);
         }
       }
     };
 
     if (isOpen) {
-      document.addEventListener('mousedown', handleGlobalEvents);
+      document.addEventListener("mousedown", handleGlobalEvents);
       // Capture: true is necessary to detect scroll on parent containers
-      window.addEventListener('scroll', handleGlobalEvents, { capture: true });
+      window.addEventListener("scroll", handleGlobalEvents, { capture: true });
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleGlobalEvents);
-      window.removeEventListener('scroll', handleGlobalEvents, {
+      document.removeEventListener("mousedown", handleGlobalEvents);
+      window.removeEventListener("scroll", handleGlobalEvents, {
         capture: true,
       });
     };
   }, [isOpen]);
 
-const safeData = Array.isArray(data) ? data : [];
-
-const filteredData = useMemo(() => {
-  const normalizedSearch = searchTerm.trim().toLowerCase();
-  if (!normalizedSearch) return safeData;
-
-  return safeData.filter((item) => {
-    return columns.some((col) => {
-      const val = item[col.key];
-      const strVal = val == null ? '' : String(val);
-      return strVal.toLowerCase().includes(normalizedSearch);
+  const filteredData = useMemo(() => {
+    if (!searchTerm) return data;
+    return data.filter((item) => {
+      return columns.some((col) => {
+        const val = item[col.key];
+        return String(val).toLowerCase().includes(searchTerm.toLowerCase());
+      });
     });
-  });
-}, [safeData, columns, searchTerm]);
+  }, [data, columns, searchTerm]);
 
-
-const selectedItemObj = useMemo(() => {
-  return safeData.find((item) => String(item[valueKey]) === String(value));
-}, [safeData, value, valueKey]);
-
+  const selectedItemObj = useMemo(() => {
+    return data.find((item) => String(item[valueKey]) === String(value));
+  }, [data, value, valueKey]);
 
   const displayLabel = selectedItemObj
     ? String(selectedItemObj[columns[1]?.key || columns[0]?.key])
@@ -128,39 +131,44 @@ const selectedItemObj = useMemo(() => {
     const isSelected = String(item[valueKey]) === String(value);
     onChange(isSelected ? null : item);
     setIsOpen(false);
-    setSearchTerm('');
+    setSearchTerm("");
   };
 
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();
     onChange(null);
     setIsOpen(false);
-    setSearchTerm('');
+    setSearchTerm("");
   };
 
   const DropdownMenu = (
     <div
       ref={dropdownRef}
-      className="animate-in fade-in zoom-in-95 fixed flex flex-col overflow-hidden rounded-sm border border-gray-300 bg-white shadow-2xl duration-100"
+      className="fixed bg-white border border-gray-300 shadow-2xl rounded-sm flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-100"
       style={{
         left: coords.left,
-        top: menuPosition === 'bottom' ? coords.top : 'auto',
-        bottom: menuPosition === 'top' ? window.innerHeight - coords.top : 'auto',
+        top: menuPosition === "bottom" ? coords.top : "auto",
+        bottom:
+          menuPosition === "top" ? window.innerHeight - coords.top : "auto",
         width: Math.max(coords.width, 400), // Slightly wider for table view
-        maxHeight: '300px',
+        maxHeight: "300px",
         zIndex: zIndex ?? 9999,
         opacity: isVisible ? 1 : 0,
-        pointerEvents: isVisible ? 'auto' : 'none',
-        overscrollBehavior: 'contain', // Prevents background page from scrolling
-      }}>
+        pointerEvents: isVisible ? "auto" : "none",
+        overscrollBehavior: "contain", // Prevents background page from scrolling
+      }}
+    >
       {/* Search Header */}
-      <div className="shrink-0 border-b border-gray-100 bg-gray-50/50 p-2">
+      <div className="p-2 border-b border-gray-100 bg-gray-50/50 shrink-0">
         <div className="relative">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search
+            size={14}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+          />
           <input
             type="text"
             placeholder="Search..."
-            className="w-full rounded-sm border border-gray-300 py-1.5 pl-9 pr-3 text-xs shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="w-full pl-9 pr-3 py-1.5 text-xs border border-gray-300 rounded-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             autoFocus
@@ -169,38 +177,47 @@ const selectedItemObj = useMemo(() => {
       </div>
 
       {/* Table Header */}
-      <div className="flex shrink-0 border-b border-gray-200 bg-gray-100 px-3 py-1.5 text-[11px] font-bold text-gray-600">
+      <div className="flex bg-gray-100 border-b border-gray-200 text-[11px] font-bold text-gray-600 px-3 py-1.5 shrink-0">
         {columns.map((col) => (
-          <div key={col.key as string} className={`${col.width || 'flex-1'} px-2 text-left`}>
+          <div
+            key={col.key as string}
+            className={`${col.width || "flex-1"} px-2 text-left`}
+          >
             {col.header}
           </div>
         ))}
       </div>
 
       {/* Scrollable List Area */}
-      <div className="flex-1 overflow-y-auto p-1">
+      <div className="overflow-y-auto flex-1 p-1">
         {filteredData.length > 0 ? (
           filteredData.map((item) => {
             const isSelected = String(item[valueKey]) === String(value);
             return (
               <div
                 key={String(item[valueKey])}
-                className={`flex cursor-pointer items-center rounded-sm border-b border-gray-50 px-3 py-2 text-[12px] transition-colors ${
+                className={`flex items-center text-[12px] px-3 py-2 border-b border-gray-50 cursor-pointer transition-colors rounded-sm ${
                   isSelected
-                    ? 'border-blue-100 bg-blue-50 font-medium text-blue-700'
-                    : 'text-gray-700 hover:bg-gray-50'
+                    ? "bg-blue-50 text-blue-700 font-medium border-blue-100"
+                    : "text-gray-700 hover:bg-gray-50"
                 }`}
-                onClick={(e) => handleSelect(e, item)}>
+                onClick={(e) => handleSelect(e, item)}
+              >
                 {columns.map((col) => (
-                  <div key={col.key as string} className={`${col.width || 'flex-1'} truncate px-2`}>
-                    {String(item[col.key] || '-')}
+                  <div
+                    key={col.key as string}
+                    className={`${col.width || "flex-1"} px-2 truncate`}
+                  >
+                    {String(item[col.key] || "-")}
                   </div>
                 ))}
               </div>
             );
           })
         ) : (
-          <div className="p-6 text-center text-xs text-gray-500">No results found</div>
+          <div className="p-6 text-center text-xs text-gray-500">
+            No results found
+          </div>
         )}
       </div>
     </div>
@@ -209,21 +226,24 @@ const selectedItemObj = useMemo(() => {
   return (
     <div className={`relative ${className}`} ref={triggerRef}>
       <div
-        className={`flex h-[30px] w-full cursor-pointer items-center justify-between rounded-sm border border-gray-300 bg-white px-2 transition-all focus-within:border-[#60a5fa] focus-within:ring-1 focus-within:ring-[#60a5fa] hover:border-gray-400 ${
-          disabled ? 'cursor-not-allowed bg-gray-100 opacity-70' : ''
+        className={`w-full h-[30px] bg-white border border-gray-300 rounded-sm px-2 flex items-center justify-between cursor-pointer hover:border-gray-400 focus-within:ring-1 focus-within:ring-[#60a5fa] focus-within:border-[#60a5fa] transition-all ${
+          disabled ? "bg-gray-100 cursor-not-allowed opacity-70" : ""
         }`}
-        onClick={() => !disabled && setIsOpen(!isOpen)}>
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+      >
         <span
-          className={`truncate text-[13px] ${
-            !value ? 'text-gray-500' : 'font-medium text-gray-700'
-          }`}>
+          className={`text-[13px] truncate ${
+            !value ? "text-gray-500" : "text-gray-700 font-medium"
+          }`}
+        >
           {displayLabel}
         </span>
         <div className="flex items-center gap-1">
           {value && !disabled && (
             <div
               onClick={handleClear}
-              className="rounded-full p-0.5 text-gray-400 transition-colors hover:bg-gray-200 hover:text-red-500">
+              className="p-0.5 hover:bg-gray-200 rounded-full text-gray-400 hover:text-red-500 transition-colors"
+            >
               <X size={12} />
             </div>
           )}

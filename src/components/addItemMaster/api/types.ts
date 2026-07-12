@@ -28,7 +28,7 @@ export interface StockUnitData {
 }
 
 export interface GstClassificationData {
-  _id: string;
+  _id: string; // Changed from 'id' to '_id'
   type: string;
   code: string;
   hsn_sac_code: string;

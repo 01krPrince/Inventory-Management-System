@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   OpenIcon,
   DeleteIcon,
@@ -8,8 +8,10 @@ import {
   CalculatorIcon,
   HelpIcon,
   ConfigurationIcon,
-} from '../../../../components/icons';
-import { COLORS } from '../../../../constants/colors';
+} from "../../../../components/icons";
+import { COLORS } from "../../../../constants/colors";
+
+// --- Interfaces ---
 
 interface HeaderButtonProps {
   label: string;
@@ -17,12 +19,21 @@ interface HeaderButtonProps {
   onClick?: () => void;
 }
 
-const HeaderButton: React.FC<HeaderButtonProps> = ({ label, icon, onClick }) => {
+// --- Components ---
+
+const HeaderButton: React.FC<HeaderButtonProps> = ({
+  label,
+  icon,
+  onClick,
+}) => {
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-2 rounded-[3px] border border-white/30 px-3 py-1 text-xs font-medium text-white transition-colors hover:border-white/50 hover:bg-white/10 active:bg-white/20">
-      <span className="flex h-4 w-4 items-center justify-center">{icon}</span>
+      // Replaced hardcoded blue border with border-white/30
+      // This ensures it looks good on the COLORS.primary background
+      className="flex items-center gap-2 px-3 py-1 border border-white/30 rounded-[3px] text-white text-xs font-medium hover:bg-white/10 hover:border-white/50 transition-colors active:bg-white/20"
+    >
+      <span className="w-4 h-4 flex items-center justify-center">{icon}</span>
       <span>{label}</span>
     </button>
   );
@@ -30,32 +41,58 @@ const HeaderButton: React.FC<HeaderButtonProps> = ({ label, icon, onClick }) => 
 
 export default function PurchaseBillHeader() {
   return (
-    <div className="w-full border-t" style={{ borderColor: COLORS.borderDark }}>
+    <div
+      className="w-full border-t"
+      style={{ borderColor: COLORS.borderDark }} // Used COLORS.borderDark
+    >
       <header
-        className="flex w-full flex-wrap items-center justify-between px-4 py-1 shadow-md transition-colors duration-300"
-        style={{ backgroundColor: COLORS.primary }}>
+        className="flex flex-wrap items-center justify-between w-full px-4 py-1 shadow-md transition-colors duration-300"
+        style={{ backgroundColor: COLORS.primary }} // Used COLORS.primary
+      >
         <div className="flex items-center gap-2">
+          {/* Spacer for responsive alignment */}
           <div className="w-0 md:w-12 lg:w-24"></div>
 
-          <HeaderButton label="Open" icon={<OpenIcon className="h-full w-full" />} />
+          <HeaderButton
+            label="Open"
+            icon={<OpenIcon className="w-full h-full" />}
+          />
 
-          <HeaderButton label="Delete" icon={<DeleteIcon className="h-full w-full" />} />
+          <HeaderButton
+            label="Delete"
+            icon={<DeleteIcon className="w-full h-full" />}
+          />
 
-          <HeaderButton label="Copy" icon={<CopyIcon className="h-full w-full" />} />
+          <HeaderButton
+            label="Copy"
+            icon={<CopyIcon className="w-full h-full" />}
+          />
 
-          <HeaderButton label="Cancel" icon={<CancelIcon className="h-full w-full stroke-[3]" />} />
+          <HeaderButton
+            label="Cancel"
+            icon={<CancelIcon className="w-full h-full stroke-[3]" />}
+          />
 
-          <HeaderButton label="Restore" icon={<RestoreIcon className="h-full w-full" />} />
+          <HeaderButton
+            label="Restore"
+            icon={<RestoreIcon className="w-full h-full" />}
+          />
         </div>
 
-        <div className="mt-2 flex items-center gap-2 sm:mt-0">
-          <HeaderButton label="Calculator" icon={<CalculatorIcon className="h-full w-full" />} />
+        <div className="flex items-center gap-2 mt-2 sm:mt-0">
+          <HeaderButton
+            label="Calculator"
+            icon={<CalculatorIcon className="w-full h-full" />}
+          />
 
-          <HeaderButton label="Help" icon={<HelpIcon className="h-full w-full" />} />
+          <HeaderButton
+            label="Help"
+            icon={<HelpIcon className="w-full h-full" />}
+          />
 
           <HeaderButton
             label="Configuration"
-            icon={<ConfigurationIcon className="h-full w-full" />}
+            icon={<ConfigurationIcon className="w-full h-full" />}
           />
         </div>
       </header>

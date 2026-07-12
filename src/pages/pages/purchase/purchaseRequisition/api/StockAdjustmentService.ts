@@ -68,7 +68,7 @@ export const createStockAdjustment = async (
 ): Promise<ApiResponse<StockAdjustment>> => {
   try {
     // api.post automatically uses BASE_URL and adds the Token
-    const response = await api.post<ApiResponse<StockAdjustment>>('', payload); // /stockadjustment/create
+    const response = await api.post<ApiResponse<StockAdjustment>>('/stockadjustment/create', payload);
     
     // Assuming backend returns { success: true, data: { ... } }
     return {
@@ -81,7 +81,7 @@ export const createStockAdjustment = async (
     const responseData = error.response?.data;
 
     // Handle Duplicate Key Error
-    if (responseData?.error && typeof responseData.error === 'string' && responseData.error.includes("duplicate key")) {
+    if (responseData?.error && typeof responseData.error === 'string' && responseData.error.includes("E11000 duplicate key")) {
       return {
         success: false,
         message: `Voucher Number "${payload.voucherNo}" already exists.`,
@@ -103,7 +103,7 @@ export const createStockAdjustment = async (
  */
 export const getAllStockAdjustments = async (): Promise<ApiResponse<StockAdjustment[]>> => {
   try {
-    const response = await api.get<ApiResponse<StockAdjustment[]>>(''); // /stockadjustment/getall
+    const response = await api.get<ApiResponse<StockAdjustment[]>>('/stockadjustment/getall');
     return {
       success: true,
       data: response.data.data || [],
@@ -123,7 +123,7 @@ export const getAllStockAdjustments = async (): Promise<ApiResponse<StockAdjustm
  */
 export const getStockAdjustmentById = async (id: string): Promise<ApiResponse<StockAdjustment>> => {
   try {
-    const response = await api.get<ApiResponse<StockAdjustment>>(`/${id}`); // /stockadjustment/getbyid/${id}
+    const response = await api.get<ApiResponse<StockAdjustment>>(`/stockadjustment/getbyid/${id}`);
     return {
       success: true,
       data: response.data.data,
@@ -146,7 +146,7 @@ export const updateStockAdjustment = async (
   payload: StockAdjustment
 ): Promise<ApiResponse<StockAdjustment>> => {
   try {
-    const response = await api.put<ApiResponse<StockAdjustment>>(`/${id}`, payload); // /stockadjustment/updatebyid/${id}
+    const response = await api.put<ApiResponse<StockAdjustment>>(`/stockadjustment/updatebyid/${id}`, payload);
     return {
       success: true,
       message: "Stock Adjustment Updated Successfully",
@@ -168,7 +168,7 @@ export const updateStockAdjustment = async (
  */
 export const deleteStockAdjustment = async (id: string): Promise<ApiResponse<null>> => {
   try {
-    await api.delete<ApiResponse<null>>(`/${id}`); // /stockadjustment/deletebyid/${id}
+    await api.delete<ApiResponse<null>>(`/stockadjustment/deletebyid/${id}`);
     return {
       success: true,
       message: "Stock Adjustment Deleted Successfully",

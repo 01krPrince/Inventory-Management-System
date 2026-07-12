@@ -208,7 +208,7 @@ const PurchaseCreditNoteForm: React.FC<PurchaseCreditNoteProps> = ({
   const [formData, setFormData] = useState({
     // Left Column
     gstType: "TaxInvoice",
-    store: "INVENTORY",
+    store: "SPORTS HUB",
     vendor: "",
     email: "",
 
@@ -254,7 +254,7 @@ const PurchaseCreditNoteForm: React.FC<PurchaseCreditNoteProps> = ({
     } catch (err) {
       console.error(err);
       setLocationList([
-        { code: "ST01", name: "INVENTORY" },
+        { code: "ST01", name: "SPORTS HUB" },
         { code: "ST02", name: "WAREHOUSE A" },
       ] as any);
     }

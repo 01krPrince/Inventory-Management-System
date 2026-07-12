@@ -1,5 +1,5 @@
-import React, { useState, useRef, MouseEvent, useEffect, useMemo } from 'react';
-import ReactDOM from 'react-dom';
+import React, { useState, useRef, MouseEvent, useEffect, useMemo } from "react";
+import ReactDOM from "react-dom";
 import {
   Plus,
   X,
@@ -13,24 +13,24 @@ import {
   ArrowUp,
   ArrowDown,
   ArrowLeft,
-} from 'lucide-react';
-import { COLORS } from '../../../../constants/colors';
+} from "lucide-react";
+import { COLORS } from "../../../../constants/colors";
 
-import AddNewItem from '../../../../components/addItemMaster/AddNewItem';
+import AddNewItem from "../../../../components/addItemMaster/AddNewItem";
 
-import { fetchItems } from '../../inventory/itemMaster/api/itemService';
+import { fetchItems } from "../../inventory/itemMaster/api/itemService";
 
-import { StockUnitData } from '../../../../components/addItemMaster/api/types';
-import { fetchStockUnits } from '../../../../components/addItemMaster/api/stockunitservice';
-import { ItemApiData } from '../../inventory/itemMaster/models/ItemModel';
-import AttributePanel from '../../../../components/AttributePanel';
+import { StockUnitData } from "../../../../components/addItemMaster/api/types";
+import { fetchStockUnits } from "../../../../components/addItemMaster/api/stockunitservice";
+import { ItemApiData } from "../../inventory/itemMaster/models/ItemModel";
+import AttributePanel from "../../../../components/AttributePanel";
 
 interface Column {
   id: string;
   label: string;
   width: number;
-  align: 'left' | 'center' | 'right';
-  sticky?: 'left';
+  align: "left" | "center" | "right";
+  sticky?: "left";
   resizable?: boolean;
 }
 
@@ -45,14 +45,20 @@ interface OrderTableProps {
   setTableData: React.Dispatch<React.SetStateAction<Record<string, RowData>>>;
 }
 
-const OrderTable: React.FC<OrderTableProps> = ({ rows, setRows, tableData, setTableData }) => {
-  const generateRowId = () => `row-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+const OrderTable: React.FC<OrderTableProps> = ({
+  rows,
+  setRows,
+  tableData,
+  setTableData,
+}) => {
+  const generateRowId = () =>
+    `row-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
   const [items, setItems] = useState<ItemApiData[]>([]);
   const [, setStockUnits] = useState<StockUnitData[]>([]);
   const [sortConfig, setSortConfig] = useState<{
     key: string;
-    direction: 'asc' | 'desc';
+    direction: "asc" | "desc";
   } | null>(null);
 
   const [popupState, setPopupState] = useState<{
@@ -77,7 +83,7 @@ const OrderTable: React.FC<OrderTableProps> = ({ rows, setRows, tableData, setTa
 
       const initialData: Record<string, RowData> = {};
       initialRows.forEach((id) => {
-        initialData[id] = { reciss: 'Receipt' };
+        initialData[id] = { reciss: "Receipt" };
       });
       setTableData(initialData);
     }
@@ -95,226 +101,226 @@ const OrderTable: React.FC<OrderTableProps> = ({ rows, setRows, tableData, setTa
       const unitsData = await fetchStockUnits();
       if (Array.isArray(unitsData)) setStockUnits(unitsData);
     } catch (error) {
-      console.error('Failed to load table master data', error);
+      console.error("Failed to load table master data", error);
     }
   };
 
   const initialColumns: Column[] = [
     {
-      id: 'sno',
-      label: 'SNo',
+      id: "sno",
+      label: "SNo",
       width: 40,
-      sticky: 'left',
-      align: 'center',
+      sticky: "left",
+      align: "center",
       resizable: true,
     },
     {
-      id: 'add',
-      label: '',
+      id: "add",
+      label: "",
       width: 35,
-      sticky: 'left',
-      align: 'center',
+      sticky: "left",
+      align: "center",
       resizable: true,
     },
     {
-      id: 'del',
-      label: '',
+      id: "del",
+      label: "",
       width: 35,
-      sticky: 'left',
-      align: 'center',
+      sticky: "left",
+      align: "center",
       resizable: true,
     },
     {
-      id: 'srch',
-      label: '',
+      id: "srch",
+      label: "",
       width: 35,
-      sticky: 'left',
-      align: 'center',
+      sticky: "left",
+      align: "center",
       resizable: true,
     },
     {
-      id: 'copy',
-      label: '',
+      id: "copy",
+      label: "",
       width: 35,
-      sticky: 'left',
-      align: 'center',
+      sticky: "left",
+      align: "center",
       resizable: true,
     },
     {
-      id: 'reciss',
-      label: 'Rec Iss',
+      id: "reciss",
+      label: "Rec Iss",
       width: 80,
-      align: 'center',
-      sticky: 'left',
+      align: "center",
+      sticky: "left",
       resizable: true,
     },
     {
-      id: 'select',
-      label: 'Select Item',
+      id: "select",
+      label: "Select Item",
       width: 110,
-      sticky: 'left',
-      align: 'left',
+      sticky: "left",
+      align: "left",
       resizable: true,
     },
     {
-      id: 'desc',
-      label: 'Description',
+      id: "desc",
+      label: "Description",
       width: 180,
-      sticky: 'left',
-      align: 'left',
+      sticky: "left",
+      align: "left",
       resizable: true,
     },
     {
-      id: 'attr',
-      label: 'Attribute',
+      id: "attr",
+      label: "Attribute",
       width: 40,
-      align: 'center',
+      align: "center",
       resizable: true,
     },
     {
-      id: 'widg',
-      label: 'Widget',
+      id: "widg",
+      label: "Widget",
       width: 40,
-      align: 'center',
+      align: "center",
       resizable: true,
     },
     {
-      id: 'batch',
-      label: 'Batch',
+      id: "batch",
+      label: "Batch",
       width: 45,
-      align: 'center',
+      align: "center",
       resizable: true,
     },
     {
-      id: 'punit',
-      label: 'Pack Unit',
+      id: "punit",
+      label: "Pack Unit",
       width: 50,
-      align: 'left',
+      align: "left",
       resizable: true,
     },
     {
-      id: 'pqty',
-      label: 'Pack Qty',
+      id: "pqty",
+      label: "Pack Qty",
       width: 50,
-      align: 'right',
+      align: "right",
       resizable: true,
     },
-    { id: 'unit', label: 'Unit', width: 70, align: 'left', resizable: true },
+    { id: "unit", label: "Unit", width: 70, align: "left", resizable: true },
     {
-      id: 'qty',
-      label: 'Quantity',
+      id: "qty",
+      label: "Quantity",
       width: 70,
-      align: 'right',
+      align: "right",
       resizable: true,
     },
     {
-      id: 'rateper',
-      label: 'Rate Per',
+      id: "rateper",
+      label: "Rate Per",
       width: 80,
-      align: 'left',
+      align: "left",
       resizable: true,
     },
-    { id: 'rate', label: 'Rate', width: 70, align: 'right', resizable: true },
+    { id: "rate", label: "Rate", width: 70, align: "right", resizable: true },
     {
-      id: 'amount',
-      label: 'Amount',
+      id: "amount",
+      label: "Amount",
       width: 80,
-      align: 'right',
+      align: "right",
       resizable: true,
     },
     {
-      id: 'minrate',
-      label: 'Min Rate',
+      id: "minrate",
+      label: "Min Rate",
       width: 70,
-      align: 'right',
+      align: "right",
       resizable: true,
     },
-    { id: 'mrp', label: 'MRP', width: 70, align: 'right', resizable: true },
+    { id: "mrp", label: "MRP", width: 70, align: "right", resizable: true },
     {
-      id: 'netrate',
-      label: 'Net Rate',
+      id: "netrate",
+      label: "Net Rate",
       width: 80,
-      align: 'right',
+      align: "right",
       resizable: true,
     },
     {
-      id: 'remark',
-      label: 'Remark',
+      id: "remark",
+      label: "Remark",
       width: 120,
-      align: 'left',
+      align: "left",
       resizable: true,
     },
     {
-      id: 'printdesc',
-      label: 'Print Desc',
+      id: "printdesc",
+      label: "Print Desc",
       width: 120,
-      align: 'left',
+      align: "left",
       resizable: true,
     },
     {
-      id: 'service',
-      label: 'Service Location',
+      id: "service",
+      label: "Service Location",
       width: 90,
-      align: 'center',
+      align: "center",
       resizable: true,
     },
     {
-      id: 'itembarcode',
-      label: 'Item Barcode',
+      id: "itembarcode",
+      label: "Item Barcode",
       width: 100,
-      align: 'left',
+      align: "left",
       resizable: true,
     },
     {
-      id: 'bdbatchno',
-      label: 'BD Batch No',
+      id: "bdbatchno",
+      label: "BD Batch No",
       width: 90,
-      align: 'left',
+      align: "left",
       resizable: false,
     },
     {
-      id: 'bdexpdate',
-      label: 'BD Exp.Date',
+      id: "bdexpdate",
+      label: "BD Exp.Date",
       width: 90,
-      align: 'left',
+      align: "left",
       resizable: false,
     },
     {
-      id: 'bdsalerate',
-      label: 'BD Sale rate',
+      id: "bdsalerate",
+      label: "BD Sale rate",
       width: 90,
-      align: 'right',
+      align: "right",
       resizable: false,
     },
     {
-      id: 'itembalance',
-      label: 'Itembalance',
+      id: "itembalance",
+      label: "Itembalance",
       width: 80,
-      align: 'right',
+      align: "right",
       resizable: false,
     },
     {
-      id: 'barcode',
-      label: 'Barcode',
+      id: "barcode",
+      label: "Barcode",
       width: 100,
-      align: 'left',
+      align: "left",
       resizable: false,
     },
     {
-      id: 'linelevel',
-      label: 'Line Level Barcode',
+      id: "linelevel",
+      label: "Line Level Barcode",
       width: 110,
-      align: 'left',
+      align: "left",
       resizable: false,
     },
     {
-      id: 'hsn',
-      label: 'HSN Code',
+      id: "hsn",
+      label: "HSN Code",
       width: 70,
-      align: 'left',
+      align: "left",
       resizable: false,
     },
-    { id: 'brand', label: 'Brand', width: 90, align: 'left', resizable: false },
+    { id: "brand", label: "Brand", width: 90, align: "left", resizable: false },
   ];
 
   const [columns, setColumns] = useState<Column[]>(initialColumns);
@@ -333,7 +339,11 @@ const OrderTable: React.FC<OrderTableProps> = ({ rows, setRows, tableData, setTa
     setAddNewItemForm(false);
   };
 
-  const handleInputChange = (rowId: string, columnId: string, value: string) => {
+  const handleInputChange = (
+    rowId: string,
+    columnId: string,
+    value: string
+  ) => {
     setTableData((prev) => ({
       ...prev,
       [rowId]: { ...prev[rowId], [columnId]: value },
@@ -351,7 +361,7 @@ const OrderTable: React.FC<OrderTableProps> = ({ rows, setRows, tableData, setTa
     } else {
       setTableData((prev) => ({
         ...prev,
-        [rowIdToDelete]: { reciss: 'Receipt' },
+        [rowIdToDelete]: { reciss: "Receipt" },
       }));
     }
   };
@@ -363,7 +373,7 @@ const OrderTable: React.FC<OrderTableProps> = ({ rows, setRows, tableData, setTa
       const newRows = [...rows];
       newRows.splice(index + 1, 0, newId);
       setRows(newRows);
-      setTableData((prev) => ({ ...prev, [newId]: { reciss: 'Receipt' } }));
+      setTableData((prev) => ({ ...prev, [newId]: { reciss: "Receipt" } }));
     }
   };
 
@@ -386,7 +396,10 @@ const OrderTable: React.FC<OrderTableProps> = ({ rows, setRows, tableData, setTa
     setTableData((prev) => ({ ...prev, [targetRowId!]: { ...sourceData } }));
   };
 
-  const handleSelectClick = (e: React.MouseEvent<HTMLDivElement>, rowId: string) => {
+  const handleSelectClick = (
+    e: React.MouseEvent<HTMLDivElement>,
+    rowId: string
+  ) => {
     e.stopPropagation();
     const rect = e.currentTarget.getBoundingClientRect();
     setPopupState({
@@ -437,22 +450,22 @@ const OrderTable: React.FC<OrderTableProps> = ({ rows, setRows, tableData, setTa
     const { activeRowId, tempItemData } = attributePanelState;
     if (activeRowId && tempItemData) {
       const baseData: RowData = {
-        reciss: 'Receipt',
-        select: tempItemData.code || '',
-        desc: tempItemData.name || '',
+        reciss: "Receipt",
+        select: tempItemData.code || "",
+        desc: tempItemData.name || "",
         // unit: tempItemData.stock_unit || "",
-        hsn: tempItemData.gst_classfication || '',
+        hsn: tempItemData.gst_classfication || "",
         // brand: tempItemData.brand || "",
-        qty: '1',
-        amount: '0.00',
-        service: 'Main Store',
-        barcode: tempItemData.barcode || '',
-        mrp: tempItemData.mrp || '0',
-        rate: tempItemData.sales_rate || '0',
-        rateper: tempItemData.sales_rate || '0',
-        netrate: tempItemData.sales_rate || '0',
-        printdesc: tempItemData.name || '',
-        itembarcode: tempItemData.barcode || '',
+        qty: "1",
+        amount: "0.00",
+        service: "Main Store",
+        barcode: tempItemData.barcode || "",
+        mrp: tempItemData.mrp || "0",
+        rate: tempItemData.sales_rate || "0",
+        rateper: tempItemData.sales_rate || "0",
+        netrate: tempItemData.sales_rate || "0",
+        printdesc: tempItemData.name || "",
+        itembarcode: tempItemData.barcode || "",
       };
       setTableData((prev) => ({
         ...prev,
@@ -471,11 +484,24 @@ const OrderTable: React.FC<OrderTableProps> = ({ rows, setRows, tableData, setTa
   const startWidthRef = useRef<number>(0);
 
   const handleHeaderClick = (columnId: string) => {
-    if (['sno', 'add', 'del', 'srch', 'copy', 'attr', 'widg', 'batch', 'reciss'].includes(columnId))
+    if (
+      [
+        "sno",
+        "add",
+        "del",
+        "srch",
+        "copy",
+        "attr",
+        "widg",
+        "batch",
+        "reciss",
+      ].includes(columnId)
+    )
       return;
     setSortConfig((curr) => ({
       key: columnId,
-      direction: curr?.key === columnId && curr.direction === 'asc' ? 'desc' : 'asc',
+      direction:
+        curr?.key === columnId && curr.direction === "asc" ? "desc" : "asc",
     }));
   };
 
@@ -488,19 +514,19 @@ const OrderTable: React.FC<OrderTableProps> = ({ rows, setRows, tableData, setTa
         if (!rowA && !rowB) return 0;
         if (!rowA) return 1;
         if (!rowB) return -1;
-        const valA = rowA[sortConfig.key] || '',
-          valB = rowB[sortConfig.key] || '';
-        return typeof valA === 'string' && typeof valB === 'string'
-          ? sortConfig.direction === 'asc'
+        const valA = rowA[sortConfig.key] || "",
+          valB = rowB[sortConfig.key] || "";
+        return typeof valA === "string" && typeof valB === "string"
+          ? sortConfig.direction === "asc"
             ? valA.localeCompare(valB)
             : valB.localeCompare(valA)
-          : sortConfig.direction === 'asc'
-            ? valA < valB
-              ? -1
-              : 1
-            : valA > valB
-              ? -1
-              : 1;
+          : sortConfig.direction === "asc"
+          ? valA < valB
+            ? -1
+            : 1
+          : valA > valB
+          ? -1
+          : 1;
       });
     }
     return sortable;
@@ -513,8 +539,8 @@ const OrderTable: React.FC<OrderTableProps> = ({ rows, setRows, tableData, setTa
     resizingRef.current = index;
     startXRef.current = e.clientX;
     startWidthRef.current = columns[index].width;
-    document.addEventListener('mousemove', handleMouseMove as any);
-    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener("mousemove", handleMouseMove as any);
+    document.addEventListener("mouseup", handleMouseUp);
   };
   const handleMouseMove = (e: MouseEvent | globalThis.MouseEvent) => {
     if (resizingRef.current === null) return;
@@ -522,18 +548,23 @@ const OrderTable: React.FC<OrderTableProps> = ({ rows, setRows, tableData, setTa
       const next = [...prev];
       next[resizingRef.current!] = {
         ...next[resizingRef.current!],
-        width: Math.max(30, startWidthRef.current + (e.clientX - startXRef.current)),
+        width: Math.max(
+          30,
+          startWidthRef.current + (e.clientX - startXRef.current)
+        ),
       };
       return next;
     });
   };
   const handleMouseUp = () => {
     resizingRef.current = null;
-    document.removeEventListener('mousemove', handleMouseMove as any);
-    document.removeEventListener('mouseup', handleMouseUp);
+    document.removeEventListener("mousemove", handleMouseMove as any);
+    document.removeEventListener("mouseup", handleMouseUp);
   };
   const getStickyLeft = (idx: number) =>
-    columns.slice(0, idx).reduce((acc, col) => (col.sticky === 'left' ? acc + col.width : acc), 0);
+    columns
+      .slice(0, idx)
+      .reduce((acc, col) => (col.sticky === "left" ? acc + col.width : acc), 0);
 
   const totals = useMemo(() => {
     const sums: Record<string, number> = {
@@ -547,14 +578,14 @@ const OrderTable: React.FC<OrderTableProps> = ({ rows, setRows, tableData, setTa
       const row = tableData[rowId];
       if (row) {
         const addVal = (field: string) => {
-          const val = parseFloat(String(row[field] || '0'));
+          const val = parseFloat(String(row[field] || "0"));
           if (!isNaN(val)) sums[field] += val;
         };
-        addVal('pqty');
-        addVal('qty');
-        addVal('amount');
-        addVal('mrp');
-        addVal('netrate');
+        addVal("pqty");
+        addVal("qty");
+        addVal("amount");
+        addVal("mrp");
+        addVal("netrate");
       }
     });
     return {
@@ -569,12 +600,13 @@ const OrderTable: React.FC<OrderTableProps> = ({ rows, setRows, tableData, setTa
   if (addNewItemForm) {
     return (
       <div className="w-full">
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+        <div className="bg-white p-6 rounded-xl shadow-lg dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
           <div className="mb-4">
             <button
               onClick={handleCloseForm}
-              className="flex items-center text-sm text-gray-600 transition-colors hover:text-blue-600 dark:text-gray-300 dark:hover:text-white">
-              <ArrowLeft className="mr-1 h-4 w-4" />
+              className="flex items-center text-sm text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-white transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4 mr-1" />
               Back to Item Master
             </button>
           </div>
@@ -590,35 +622,47 @@ const OrderTable: React.FC<OrderTableProps> = ({ rows, setRows, tableData, setTa
 
   return (
     <div
-      className="relative z-0 flex h-auto flex-col overflow-hidden font-sans text-sm"
-      style={{ backgroundColor: COLORS.background }}>
+      className="flex flex-col h-auto font-sans text-sm overflow-hidden relative z-0"
+      style={{ backgroundColor: COLORS.background }}
+    >
       <div
-        className="relative z-10 flex flex-none items-center justify-between border-b bg-white p-2"
-        style={{ borderColor: COLORS.border }}>
+        className="flex-none flex justify-between items-center p-2 border-b z-10 relative bg-white"
+        style={{ borderColor: COLORS.border }}
+      >
         <div className="flex items-center gap-4">
           <div
-            className="flex h-9 w-72 items-center rounded-sm border bg-white"
-            style={{ borderColor: COLORS.borderDark }}>
-            <div className="flex h-full items-center justify-center border-r bg-gray-50 px-2">
-              <ScanLine className="h-6 w-6 text-orange-500" />
+            className="flex items-center border h-9 w-72 rounded-sm bg-white"
+            style={{ borderColor: COLORS.borderDark }}
+          >
+            <div className="px-2 border-r h-full flex items-center justify-center bg-gray-50">
+              <ScanLine className="w-6 h-6 text-orange-500" />
             </div>
-            <input type="text" placeholder="Scan" className="w-full px-2 text-sm outline-none" />
+            <input
+              type="text"
+              placeholder="Scan"
+              className="px-2 outline-none text-sm w-full"
+            />
           </div>
         </div>
         <button
-          className="rounded px-6 py-1.5 text-xs font-bold text-white shadow-sm"
-          style={{ backgroundColor: COLORS.primary }}>
+          className="px-6 py-1.5 rounded text-xs font-bold text-white shadow-sm"
+          style={{ backgroundColor: COLORS.primary }}
+        >
           Pull From Order
         </button>
       </div>
 
-      <div className="relative z-0 flex flex-1 flex-col p-2">
+      <div className="flex-1 p-2 relative flex flex-col z-0">
         <div
-          className="relative w-full overflow-hidden border bg-white shadow-sm"
-          style={{ borderColor: COLORS.borderDark }}>
-          <div className="custom-scrollbar w-full overflow-auto" style={{ height: '400px' }}>
+          className="w-full border shadow-sm relative overflow-hidden bg-white"
+          style={{ borderColor: COLORS.borderDark }}
+        >
+          <div
+            className="w-full overflow-auto custom-scrollbar"
+            style={{ height: "400px" }}
+          >
             <div style={{ width: columns.reduce((a, c) => a + c.width, 0) }}>
-              <table className="w-full table-fixed border-collapse">
+              <table className="border-collapse table-fixed w-full">
                 <thead className="sticky top-0 z-20">
                   <tr className="h-6">
                     {columns.map((col, idx) => (
@@ -626,22 +670,30 @@ const OrderTable: React.FC<OrderTableProps> = ({ rows, setRows, tableData, setTa
                         key={col.id}
                         style={{
                           width: col.width,
-                          left: col.sticky === 'left' ? getStickyLeft(idx) : undefined,
-                          position: col.sticky === 'left' ? 'sticky' : 'relative',
-                          zIndex: col.sticky === 'left' ? 30 : 20,
+                          left:
+                            col.sticky === "left"
+                              ? getStickyLeft(idx)
+                              : undefined,
+                          position:
+                            col.sticky === "left" ? "sticky" : "relative",
+                          zIndex: col.sticky === "left" ? 30 : 20,
                           backgroundColor: COLORS.primary,
-                          color: 'white',
+                          color: "white",
                           borderColor: COLORS.primaryHover,
                         }}
-                        className="group relative cursor-pointer border-r px-1 text-xs font-normal"
-                        onClick={() => handleHeaderClick(col.id)}>
+                        className="border-r px-1 text-xs font-normal cursor-pointer relative group"
+                        onClick={() => handleHeaderClick(col.id)}
+                      >
                         <div
-                          className={`flex h-full w-full items-center ${
-                            col.align === 'center' ? 'justify-center' : 'justify-between px-1'
-                          }`}>
+                          className={`flex w-full h-full items-center ${
+                            col.align === "center"
+                              ? "justify-center"
+                              : "justify-between px-1"
+                          }`}
+                        >
                           <span className="truncate">{col.label}</span>
                           {sortConfig?.key === col.id &&
-                            (sortConfig.direction === 'asc' ? (
+                            (sortConfig.direction === "asc" ? (
                               <ArrowUp size={10} />
                             ) : (
                               <ArrowDown size={10} />
@@ -649,7 +701,7 @@ const OrderTable: React.FC<OrderTableProps> = ({ rows, setRows, tableData, setTa
                         </div>
                         {col.resizable && (
                           <div
-                            className="absolute bottom-0 right-0 top-0 w-1 cursor-col-resize opacity-0 hover:bg-blue-400 group-hover:opacity-100"
+                            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 opacity-0 group-hover:opacity-100"
                             onMouseDown={(e) => handleMouseDown(e, idx)}
                             onClick={(e) => e.stopPropagation()}
                           />
@@ -665,121 +717,167 @@ const OrderTable: React.FC<OrderTableProps> = ({ rows, setRows, tableData, setTa
                       <tr
                         key={rowId}
                         className="h-6 border-b hover:bg-blue-50"
-                        style={{ borderColor: COLORS.border }}>
+                        style={{ borderColor: COLORS.border }}
+                      >
                         {columns.map((col, cIdx) => {
-                          const isLeft = col.sticky === 'left';
+                          const isLeft = col.sticky === "left";
                           let content: React.ReactNode = null;
 
-                          if (col.id === 'sno')
-                            content = <span className="text-gray-500">{vIdx + 1}</span>;
-                          else if (col.id === 'add')
+                          if (col.id === "sno")
+                            content = (
+                              <span className="text-gray-500">{vIdx + 1}</span>
+                            );
+                          else if (col.id === "add")
                             content = (
                               <Plus
                                 size={12}
-                                className="mx-auto cursor-pointer text-green-600"
+                                className="mx-auto text-green-600 cursor-pointer"
                                 onClick={() => handleAddRow(rowId)}
                               />
                             );
-                          else if (col.id === 'del')
+                          else if (col.id === "del")
                             content = (
                               <X
                                 size={12}
-                                className="mx-auto cursor-pointer text-red-500"
+                                className="mx-auto text-red-500 cursor-pointer"
                                 onClick={() => handleDeleteRow(rowId)}
                               />
                             );
-                          else if (col.id === 'srch')
+                          else if (col.id === "srch")
                             content = (
-                              <Search size={12} className="mx-auto cursor-pointer text-blue-500" />
+                              <Search
+                                size={12}
+                                className="mx-auto text-blue-500 cursor-pointer"
+                              />
                             );
-                          else if (col.id === 'copy')
+                          else if (col.id === "copy")
                             content = (
                               <Copy
                                 size={12}
-                                className="mx-auto cursor-pointer text-orange-400"
+                                className="mx-auto text-orange-400 cursor-pointer"
                                 onClick={() => handleCopyRow(rowId)}
                               />
                             );
-                          else if (col.id === 'attr')
+                          else if (col.id === "attr")
                             content = (
                               <FileText
                                 size={12}
-                                className="mx-auto cursor-pointer text-blue-400"
+                                className="mx-auto text-blue-400 cursor-pointer"
                                 onClick={() => handleAttributeClick(rowId)}
                               />
                             );
-                          else if (col.id === 'widg')
-                            content = <BarChart2 size={12} className="mx-auto text-blue-400" />;
-                          else if (col.id === 'batch')
-                            content = <Table size={12} className="mx-auto text-blue-600" />;
-                          else if (col.id === 'reciss') {
+                          else if (col.id === "widg")
                             content = (
-                              <div className="group relative h-full w-full">
-                                <div className="flex h-full items-center justify-between px-1 text-[10px]">
+                              <BarChart2
+                                size={12}
+                                className="mx-auto text-blue-400"
+                              />
+                            );
+                          else if (col.id === "batch")
+                            content = (
+                              <Table
+                                size={12}
+                                className="mx-auto text-blue-600"
+                              />
+                            );
+                          else if (col.id === "reciss") {
+                            content = (
+                              <div className="relative w-full h-full group">
+                                <div className="flex justify-between items-center h-full px-1 text-[10px]">
                                   <span
                                     style={{
-                                      color: rowData.reciss === 'Issue' ? 'red' : 'inherit',
-                                    }}>
-                                    {rowData.reciss || 'Receipt'}
+                                      color:
+                                        rowData.reciss === "Issue"
+                                          ? "red"
+                                          : "inherit",
+                                    }}
+                                  >
+                                    {rowData.reciss || "Receipt"}
                                   </span>
-                                  <ChevronDown size={10} className="text-gray-400" />
+                                  <ChevronDown
+                                    size={10}
+                                    className="text-gray-400"
+                                  />
                                 </div>
                                 <select
-                                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                                  value={rowData.reciss || 'Receipt'}
+                                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                  value={rowData.reciss || "Receipt"}
                                   onChange={(e) =>
-                                    handleInputChange(rowId, 'reciss', e.target.value)
-                                  }>
+                                    handleInputChange(
+                                      rowId,
+                                      "reciss",
+                                      e.target.value
+                                    )
+                                  }
+                                >
                                   <option value="Receipt">Receipt</option>
                                   <option value="Issue">Issue</option>
                                 </select>
                               </div>
                             );
-                          } else if (col.id === 'select') {
+                          } else if (col.id === "select") {
                             content = (
                               <div
-                                className="flex h-full cursor-pointer items-center justify-between px-1 text-[10px] italic text-gray-400 hover:bg-gray-100"
-                                onClick={(e) => handleSelectClick(e, rowId)}>
-                                {rowData.select || 'Select...'} <span>▶</span>
+                                className="text-[10px] italic text-gray-400 flex justify-between cursor-pointer hover:bg-gray-100 h-full items-center px-1"
+                                onClick={(e) => handleSelectClick(e, rowId)}
+                              >
+                                {rowData.select || "Select..."} <span>▶</span>
                               </div>
                             );
-                          } else if (col.id === 'unit' || col.id === 'rateper') {
+                          } else if (
+                            col.id === "unit" ||
+                            col.id === "rateper"
+                          ) {
                             content = (
-                              <div className="group flex h-full min-h-[24px] w-full cursor-pointer items-center justify-between px-1 hover:bg-gray-100">
-                                <span>{rowData[col.id] || ''}</span>
+                              <div className="w-full h-full flex justify-between items-center px-1 cursor-pointer hover:bg-gray-100 group min-h-[24px]">
+                                <span>{rowData[col.id] || ""}</span>
                               </div>
                             );
-                          } else if (['qty', 'rate', 'amount', 'mrp'].includes(col.id)) {
+                          } else if (
+                            ["qty", "rate", "amount", "mrp"].includes(col.id)
+                          ) {
                             content = (
                               <input
                                 type="text"
-                                className="h-full w-full bg-transparent px-1 text-right outline-none"
-                                value={rowData[col.id] || ''}
-                                onChange={(e) => handleInputChange(rowId, col.id, e.target.value)}
+                                className="w-full h-full bg-transparent outline-none px-1 text-right"
+                                value={rowData[col.id] || ""}
+                                onChange={(e) =>
+                                  handleInputChange(
+                                    rowId,
+                                    col.id,
+                                    e.target.value
+                                  )
+                                }
                               />
                             );
                           } else if (
                             [
-                              'desc',
-                              'hsn',
-                              'barcode',
-                              'brand',
-                              'punit',
-                              'pqty',
-                              'minrate',
-                              'netrate',
+                              "desc",
+                              "hsn",
+                              "barcode",
+                              "brand",
+                              "punit",
+                              "pqty",
+                              "minrate",
+                              "netrate",
                             ].includes(col.id)
                           ) {
                             // --- READ ONLY TEXT ---
-                            content = rowData[col.id] || '';
+                            content = rowData[col.id] || "";
                           } else {
                             // --- DEFAULT INPUT ---
                             content = (
                               <input
                                 type="text"
-                                className="h-full w-full bg-transparent px-1 outline-none"
-                                value={rowData[col.id] || ''}
-                                onChange={(e) => handleInputChange(rowId, col.id, e.target.value)}
+                                className="w-full h-full bg-transparent outline-none px-1"
+                                value={rowData[col.id] || ""}
+                                onChange={(e) =>
+                                  handleInputChange(
+                                    rowId,
+                                    col.id,
+                                    e.target.value
+                                  )
+                                }
                               />
                             );
                           }
@@ -791,18 +889,21 @@ const OrderTable: React.FC<OrderTableProps> = ({ rows, setRows, tableData, setTa
                               style={{
                                 width: col.width,
                                 left: isLeft ? getStickyLeft(cIdx) : undefined,
-                                position: isLeft ? 'sticky' : 'static',
-                                zIndex: isLeft ? 10 : 'auto',
-                                backgroundColor: isReadOnly ? '#FAFAFA' : 'white',
+                                position: isLeft ? "sticky" : "static",
+                                zIndex: isLeft ? 10 : "auto",
+                                backgroundColor: isReadOnly
+                                  ? "#FAFAFA"
+                                  : "white",
                                 borderColor: COLORS.border,
                               }}
-                              className={`overflow-hidden whitespace-nowrap border-r px-1 text-xs ${
-                                col.align === 'center'
-                                  ? 'text-center'
-                                  : col.align === 'right'
-                                    ? 'text-right'
-                                    : 'text-left'
-                              } ${isReadOnly ? 'text-gray-500' : ''}`}>
+                              className={`border-r px-1 text-xs overflow-hidden whitespace-nowrap ${
+                                col.align === "center"
+                                  ? "text-center"
+                                  : col.align === "right"
+                                  ? "text-right"
+                                  : "text-left"
+                              } ${isReadOnly ? "text-gray-500" : ""}`}
+                            >
                               {content}
                             </td>
                           );
@@ -814,22 +915,27 @@ const OrderTable: React.FC<OrderTableProps> = ({ rows, setRows, tableData, setTa
                 <tfoot className="sticky bottom-0 z-20 bg-gray-50">
                   <tr className="h-9 font-bold">
                     {columns.map((col, idx) => {
-                      let content: React.ReactNode = '';
-                      if (col.id === 'desc') content = 'TOTAL';
-                      else if (col.id === 'pqty') content = totals.pqty;
-                      else if (col.id === 'qty') content = totals.qty;
-                      else if (col.id === 'amount') content = totals.amount;
+                      let content: React.ReactNode = "";
+                      if (col.id === "desc") content = "TOTAL";
+                      else if (col.id === "pqty") content = totals.pqty;
+                      else if (col.id === "qty") content = totals.qty;
+                      else if (col.id === "amount") content = totals.amount;
 
                       return (
                         <td
                           key={col.id}
                           style={{
-                            left: col.sticky === 'left' ? getStickyLeft(idx) : undefined,
-                            position: col.sticky === 'left' ? 'sticky' : 'static',
-                            zIndex: col.sticky === 'left' ? 30 : 20,
+                            left:
+                              col.sticky === "left"
+                                ? getStickyLeft(idx)
+                                : undefined,
+                            position:
+                              col.sticky === "left" ? "sticky" : "static",
+                            zIndex: col.sticky === "left" ? 30 : 20,
                             backgroundColor: COLORS.background,
                           }}
-                          className="border-r border-t-2 px-1 text-right text-xs">
+                          className="border-r border-t-2 px-1 text-xs text-right"
+                        >
                           {content}
                         </td>
                       );
@@ -843,9 +949,10 @@ const OrderTable: React.FC<OrderTableProps> = ({ rows, setRows, tableData, setTa
       </div>
 
       <AttributePanel
-        billType="SALE"
         isOpen={attributePanelState.visible}
-        onClose={() => setAttributePanelState({ ...attributePanelState, visible: false })}
+        onClose={() =>
+          setAttributePanelState({ ...attributePanelState, visible: false })
+        }
         onSave={handleAttributeSave}
         initialData={attributePanelState.tempItemData}
       />
@@ -859,42 +966,57 @@ const OrderTable: React.FC<OrderTableProps> = ({ rows, setRows, tableData, setTa
               onClick={closePopup}
             />
             <div
-              className="fixed z-[9999] flex flex-col rounded border bg-white shadow-xl"
+              className="fixed z-[9999] bg-white border shadow-xl flex flex-col rounded"
               style={{
                 top: popupState.top,
                 left: popupState.left,
                 borderColor: COLORS.borderDark,
-                width: '500px',
-                maxHeight: '300px',
-                transform: popupState.top + 300 > window.innerHeight ? 'translateY(-100%)' : 'none',
-              }}>
+                width: "500px",
+                maxHeight: "300px",
+                transform:
+                  popupState.top + 300 > window.innerHeight
+                    ? "translateY(-100%)"
+                    : "none",
+              }}
+            >
               <div
-                className="flex h-8 items-center justify-between border-b p-2"
-                style={{ backgroundColor: COLORS.primary, color: COLORS.white }}>
-                <span className="pl-1 text-xs font-bold">Select Item</span>
+                className="flex justify-between items-center p-2 border-b h-8"
+                style={{ backgroundColor: COLORS.primary, color: COLORS.white }}
+              >
+                <span className="font-bold text-xs pl-1">Select Item</span>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleCreateItemClick}
-                    className="rounded p-0.5 transition-colors hover:bg-green-600 hover:text-white"
-                    title="Create New Item">
+                    className="hover:bg-green-600 hover:text-white p-0.5 rounded transition-colors"
+                    title="Create New Item"
+                  >
                     <Plus size={14} />
                   </button>
                   <button
                     onClick={closePopup}
-                    className="rounded p-0.5 transition-colors hover:bg-red-500 hover:text-white">
+                    className="hover:bg-red-500 hover:text-white p-0.5 rounded transition-colors"
+                  >
                     <X size={14} />
                   </button>
                 </div>
               </div>
 
               <div className="flex-1 overflow-auto p-0">
-                <table className="w-full border-collapse text-left text-xs">
-                  <thead className="sticky top-0 z-10 bg-gray-100 shadow-sm">
+                <table className="w-full text-xs text-left border-collapse">
+                  <thead className="sticky top-0 bg-gray-100 z-10 shadow-sm">
                     <tr>
-                      <th className="w-24 border p-1.5 font-semibold text-gray-700">Code</th>
-                      <th className="border p-1.5 font-semibold text-gray-700">Name</th>
-                      <th className="w-20 border p-1.5 font-semibold text-gray-700">HSN</th>
-                      <th className="w-24 border p-1.5 font-semibold text-gray-700">Barcode</th>
+                      <th className="p-1.5 border font-semibold text-gray-700 w-24">
+                        Code
+                      </th>
+                      <th className="p-1.5 border font-semibold text-gray-700">
+                        Name
+                      </th>
+                      <th className="p-1.5 border font-semibold text-gray-700 w-20">
+                        HSN
+                      </th>
+                      <th className="p-1.5 border font-semibold text-gray-700 w-24">
+                        Barcode
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -902,17 +1024,23 @@ const OrderTable: React.FC<OrderTableProps> = ({ rows, setRows, tableData, setTa
                       items.map((item, idx) => (
                         <tr
                           key={item._id || idx}
-                          className="cursor-pointer border-b transition-colors hover:bg-blue-50"
-                          onClick={() => handleItemSelect(item)}>
-                          <td className="border p-1.5">{item.code}</td>
-                          <td className="border p-1.5">{item.name}</td>
-                          <td className="border p-1.5">{item.gst_classfication}</td>
-                          <td className="border p-1.5">{item.barcode}</td>
+                          className="border-b hover:bg-blue-50 cursor-pointer transition-colors"
+                          onClick={() => handleItemSelect(item)}
+                        >
+                          <td className="p-1.5 border">{item.code}</td>
+                          <td className="p-1.5 border">{item.name}</td>
+                          <td className="p-1.5 border">
+                            {item.gst_classfication}
+                          </td>
+                          <td className="p-1.5 border">{item.barcode}</td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={4} className="p-4 text-center text-gray-500">
+                        <td
+                          colSpan={4}
+                          className="p-4 text-center text-gray-500"
+                        >
                           Loading items...
                         </td>
                       </tr>

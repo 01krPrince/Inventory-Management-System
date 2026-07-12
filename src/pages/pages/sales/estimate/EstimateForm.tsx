@@ -33,7 +33,7 @@ const toOptions = (arr: string[]): SimpleOption[] =>
 
 const mockData: MockData = {
   gstTypes: toOptions(["BillOfSupply", "GST Invoice", "Export"]),
-  stores: toOptions(["INVENTORY", "TECH WORLD", "FASHION POINT"]),
+  stores: toOptions(["SPORTS HUB", "TECH WORLD", "FASHION POINT"]),
   customers: toOptions(["John Doe", "Jane Smith", "Acme Corp"]),
   priceCategories: toOptions(["Retail", "Wholesale", "Dealer"]),
   salesmen: toOptions(["Alice", "Bob", "Charlie"]),
@@ -212,7 +212,7 @@ const EstimateForm: React.FC<SalesInvoiceFormProps> = ({
                 <Dropdown<SimpleOption>
                   data={mockData.stores}
                   columns={simpleColumns}
-                  value="INVENTORY"
+                  value="SPORTS HUB"
                   valueKey="name"
                   onChange={handleDropdownChange}
                   placeholder="Select..."

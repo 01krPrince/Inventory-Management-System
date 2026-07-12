@@ -18,7 +18,7 @@ export interface ApiResponse {
 export const fetchBrands = async (): Promise<BrandData[]> => {
   try {
     const response = await api.get<ListResponse<BrandData>>(
-      "" ///brand/getallbrand
+      "/brand/getallbrand"
     );
     return response.data.data || [];
   } catch {
@@ -31,8 +31,7 @@ export const createItemBrand = async (
   payload: CreateBrandPayload
 ): Promise<ApiResponse> => {
   const response = await api.post<ApiResponse>(
-    ""// /brand/add_brand
-    ,
+    "/brand/add_brand",
     payload
   );
   return response.data;
@@ -44,7 +43,7 @@ export const updateItemBrand = async (
   payload: CreateBrandPayload
 ): Promise<ApiResponse> => {
   const response = await api.put<ApiResponse>(
-    `${id}`, // /itembrand/update_item_brand_by_id/${id}
+    `/itembrand/update_item_brand_by_id/${id}`,
     payload
   );
   return response.data;
@@ -53,7 +52,7 @@ export const updateItemBrand = async (
 // --- DELETE ---
 export const deleteItemBrand = async (id: string): Promise<ApiResponse> => {
   const response = await api.delete<ApiResponse>(
-    `${id}` // /itembrand/delete_item_brand_by_id/${id}
+    `/itembrand/delete_item_brand_by_id/${id}`
   );
   return response.data;
 };
@@ -64,7 +63,7 @@ export const getItemBrandById = async (
 ): Promise<BrandData | null> => {
   try {
     const response = await api.get<ApiResponse>(
-      `${id}` // /itembrand/get_item_brand_by_id/${id}
+      `/itembrand/get_item_brand_by_id/${id}`
     );
     return response.data.data || null;
   } catch {
@@ -78,7 +77,7 @@ export const getItemBrandByCode = async (
 ): Promise<BrandData | null> => {
   try {
     const response = await api.get<ApiResponse>(
-      `${code}` // /itembrand/get_item_brand_by_code/${code}
+      `/itembrand/get_item_brand_by_code/${code}`
     );
     return response.data.data || null;
   } catch {

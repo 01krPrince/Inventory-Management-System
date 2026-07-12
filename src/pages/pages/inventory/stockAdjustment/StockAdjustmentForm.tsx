@@ -1,20 +1,26 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { CalenderIcon } from '../../../../components/icons';
-import CrudCustomer from '../../sales/customer/AddNewCustomer';
-import { EditIcon, ArrowLeft } from 'lucide-react';
+import React, { useState, useEffect, useRef } from "react";
+import { CalenderIcon } from "../../../../components/icons";
+import CrudCustomer from "../../sales/customer/AddNewCustomer";
+import { EditIcon, ArrowLeft } from "lucide-react";
 
-import DocumentInventoryModal from '../../../../components/DocumentCategoryInventory';
+import DocumentInventoryModal from "../../../../components/DocumentCategoryInventory";
 import {
   fetchDocumentCategoryInventory,
   DocumentCategoryInventory,
-} from './api/DocumentCategoryInventory';
+} from "./api/DocumentCategoryInventory";
 
-import { fetchAllLocations, LocationMaster as LocationMasterType } from './api/LocationMaster';
-import { LocationMaster } from '../../../../components/LocationMaster';
+import {
+  fetchAllLocations,
+  LocationMaster as LocationMasterType,
+} from "./api/LocationMaster";
+import { LocationMaster } from "../../../../components/LocationMaster";
 
-import { getAllCustomers, Customer } from '../../../../services/sales/customer/customerService';
+import {
+  getAllCustomers,
+  Customer,
+} from "../../../../services/sales/customer/customerService";
 
-import Dropdown, { ColumnDef } from '../../../../components/Dropdown';
+import Dropdown, { ColumnDef } from "../../../../components/Dropdown";
 
 export interface StockAdjustmentHeaderData {
   voucherDate: string;
@@ -47,20 +53,21 @@ interface InputGroupProps {
 }
 
 const Label: React.FC<LabelProps> = ({ children, required }) => (
-  <label className="flex h-[32px] items-center whitespace-nowrap text-[13px] font-medium text-gray-700">
-    {children} {required && <span className="ml-1 text-red-500">*</span>}
+  <label className="text-[13px] text-gray-700 font-medium flex items-center h-[32px] whitespace-nowrap">
+    {children} {required && <span className="text-red-500 ml-1">*</span>}
   </label>
 );
 
 const InputGroup: React.FC<InputGroupProps> = ({ children }) => (
-  <div className="relative flex w-full items-center gap-1">{children}</div>
+  <div className="flex items-center w-full relative gap-1">{children}</div>
 );
 
 const ActionBtn: React.FC<ActionBtnProps> = ({ icon, onClick }) => (
   <button
     onClick={onClick}
     type="button"
-    className="z-10 ml-[-1px] flex h-[32px] w-[32px] items-center justify-center rounded-sm border border-[var(--theme-primary)] bg-[var(--theme-primary)] text-white shadow-sm transition-opacity hover:opacity-90">
+    className="h-[32px] w-[32px] bg-[var(--theme-primary)] text-white flex items-center justify-center rounded-sm border border-[var(--theme-primary)] hover:opacity-90 transition-opacity ml-[-1px] z-10 shadow-sm"
+  >
     {icon}
   </button>
 );
@@ -72,18 +79,19 @@ const VoucherDateInput: React.FC<{
   const inputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <div className="relative h-[32px] w-full">
+    <div className="relative w-full h-[32px]">
       <input
         ref={inputRef}
         type="date"
-        value={value || ''}
+        value={value || ""}
         onChange={onChange}
-        className="h-[32px] w-full rounded-sm border border-gray-300 bg-white px-3 pr-8 text-[13px] uppercase text-gray-700 focus:border-[var(--theme-focus)] focus:outline-none focus:ring-1 focus:ring-[var(--theme-focus)]"
+        className="w-full h-[32px] bg-white border border-gray-300 rounded-sm px-3 text-[13px] text-gray-700 focus:outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)] pr-8 uppercase"
       />
       <button
         type="button"
         onClick={() => inputRef.current?.showPicker()}
-        className="absolute right-0 top-0 flex h-full w-8 items-center justify-center rounded-r-sm border-l border-gray-300 bg-gray-50 transition-colors hover:bg-gray-100">
+        className="absolute right-0 top-0 h-full w-8 flex items-center justify-center bg-gray-50 rounded-r-sm border-l border-gray-300 hover:bg-gray-100 transition-colors"
+      >
         <CalenderIcon />
       </button>
     </div>
@@ -91,14 +99,14 @@ const VoucherDateInput: React.FC<{
 };
 
 const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
-  themeColor = '#0f3c63',
+  themeColor = "#0f3c63",
   onOverlayChange,
   data,
   onDataChange,
 }) => {
   const themeStyles = {
-    '--theme-primary': themeColor,
-    '--theme-focus': '#60a5fa',
+    "--theme-primary": themeColor,
+    "--theme-focus": "#60a5fa",
   } as React.CSSProperties;
 
   const [documentInventoryModal, setDocumentInventoryModal] = useState(false);
@@ -106,26 +114,27 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<Customer | null>(null);
 
-  const [categoryList, setCategoryList] = useState<DocumentCategoryInventory[]>([]);
-  // Use 'any' here temporarily to handle the populated 'party' object flexible structure
-  const [locationList, setLocationList] = useState<any[]>([]);
+  const [categoryList, setCategoryList] = useState<DocumentCategoryInventory[]>(
+    []
+  );
+  const [locationList, setLocationList] = useState<LocationMasterType[]>([]);
   const [customerList, setCustomerList] = useState<Customer[]>([]);
 
   const categoryColumns: ColumnDef<DocumentCategoryInventory>[] = [
-    { header: 'Code', key: 'code', width: 'w-20' },
-    { header: 'Name', key: 'name', width: 'flex-1' },
+    { header: "Code", key: "code", width: "w-20" },
+    { header: "Name", key: "name", width: "flex-1" },
   ];
 
   const locationColumns: ColumnDef<LocationMasterType>[] = [
-    { header: 'Code', key: 'code', width: 'w-20' },
-    { header: 'Name', key: 'name', width: 'flex-1' },
+    { header: "Code", key: "code", width: "w-20" },
+    { header: "Name", key: "name", width: "flex-1" },
   ];
 
   const partyColumns: ColumnDef<Customer>[] = [
-    { header: 'Code', key: 'code', width: 'w-16' },
-    { header: 'Name', key: 'cust_name', width: 'flex-1' },
-    { header: 'Phone', key: 'phone', width: 'w-24' },
-    { header: 'GST', key: 'gst_no', width: 'w-28' },
+    { header: "Code", key: "code", width: "w-16" },
+    { header: "Name", key: "cust_name", width: "flex-1" },
+    { header: "Phone", key: "phone", width: "w-24" },
+    { header: "GST", key: "gst_no", width: "w-28" },
   ];
 
   useEffect(() => {
@@ -162,7 +171,10 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
   };
 
   // --- HELPER: Update Parent State ---
-  const handleFieldChange = (field: keyof StockAdjustmentHeaderData, value: string) => {
+  const handleFieldChange = (
+    field: keyof StockAdjustmentHeaderData,
+    value: string
+  ) => {
     onDataChange({
       ...data,
       [field]: value,
@@ -173,22 +185,8 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
   const getSelectedCategoryObject = () =>
     categoryList.find((cat) => cat._id === data.category) || null;
 
-  // IMPORTANT: This function now flattens the 'party' object if it exists
-  const getSelectedLocationObject = () => {
-    const selected = locationList.find((loc) => loc._id === data.store);
-    if (!selected) return null;
-
-    // Check if 'party' is a populated object (containing keys like cust_name, etc.)
-    // If so, we replace it with just the _id string to prevent React "Object invalid child" errors
-    if (selected.party && typeof selected.party === 'object') {
-      return {
-        ...selected,
-        party: selected.party.code || '', // Flatten object to ID string
-      };
-    }
-
-    return selected;
-  };
+  const getSelectedLocationObject = () =>
+    locationList.find((loc) => loc._id === data.store) || null;
 
   const getSelectedCustomerObject = () =>
     customerList.find((cust) => cust._id === data.party) || null;
@@ -219,13 +217,15 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
   if (isFormOpen) {
     return (
       <div
-        className="w-full rounded-xl border border-gray-200 bg-white p-6 shadow-md"
-        style={themeStyles}>
+        className="w-full bg-white rounded-xl shadow-md border border-gray-200 p-6"
+        style={themeStyles}
+      >
         <div className="mb-4 border-b pb-4">
           <button
             onClick={handleCustomerFormClose}
-            className="flex items-center text-sm font-medium text-gray-600 hover:text-[var(--theme-primary)]">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back
+            className="flex items-center text-sm font-medium text-gray-600 hover:text-[var(--theme-primary)]"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" /> Back
           </button>
         </div>
         <CrudCustomer
@@ -240,12 +240,15 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
   // --- RENDER MAIN FORM ---
   return (
     <>
-      <div style={themeStyles} className="w-full rounded-lg border border-gray-200 bg-white p-6">
-        <div className="grid grid-cols-1 gap-x-12 gap-y-4 md:grid-cols-2">
+      <div
+        style={themeStyles}
+        className="bg-white rounded-lg border border-gray-200 p-6 w-full"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
           {/* LEFT COLUMN */}
           <div className="space-y-4">
             {/* CATEGORY */}
-            <div className="grid grid-cols-12 items-center gap-3">
+            <div className="grid grid-cols-12 gap-3 items-center">
               <div className="col-span-4">
                 <Label required>Category</Label>
               </div>
@@ -255,17 +258,22 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
                     data={categoryList}
                     columns={categoryColumns}
                     value={data.category}
-                    valueKey="code"
-                    onChange={(item) => handleFieldChange('category', item?.code || '')}
+                    valueKey="_id"
+                    onChange={(item) =>
+                      handleFieldChange("category", item?._id || "")
+                    }
                     placeholder="Select Category..."
                   />
-                  <ActionBtn icon={<EditIcon size={16} />} onClick={handleEditCategoryClick} />
+                  <ActionBtn
+                    icon={<EditIcon size={16} />}
+                    onClick={handleEditCategoryClick}
+                  />
                 </InputGroup>
               </div>
             </div>
 
             {/* STORE */}
-            <div className="grid grid-cols-12 items-center gap-3">
+            <div className="grid grid-cols-12 gap-3 items-center">
               <div className="col-span-4">
                 <Label required>Store</Label>
               </div>
@@ -275,11 +283,16 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
                     data={locationList}
                     columns={locationColumns}
                     value={data.store}
-                    valueKey="code"
-                    onChange={(item) => handleFieldChange('store', item?.code || '')}
+                    valueKey="_id"
+                    onChange={(item) =>
+                      handleFieldChange("store", item?._id || "")
+                    }
                     placeholder="Select Store..."
                   />
-                  <ActionBtn icon={<EditIcon size={16} />} onClick={handleEditLocationClick} />
+                  <ActionBtn
+                    icon={<EditIcon size={16} />}
+                    onClick={handleEditLocationClick}
+                  />
                 </InputGroup>
               </div>
             </div>
@@ -288,7 +301,7 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
           {/* RIGHT COLUMN */}
           <div className="space-y-4">
             {/* PARTY (Customer) */}
-            <div className="grid grid-cols-12 items-center gap-3">
+            <div className="grid grid-cols-12 gap-3 items-center">
               <div className="col-span-4">
                 <Label>Party</Label>
               </div>
@@ -298,22 +311,29 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
                     data={customerList}
                     columns={partyColumns}
                     value={data.party}
-                    valueKey="code"
-                    onChange={(item) => handleFieldChange('party', item?.code || '')}
+                    valueKey="_id"
+                    onChange={(item) =>
+                      handleFieldChange("party", item?._id || "")
+                    }
                     placeholder="Select Party..."
                   />
-                  <ActionBtn icon={<EditIcon size={16} />} onClick={handleEditCustomerClick} />
+                  <ActionBtn
+                    icon={<EditIcon size={16} />}
+                    onClick={handleEditCustomerClick}
+                  />
                 </InputGroup>
               </div>
             </div>
-            <div className="grid grid-cols-12 items-center gap-3">
+            <div className="grid grid-cols-12 gap-3 items-center">
               <div className="col-span-4">
                 <Label>Voucher Date</Label>
               </div>
               <div className="col-span-8">
                 <VoucherDateInput
                   value={data.voucherDate}
-                  onChange={(e) => handleFieldChange('voucherDate', e.target.value)}
+                  onChange={(e) =>
+                    handleFieldChange("voucherDate", e.target.value)
+                  }
                 />
               </div>
             </div>
@@ -322,8 +342,8 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
 
         {/* MODALS */}
         {documentInventoryModal && (
-          <div className="fixed inset-0 z-[30] flex items-center justify-center bg-transparent bg-opacity-50 p-4 backdrop-blur-sm">
-            <div className="relative h-auto w-auto overflow-hidden rounded-lg bg-white shadow-2xl">
+          <div className="fixed inset-0 z-[30] flex items-center justify-center bg-transparent bg-opacity-50 backdrop-blur-sm p-4">
+            <div className="w-auto h-auto bg-white rounded-lg shadow-2xl overflow-hidden relative">
               <DocumentInventoryModal
                 isOpen={documentInventoryModal}
                 onClose={() => setDocumentInventoryModal(false)}
@@ -335,11 +355,10 @@ const StockAdjustmentForm: React.FC<SalesInvoiceFormProps> = ({
         )}
 
         {locationMasterModal && (
-          <div className="fixed inset-0 z-[30] flex items-center justify-center bg-transparent bg-opacity-50 p-4 backdrop-blur-sm">
-            <div className="relative overflow-hidden shadow-lg">
+          <div className="fixed inset-0 z-[30] flex items-center justify-center bg-transparent bg-opacity-50 backdrop-blur-sm p-4">
+            <div className="shadow-lg overflow-hidden relative">
               <LocationMaster
                 onClose={() => setLocationMasterModal(false)}
-                // Updated: using the flattened data here
                 initialData={getSelectedLocationObject()}
                 onSuccess={() => loadLocations()}
               />

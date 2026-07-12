@@ -1,651 +1,260 @@
-import React, { useState, useRef } from 'react';
-import { X, Save } from 'lucide-react';
-import SalesInvoiceHeader from './SalesInvoiceHeader';
-import SalesInvoiceForm, { InvoiceFormData, SalesInvoiceFormRef } from './SalesInvoiceForm';
-import ProfitAnalysisModal from '../../../../components/ProfitAnalysisModal';
-import OrderTable, { OrderTableRef } from './OrderTable2';
-import { ToWords } from 'to-words';
-import SaleInvoiceFooter, { SaleInvoiceFooterRef } from './SaleInvoiceFooter';
+import React, { useState, useRef } from "react";
+import { X, Save } from "lucide-react";
 
-// import LedgerAttributes from '../../../../components/LedgerAttributes';
-import InvoiceA4 from '../../../../components/invoiceDownload/InvoiceA4';
-import { fetchProfitAnalysis } from '../../../../services/analysis/profitService';
-import { COLORS } from '../../../../constants/colors';
-import { createSalesInvoice } from './salesInvoiceService';
+import SalesInvoiceHeader from "./SalesInvoiceHeader";
+import SalesInvoiceForm, {
+  InvoiceFormData,
+  SalesInvoiceFormRef,
+} from "./SalesInvoiceForm";
+import ProfitAnalysisModal from "../../../../components/ProfitAnalysisModal";
+import { fetchProfitAnalysis } from "../../../../services/analysis/profitService";
+import OrderTable, { OrderTableRef } from "./OrderTable";
+import InvoiceFooter, { InvoiceFooterRef } from "./InvoiceFooter";
+import LedgerAttributes from "../../../../components/LedgerAttributes";
+import InvoiceA4 from "../../../../components/invoiceDownload/InvoiceA4";
+
+import { COLORS } from "../../../../constants/colors";
+import { createSalesInvoice } from "./salesInvoiceService";
+import { prepareInvoicePayload } from "./invoiceAdapter";
 
 const SalesInvoice: React.FC = () => {
   const [showBillPreview, setShowBillPreview] = useState(false);
   const [generatedBillData, setGeneratedBillData] = useState<any>(null);
-  const [storeCode, setStoreCode] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
-  const [tableItems, setTableItems] = useState<any[]>([]);
 
-  // Profit Analysis State
   const [isAnalysisOpen, setAnalysisOpen] = useState(false);
   const [analysisData, setAnalysisData] = useState<any>(null);
 
-  const [cashCredit, setCashCredit] = useState<string>('Credit');
-
-  // Refs
   const formRef = useRef<SalesInvoiceFormRef>(null);
   const orderTableRef = useRef<OrderTableRef>(null);
-  const footerRef = useRef<SaleInvoiceFooterRef>(null);
-
-  // Sync form state
-  const handleFormChange = (data: InvoiceFormData) => {
-    setCashCredit(data.cashCredit);
-    if (data.storeCode !== storeCode) {
-      setStoreCode(data.storeCode || '');
-    }
-  };
+  const footerRef = useRef<InvoiceFooterRef>(null);
 
   /* =========================
-      PROFIT ANALYSIS
-     ========================== */
-  const handleAnalyzeProfit = async (tableRows: any[]) => {
+     HANDLE SAVE BUTTON
+  ========================== */
+  const handleBottomSaveClick = () => {
+    formRef.current?.triggerSubmit();
+  };
+
+  /// profit analyzesection
+const handleAnalyzeProfit = async (tableRows: any[]) => {
+    // 1. Check if items exist
     if (!tableRows || tableRows.length === 0) {
-      alert('Please add items to the table first.');
+      alert("Please add items to the table first.");
       return;
     }
-    const currentFormData = formRef.current?.getFormData();
-    const currentStore = currentFormData?.store || '';
 
-    const itemsPayload = tableRows.map((row) => ({
-      item: row.data.itemId,
-      quantity: Number(row.data.qty),
-      sellingPrice: Number(row.data.rate),
-    }));
+    // 2. Get Store ID
+    const formData = formRef.current?.getFormData();
+    const storeId = formData?.storeId || formData?.store; 
+
+    if (!storeId) {
+      alert("Please select a Store in the form.");
+      return;
+    }
+
+    // 3. Map Items & Validate IDs
+    const itemsPayload = [];
+    
+    for (const row of tableRows) {
+        // STRICT CHECK: We MUST have the hidden itemId
+        const hiddenId = row.data.itemId; 
+        
+        if (!hiddenId) {
+            console.error("Missing ID for row:", row);
+            alert(`Error: Item '${row.data.desc}' does not have a valid System ID. \n\nPlease DELETE this row and ADD it again to fix it.`);
+            return; // STOP HERE. Don't crash the server.
+        }
+
+        itemsPayload.push({
+          item: hiddenId, // Send the valid Mongo ID
+          quantity: Number(row.data.qty),
+          sellingPrice: Number(row.data.rate) // Sending Total Amount
+        });
+    }
+
+    // 4. Debugging Log (Check your console!)
+    console.log("🚀 Payload being sent:", {
+        store: storeId,
+        items: itemsPayload
+    });
 
     try {
       const response = await fetchProfitAnalysis({
-        store: currentStore,
+        store: storeId,
         items: itemsPayload,
-        totalExpenses: 0,
+        totalExpenses: 0
       });
 
-      if (!response.success) throw new Error('Analysis failed');
+      if (!response.success) throw new Error("Analysis failed");
 
+      // 5. Merge Data
       const mergedItems = response.items.map((apiItem: any) => {
-        const originalRow = tableRows.find((r) => r.data.itemId === apiItem.item);
-        return {
-          ...apiItem,
-          itemName: originalRow?.data.desc || 'Unknown Item',
-          itemCode: originalRow?.data.select || 'N/A',
-        };
+          const originalRow = tableRows.find(r => r.data.itemId === apiItem.item);
+          return {
+             ...apiItem,
+             itemName: originalRow?.data.desc || "Unknown Item",
+             itemCode: originalRow?.data.select || "N/A"
+          };
       });
 
       setAnalysisData({ ...response, items: mergedItems });
       setAnalysisOpen(true);
+
     } catch (error: any) {
-      console.error('Analysis Error:', error);
-      alert(error.message || 'Failed to fetch profit analysis.');
+      console.error("Analysis Error:", error);
+      alert(error.message || "Failed to fetch profit analysis.");
     }
   };
 
   /* =========================
-      SAVE / SUBMIT LOGIC
-     ========================== */
-  const handleBottomSaveClick = () => {
-    // This triggers the submit in the form, which calls handleFormSubmit below
-    formRef.current?.triggerSubmit();
-  };
-
-  // Inside SalseInvoice.tsx
-  //// item amount without including warrenty....
-  // const handleFormSubmit = async (formData: InvoiceFormData) => {
-  //   try {
-  //     setIsSaving(true);
-
-  //     // --- 1. GET TABLE DATA ---
-  //     const tableData = orderTableRef.current?.getTableData();
-  //     if (!tableData || tableData.visibleRows.length === 0) {
-  //       alert("Please add at least one item to the invoice.");
-  //       setIsSaving(false);
-  //       return;
-  //     }
-
-  //     // --- 2. GET FOOTER DATA ---
-  //     const footerData = footerRef.current?.getFooterData();
-  //     const billDiscount = Number(footerData?.discount1 || 0);
-  //     const roundOff = Number(footerData?.roundOff || 0);
-
-  //     // --- 3. PROCESS ITEMS LOOP ---
-  //     let totalTaxAmount = 0;
-  //     let totalItemValue = 0;
-
-  //     const mappedItems = tableData.visibleRows.map((row) => {
-  //       const rawQty = parseFloat(String(row.data.qty || 0));
-  //       const rawRate = parseFloat(String(row.data.rate || 0));
-  //       const taxRate = parseFloat(String(row.data.gstRate || row.data.taxRate || 0));
-  //       const hsn = String(row.data.taxCode || row.data.hsn || "");
-
-  //       const customWarranty = [];
-  //       if (row.data.warrantyDuration) {
-  //         customWarranty.push({
-  //           duration: row.data.warrantyDuration,
-  //           price: row.data.warrantyPrice || "0"
-  //         });
-  //       }
-
-  //       let taxableRate = 0;
-  //       let taxableAmount = 0;
-
-  //       if (formData.tax === "Inclusive") {
-  //         taxableRate = rawRate / (1 + taxRate / 100);
-  //       } else {
-  //         taxableRate = rawRate;
-  //       }
-
-  //       taxableRate = Number(taxableRate.toFixed(2));
-  //       taxableAmount = Number((rawQty * taxableRate).toFixed(2));
-
-  //       const totalTaxForItem = Number(((taxableAmount * taxRate) / 100).toFixed(2));
-  //       const netAmountForItem = Number((taxableAmount + totalTaxForItem).toFixed(2));
-
-  //       let cgst = 0, sgst = 0, igst = 0;
-  //       if (formData.gstType === "Intra") {
-  //         cgst = Number((totalTaxForItem / 2).toFixed(2));
-  //         sgst = Number((totalTaxForItem / 2).toFixed(2));
-  //       } else {
-  //         igst = totalTaxForItem;
-  //       }
-
-  //       totalTaxAmount += totalTaxForItem;
-  //       totalItemValue += taxableAmount;
-
-  //       return {
-  //         itemCode: row.data.select,
-  //         quantity: rawQty,
-  //         rate: taxableRate,
-  //         amount: taxableAmount,
-  //         hsn: hsn,
-  //         taxRate: taxRate,
-  //         cgst, sgst, igst,
-  //         taxAmount: totalTaxForItem,
-  //         netAmount: netAmountForItem,
-  //         description: row.data.desc || row.data.item_name || "Item",
-  //         unit: row.data.unit || "PCS",
-  //         customWarranty: customWarranty
-  //       };
-  //     });
-
-  //     const subTotal = totalItemValue + totalTaxAmount;
-  //     const finalNetAmount = Number((subTotal - billDiscount + roundOff).toFixed(2));
-
-  //     // --- 4. API PAYLOAD ---
-  //     const apiPayload = {
-  //       store: formData.storeCode,
-  //       customer: formData.customerCode,
-  //       date: formData.date,
-  //       remarks: formData.refNo || formData.billToText || "Sales Invoice",
-  //       type: formData.cashCredit,
-  //       gstType: formData.gstType,
-  //       items: mappedItems,
-  //       promoDiscount: 0,
-  //       billDiscount: billDiscount,
-  //       billDiscountPercent: 0,
-  //       taxAmount: Number(totalTaxAmount.toFixed(2)),
-  //       roundOff: roundOff,
-  //       adjustment: 0,
-  //       netAmount: finalNetAmount,
-  //       payments: [{ ledger: "23400002", amount: finalNetAmount }]
-  //     };
-
-  //     console.log("🚀 DEBUG: Sending Payload:", JSON.stringify(apiPayload, null, 2));
-
-  //     if (!apiPayload.store || !apiPayload.customer) {
-  //       alert("Validation Failed: Store Code or Customer Code is missing.");
-  //       setIsSaving(false);
-  //       return;
-  //     }
-
-  //     // --- 5. CALL SERVICE ---
-  //     const response = await createSalesInvoice(apiPayload);
-
-  //     console.log("✅ DEBUG: API Response:", JSON.stringify(response, null, 2));
-
-  //     if (response.success) {
-  //       alert("Invoice Created Successfully!");
-
-  //       formRef.current?.resetForm();
-  //       orderTableRef.current?.clearTable();
-  //       footerRef.current?.resetFooter?.();
-  //       setTableItems([]);
-
-  //       // --- 6. PREPARE PREVIEW DATA ---
-  //       const apiData = response.data;
-  //       const toWords = new ToWords({ localeCode: 'en-IN', converterOptions: { currency: true } });
-  //       const formatDate = (d: string) => d ? new Date(d).toLocaleDateString('en-GB') : "";
-
-  //       const previewData = {
-  //         // --- DYNAMIC STORE NAME ---
-  //         storeName: apiData.storeName || formData.store || "Unknown Store",
-
-  //         // --- REMARKS (COMMENTS) ---
-  //         remarks: apiData.remarks || apiPayload.remarks || "",
-
-  //         invoiceNo: apiData.invoiceNo || "NEW-INV",
-  //         date: formatDate(apiData.date || formData.date),
-  //         billType: apiData.type || formData.cashCredit,
-  //         placeOfSupply: formData.placeOfSupply || "Bihar",
-  //         grlrNo: "",
-  //         destination: "",
-  //         stateCode: "10",
-  //         customer: {
-  //           name: apiData.customerName || formData.customer,
-  //           addressLine: formData.billToText || "",
-  //           cityStateZip: "",
-  //           stateCode: "",
-  //           gstin: formData.gstNo || ""
-  //         },
-  //         items: apiData.items.map((item: any, idx: number) => {
-  //           let warrantyText = "";
-  //           if (item.customWarranty && item.customWarranty.length > 0) {
-  //                 const w = item.customWarranty[0];
-  //                 warrantyText = `${w.duration} Months Warranty`;
-  //                 const wPrice = Number(w.price || 0);
-
-  //                 if (wPrice > 0) {
-  //                     warrantyText = `${w.duration} Months Warranty (₹${wPrice})`;
-  //                 } else {
-  //                     warrantyText = `${w.duration} Months Warranty`;
-  //                 }
-  //           }
-
-  //           // --- FIX: AMOUNT CALCULATION ---
-  //           // Use netAmount if exists, otherwise assume 'amount' is taxable and add 'taxAmount'
-  //           const itemTaxable = Number(item.amount || 0);
-  //           const itemTax = Number(item.taxAmount || 0);
-  //           const totalAmountInclusive = item.netAmount ? Number(item.netAmount) : (itemTaxable + itemTax);
-
-  //           const itemQty = Number(item.quantity || 0);
-
-  //           // Calculate Rate (Total / Qty) to show inclusive rate
-  //           const inclusiveRate = itemQty > 0 ? (totalAmountInclusive / itemQty) : 0;
-
-  //           return {
-  //             id: idx + 1,
-  //             description: item.description || "Item",
-  //             qty: itemQty,
-  //             uom: "PCS",
-  //             rate: inclusiveRate,
-  //             amount: totalAmountInclusive,
-  //             warranty: warrantyText
-  //           };
-  //         }),
-  //         amountInWords: toWords.convert(apiData.netAmount || 0),
-  //         bankDetails: {
-  //           bankName: "HDFC BANK",
-  //           ifsc: "HDFC0001234",
-  //           accountNo: "5020000123456"
-  //         },
-  //         terms: [
-  //           "Goods once sold will not be taken back.",
-  //           "Subject to local jurisdiction."
-  //         ]
-  //       };
-
-  //       setGeneratedBillData(previewData);
-  //       setShowBillPreview(true);
-  //     } else {
-  //       alert("Failed to create invoice: " + (response.message || "Unknown error"));
-  //     }
-
-  //   } catch (error: any) {
-  //     console.error("Submission Error:", error);
-  //     alert("Error: " + error.message);
-  //   } finally {
-  //     setIsSaving(false);
-  //   }
-  // };
-
+     MAIN SUBMIT LOGIC
+  ========================== */
   const handleFormSubmit = async (formData: InvoiceFormData) => {
     try {
       setIsSaving(true);
 
-      // --- 1. GET TABLE DATA ---
+      // 1. Validate Items
       const tableData = orderTableRef.current?.getTableData();
       if (!tableData || tableData.visibleRows.length === 0) {
-        alert('Please add at least one item to the invoice.');
-        setIsSaving(false);
+        alert("Please add at least one item.");
         return;
       }
 
-      // --- 2. GET FOOTER DATA ---
+      // 2. Footer Data
       const footerData = footerRef.current?.getFooterData();
-      const billDiscount = Number(footerData?.discount1 || 0);
-      const roundOff = Number(footerData?.roundOff || 0);
+      if (!footerData) return;
 
-      // A. Calculate Total Expense from Footer
-      // const transportAmt = Number(footerData?.transportAmt || 0);
-      //   const otherDiscAmt = Number(footerData?.otherDiscAmt || 0);
-      //   const adjustmentAmt = Number(footerData?.adjustmentAmt || 0);
+      // 3. Prepare API Payload
+      const apiPayload = prepareInvoicePayload(
+        formData,
+        tableData.visibleRows,
+        footerData,
+      );
 
-      // const totalExpense = transportAmt + otherDiscAmt + adjustmentAmt;
+      console.log("🚀 Sending to API:", apiPayload);
 
-      // B. Trigger Visual Update in Table
-      // if (orderTableRef.current) {
-      //    orderTableRef.current.calculateNetRates(totalExpense);
-      // }
+      // 4. API Call
+      const result = await createSalesInvoice(apiPayload);
 
-      // C. Calculate Expense Ratio for Payload Mapping
-      // We need to re-calculate total item value here to be safe
-      // let totalItemValueForMath = 0;
-      // tableData.visibleRows.forEach((row) => {
-      //    totalItemValueForMath += parseFloat(String(row.data.amount || 0));
-      // });
-
-      // const expenseRatio = totalItemValueForMath > 0 ? (totalExpense / totalItemValueForMath) : 0;
-
-      if (footerRef.current) {
-        const validation = footerRef.current.validatePayment();
-
-        // This says: "If NOT valid, stop and alert."
-        if (!validation.isValid) {
-          alert(validation.message);
-          return;
-        }
+      if (!result?.success) {
+        throw new Error(result?.message || "Invoice creation failed");
       }
 
-      // --- 3. PROCESS ITEMS LOOP ---
-      let totalTaxAmount = 0;
-      let totalItemValue = 0;
-      let totalWarrantyValue = 0;
+      /* =========================
+         BUILD BILL PREVIEW DATA
+      ========================== */
+      const finalBillData = {
+        invoiceNo: result.data.invoiceNo,
+        date: new Date(result.data.date).toLocaleDateString("en-GB"),
+        billType: result.data.gstType,
+        placeOfSupply: formData.placeOfSupply,
+        stateCode: "10",
 
-      const mappedItems = tableData.visibleRows.map((row) => {
-        const rawQty = parseFloat(String(row.data.qty || 0));
-        const rawRate = parseFloat(String(row.data.rate || 0));
-        // const calculatedNetRate = rawRate + (rawRate * expenseRatio);
-        const taxRate = parseFloat(String(row.data.gstRate || row.data.taxRate || 0));
-        const hsn = String(row.data.taxCode || row.data.hsn || '');
-        // const groupName = row.data.group || 'Default';
-        // Warranty Logic
-        let warrantyPrice = 0;
-        const customWarranty = [];
-        if (row.data.warrantyDuration) {
-          warrantyPrice = Number(row.data.warrantyPrice || 0);
-          customWarranty.push({
-            duration: row.data.warrantyDuration,
-            price: row.data.warrantyPrice || '0',
-          });
-        }
+        customer: {
+          name: result.data.customer,
+          addressLine: formData.billToText || "Address not provided",
+          cityStateZip: "",
+          gstin: formData.gstNo,
+        },
 
-        // Tax Logic
-        let taxableRate = 0;
-        if (formData.tax === 'Inclusive') {
-          taxableRate = rawRate / (1 + taxRate / 100);
-        } else {
-          taxableRate = rawRate;
-        }
+        shipping: {
+          name: result.data.customer,
+          addressLine: formData.shipToText || formData.billToText,
+          cityStateZip: "",
+          stateCode: "",
+        },
 
-        taxableRate = Number(taxableRate.toFixed(2));
-        const taxableAmount = Number((rawQty * taxableRate).toFixed(2));
-        const totalTaxForItem = Number(((taxableAmount * taxRate) / 100).toFixed(2));
+        items: result.data.items.map((item: any) => ({
+          id: item.itemCode,
+          description: item.description,
+          qty: item.quantity,
+          uom: "PCS",
+          rate: item.rate,
+          amount: item.amount,
+        })),
 
-        // Net Amount for API (Taxable + Tax + Warranty)
-        const netAmountForItem = Number(
-          (taxableAmount + totalTaxForItem + warrantyPrice).toFixed(2)
-        );
+        amountInWords:
+          "Rupees " + (result.data.receivedAmount || "0") + " Only",
 
-        let cgst = 0,
-          sgst = 0,
-          igst = 0;
-        if (formData.gstType === 'Intra') {
-          cgst = Number((totalTaxForItem / 2).toFixed(2));
-          sgst = Number((totalTaxForItem / 2).toFixed(2));
-        } else {
-          igst = totalTaxForItem;
-        }
+        bankDetails: {
+          bankName: "HDFC Bank",
+          ifsc: "HDFC000123",
+          accountNo: "5020XXXXXXXX",
+        },
 
-        totalTaxAmount += totalTaxForItem;
-        totalItemValue += taxableAmount;
-        totalWarrantyValue += warrantyPrice;
-
-        return {
-          itemCode: row.data.select,
-          quantity: rawQty,
-          rate: taxableRate,
-          amount: taxableAmount,
-          hsn: hsn,
-          taxRate: taxRate,
-          cgst,
-          sgst,
-          igst,
-          taxAmount: totalTaxForItem,
-          netAmount: netAmountForItem,
-          description: row.data.desc || 'Item',
-          unit: row.data.unit || 'PCS',
-          customWarranty: customWarranty,
-          group: row.data.group || 'Default',
-          // netRate: Number(calculatedNetRate.toFixed(2)),
-          // warrantyPrice: warrantyPrice
-        };
-      });
-
-      // Calculate Grand Total
-      const subTotal = totalItemValue + totalTaxAmount + totalWarrantyValue;
-      const finalNetAmount = Number((subTotal - billDiscount + roundOff).toFixed(2));
-      const paymentList = footerData?.payments || [];
-
-      // --- 4. API PAYLOAD ---
-      const apiPayload = {
-        store: formData.storeCode,
-        customer: formData.customerCode,
-        date: formData.date,
-        remarks: formData.refNo || formData.billToText || 'Sales Invoice',
-        type: formData.cashCredit,
-        gstType: formData.gstType,
-        items: mappedItems,
-        promoDiscount: 0,
-        billDiscount: billDiscount,
-        billDiscountPercent: 0,
-        taxAmount: Number(totalTaxAmount.toFixed(2)),
-        roundOff: roundOff,
-        adjustment: 0,
-        netAmount: finalNetAmount,
-        payments: paymentList,
+        terms: [
+          "1. Goods once sold will not be taken back",
+          "2. Subject to Patna Jurisdiction",
+        ],
       };
 
-      console.log('🚀 DEBUG: Sending Payload:', JSON.stringify(apiPayload, null, 2));
-
-      if (!apiPayload.store || !apiPayload.customer) {
-        alert('Validation Failed: Store Code or Customer Code is missing.');
-        setIsSaving(false);
-        return;
-      }
-
-      // --- 5. CALL SERVICE ---
-      const response = await createSalesInvoice(apiPayload);
-      console.log('✅ DEBUG: API Response:', JSON.stringify(response, null, 2));
-
-      if (response.success) {
-        alert('Invoice Created Successfully!');
-
-        formRef.current?.resetForm();
-        orderTableRef.current?.clearTable();
-        footerRef.current?.resetFooter?.();
-        setTableItems([]);
-
-        // --- 6. PREPARE PREVIEW DATA ---
-        const apiData = response.data;
-        const toWords = new ToWords({ localeCode: 'en-IN', converterOptions: { currency: true } });
-        const formatDate = (d: string) => (d ? new Date(d).toLocaleDateString('en-GB') : '');
-
-        // Map Items specifically for the A4 Invoice View
-        const previewItems = apiData.items.map((item: any, idx: number) => {
-          let warrantyText = '';
-          let wPrice = 0;
-
-          if (item.customWarranty && item.customWarranty.length > 0) {
-            const w = item.customWarranty[0];
-            wPrice = Number(w.price || 0);
-            if (wPrice > 0) {
-              warrantyText = `${w.duration} Months Warranty (₹${wPrice})`;
-            } else {
-              warrantyText = `${w.duration} Months Warranty`;
-            }
-          }
-
-          // --- CALCULATION LOGIC FOR PREVIEW ---
-          const itemQty = Number(item.quantity || 0);
-
-          // 1. Get Base Values (Product Only)
-          const itemTaxable = Number(item.amount || 0); // API 'amount' is taxable
-          const itemTax = Number(item.taxAmount || 0);
-          const productTotal = itemTaxable + itemTax; // Price without warranty
-
-          // 2. Original Rate (Product Rate / Qty) -> Matches "Original Item Rate"
-          const originalRate = itemQty > 0 ? productTotal / itemQty : 0;
-
-          // 3. Final Amount (Product + Warranty) -> Matches "Total Amount me add kr ke"
-          const totalLineAmount = productTotal + wPrice;
-
-          return {
-            id: idx + 1,
-            description: item.description || 'Item',
-            qty: itemQty,
-            uom: 'PCS',
-            rate: originalRate, // Shows rate WITHOUT warranty
-            amount: totalLineAmount, // Shows total WITH warranty
-            warranty: warrantyText,
-          };
-        });
-
-        // Calculate the sum of the displayed amounts for the words
-        const totalDisplayAmount = previewItems.reduce(
-          (acc: number, curr: any) => acc + (curr.isWarrantyRow ? curr.amount : curr.amount),
-          0
-        );
-        // Adjust for discount/roundoff from API response
-        const finalDisplayTotal =
-          totalDisplayAmount - (apiData.billDiscount || 0) + (apiData.roundOff || 0);
-
-        const previewData = {
-          storeName: apiData.storeName || formData.store || 'Unknown Store',
-          remarks: apiData.remarks || apiPayload.remarks || '',
-          invoiceNo: apiData.invoiceNo || 'NEW-INV',
-          date: formatDate(apiData.date || formData.date),
-          billType: apiData.type || formData.cashCredit,
-          placeOfSupply: formData.placeOfSupply || 'Bihar',
-          grlrNo: '',
-          destination: '',
-          stateCode: '10',
-          customer: {
-            name: apiData.customerName || formData.customer,
-            addressLine: formData.billToText || '',
-            cityStateZip: '',
-            stateCode: '',
-            gstin: formData.gstNo || '',
-          },
-          items: previewItems,
-          amountInWords: toWords.convert(finalDisplayTotal),
-          bankDetails: {
-            bankName: 'HDFC BANK',
-            ifsc: 'HDFC0001234',
-            accountNo: '5020000123456',
-          },
-          terms: ['Goods once sold will not be taken back.', 'Subject to local jurisdiction.'],
-        };
-
-        setGeneratedBillData(previewData);
-        setShowBillPreview(true);
-      } else {
-        alert('Failed to create invoice: ' + (response.message || 'Unknown error'));
-      }
+      setGeneratedBillData(finalBillData);
+      setShowBillPreview(true);
+      alert("✅ Invoice Saved Successfully!");
     } catch (error: any) {
-      console.error('Submission Error:', error);
-      alert('Error: ' + error.message);
+      console.error(error);
+      alert(error.message || "Something went wrong");
     } finally {
       setIsSaving(false);
     }
   };
 
-  // This function runs automatically whenever Footer expenses change
-  // const handleExpenseChange = (totalExpense: number) => {
-  //   if (orderTableRef.current) {
-  //     // Trigger the calculation in the table immediately
-  //     orderTableRef.current.calculateNetRates(totalExpense);
-  //   }
-  // };
-
   /* =========================
-      UI RENDER
-     ========================== */
-
+     UI
+  ========================== */
   return (
     <div
-      className="flex h-screen flex-col overflow-hidden"
-      style={{ backgroundColor: COLORS.background }}>
+      className="flex flex-col h-screen overflow-hidden"
+      style={{ backgroundColor: COLORS.background }}
+    >
       {/* HEADER */}
       <SalesInvoiceHeader />
 
-      {/* SCROLLABLE CONTENT */}
-      <div className="custom-scrollbar flex-1 overflow-auto px-4 py-3 pb-24">
-        <div className="mx-auto flex max-w-[1400px] flex-col gap-4">
-          <SalesInvoiceForm
-            ref={formRef}
-            onSubmit={handleFormSubmit}
-            onFormChange={handleFormChange}
-          />
-
-          <OrderTable
-            ref={orderTableRef}
-            onAnalyze={handleAnalyzeProfit}
-            vendorCode={''} // Not needed for Sales, but prop is required
-            storeCode={storeCode}
-            onItemsChange={setTableItems}
-          />
-
-          <SaleInvoiceFooter
-            ref={footerRef}
-            cashCredit={cashCredit}
-            currentItems={tableItems}
-            // onExpenseChange={handleExpenseChange}
-          />
-
-          {/* <LedgerAttributes /> */}
+      {/* CONTENT */}
+      <div className="flex-1 overflow-auto px-4 py-3 pb-24 custom-scrollbar">
+        <div className="max-w-[1400px] mx-auto flex flex-col gap-4">
+          <SalesInvoiceForm ref={formRef} onSubmit={handleFormSubmit} />
+          <OrderTable ref={orderTableRef} onAnalyze={handleAnalyzeProfit} />
+          <InvoiceFooter ref={footerRef} />
+          <LedgerAttributes />
         </div>
       </div>
 
-      {/* FOOTER SAVE BAR */}
+      {/* BOTTOM ACTION BAR */}
       <div
-        className="fixed bottom-0 left-0 right-0 z-50 flex h-16 items-center justify-end border-t bg-white px-6 shadow-[0_-6px_10px_-4px_rgba(0,0,0,0.15)]"
-        style={{ borderColor: COLORS.borderDark }}>
-        <div className="mr-auto text-sm font-medium text-gray-500">
-          {tableItems.length} Items | Total:{' '}
-          {tableItems.reduce((acc, curr) => acc + parseFloat(curr.amount || 0), 0).toFixed(2)}
-        </div>
+        className="fixed bottom-0 left-0 right-0 h-16 bg-white border-t shadow-[0_-6px_10px_-4px_rgba(0,0,0,0.15)] flex items-center justify-end px-6 z-50"
+        style={{ borderColor: COLORS.borderDark }}
+      >
         <button
           onClick={handleBottomSaveClick}
           disabled={isSaving}
-          className="flex items-center gap-2 rounded px-6 py-2 text-sm font-bold text-white transition-all hover:brightness-110 active:scale-95 disabled:opacity-60"
-          style={{ backgroundColor: COLORS.primary }}>
+          className="flex items-center gap-2 px-6 py-2 rounded text-sm font-semibold text-white transition-all active:scale-95 disabled:opacity-60"
+          style={{ backgroundColor: COLORS.primary }}
+        >
           <Save size={18} />
-          {isSaving ? 'Saving...' : 'Save Invoice'}
+          {isSaving ? "Saving..." : "Save Invoice"}
         </button>
       </div>
 
-      {/* MODALS */}
-      <ProfitAnalysisModal
-        isOpen={isAnalysisOpen}
-        onClose={() => setAnalysisOpen(false)}
-        data={analysisData}
+      <ProfitAnalysisModal 
+          isOpen={isAnalysisOpen} 
+          onClose={() => setAnalysisOpen(false)} 
+          data={analysisData}
       />
 
+      {/* BILL PREVIEW MODAL */}
       {showBillPreview && generatedBillData && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
-          <div className="relative flex h-[90vh] w-full max-w-4xl flex-col rounded bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b bg-gray-100 px-4 py-3">
-              <h3 className="font-bold text-gray-700">Invoice Generated</h3>
-              <button
-                onClick={() => setShowBillPreview(false)}
-                className="rounded-full bg-red-500 p-1.5 text-white transition-colors hover:bg-red-600">
-                <X size={18} />
-              </button>
-            </div>
-            <div className="custom-scrollbar flex-1 overflow-auto bg-gray-50 p-6">
-              <InvoiceA4 data={generatedBillData} />
-            </div>
+        <div className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-auto">
+          <div className="relative bg-white w-full max-w-4xl h-[90vh] rounded shadow-2xl overflow-auto">
+            <button
+              onClick={() => setShowBillPreview(false)}
+              className="absolute top-3 right-3 bg-red-600 text-white p-2 rounded-full hover:bg-red-700 print:hidden z-50"
+            >
+              <X size={18} />
+            </button>
+
+            <InvoiceA4 data={generatedBillData} />
           </div>
         </div>
       )}

@@ -12,13 +12,11 @@ export interface SalesExecutiveData {
   _id: string;
   name: string;
   code: string;
-  commisionRate: string; 
+  commisionRate: string; // Note: Matches API spelling
   rateOn: string;
   amountType: string;
   email: string;
   phone: string;
-  reporting_to?: string | null; // Added based on Postman
-  underStore?: string | null;   // Added based on Postman
   createdAt?: string;
   updatedAt?: string;
   __v?: number;
@@ -32,15 +30,13 @@ export interface CreateSalesExecutivePayload {
   amountType: string;
   email: string;
   phone: string;
-  reporting_to?: string | null; // Added
-  underStore?: string | null;   // Added
 }
 
 // --- API Functions ---
 
 export const fetchSalesExecutives = async (): Promise<SalesExecutiveData[]> => {
   try {
-    const response = await api.get<ApiResponse<SalesExecutiveData[]>>(""); // /salesexecutive/getall/
+    const response = await api.get<ApiResponse<SalesExecutiveData[]>>("/salesexecutive/getall/");
     if (response.data && response.data.success && Array.isArray(response.data.data)) {
       return response.data.data;
     }
@@ -53,7 +49,7 @@ export const fetchSalesExecutives = async (): Promise<SalesExecutiveData[]> => {
 
 export const fetchSalesExecutiveByCode = async (code: string): Promise<ApiResponse<SalesExecutiveData>> => {
   try {
-    const response = await api.get<ApiResponse<SalesExecutiveData>>(`/${code}`); // /salesexecutive/getbycode/${code}
+    const response = await api.get<ApiResponse<SalesExecutiveData>>(`/salesexecutive/getbycode/${code}`);
     return response.data;
   } catch (error: any) {
     return {
@@ -65,7 +61,7 @@ export const fetchSalesExecutiveByCode = async (code: string): Promise<ApiRespon
 
 export const fetchSalesExecutiveById = async (id: string): Promise<ApiResponse<SalesExecutiveData>> => {
   try {
-    const response = await api.get<ApiResponse<SalesExecutiveData>>(`/${id}`); // /salesexecutive/getbyid/${id}`);
+    const response = await api.get<ApiResponse<SalesExecutiveData>>(`/salesexecutive/getbyid/${id}`);
     return response.data;
   } catch (error: any) {
     return {
@@ -77,7 +73,7 @@ export const fetchSalesExecutiveById = async (id: string): Promise<ApiResponse<S
 
 export const createSalesExecutive = async (payload: CreateSalesExecutivePayload): Promise<ApiResponse> => {
   try {
-    const response = await api.post<ApiResponse>("", payload); // /salesexecutive/create/
+    const response = await api.post<ApiResponse>("/salesexecutive/create/", payload);
     return response.data;
   } catch (error: any) {
     return {
@@ -89,11 +85,11 @@ export const createSalesExecutive = async (payload: CreateSalesExecutivePayload)
 
 /**
  * Update an existing Sales Executive
- * FIX: Endpoint changed to /updatebyid/ to match Postman
+ * Assumed Endpoint: /salesexecutive/update/:id (Adjust if your backend differs)
  */
 export const updateSalesExecutive = async (id: string, payload: CreateSalesExecutivePayload): Promise<ApiResponse> => {
   try {
-    const response = await api.put<ApiResponse>(`/${id}`, payload); // /salesexecutive/updatebyid/${id}
+    const response = await api.put<ApiResponse>(`/salesexecutive/update/${id}`, payload);
     return response.data;
   } catch (error: any) {
     return {
@@ -105,7 +101,7 @@ export const updateSalesExecutive = async (id: string, payload: CreateSalesExecu
 
 export const deleteSalesExecutive = async (id: string): Promise<ApiResponse> => {
   try {
-    const response = await api.delete<ApiResponse>(`/${id}`); // /salesexecutive/deletebyid/${id}
+    const response = await api.delete<ApiResponse>(`/salesexecutive/deletebyid/${id}`);
     return response.data;
   } catch (error: any) {
     return {

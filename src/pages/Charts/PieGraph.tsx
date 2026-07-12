@@ -6,18 +6,21 @@ import {
   Cell,
   Legend,
   ResponsiveContainer,
+  // TooltipProps is still imported but we'll use a specific interface below
 } from "recharts";
 import {
   NameType,
   ValueType,
 } from "recharts/types/component/DefaultTooltipContent";
 
+// Define the shape of a single data entry
 interface ChartDataEntry {
-  [key: string]: any;
-  name: string;
-  value: number;
+  [key: string]: any; // Allows flexible data properties
+  name: string; // Ensure name is always a string for nameKey
+  value: number; // Ensure value is a number for dataKey
 }
 
+// Define the props for the PieGraph component
 interface PieGraphProps {
   data: ChartDataEntry[];
   dataKey?: string;
@@ -29,18 +32,24 @@ interface PieGraphProps {
   height?: number;
 }
 
+// --- FIX: Define explicit props for the custom Tooltip content component ---
 interface CustomTooltipContentProps {
   active?: boolean;
+  // Payload is an array of objects describing the active data points.
+  // We explicitly define its structure to resolve the TS error.
   payload?: Array<{
     name: NameType;
     value: ValueType;
-    payload: ChartDataEntry;
+    payload: ChartDataEntry; // The actual data object
     color: string;
+    // Add index signature for flexibility
     [key: string]: any;
   }>;
   label?: NameType;
 }
+// --- END FIX ---
 
+// Define a set of default colors for the pie slices
 const DEFAULT_COLORS = [
   "#8884d8",
   "#82ca9d",
@@ -50,6 +59,9 @@ const DEFAULT_COLORS = [
   "#ff4560",
 ];
 
+/**
+ * Reusable Pie/Donut Chart component using recharts.
+ */
 export default function PieGraph({
   data,
   dataKey = "value",
@@ -60,6 +72,7 @@ export default function PieGraph({
   showLegend = true,
   height = 300,
 }: PieGraphProps) {
+  // Use the defined interface for props
   if (!data || data.length === 0) {
     return (
       <div className="text-center p-8 text-gray-500">
@@ -68,11 +81,14 @@ export default function PieGraph({
     );
   }
 
+  // Custom Tooltip component, explicitly typed using CustomTooltipContentProps
   const CustomTooltip: FC<CustomTooltipContentProps> = ({
     active,
     payload,
   }) => {
+    // Only proceed if active and payload are truthy and payload has items
     if (active && payload && payload.length) {
+      // The payload item contains the necessary name and value fields
       const item = payload[0];
       return (
         <div
@@ -81,6 +97,7 @@ export default function PieGraph({
             backgroundColor: "rgba(255, 255, 255, 0.9)",
           }}
         >
+          {/* Use item.name and item.value directly for display */}
           <p className="font-bold text-gray-800">{`${item.name} : ${item.value}`}</p>
         </div>
       );
@@ -92,6 +109,7 @@ export default function PieGraph({
     <div style={{ width: "100%", height: height }}>
       <ResponsiveContainer width="100%" height="100%">
         <PieChart margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+          {/* Pass the CustomTooltip component */}
           <Tooltip content={<CustomTooltip />} />
           {showLegend && (
             <Legend

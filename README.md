@@ -1,250 +1,192 @@
-# 🏢 Enterprise ERP & Inventory Management System
+# TailAdmin React - Free React Tailwind Admin Dashboard Template
 
-**Live Demo:**  
-👉 https://inventory-mgmt-dashboard.netlify.app/
+TailAdmin is a free and open-source admin dashboard template built on **React and Tailwind CSS**, providing developers
+with everything they need to create a comprehensive, data-driven back-end,
+dashboard, or admin panel solution for upcoming web projects.
 
-_This is a working demo website showcasing my frontend and full-stack development capabilities through a production-grade ERP dashboard application._
+With TailAdmin, you get access to all the necessary dashboard UI components, elements, and pages required to build a
+feature-rich and complete dashboard or admin panel. Whether you're building dashboard or admin panel for a complex web
+application or a simple website, TailAdmin is the perfect solution to help you get up and running quickly.
 
-**Project Started:** November 1, 2025  
-**Version:** 2.0.2  
+![TailAdmin React.js Dashboard Preview](./banner.png)
 
----
+## Overview
 
-## 📌 Overview
+TailAdmin provides essential UI components and layouts for building feature-rich, data-driven admin dashboards and
+control panels. It's built on:
 
-This project is a modern, enterprise-oriented **ERP (Enterprise Resource Planning) Dashboard** built using React, TypeScript, Vite, and Tailwind CSS.
-
-It is designed as a scalable, modular business management system integrating multiple operational domains such as Sales, Purchase, Finance, Inventory, POS, and Reporting — all within a unified interface.
-
-The application demonstrates advanced UI engineering, modular architecture, reusable data tables, dynamic role management, and multi-tab navigation systems similar to professional ERP platforms.
-
----
-
-## 🏢 Multi-Module ERP Architecture
-
-The system is structured as a unified application containing multiple business modules:
-
-- 📈 Sales Management  
-- 🛒 Purchase Management  
-- 💰 Finance & Accounting  
-- 📦 Inventory Management  
-- 🧾 Point of Sale (POS)  
-- 🏭 Production Management  
-- 🏢 Asset Tracking  
-- 🌐 E-commerce Module  
-- 👥 Employee Management  
-- 📊 Reporting & Analytics  
-
-Each module operates independently while sharing:
-
-- Centralized authentication
-- Dynamic role-based access control
-- Unified UI component system
-- Shared table engine & export utilities
-
----
-
-## 🧠 Key Features
-
-### 🔐 Authentication & Role System
-- Secure login system
-- Dynamic multi-role management controlled by Admin
-- Role-based feature access
-- Protected routes architecture
-
-### 🗂 ERP-Style Tab System
-- Multi-tab navigation within a single page
-- No URL path changes while switching modules
-- Multiple tabs can remain open simultaneously
-- Stateful tab lifecycle management
-
-### 📊 Advanced Data Tables
-- Reusable table engine
-- Sorting, filtering, pagination
-- Column drag & drop reordering
-- Resizable columns
-- Bulk selection & delete
-- Export to CSV / Excel
-- Printable views
-
-### 📈 Visualization & Reporting
-- Real-time charts (ApexCharts & Recharts)
-- World map visualization
-- Financial & analytical dashboards
-
-### 📆 Scheduling & Interaction
-- FullCalendar integration
-- Drag-and-drop functionality
-- Dynamic event handling
-
-### 📦 Inventory Capabilities
-- Item Master
-- Stock Adjustments
-- Inter Branch Transfers
-- POS Invoice support
-- QR Code generation
-
-### 🔊 Smart UX Enhancements
-- Time-based dynamic greeting using Web Speech API  
-  _Example: “Good Morning, Prince Kumar”_
-- Smooth animations via Framer Motion
-- Custom scrollbars and UI transitions
-
----
-
-## 🧰 Tech Stack
-
-### ⚛️ Frontend
 - React 19
 - TypeScript
-- Vite
-- Tailwind CSS 4
-- clsx
-- tailwind-merge
-- tailwind-scrollbar
+- Tailwind CSS
 
-### 📊 Charts & Visualization
-- ApexCharts
-- React ApexCharts
-- Recharts
-- @react-jvectormap/core
-- @react-jvectormap/world
+### Quick Links
 
-### 🧩 UI & Interaction
-- Lucide React
-- React Icons
-- Framer Motion
-- SimpleBar
-- Swiper
+- [✨ Visit Website](https://tailadmin.com)
+- [📄 Documentation](https://tailadmin.com/docs)
+- [⬇️ Download](https://tailadmin.com/download)
+- [🖌️ Figma Design File (Community Edition)](https://www.figma.com/community/file/1214477970819985778)
+- [⚡ Get PRO Version](https://tailadmin.com/pricing)
 
-### 📅 Calendar & Drag-Drop
-- FullCalendar (Core, DayGrid, TimeGrid, List, Interaction)
-- @hello-pangea/dnd
-- react-dnd
-- react-dnd-html5-backend
+### Demos
 
-### 📦 Utilities & Data Handling
-- Axios
-- Firebase
-- UUID
-- to-words
-- html2pdf.js
-- xlsx
+- [Free Version](https://free-react-demo.tailadmin.com/)
+- [Pro Version](https://react-demo.tailadmin.com)
 
-### 🛣 Navigation & SEO
-- React Router v7
-- React Helmet Async
+### Other Versions
 
-### 🛠 Development Tools
-- ESLint
-- TypeScript
-- Vite
-- PostCSS
-- Autoprefixer
+- [HTML Version](https://github.com/TailAdmin/tailadmin-free-tailwind-dashboard-template)
+- [Next.js Version](https://github.com/TailAdmin/free-nextjs-admin-dashboard)
+- [Vue.js Version](https://github.com/TailAdmin/vue-tailwind-admin-dashboard)
 
----
-
-## 🧱 Architectural Highlights
-
-- Modular folder structure
-- Scalable component-driven architecture
-- Reusable table logic hooks
-- Separation of business logic & UI
-- Centralized service layer for API integration
-- ERP-like multi-domain scalability
-
----
-
-## 📁 Project Structure
-
-```
-src/
- ├── assets/
- ├── components/
- ├── context/
- ├── hooks/
- ├── modules/
- │    ├── sales/
- │    ├── purchase/
- │    ├── finance/
- │    ├── inventory/
- │    ├── pos/
- │    ├── production/
- │    ├── assets/
- │    ├── ecommerce/
- │    └── reports/
- ├── services/
- ├── utils/
- └── App.tsx
-```
-
----
-
-## 🚀 Installation
+## Installation
 
 ### Prerequisites
-- Node.js 18+
-- npm or pnpm
 
-### Setup
+To get started with TailAdmin, ensure you have the following prerequisites installed and set up:
 
-```bash
-git clone <your-repository-url>
-cd inventory
-npm install
-npm run dev
-```
+- Node.js 18.x or later (recommended to use Node.js 20.x or later)
 
-### Production Build
+### Cloning the Repository
+
+Clone the repository using the following command:
 
 ```bash
-npm run build
-npm run preview
+git clone https://github.com/TailAdmin/free-react-tailwind-admin-dashboard.git
 ```
 
----
+> Windows Users: place the repository near the root of your drive if you face issues while cloning.
 
-## 🔐 Security Notes
+1. Install dependencies:
 
-- No passwords stored in browser storage
-- Token-based authentication
-- Protected route implementation
-- API validation handled on backend services
+   ```bash
+   npm install
+   # or
+   yarn install
+   ```
 
----
+   > Use the `--legacy-peer-deps` flag, if you face issues while installing.
 
-## 📈 Performance Optimization
+2. Start the development server:
+   ```bash
+   npm run dev
+   # or
+   yarn dev
+   ```
 
-- Vite fast build & hot reload
-- Optimized rendering
-- Component modularization
-- Efficient pagination & data slicing
-- Controlled re-renders using memoization
+## Components
 
----
+TailAdmin is a pre-designed starting point for building a web-based dashboard using React.js and Tailwind CSS. The
+template includes:
 
-## 🎯 Purpose
+- Sophisticated and accessible sidebar
+- Data visualization components
+- Prebuilt profile management and 404 page
+- Tables and Charts(Line and Bar)
+- Authentication forms and input elements
+- Alerts, Dropdowns, Modals, Buttons and more
+- Can't forget Dark Mode 🕶️
 
-This project is built as a professional demonstration of:
+All components are built with React and styled using Tailwind CSS for easy customization.
 
-- Enterprise-level UI architecture
-- ERP-style system design
-- Scalable frontend engineering
-- Multi-module dashboard development
-- Advanced React + TypeScript implementation
+## Feature Comparison
 
----
+### Free Version
 
-## 👨‍💻 Author
+- 1 Unique Dashboard
+- 30+ dashboard components
+- 50+ UI elements
+- Basic Figma design files
+- Community support
 
-**Prince Kumar**  
-Full Stack Developer  
+### Pro Version
 
-GitHub: https://github.com/<your-username>  
-LinkedIn: https://linkedin.com/in/<your-username>  
+- 7 Unique Dashboards: Analytics, Ecommerce, Marketing, CRM, SaaS, Stocks, Logistics (more coming soon)
+- 500+ dashboard components and UI elements
+- Complete Figma design file
+- Email support
 
----
+To learn more about pro version features and pricing, visit our [pricing page](https://tailadmin.com/pricing).
 
-## 📄 License
+## Changelog
 
-This project is created for portfolio and demonstration purposes.
+### Version 2.0.2 - [March 25, 2025]
+
+- Upgraded to React 19
+- Included overrides for packages to prevent peer dependency errors.
+- Migrated from react-flatpickr to flatpickr package for React 19 support
+
+### Version 2.0.1 - [February 27, 2025]
+
+#### Update Overview
+
+- Upgraded to Tailwind CSS v4 for better performance and efficiency.
+- Updated class usage to match the latest syntax and features.
+- Replaced deprecated class and optimized styles.
+
+#### Next Steps
+
+- Run npm install or yarn install to update dependencies.
+- Check for any style changes or compatibility issues.
+- Refer to the Tailwind CSS v4 [Migration Guide](https://tailwindcss.com/docs/upgrade-guide) on this release. if needed.
+- This update keeps the project up to date with the latest Tailwind improvements. 🚀
+
+### Version 2.0.0 - [February 2025]
+
+A major update with comprehensive redesign and modern React patterns implementation.
+
+#### Major Improvements
+
+- Complete UI redesign with modern React patterns
+- New features: collapsible sidebar, chat, and calendar
+- Improved performance and accessibility
+- Updated data visualization using ApexCharts
+
+#### Key Features
+
+- Redesigned dashboards (Ecommerce, Analytics, Marketing, CRM)
+- Enhanced navigation with React Router integration
+- Advanced tables with sorting and filtering
+- Calendar with drag-and-drop support
+- New UI components and improved existing ones
+
+#### Breaking Changes
+
+- Updated sidebar component API
+- Migrated charts to ApexCharts
+- Revised authentication system
+
+[Read more](https://tailadmin.com/docs/update-logs/react) on this release.
+
+### Version 1.3.7 - [June 20, 2024]
+
+#### Enhancements
+
+1. Remove Repetition of DefaultLayout in every Pages
+2. Add ClickOutside Component for reduce repeated functionality in Header Message, Notification and User Dropdowns.
+
+### Version 1.3.6 - [Jan 31, 2024]
+
+#### Enhancements
+
+1. Integrate flatpickr in [Date Picker/Form Elements]
+2. Change color after select an option [Select Element/Form Elements].
+3. Make it functional [Multiselect Dropdown/Form Elements].
+4. Make best value editable [Pricing Table One/Pricing Table].
+5. Rearrange Folder structure.
+
+### Version 1.2.0 - [Apr 28, 2023]
+
+- Add Typescript in TailAdmin React.
+
+### Version 1.0.0 - Initial Release - [Mar 13, 2023]
+
+- Initial release of TailAdmin React.
+
+## License
+
+TailAdmin React.js Free Version is released under the MIT License.
+
+## Support
+
+If you find this project helpful, please consider giving it a star on GitHub. Your support helps us continue developing
+and maintaining this template.

@@ -22,7 +22,7 @@ interface SalesExecutiveFormData {
   name: string;
   reportingTo: string;
   underStore: string;
-  commissionRate: string;
+  commissionRate: string; // Internal state spelling
   rateOn: string;
   amountType: string;
   email: string;
@@ -52,7 +52,7 @@ const mockOptions = {
   ],
   rateOnOptions: [
     { name: "Qty", code: "QTY" },
-    { name: "Net Amount", code: "NET" }, // Updated to match your example "Net Amount"
+    { name: "Invoice Amount", code: "INV" },
   ],
   amountTypes: [
     { name: "Taxable", code: "TAX" },
@@ -61,7 +61,7 @@ const mockOptions = {
   ],
 };
 
-// --- Helper Component ---
+// --- Helper Component DEFINED OUTSIDE ---
 const FormRow = ({
   label,
   children,
@@ -98,10 +98,13 @@ const SalesExecutiveMaster: React.FC<SalesExecutiveMasterProps> = ({
   onClose,
   initialData,
   onSuccess,
-  index = 50,
+  index = 50, // 2. Default Index
 }) => {
+  // 3. Logic: Modal layer + Dropdown layer
   const overlayZIndex = index + 10;
+  // This ensures dropdowns are 50 points higher than the modal they live in
   const dropdownZIndex = overlayZIndex + 50;
+  // This ensures the LocationMaster modal is on top of this current modal
   const nestedModalZIndex = overlayZIndex + 20;
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -137,6 +140,7 @@ const SalesExecutiveMaster: React.FC<SalesExecutiveMasterProps> = ({
     }
   };
 
+  // --- FIX: Fetch Stores on Mount ---
   useEffect(() => {
     loadStores();
   }, []);
@@ -147,9 +151,8 @@ const SalesExecutiveMaster: React.FC<SalesExecutiveMasterProps> = ({
         _id: initialData._id,
         code: initialData.code || "0001",
         name: initialData.name || "",
-        // Fix: Map reporting_to (from API) to reportingTo (local state)
-        reportingTo: initialData.reporting_to || "",
-        underStore: initialData.underStore || "",
+        reportingTo: "",
+        underStore: "",
         commissionRate: initialData.commisionRate || "0",
         rateOn: initialData.rateOn || "Qty",
         amountType: initialData.amountType || "Percentage",
@@ -170,8 +173,6 @@ const SalesExecutiveMaster: React.FC<SalesExecutiveMasterProps> = ({
       return;
     }
     setIsSubmitting(true);
-
-    // Fix: Include missing fields in payload
     const payload: CreateSalesExecutivePayload = {
       name: formData.name,
       commisionRate: formData.commissionRate,
@@ -179,14 +180,11 @@ const SalesExecutiveMaster: React.FC<SalesExecutiveMasterProps> = ({
       amountType: formData.amountType,
       email: formData.email,
       phone: formData.phone,
-      reporting_to: formData.reportingTo || null,
-      underStore: formData.underStore || null,
     };
 
     try {
       let response;
       if (formData._id) {
-        // Calls the FIXED update function
         response = await updateSalesExecutive(formData._id, payload);
       } else {
         response = await createSalesExecutive(payload);
@@ -196,7 +194,7 @@ const SalesExecutiveMaster: React.FC<SalesExecutiveMasterProps> = ({
         if (onSuccess) onSuccess();
         onClose();
       } else {
-        alert("Operation failed: " + (response.message || "Unknown error"));
+        alert("Operation failed: " + response.message);
       }
     } catch (error) {
       console.error("Save error:", error);
@@ -234,11 +232,13 @@ const SalesExecutiveMaster: React.FC<SalesExecutiveMasterProps> = ({
 
   const themeColor = "#0f3c63";
 
+  // --- Dropdown Config ---
   const defaultColumns: ColumnDef<DropdownItem>[] = [
     { header: "Code", key: "code", width: "w-1/3" },
     { header: "Name", key: "name", width: "w-full" },
   ];
 
+  // --- Helper to get selected Store Object ---
   const getSelectedStoreData = (): LocationMasterType | null => {
     if (!formData.underStore) return null;
     return storeList.find((s) => s.name === formData.underStore) || null;
@@ -251,6 +251,7 @@ const SalesExecutiveMaster: React.FC<SalesExecutiveMasterProps> = ({
   return (
     <div
       className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      // 4. Apply Z-Index to the Modal Wrapper
       style={{ zIndex: overlayZIndex }}
     >
       <div className="w-full max-w-xl bg-white border border-gray-300 shadow-2xl rounded-sm overflow-hidden flex flex-col max-h-[90vh]">
@@ -432,6 +433,7 @@ const SalesExecutiveMaster: React.FC<SalesExecutiveMasterProps> = ({
 
       {/* --- Location Master Popup (Stacked ON TOP of Counter Form) --- */}
       {isLocationMasterOpen && (
+        // Use Dynamic Indexing
         <div
           className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
           style={{ zIndex: nestedModalZIndex }}

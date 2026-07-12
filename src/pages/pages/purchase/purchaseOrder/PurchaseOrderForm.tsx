@@ -195,7 +195,7 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
 
   const [formData, setFormData] = useState({
     gstType: "TaxInvoice",
-    store: "INVENTORY",
+    store: "SPORTS HUB",
     vendor: "",
     email: "",
     deliveryDate: "26/12/2025",
@@ -231,7 +231,7 @@ const PurchaseOrderForm: React.FC<POSOrderFormProps> = ({
     } catch (err) {
       console.error(err);
       setLocationList([
-        { code: "ST01", name: "INVENTORY" },
+        { code: "ST01", name: "SPORTS HUB" },
         { code: "ST02", name: "WAREHOUSE A" },
       ] as any);
     }

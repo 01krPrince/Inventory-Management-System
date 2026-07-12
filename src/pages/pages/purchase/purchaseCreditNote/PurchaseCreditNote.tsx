@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
-import PurchaseBillHeader from './PurchaseBillHeader';
-import PurchaseCreditNoteForm from './PurchaseCreditNoteForm';
-import OrderTable from '../purchaseOrder/OrderTable';
-import PurchaseBillFooter from './PurchaseBillFooter';
-import { COLORS } from '../../../../constants/colors';
-import LedgerAttributes from '../../../../components/LedgerAttributes';
+import React, { useState } from "react";
+import PurchaseBillHeader from "./PurchaseBillHeader";
+import PurchaseCreditNoteForm from "./PurchaseCreditNoteForm";
+import OrderTable from "../purchaseOrder/OrderTable";
+import PurchaseBillFooter from "./PurchaseBillFooter";
+import { COLORS } from "../../../../constants/colors";
+import LedgerAttributes from "../../../../components/LedgerAttributes";
 
 import GoodsRecieptNoteLogistics, {
   LogisticsData,
-} from '../goodsRecieptNote/GoodsRecieptNoteLogistics';
+} from "../goodsRecieptNote/GoodsRecieptNoteLogistics";
 
 interface RowData {
   [key: string]: string | number;
@@ -20,69 +20,69 @@ const PurchaseCreditNote: React.FC = () => {
 
   const [logisticsData, setLogisticsData] = useState<LogisticsData>({
     // Left Column
-    destination: '',
-    shippingMode: 'Road',
-    shippingCompany: '',
-    shippingCompanyAddress: '',
-    shippingTrackingNo: '',
-    shippingDate: new Date().toISOString().split('T')[0],
-    shippingCharges: '0',
-    vehicleNo: '',
-    chargeType: 'Paid',
-    documentThrough: '',
+    destination: "",
+    shippingMode: "Road",
+    shippingCompany: "",
+    shippingCompanyAddress: "",
+    shippingTrackingNo: "",
+    shippingDate: new Date().toISOString().split("T")[0],
+    shippingCharges: "0",
+    vehicleNo: "",
+    chargeType: "Paid",
+    documentThrough: "",
 
     // Middle Column
-    portOfLanding: '',
-    portOfDischarge: '',
-    noOfPackets: '0',
-    weight: '0',
+    portOfLanding: "",
+    portOfDischarge: "",
+    noOfPackets: "0",
+    weight: "0",
 
     // Middle Column (Continued)
-    portAddressForEway: '',
-    portStateForEway: '',
-    distance: '',
-    ewayInvoiceNo: '',
-    ewayInvoiceDate: '',
-    ewayCancelDate: '',
-    irnNo: '',
-    qrCode: '',
-    irnCancelDate: '',
-    irnCancelReason: '',
-    ackNo: '',
-    ackDate: '',
-    billOfEntryNum: '',
-    billOfEntryDate: '',
+    portAddressForEway: "",
+    portStateForEway: "",
+    distance: "",
+    ewayInvoiceNo: "",
+    ewayInvoiceDate: "",
+    ewayCancelDate: "",
+    irnNo: "",
+    qrCode: "",
+    irnCancelDate: "",
+    irnCancelReason: "",
+    ackNo: "",
+    ackDate: "",
+    billOfEntryNum: "",
+    billOfEntryDate: "",
 
     // Right Column (Overhead Expenses) - Missing Tender Fields Added Below
-    custDuty: '0.00',
-    custDutyAccount: '',
+    customDuty: "0.00",
+    customDutyTender: "", // Added this
 
-    chaPayment: '0.00',
-    chaPaymentAccount: '',
+    chaPayment: "0.00",
+    chaPaymentTender: "", // Added this
 
-    freight: '0.00',
-    freightAccount: '',
+    freight: "0.00",
+    freightTender: "", // Added this
 
-    insurance: '0.00',
-    insuranceAccount: '',
+    insurance: "0.00",
+    insuranceTender: "", // Added this
 
-    handling: '0.00',
-    handlingAccount: '',
+    handling: "0.00",
+    handlingTender: "", // Added this
 
-    docCharges: '0.00',
-    docChargesAccount: '',
+    documentationCharges: "0.00",
+    documentationChargesTender: "", // Added this
 
-    bankCharges: '0.00',
-    bankChargesAccount: '',
+    bankCharges: "0.00",
+    bankChargesTender: "", // Added this
 
-    custExp: '0.00',
-    custExpAccount: '',
+    customExpenses: "0.00",
+    customExpensesTender: "", // Added this
 
-    loadingUnloading: '0.00',
-    loadingUnloadingAccount: '',
+    loadingUnloading: "0.00",
+    loadingUnloadingTender: "", // Added this
 
-    otherCharges: '0.00',
-    otherChargesAccount: '',
+    otherCharges: "0.00",
+    otherChargesTender: "", // Added this
   });
 
   const handleLogisticsChange = (newData: LogisticsData) => {
@@ -92,7 +92,8 @@ const PurchaseCreditNote: React.FC = () => {
   return (
     <div
       style={{ backgroundColor: COLORS.background }}
-      className="flex flex-col overflow-hidden bg-gray-100">
+      className="flex flex-col bg-gray-100 overflow-hidden"
+    >
       <PurchaseBillHeader />
 
       <div className="flex-1 overflow-auto p-4">
@@ -110,7 +111,10 @@ const PurchaseCreditNote: React.FC = () => {
 
           <LedgerAttributes />
 
-          <GoodsRecieptNoteLogistics data={logisticsData} onChange={handleLogisticsChange} />
+          <GoodsRecieptNoteLogistics
+            data={logisticsData}
+            onChange={handleLogisticsChange}
+          />
         </div>
       </div>
     </div>

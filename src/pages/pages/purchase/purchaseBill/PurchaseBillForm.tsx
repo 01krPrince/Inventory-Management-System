@@ -1,29 +1,30 @@
-import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { DocumentIcon, ChevronDownIcon, ChevronUpIcon } from '../../../../components/icons';
-import { EditIcon } from 'lucide-react';
-import Dropdown, { ColumnDef } from '../../../../components/Dropdown';
-import { LocationMaster } from '../../../../components/LocationMaster';
-import CrudVendor from '../vendor/pages/AddNewVendor';
-import NameAndCodeMaster from '../../../../components/NameAndCodeComponent';
-import { getAllVendors } from '../vendor/api/vendorService';
-import { fetchAllLocations } from '../../inventory/stockAdjustment/api/LocationMaster';
-import DateInput from '../../../../components/DateInput';
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from "react";
+import {
+  DocumentIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+} from "../../../../components/icons";
+import { EditIcon, BarChart2 } from "lucide-react";
+import Dropdown, { ColumnDef } from "../../../../components/Dropdown";
+import DateInput from "../../../../components/DateInput";
+import { LocationMaster } from "../../../../components/LocationMaster";
+import CrudVendor from "../vendor/pages/AddNewVendor";
+import NameAndCodeMaster from "../../../../components/NameAndCodeComponent";
+
+import { getAllVendors } from "../vendor/api/vendorService";
+import {
+  fetchAllLocations,
+  LocationMaster as LocationMasterType,
+} from "../../inventory/stockAdjustment/api/LocationMaster";
+
+// --- Types & Interfaces ---
 
 export interface PurchaseBillFormData {
   gstType: string;
-  cashCredit: string;
-
-  ecommerceInvoiceNo?: string;
-  contactNo?: string;
-
   store: string;
   storeId?: string;
-  storeCode?: string;
-
   vendor: string;
   vendorId?: string;
-  vendorCode?: string;
-
   priceCategory: string;
   tax: string;
   placeOfSupply: string;
@@ -32,11 +33,11 @@ export interface PurchaseBillFormData {
   email?: string;
   orderNo?: string;
   refNo?: string;
-
   orderDate: string;
   refDate: string;
   dueDate: string;
 
+  // --- NEW FIELDS FOR AUTO-FILL ---
   billToText?: string;
   shipToText?: string;
   gstNo?: string;
@@ -57,46 +58,36 @@ interface ActionBtnProps {
 interface PurchaseBillFormProps {
   themeColor?: string;
   onSubmit?: (data: PurchaseBillFormData) => void;
-  onFormChange?: (data: PurchaseBillFormData) => void;
 }
 
 export interface PurchaseBillFormRef {
   triggerSubmit: () => void;
   getFormData: () => PurchaseBillFormData;
-  resetForm: () => void; // <--- Added resetForm to interface
 }
+
+// --- Helper Components ---
 
 const Label: React.FC<{ children: React.ReactNode; required?: boolean }> = ({
   children,
   required,
 }) => (
-  <label className="flex h-[30px] items-center whitespace-nowrap text-[13px] font-medium text-gray-700">
-    {children} {required && <span className="ml-1 text-red-500">*</span>}
+  <label className="text-[13px] text-gray-700 font-medium flex items-center h-[30px] whitespace-nowrap">
+    {children} {required && <span className="text-red-500 ml-1">*</span>}
   </label>
 );
 
-const toOptions = (arr: string[]): SimpleOption[] => arr.map((s) => ({ name: s }));
+const toOptions = (arr: string[]): SimpleOption[] =>
+  arr.map((s) => ({ name: s }));
 
 const mockData = {
-  gstTypes: toOptions([
-    'TaxInvoice',
-    'Import',
-    'ReverseCharges',
-    'BillOfSupply_Compounding',
-    'BillOfSupply_UnRegistered',
-    'BillOfSupply_Exempted',
-    'BillOfSupply_NilRated',
-    'BillOfSupply_NonGST',
-    'BranchTransfer',
-  ]),
-  cashCredit: toOptions(['Cash', 'Credit']),
-  priceCategories: toOptions(['Wholesale', 'Retail', 'Distributor']),
-  taxOptions: toOptions(['Inclusive', 'Exclusive']),
-  paymentTerms: toOptions(['Net 30', 'Immediate', 'Cash on Delivery']),
+  gstTypes: toOptions(["TaxInvoice", "BillOfSupply", "Export"]),
+  priceCategories: toOptions(["Wholesale", "Retail", "Distributor"]),
+  taxOptions: toOptions(["Inclusive", "Exclusive"]),
+  paymentTerms: toOptions(["Net 30", "Immediate", "Cash on Delivery"]),
 };
 
 const InputGroup: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="relative flex w-full items-center gap-1">{children}</div>
+  <div className="flex items-center w-full relative gap-1">{children}</div>
 );
 
 const Input: React.FC<{
@@ -107,10 +98,10 @@ const Input: React.FC<{
 }> = ({ value, placeholder, readOnly, onChange }) => (
   <input
     type="text"
-    className={`h-[30px] w-full rounded-sm border border-gray-300 bg-white px-2 text-[13px] text-gray-700 focus:border-[var(--theme-focus)] focus:outline-none focus:ring-1 focus:ring-[var(--theme-focus)] ${
-      readOnly ? 'bg-gray-50' : ''
+    className={`w-full h-[30px] bg-white border border-gray-300 rounded-sm px-2 text-[13px] text-gray-700 focus:outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)] ${
+      readOnly ? "bg-gray-50" : ""
     }`}
-    value={value || ''}
+    value={value || ""}
     onChange={onChange}
     placeholder={placeholder}
     readOnly={readOnly}
@@ -121,7 +112,8 @@ const ActionBtn: React.FC<ActionBtnProps> = ({ icon, onClick }) => (
   <button
     onClick={onClick}
     type="button"
-    className="z-10 ml-[-1px] flex h-[32px] w-[32px] items-center justify-center rounded-sm border border-[var(--theme-primary)] bg-[var(--theme-primary)] text-white shadow-sm transition-opacity hover:opacity-90">
+    className="h-[32px] w-[32px] bg-[var(--theme-primary)] text-white flex items-center justify-center rounded-sm border border-[var(--theme-primary)] hover:opacity-90 transition-opacity ml-[-1px] z-10 shadow-sm"
+  >
     {icon}
   </button>
 );
@@ -132,221 +124,179 @@ const AccordionSection: React.FC<{
   onToggle: () => void;
   children: React.ReactNode;
 }> = ({ title, isOpen, onToggle, children }) => (
-  <div className="mb-2 rounded border border-gray-200 bg-white">
+  <div className="mb-2 border border-gray-200 rounded bg-white">
     <div
       onClick={onToggle}
-      className="flex cursor-pointer select-none items-center justify-between border-b border-transparent px-3 py-2 transition-colors hover:bg-gray-50">
-      <div className="flex items-center gap-2 text-sm font-bold text-[var(--theme-secondary)]">
-        <DocumentIcon className="h-5 w-5" />
+      className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-50 transition-colors select-none border-b border-transparent"
+    >
+      <div className="flex items-center gap-2 text-[var(--theme-secondary)] font-bold text-sm">
+        <DocumentIcon className="w-5 h-5" />
         <span>{title}</span>
       </div>
       <div className="text-[var(--theme-secondary)]">
-        {isOpen ? <ChevronUpIcon className="h-5 w-5" /> : <ChevronDownIcon className="h-5 w-5" />}
+        {isOpen ? (
+          <ChevronUpIcon className="w-5 h-5" />
+        ) : (
+          <ChevronDownIcon className="w-5 h-5" />
+        )}
       </div>
     </div>
-    {isOpen && <div className="border-t border-gray-100 p-3">{children}</div>}
+    {isOpen && <div className="p-3 border-t border-gray-100">{children}</div>}
   </div>
 );
 
+// --- MAIN COMPONENT ---
 const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
-  ({ themeColor = '#0f3c63', onSubmit, onFormChange }, ref) => {
+  ({ themeColor = "#0f3c63", onSubmit }, ref) => {
+    // --- State ---
     const [storeOptions, setStoreOptions] = useState<SimpleOption[]>([]);
     const [vendorOptions, setVendorOptions] = useState<SimpleOption[]>([]);
-
     const [rawVendors, setRawVendors] = useState<any[]>([]);
-    const [rawStores, setRawStores] = useState<any[]>([]);
 
     const [isBillToOpen, setBillToOpen] = useState<boolean>(false);
     const [isShipToOpen, setShipToOpen] = useState<boolean>(false);
     const [activeModal, setActiveModal] = useState<string | null>(null);
 
-    const getToday = () => new Date().toISOString().split('T')[0];
-
     const [formData, setFormData] = useState<PurchaseBillFormData>({
-      gstType: 'TaxInvoice',
-      cashCredit: 'Credit',
-      store: '',
-      storeId: '',
-      storeCode: '',
-      vendor: '',
-      vendorId: '',
-      vendorCode: '',
-      priceCategory: 'Wholesale',
-      tax: 'Inclusive',
-      placeOfSupply: '',
-      shipTo: '',
-      paymentTerms: '',
-      email: '',
-      orderNo: '',
-      refNo: '',
-      orderDate: getToday(),
-      refDate: getToday(),
-      dueDate: getToday(),
-      billToText: '',
-      shipToText: '',
-      gstNo: '',
-      contactPerson: '',
+      gstType: "TaxInvoice",
+      store: "",
+      vendor: "",
+      priceCategory: "Wholesale",
+      tax: "Inclusive",
+      placeOfSupply: "",
+      shipTo: "",
+      paymentTerms: "",
+      email: "",
+      orderNo: "",
+      refNo: "",
+      orderDate: "",
+      refDate: "",
+      dueDate: "",
+      billToText: "",
+      shipToText: "",
+      gstNo: "",
+      contactPerson: "",
     });
 
     const simpleColumns: ColumnDef<SimpleOption>[] = [
-      { header: 'Name', key: 'name', width: 'flex-1' },
+      {
+        header: "Name",
+        key: "name",
+        width: "flex-1",
+      },
     ];
 
     const themeStyles = {
-      '--theme-primary': themeColor,
-      '--theme-secondary': themeColor,
-      '--theme-focus': '#60a5fa',
+      "--theme-primary": themeColor,
+      "--theme-secondary": themeColor,
+      "--theme-focus": "#60a5fa",
     } as React.CSSProperties;
 
-    const updateFormState = (updates: Partial<PurchaseBillFormData>) => {
-      setFormData((prev) => {
-        const newData = { ...prev, ...updates };
-        if (onFormChange) {
-          onFormChange(newData);
-        }
-        return newData;
-      });
-    };
-
+    // --- Load Data ---
     useEffect(() => {
       loadDropdownData();
     }, []);
 
     const loadDropdownData = async () => {
       try {
+        // 1. Stores (used for store and shipTo)
         const storesData = await fetchAllLocations();
-        setRawStores(storesData);
-        const mappedStores = storesData.map((item: any) => ({
-          name: item.name || item.storeName,
+        const mappedStores = storesData.map((item: LocationMasterType) => ({
+          name: item.name,
           id: item._id,
-          code: item.storeCode || item.code || '',
         }));
         setStoreOptions(mappedStores);
-
         if (mappedStores.length > 0) {
-          const firstStore = storesData[0];
-          updateFormState({
+          setFormData((prev) => ({
+            ...prev,
             store: mappedStores[0].name,
             storeId: mappedStores[0].id,
-            storeCode: (firstStore as any).code || (firstStore as any).storeCode || '',
-          });
+          }));
         }
 
+        // 2. Vendors
         const vendorsData = await getAllVendors();
-        setRawVendors(vendorsData);
+        setRawVendors(vendorsData); // Store raw data for auto-fill logic
+        
+        // --- FIX: Map 'vend_name' from API to 'name' for Dropdown ---
         const mappedVendors = vendorsData.map((item: any) => ({
-          name: item.vend_name || item.name,
+          name: item.vend_name, // Changed from item.name to item.vend_name
           id: item._id,
         }));
         setVendorOptions(mappedVendors);
       } catch (error) {
-        console.error('Error loading dropdowns', error);
+        console.error("Error loading dropdowns", error);
       }
     };
 
-    const handleDropdownChange = (field: keyof PurchaseBillFormData, item: SimpleOption | null) => {
-      const value = item?.name || '';
-      let updates: Partial<PurchaseBillFormData> = { [field]: value };
+    // --- Dynamic Handler ---
+    const handleDropdownChange = (
+      field: keyof PurchaseBillFormData,
+      item: SimpleOption | null,
+    ) => {
+      setFormData((prev) => ({ ...prev, [field]: item?.name || "" }));
 
-      if (field === 'vendor' && item) {
-        const fullVendor = rawVendors.find((v) => v._id === item.id);
-        updates = {
-          ...updates,
-          contactNo: fullVendor.phone || '',
-          gstNo: fullVendor.gst_no || '',
-          ecommerceInvoiceNo: '',
-        };
+      // === AUTO FILL LOGIC ===
+      if (field === "store" && item) {
+        setFormData((prev) => ({ ...prev, storeId: item.id }));
       }
+      
+      if (field === "vendor" && item) {
+        setFormData((prev) => ({ ...prev, vendorId: item.id }));
 
-      if (field === 'store' && item) {
-        const fullStore = rawStores.find((s) => s._id === item.id);
-        const sCode = fullStore?.code || fullStore.storeCode || '';
-        updates = {
-          store: value,
-          storeCode: sCode,
-        };
-      }
-      if (field === 'vendor' && item) {
-        const fullVendor = rawVendors.find((v) => v._id === item.id);
+        // Find the full vendor object using the unique ID
+        const fullVendor = rawVendors.find(
+          (v) => v._id === item.id 
+        );
+
         if (fullVendor) {
-          const vCode = fullVendor.code || fullVendor.vend_code || '';
+          // 1. Format Bill To Address
+          const billTo = `${fullVendor.vend_name || fullVendor.name || ""}\n${fullVendor.address || ""}\n${fullVendor.city || ""}, ${fullVendor.state || ""} - ${fullVendor.pin_code || ""}\nPhone: ${fullVendor.phone || ""}`;
 
-          const billTo = `${fullVendor.vend_name || fullVendor.name || ''}\n${fullVendor.address || ''}\n${fullVendor.city || ''}, ${fullVendor.state || ''} - ${fullVendor.pin_code || ''}\nPhone: ${fullVendor.phone || ''}`;
-          const shipToAddress = `${fullVendor.vend_name || fullVendor.name || ''}\n${fullVendor.address_ship || fullVendor.address || ''}\n${fullVendor.city_ship || fullVendor.city || ''}, ${fullVendor.state_ship || fullVendor.state || ''} - ${fullVendor.pin_code_ship || fullVendor.pin_code || ''}\nPhone: ${fullVendor.phone_ship || fullVendor.phone || ''}`;
+          // 2. Format Ship To Address
+          const shipTo = `${fullVendor.vend_name || fullVendor.name || ""}\n${fullVendor.address_ship || fullVendor.address || ""}\n${fullVendor.city_ship || fullVendor.city || ""}, ${fullVendor.state_ship || fullVendor.state || ""} - ${fullVendor.pin_code_ship || fullVendor.pin_code || ""}\nPhone: ${fullVendor.phone_ship || fullVendor.phone || ""}`;
 
-          updates = {
-            ...updates,
-            vendorId: item.id,
-            vendorCode: vCode,
-            email: fullVendor.email || '',
-            priceCategory: fullVendor.price_category || formData.priceCategory,
-            paymentTerms: fullVendor.payment_term || formData.paymentTerms,
-            placeOfSupply: fullVendor.state || '',
+          setFormData((prev) => ({
+            ...prev,
+            email: fullVendor.email || "",
+            priceCategory: fullVendor.price_category || prev.priceCategory,
+            paymentTerms: fullVendor.payment_term || prev.paymentTerms, // Note: check if API uses payment_term or payment_terms
+            placeOfSupply: fullVendor.state || "",
+
+            // Auto-fill new fields
             billToText: billTo,
-            shipToText: shipToAddress,
-            gstNo: fullVendor.gst_no || '',
-            contactPerson: fullVendor.contact_person || '',
-          };
+            shipToText: shipTo,
+            gstNo: fullVendor.gst_no || "",
+            contactPerson: fullVendor.contact_person || "",
+          }));
         }
       }
-
-      updateFormState(updates);
     };
 
     const handleInputChange = (field: keyof PurchaseBillFormData, value: string) => {
-      updateFormState({ [field]: value });
+      setFormData((prev) => ({ ...prev, [field]: value }));
     };
 
     useImperativeHandle(ref, () => ({
       triggerSubmit: () => {
         if (onSubmit) {
           if (!formData.vendor) {
-            alert('Please select a vendor');
+            alert("Please select a vendor");
             return;
           }
           onSubmit(formData);
         }
       },
       getFormData: () => formData,
-      resetForm: () => {
-        const defaultStore = storeOptions.length > 0 ? storeOptions[0] : null;
-        const defaultStoreData = rawStores.length > 0 ? rawStores[0] : null;
-
-        const resetData: PurchaseBillFormData = {
-          gstType: 'TaxInvoice',
-          cashCredit: 'Credit',
-          store: defaultStore ? defaultStore.name : '',
-          storeId: defaultStore ? defaultStore.id : '',
-          storeCode: defaultStoreData ? defaultStoreData.code || '' : '',
-          vendor: '',
-          vendorId: '',
-          vendorCode: '',
-          priceCategory: 'Wholesale',
-          tax: 'Inclusive',
-          placeOfSupply: '',
-          shipTo: '',
-          paymentTerms: '',
-          email: '',
-          orderNo: '',
-          refNo: '',
-          orderDate: getToday(),
-          refDate: getToday(),
-          dueDate: getToday(),
-          billToText: '',
-          shipToText: '',
-          gstNo: '',
-          contactPerson: '',
-        };
-
-        updateFormState(resetData);
-        setBillToOpen(false);
-        setShipToOpen(false);
-      },
     }));
 
     return (
-      <div style={themeStyles} className="relative rounded border border-gray-200 bg-white p-5">
+      <div
+        style={themeStyles}
+        className="bg-white rounded border border-gray-200 p-5 relative"
+      >
         <div className="grid grid-cols-12 gap-8">
+          {/* LEFT COLUMN */}
           <div className="col-span-4 space-y-1">
             <div className="grid grid-cols-12 gap-2">
               <div className="col-span-4">
@@ -355,25 +305,10 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
               <div className="col-span-8">
                 <Dropdown
                   data={mockData.gstTypes}
-                  columns={simpleColumns}
+                  columns={[{ header: "Name", key: "name", width: "flex-1" }]}
                   value={formData.gstType}
                   valueKey="name"
-                  onChange={(i) => handleDropdownChange('gstType', i)}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-12 gap-2">
-              <div className="col-span-4">
-                <Label>Cash/Credit</Label>
-              </div>
-              <div className="col-span-8">
-                <Dropdown
-                  data={mockData.cashCredit}
-                  columns={simpleColumns}
-                  value={formData.cashCredit}
-                  valueKey="name"
-                  onChange={(i) => handleDropdownChange('cashCredit', i)}
+                  onChange={(i) => handleDropdownChange("gstType", i)}
                 />
               </div>
             </div>
@@ -386,14 +321,14 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                 <InputGroup>
                   <Dropdown
                     data={storeOptions}
-                    columns={simpleColumns}
+                    columns={[{ header: "Name", key: "name", width: "flex-1" }]}
                     value={formData.store}
                     valueKey="name"
-                    onChange={(item) => handleDropdownChange('store', item)}
+                    onChange={(item) => handleDropdownChange("store", item)}
                   />
                   <ActionBtn
                     icon={<EditIcon size={14} />}
-                    onClick={() => setActiveModal('store')}
+                    onClick={() => setActiveModal("store")}
                   />
                 </InputGroup>
               </div>
@@ -407,16 +342,17 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                 <InputGroup>
                   <Dropdown
                     data={vendorOptions}
-                    columns={simpleColumns}
+                    columns={[{ header: "Name", key: "name", width: "flex-1" }]}
                     value={formData.vendor}
                     valueKey="name"
                     placeholder="Select Vendor..."
-                    onChange={(item) => handleDropdownChange('vendor', item)}
+                    onChange={(item) => handleDropdownChange("vendor", item)}
                   />
                   <ActionBtn
                     icon={<EditIcon size={16} />}
-                    onClick={() => setActiveModal('vendor')}
+                    onClick={() => setActiveModal("vendor")}
                   />
+                  <ActionBtn icon={<BarChart2 size={14} />} />
                 </InputGroup>
               </div>
             </div>
@@ -428,7 +364,7 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
               <div className="col-span-8">
                 <Input
                   value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  onChange={(e) => handleInputChange("email", e.target.value)}
                 />
               </div>
             </div>
@@ -441,20 +377,21 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
                 <InputGroup>
                   <Dropdown
                     data={mockData.priceCategories}
-                    columns={simpleColumns}
+                    columns={[{ header: "Name", key: "name", width: "flex-1" }]}
                     value={formData.priceCategory}
                     valueKey="name"
-                    onChange={(item) => handleDropdownChange('priceCategory', item)}
+                    onChange={(item) => handleDropdownChange("priceCategory", item)}
                   />
                   <ActionBtn
                     icon={<EditIcon size={16} />}
-                    onClick={() => setActiveModal('priceCategory')}
+                    onClick={() => setActiveModal("priceCategory")}
                   />
                 </InputGroup>
               </div>
             </div>
           </div>
 
+          {/* MIDDLE COLUMN */}
           <div className="col-span-4 space-y-1">
             <div className="grid grid-cols-12 gap-2">
               <div className="col-span-4">
@@ -463,7 +400,7 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
               <div className="col-span-8">
                 <DateInput
                   value={formData.orderDate}
-                  onChange={(e) => handleInputChange('orderDate', e.target.value)}
+                  onChange={(e) => handleInputChange("orderDate", e.target.value)}
                 />
               </div>
             </div>
@@ -473,9 +410,8 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
               </div>
               <div className="col-span-8">
                 <Input
-                  readOnly
-                  value="N/A"
-                  onChange={(e) => handleInputChange('orderNo', e.target.value)}
+                  value={formData.orderNo}
+                  onChange={(e) => handleInputChange("orderNo", e.target.value)}
                 />
               </div>
             </div>
@@ -486,7 +422,7 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
               <div className="col-span-8">
                 <Input
                   value={formData.refNo}
-                  onChange={(e) => handleInputChange('refNo', e.target.value)}
+                  onChange={(e) => handleInputChange("refNo", e.target.value)}
                 />
               </div>
             </div>
@@ -498,10 +434,11 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
               <div className="col-span-8">
                 <DateInput
                   value={formData.refDate}
-                  onChange={(e) => handleInputChange('refDate', e.target.value)}
+                  onChange={(e) => handleInputChange("refDate", e.target.value)}
                 />
               </div>
             </div>
+            {/* Tax */}
             <div className="grid grid-cols-12 gap-2">
               <div className="col-span-4">
                 <Label>Tax</Label>
@@ -509,46 +446,74 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
               <div className="col-span-8">
                 <Dropdown
                   data={mockData.taxOptions}
-                  columns={simpleColumns}
+                  columns={[{ header: "Name", key: "name", width: "flex-1" }]}
                   value={formData.tax}
                   valueKey="name"
-                  onChange={(i) => handleDropdownChange('tax', i)}
+                  onChange={(i) => handleDropdownChange("tax", i)}
                 />
               </div>
             </div>
           </div>
 
-          <div className="col-span-4 flex min-h-full flex-col">
+          {/* RIGHT COLUMN */}
+          <div className="col-span-4 flex flex-col min-h-full">
             <AccordionSection
               title="Billing Address"
               isOpen={isBillToOpen}
-              onToggle={() => setBillToOpen(!isBillToOpen)}>
+              onToggle={() => setBillToOpen(!isBillToOpen)}
+            >
               <div className="space-y-2">
-                <textarea
-                  className="h-20 w-full resize-none rounded border border-gray-300 p-2 text-[13px] focus:outline-none"
-                  value={formData.billToText}
-                  onChange={(e) => handleInputChange('billToText', e.target.value)}
-                />
-                <div className="grid grid-cols-12 items-center gap-2">
+                <div className="relative">
+                  <textarea
+                    className="w-full h-20 border border-gray-300 rounded text-[13px] p-2 resize-none focus:outline-none"
+                    value={formData.billToText}
+                    onChange={(e) =>
+                      handleInputChange("billToText", e.target.value)
+                    }
+                  />
+                  <span className="absolute bottom-1 right-2 text-[10px] text-gray-400">
+                    0/200
+                  </span>
+                </div>
+                <div className="grid grid-cols-12 gap-2 items-center">
                   <div className="col-span-4">
                     <Label>GST No</Label>
                   </div>
                   <div className="col-span-8">
                     <Input
                       value={formData.gstNo}
-                      onChange={(e) => handleInputChange('gstNo', e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("gstNo", e.target.value)
+                      }
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-12 items-center gap-2">
+                <div className="grid grid-cols-12 gap-2 items-center">
+                  <div className="col-span-4">
+                    <Label>Contact Person</Label>
+                  </div>
+                  <div className="col-span-8">
+                    <Input
+                      value={formData.contactPerson}
+                      onChange={(e) =>
+                        handleInputChange("contactPerson", e.target.value)
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-12 gap-2 items-center">
                   <div className="col-span-4">
                     <Label>Place of Supply</Label>
                   </div>
                   <div className="col-span-8">
-                    <Input
-                      value={formData.placeOfSupply}
-                      onChange={(e) => handleInputChange('placeOfSupply', e.target.value)}
-                    />
+                    <InputGroup>
+                      <Input
+                        value={formData.placeOfSupply}
+                        onChange={(e) =>
+                          handleInputChange("placeOfSupply", e.target.value)
+                        }
+                      />
+                    </InputGroup>
                   </div>
                 </div>
               </div>
@@ -557,49 +522,62 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
             <AccordionSection
               title="Delivery At"
               isOpen={isShipToOpen}
-              onToggle={() => setShipToOpen(!isShipToOpen)}>
-              <div className="mb-2 flex items-center">
-                <span className="w-16 whitespace-nowrap text-[13px] font-medium text-gray-600">
+              onToggle={() => setShipToOpen(!isShipToOpen)}
+            >
+              <div className="flex items-center mb-2">
+                <span className="w-16 text-[13px] text-gray-600 font-medium whitespace-nowrap">
                   Delivery At
                 </span>
-                <Dropdown
-                  data={storeOptions}
-                  columns={simpleColumns}
-                  value={formData.shipTo}
-                  valueKey="name"
-                  onChange={(item) => handleDropdownChange('shipTo', item)}
-                />
+                <div className="flex-grow flex w-full relative">
+                  <InputGroup>
+                    <Dropdown
+                      data={storeOptions}
+                      columns={[
+                        { header: "Name", key: "name", width: "flex-1" },
+                      ]}
+                      value={formData.shipTo}
+                      valueKey="name"
+                      onChange={(item) => handleDropdownChange("shipTo", item)}
+                    />
+                  </InputGroup>
+                </div>
               </div>
               <textarea
-                className="h-24 w-full resize-none rounded border border-gray-300 p-2 text-[13px] focus:outline-none"
+                className="w-full h-24 border border-gray-300 rounded text-[13px] p-2 resize-none focus:outline-none"
                 value={formData.shipToText}
-                onChange={(e) => handleInputChange('shipToText', e.target.value)}
-              />
+                onChange={(e) =>
+                  handleInputChange("shipToText", e.target.value)
+                }
+              ></textarea>
             </AccordionSection>
 
-            <div className="mt-auto space-y-1 pt-4">
-              <div className="grid grid-cols-12 items-center gap-2">
+            <div className="mt-auto pt-4 space-y-1">
+              <div className="grid grid-cols-12 gap-2 items-center">
                 <div className="col-span-4">
                   <Label>Payment Terms</Label>
                 </div>
                 <div className="col-span-8">
-                  <Dropdown
-                    data={mockData.paymentTerms}
-                    columns={simpleColumns}
-                    value={formData.paymentTerms}
-                    valueKey="name"
-                    onChange={(item) => handleDropdownChange('paymentTerms', item)}
-                  />
+                  <InputGroup>
+                    <Dropdown
+                      data={mockData.paymentTerms}
+                      columns={simpleColumns}
+                      value={formData.paymentTerms}
+                      valueKey="name"
+                      onChange={(item) =>
+                        handleDropdownChange("paymentTerms", item)
+                      }
+                    />
+                  </InputGroup>
                 </div>
               </div>
-              <div className="grid grid-cols-12 items-center gap-2">
+              <div className="grid grid-cols-12 gap-2 items-center">
                 <div className="col-span-4">
                   <Label>Due Date</Label>
                 </div>
                 <div className="col-span-8">
                   <DateInput
                     value={formData.dueDate}
-                    onChange={(e) => handleInputChange('dueDate', e.target.value)}
+                    onChange={(e) => handleInputChange("dueDate", e.target.value)}
                   />
                 </div>
               </div>
@@ -607,42 +585,45 @@ const PurchaseBillForm = forwardRef<PurchaseBillFormRef, PurchaseBillFormProps>(
           </div>
         </div>
 
+        {/* OVERLAY SYSTEM */}
         {activeModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 p-4 backdrop-blur-[2px]">
-            <div className="p-8">
-              {activeModal === 'vendor' && (
-                <CrudVendor
-                  onClose={() => setActiveModal(null)}
-                  onSuccess={() => {
-                    setActiveModal(null);
-                    loadDropdownData();
-                  }}
-                  initialData={null}
-                />
-              )}
-              {activeModal === 'store' && (
-                <LocationMaster
-                  onClose={() => setActiveModal(null)}
-                  onSuccess={() => {
-                    setActiveModal(null);
-                    loadDropdownData();
-                  }}
-                  initialData={null}
-                />
-              )}
-              {activeModal === 'priceCategory' && (
-                <NameAndCodeMaster
-                  title="Price Category"
-                  onClose={() => setActiveModal(null)}
-                  index={1200}
-                />
-              )}
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 backdrop-blur-[2px] p-4">
+            <div>
+              <div className="p-8">
+                {activeModal === "vendor" && (
+                  <CrudVendor
+                    onClose={() => setActiveModal(null)}
+                    onSuccess={() => {
+                      setActiveModal(null);
+                      loadDropdownData();
+                    }}
+                    initialData={null}
+                  />
+                )}
+                {activeModal === "store" && (
+                  <LocationMaster
+                    onClose={() => setActiveModal(null)}
+                    onSuccess={() => {
+                      setActiveModal(null);
+                      loadDropdownData();
+                    }}
+                    initialData={null}
+                  />
+                )}
+                {activeModal === "priceCategory" && (
+                  <NameAndCodeMaster
+                    title="Price Category"
+                    onClose={() => setActiveModal(null)}
+                    index={1200}
+                  />
+                )}
+              </div>
             </div>
           </div>
         )}
       </div>
     );
-  }
+  },
 );
 
 export default PurchaseBillForm;

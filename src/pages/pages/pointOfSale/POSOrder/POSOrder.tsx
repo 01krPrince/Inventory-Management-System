@@ -6,9 +6,6 @@ import POSOrderFooter from "./POSOrderFooter";
 import { COLORS } from "../../../../constants/colors";
 import InvoiceA4 from "../../../../components/invoiceDownload/InvoiceA4";
 import PosReceipt from "../../../../components/invoiceDownload/PosReceipt";
-import PurchaseOrderInvoice from "../../../../components/invoiceDownload/PurchaseOrderInvoice";
-import PurchaseBillInvoice from "../../../../components/invoiceDownload/PurchaseBillInvoice";
-import PurchaseBillInv2 from "../../../../components/invoiceDownload/PurchaseBillInv2";
 
 interface RowData {
   [key: string]: string | number;
@@ -47,12 +44,6 @@ const POSOrder: React.FC = () => {
               <PosReceipt />
             </div>
           </div>
-          <br />
-          <PurchaseOrderInvoice />
-          <br />
-          <PurchaseBillInvoice />
-          <br />
-          <PurchaseBillInv2 />
         </div>
       </div>
     </div>

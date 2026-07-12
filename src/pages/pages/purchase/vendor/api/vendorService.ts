@@ -81,7 +81,7 @@ export interface VendorPayload {
 ========================== */
 
 export const getAllVendors = async (): Promise<any[]> => {
-  const response = await api.get(""); // /vendor/getallvendor
+  const response = await api.get("/vendor/getallvendor");
   return response.data.data;
 };
 
@@ -91,7 +91,7 @@ export const addVendor = async (payload: VendorPayload) => {
   console.groupEnd();
 
   try {
-    const response = await api.post("", payload); // /vendor/createvendor
+    const response = await api.post("/vendor/createvendor", payload);
     return response.data;
   } catch (error: any) {
     console.error("🔴 [API Error]", error);
@@ -104,7 +104,7 @@ export const addVendor = async (payload: VendorPayload) => {
 
 export const updateVendor = async (id: string, payload: VendorPayload) => {
   try {
-    const response = await api.put(`/${id}`, payload); // /vendor/update/${id}
+    const response = await api.put(`/vendor/update/${id}`, payload);
     return { success: true, data: response.data, message: "Vendor updated" };
   } catch (error: any) {
     return {
@@ -115,7 +115,7 @@ export const updateVendor = async (id: string, payload: VendorPayload) => {
 };
 
 export const deleteVendor = async (id: string) => {
-  const response = await api.delete(`/${id}`); // /vendor/delete/${id}
+  const response = await api.delete(`/vendor/delete/${id}`);
   return response.data;
 };
 

@@ -51,7 +51,7 @@ export interface UpdateCoaGroupResponse {
 // --- GET: Fetch All COA Groups ---
 export const fetchCoaGroups = async (): Promise<CoaGroup[]> => {
   try {
-    const response = await api.get<GetCoaGroupsResponse>(''); // /coagroups/getall
+    const response = await api.get<GetCoaGroupsResponse>('/coagroups/getall');
     return response.data.data || [];
   } catch (error) {
     console.error("Error fetching COA Groups:", error);
@@ -65,7 +65,7 @@ export const createCoaGroup = async (
 ): Promise<CreateCoaGroupResponse> => {
   try {
     const response = await api.post<CreateCoaGroupResponse>(
-      '', // /coagroups/create_coagroups
+      '/coagroups/create_coagroups',
       formData
     );
     return response.data;
@@ -90,7 +90,7 @@ export const updateCoaGroup = async (
   try {
     // Using PUT request targeting the specific ID
     const response = await api.put<UpdateCoaGroupResponse>(
-      `${id}`, // /coagroups/update_by/${id}
+      `/coagroups/update_by/${id}`,
       formData
     );
     return response.data;

@@ -23,14 +23,14 @@ export interface OpeningStockPayload {
 
 export const openingStockService = {
   createOpeningStock: async (payload: OpeningStockPayload) => {
-    const response = await api.post("", payload); // /openingstock/opening-stock
+    const response = await api.post("/openingstock/opening-stock", payload);
     return response.data;
   },
 
-  getOpeningStockByStore: async (code: string) => {
+  getOpeningStockByStore: async (storeId: string) => {
     try {
-      const response = await api.get(`/${code}`); // /openingstock/opening-stock/store/${code}
-      return response.data;
+      const response = await api.get(`/openingstock/opening-stock/store/${storeId}`);
+      return response.data; 
     } catch (error: any) {
       if (error.response && error.response.status === 404) {
         return { success: false, message: "No opening stock found", items: [] };
@@ -39,25 +39,13 @@ export const openingStockService = {
     }
   },
 
-  getStockByStoreCode: async (code: string) => {
-    try {
-      const response = await api.get(``, { // /openingstock/opening-stock/by-store
-        params: { store: code }
-      });
-      return response.data;
-    } catch (error: any) {
-      console.error("Error fetching stock by store code:", error);
-      return { success: false, data: [] };
-    }
-  },
-
   getOpeningStockHistory: async (params?: { store?: string; fromDate?: string; toDate?: string }) => {
-    const response = await api.get("", { params }); // /openingstock/opening-stock
+    const response = await api.get("/openingstock/opening-stock", { params });
     return response.data;
   },
 
   getStockByStore: async (storeId: string) => {
-    const response = await api.get(``, { params: { store: storeId } }); // /stock/by-store
+    const response = await api.get(`/stock/by-store`, { params: { store: storeId } });
     return response.data;
   }
 };

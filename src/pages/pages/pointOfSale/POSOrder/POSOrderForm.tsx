@@ -1,13 +1,17 @@
-import React, { useState } from 'react';
-import { DocumentIcon, ChevronDownIcon, ChevronUpIcon } from '../../../../components/icons';
-import Dropdown, { ColumnDef } from '../../../../components/Dropdown';
-import DateInput from '../../../../components/DateInput';
-import { Search, EditIcon } from 'lucide-react';
+import React, { useState } from "react";
+import {
+  DocumentIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+} from "../../../../components/icons";
+import Dropdown, { ColumnDef } from "../../../../components/Dropdown";
+import DateInput from "../../../../components/DateInput";
+import { Search, EditIcon } from "lucide-react";
 
-import CounterMaster from '../../../../components/CounterMaster';
-import SalesExecutiveMaster from '../../../../components/SalesExecutiveMaster';
-import TenderTypeMaster from '../../../../components/TenderTypeMaster';
-import State from '../../../../components/State';
+import CounterMaster from "../../../../components/CounterMaster";
+import SalesExecutiveMaster from "../../../../components/SalesExecutiveMaster";
+import TenderTypeMaster from "../../../../components/TenderTypeMaster";
+import State from "../../../../components/State";
 
 interface DropdownItem {
   name: string;
@@ -30,49 +34,49 @@ interface MockData {
 
 const mockData: MockData = {
   gstTypes: [
-    { name: 'BillOfSupply', code: 'BOS' },
-    { name: 'GST Invoice', code: 'GST' },
-    { name: 'Export', code: 'EXP' },
+    { name: "BillOfSupply", code: "BOS" },
+    { name: "GST Invoice", code: "GST" },
+    { name: "Export", code: "EXP" },
   ],
   salesmen: [
-    { name: 'Alice', code: 'SM01' },
-    { name: 'Bob', code: 'SM02' },
-    { name: 'Charlie', code: 'SM03' },
+    { name: "Alice", code: "SM01" },
+    { name: "Bob", code: "SM02" },
+    { name: "Charlie", code: "SM03" },
   ],
   paymentModes: [
-    { name: 'Cash', code: 'CASH' },
-    { name: 'Card', code: 'CARD' },
-    { name: 'UPI', code: 'UPI' },
+    { name: "Cash", code: "CASH" },
+    { name: "Card", code: "CARD" },
+    { name: "UPI", code: "UPI" },
   ],
   tenderAccounts: [
-    { name: 'Main Cash', code: 'AC01' },
-    { name: 'Petty Cash', code: 'AC02' },
-    { name: 'Bank HDFC', code: 'BK01' },
+    { name: "Main Cash", code: "AC01" },
+    { name: "Petty Cash", code: "AC02" },
+    { name: "Bank HDFC", code: "BK01" },
   ],
   states: [
-    { name: 'Delhi', code: 'DL' },
-    { name: 'Haryana', code: 'HR' },
-    { name: 'Uttar Pradesh', code: 'UP' },
-    { name: 'Maharashtra', code: 'MH' },
+    { name: "Delhi", code: "DL" },
+    { name: "Haryana", code: "HR" },
+    { name: "Uttar Pradesh", code: "UP" },
+    { name: "Maharashtra", code: "MH" },
   ],
-  creditTypes: ['Credit', 'Cash'],
-  stores: ['INVENTORY', 'TECH WORLD', 'FASHION POINT'],
-  customers: ['John Doe', 'Jane Smith', 'Acme Corp'],
-  paymentLinks: ['PayTM', 'Razorpay', 'Stripe', 'Direct Transfer'],
-  shipToOptions: ['Warehouse A', 'Warehouse B', 'Store Front'],
+  creditTypes: ["Credit", "Cash"],
+  stores: ["SPORTS HUB", "TECH WORLD", "FASHION POINT"],
+  customers: ["John Doe", "Jane Smith", "Acme Corp"],
+  paymentLinks: ["PayTM", "Razorpay", "Stripe", "Direct Transfer"],
+  shipToOptions: ["Warehouse A", "Warehouse B", "Store Front"],
 };
 
 const Label: React.FC<{ children: React.ReactNode; required?: boolean }> = ({
   children,
   required,
 }) => (
-  <label className="flex h-[30px] items-center whitespace-nowrap text-[13px] font-medium text-gray-700">
-    {children} {required && <span className="ml-1 text-red-500">*</span>}
+  <label className="text-[13px] text-gray-700 font-medium flex items-center h-[30px] whitespace-nowrap">
+    {children} {required && <span className="text-red-500 ml-1">*</span>}
   </label>
 );
 
 const InputGroup: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="relative flex w-full items-center gap-1">{children}</div>
+  <div className="flex items-center w-full relative gap-1">{children}</div>
 );
 
 interface InputProps {
@@ -82,13 +86,18 @@ interface InputProps {
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-const Input: React.FC<InputProps> = ({ value, placeholder, readOnly, onChange }) => (
+const Input: React.FC<InputProps> = ({
+  value,
+  placeholder,
+  readOnly,
+  onChange,
+}) => (
   <input
     type="text"
     readOnly={readOnly}
     onChange={onChange}
-    className={`h-[30px] w-full rounded-sm border border-gray-300 px-2 text-[13px] text-gray-700 focus:border-[var(--theme-focus)] focus:outline-none focus:ring-1 focus:ring-[var(--theme-focus)] ${
-      readOnly ? 'cursor-not-allowed bg-gray-100 text-gray-500' : 'bg-white'
+    className={`w-full h-[30px] border border-gray-300 rounded-sm px-2 text-[13px] text-gray-700 focus:outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)] ${
+      readOnly ? "bg-gray-100 text-gray-500 cursor-not-allowed" : "bg-white"
     }`}
     value={value}
     placeholder={placeholder}
@@ -102,8 +111,9 @@ const ActionBtn: React.FC<{ icon: React.ReactNode; onClick?: () => void }> = ({
   <button
     type="button"
     onClick={onClick}
-    className="z-10 ml-[-1px] flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-sm border border-[var(--theme-primary)] bg-[var(--theme-primary)] text-white transition-opacity hover:opacity-90">
-    <span className="flex h-3 w-3 items-center justify-center">{icon}</span>
+    className="h-[30px] w-[30px] bg-[var(--theme-primary)] text-white flex items-center justify-center rounded-sm border border-[var(--theme-primary)] hover:opacity-90 transition-opacity ml-[-1px] z-10 shrink-0"
+  >
+    <span className="w-3 h-3 flex items-center justify-center">{icon}</span>
   </button>
 );
 
@@ -114,19 +124,24 @@ const AccordionSection: React.FC<{
   children: React.ReactNode;
 }> = ({ title, isOpen, onToggle, children }) => {
   return (
-    <div className="mb-2 rounded border border-gray-200 bg-white">
+    <div className="mb-2 border border-gray-200 rounded bg-white">
       <div
         onClick={onToggle}
-        className="flex cursor-pointer select-none items-center justify-between border-b border-transparent px-3 py-2 transition-colors hover:bg-gray-50">
-        <div className="flex items-center gap-2 text-sm font-bold text-[var(--theme-secondary)]">
-          <DocumentIcon className="h-5 w-5" />
+        className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-50 transition-colors select-none border-b border-transparent"
+      >
+        <div className="flex items-center gap-2 text-[var(--theme-secondary)] font-bold text-sm">
+          <DocumentIcon className="w-5 h-5" />
           <span>{title}</span>
         </div>
         <div className="text-[var(--theme-secondary)]">
-          {isOpen ? <ChevronUpIcon className="h-5 w-5" /> : <ChevronDownIcon className="h-5 w-5" />}
+          {isOpen ? (
+            <ChevronUpIcon className="w-5 h-5" />
+          ) : (
+            <ChevronDownIcon className="w-5 h-5" />
+          )}
         </div>
       </div>
-      {isOpen && <div className="border-t border-gray-100 p-3">{children}</div>}
+      {isOpen && <div className="p-3 border-t border-gray-100">{children}</div>}
     </div>
   );
 };
@@ -135,7 +150,9 @@ interface SalesInvoiceFormProps {
   themeColor?: string;
 }
 
-const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({ themeColor = '#0f3c63' }) => {
+const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({
+  themeColor = "#0f3c63",
+}) => {
   const [isBillToOpen, setBillToOpen] = useState<boolean>(true);
   const [isShipToOpen, setShipToOpen] = useState<boolean>(false);
   const [isCustomerOpen, setIsCustomerOpen] = useState<boolean>(false);
@@ -143,22 +160,23 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({ themeColor = '#0f3c63' 
   const [isCounterMasterOpen, setIsCounterMasterOpen] = useState(false);
   const [isStateOpen, setIsStateOpen] = useState(false);
 
-  const [isSalesExecutiveMasterOpen, setIsSalesExecutiveMasterOpen] = useState(false);
+  const [isSalesExecutiveMasterOpen, setIsSalesExecutiveMasterOpen] =
+    useState(false);
   const [isTenderTypeOpen, setIsTenderTypeOpen] = useState(false);
   const overlayZIndex = 10;
   const nestedModalZIndex = overlayZIndex + 20;
 
   const [formData, setFormData] = useState({
-    counter: 'BillOfSupply',
-    salesman: '',
-    paymentMode: '',
-    advanceTender: '',
-    state: '',
-    city: '',
-    orderDate: '',
-    deliveryDate: '',
-    refDate: '',
-    refNo: '',
+    counter: "BillOfSupply",
+    salesman: "",
+    paymentMode: "",
+    advanceTender: "",
+    state: "",
+    city: "",
+    orderDate: "",
+    deliveryDate: "",
+    refDate: "",
+    refNo: "",
   });
 
   const handleFieldChange = (field: string, value: string) => {
@@ -166,17 +184,17 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({ themeColor = '#0f3c63' 
   };
 
   const themeStyles = {
-    '--theme-primary': themeColor,
-    '--theme-secondary': themeColor,
-    '--theme-focus': '#60a5fa',
+    "--theme-primary": themeColor,
+    "--theme-secondary": themeColor,
+    "--theme-focus": "#60a5fa",
   } as React.CSSProperties;
 
   const defaultColumns: ColumnDef<DropdownItem>[] = [
-    { header: 'Name', key: 'name', width: 'w-full' },
+    { header: "Name", key: "name", width: "w-full" },
   ];
   const codeNameColumns: ColumnDef<DropdownItem>[] = [
-    { header: 'Code', key: 'code', width: 'w-20' },
-    { header: 'Name', key: 'name', width: 'w-full' },
+    { header: "Code", key: "code", width: "w-20" },
+    { header: "Name", key: "name", width: "w-full" },
   ];
 
   const handleState = () => {
@@ -184,17 +202,27 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({ themeColor = '#0f3c63' 
   };
 
   return (
-    <div style={themeStyles} className="relative rounded border border-gray-200 bg-white p-5">
-      {isCounterMasterOpen && <CounterMaster onClose={() => setIsCounterMasterOpen(false)} />}
+    <div
+      style={themeStyles}
+      className="bg-white rounded border border-gray-200 p-5 relative"
+    >
+      {isCounterMasterOpen && (
+        <CounterMaster onClose={() => setIsCounterMasterOpen(false)} />
+      )}
 
       {isStateOpen && <State onClose={() => setIsStateOpen(false)} />}
 
       {isSalesExecutiveMasterOpen && (
-        <SalesExecutiveMaster onClose={() => setIsSalesExecutiveMasterOpen(false)} />
+        <SalesExecutiveMaster
+          onClose={() => setIsSalesExecutiveMasterOpen(false)}
+        />
       )}
 
       {isTenderTypeOpen && (
-        <TenderTypeMaster onClose={() => setIsTenderTypeOpen(false)} index={nestedModalZIndex} />
+        <TenderTypeMaster
+          onClose={() => setIsTenderTypeOpen(false)}
+          index={nestedModalZIndex}
+        />
       )}
 
       <div className="grid grid-cols-12 gap-8">
@@ -210,7 +238,9 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({ themeColor = '#0f3c63' 
                   columns={defaultColumns}
                   value={formData.counter}
                   valueKey="name"
-                  onChange={(item) => handleFieldChange('counter', item?.name || '')}
+                  onChange={(item) =>
+                    handleFieldChange("counter", item?.name || "")
+                  }
                   placeholder="Select Counter..."
                 />
                 <ActionBtn
@@ -228,7 +258,7 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({ themeColor = '#0f3c63' 
             <div className="col-span-8">
               <DateInput
                 value={formData.orderDate}
-                onChange={(e) => handleFieldChange('orderDate', e.target.value)}
+                onChange={(e) => handleFieldChange("orderDate", e.target.value)}
               />
             </div>
           </div>
@@ -265,7 +295,9 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({ themeColor = '#0f3c63' 
                   columns={codeNameColumns}
                   value={formData.salesman}
                   valueKey="name"
-                  onChange={(item) => handleFieldChange('salesman', item?.name || '')}
+                  onChange={(item) =>
+                    handleFieldChange("salesman", item?.name || "")
+                  }
                   placeholder="Select Salesman..."
                 />
                 <ActionBtn
@@ -287,7 +319,9 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({ themeColor = '#0f3c63' 
                   columns={defaultColumns}
                   value={formData.paymentMode}
                   valueKey="name"
-                  onChange={(item) => handleFieldChange('paymentMode', item?.name || '')}
+                  onChange={(item) =>
+                    handleFieldChange("paymentMode", item?.name || "")
+                  }
                   placeholder="Select Mode..."
                 />
               </InputGroup>
@@ -303,7 +337,9 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({ themeColor = '#0f3c63' 
             <div className="col-span-8">
               <DateInput
                 value={formData.deliveryDate}
-                onChange={(e) => handleFieldChange('deliveryDate', e.target.value)}
+                onChange={(e) =>
+                  handleFieldChange("deliveryDate", e.target.value)
+                }
               />
             </div>
           </div>
@@ -315,7 +351,7 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({ themeColor = '#0f3c63' 
             <div className="col-span-8">
               <Input
                 value={formData.refNo}
-                onChange={(e) => handleFieldChange('refNo', e.target.value)}
+                onChange={(e) => handleFieldChange("refNo", e.target.value)}
               />
             </div>
           </div>
@@ -327,13 +363,13 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({ themeColor = '#0f3c63' 
             <div className="col-span-8">
               <DateInput
                 value={formData.refDate}
-                onChange={(e) => handleFieldChange('refDate', e.target.value)}
+                onChange={(e) => handleFieldChange("refDate", e.target.value)}
               />
             </div>
           </div>
 
-          <div className="mt-auto space-y-1 pt-4">
-            <div className="grid grid-cols-12 items-center gap-2">
+          <div className="mt-auto pt-4 space-y-1">
+            <div className="grid grid-cols-12 gap-2 items-center">
               <div className="col-span-4">
                 <Label>Advance Tender A/c</Label>
               </div>
@@ -344,7 +380,9 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({ themeColor = '#0f3c63' 
                     columns={defaultColumns}
                     value={formData.advanceTender}
                     valueKey="name"
-                    onChange={(item) => handleFieldChange('advanceTender', item?.name || '')}
+                    onChange={(item) =>
+                      handleFieldChange("advanceTender", item?.name || "")
+                    }
                     placeholder="Select Account..."
                   />
                   <ActionBtn
@@ -355,7 +393,7 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({ themeColor = '#0f3c63' 
               </div>
             </div>
 
-            <div className="grid grid-cols-12 items-center gap-2">
+            <div className="grid grid-cols-12 gap-2 items-center">
               <div className="col-span-4">
                 <Label>Advance amount</Label>
               </div>
@@ -366,12 +404,13 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({ themeColor = '#0f3c63' 
           </div>
         </div>
 
-        <div className="col-span-4 flex min-h-full flex-col">
+        <div className="col-span-4 flex flex-col min-h-full">
           <AccordionSection
             title="Customer"
             isOpen={isCustomerOpen}
-            onToggle={() => setIsCustomerOpen(!isCustomerOpen)}>
-            <div className="grid grid-cols-1 gap-x-10 gap-y-3 text-sm text-gray-700 md:grid-cols-2">
+            onToggle={() => setIsCustomerOpen(!isCustomerOpen)}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-3 text-sm text-gray-700">
               <div className="flex gap-2">
                 <span className="font-medium">Name:</span>
                 <span>AMIT</span>
@@ -427,26 +466,32 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({ themeColor = '#0f3c63' 
           <AccordionSection
             title="Bill To"
             isOpen={isBillToOpen}
-            onToggle={() => setBillToOpen(!isBillToOpen)}>
+            onToggle={() => setBillToOpen(!isBillToOpen)}
+          >
             <textarea
               placeholder="Billing Address..."
-              className="h-24 w-full resize-none rounded border border-gray-300 p-2 text-[13px] outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)]"
+              className="w-full h-24 border border-gray-300 rounded text-[13px] p-2 resize-none focus:ring-1 focus:border-[var(--theme-focus)] focus:ring-[var(--theme-focus)] outline-none"
             />
           </AccordionSection>
 
           <AccordionSection
             title="Ship To"
             isOpen={isShipToOpen}
-            onToggle={() => setShipToOpen(!isShipToOpen)}>
+            onToggle={() => setShipToOpen(!isShipToOpen)}
+          >
             <div className="relative mb-2">
               <textarea
                 placeholder="Shipping Address..."
-                className="h-24 w-full resize-none rounded border border-gray-300 p-2 text-[13px] outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)]"
+                className="w-full h-24 border border-gray-300 rounded text-[13px] p-2 resize-none focus:ring-1 focus:border-[var(--theme-focus)] focus:ring-[var(--theme-focus)] outline-none"
               />
-              <span className="absolute bottom-1 right-2 text-[10px] text-gray-400">0/200</span>
+              <span className="absolute bottom-1 right-2 text-[10px] text-gray-400">
+                0/200
+              </span>
             </div>
-            <div className="mb-2 flex items-center gap-2">
-              <span className="w-16 shrink-0 text-[13px] text-gray-600">State</span>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="w-16 text-[13px] text-gray-600 shrink-0">
+                State
+              </span>
               <div className="col-span-12 w-full">
                 <InputGroup>
                   <Dropdown
@@ -454,7 +499,9 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({ themeColor = '#0f3c63' 
                     columns={codeNameColumns}
                     value={formData.state}
                     valueKey="name"
-                    onChange={(item) => handleFieldChange('state', item?.name || '')}
+                    onChange={(item) =>
+                      handleFieldChange("state", item?.name || "")
+                    }
                     placeholder="Select State..."
                   />
                   <button onClick={handleState}>
@@ -464,11 +511,13 @@ const POSOrderForm: React.FC<SalesInvoiceFormProps> = ({ themeColor = '#0f3c63' 
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="w-16 shrink-0 text-[13px] text-gray-600">City</span>
-              <div className="w-full min-w-0 flex-grow">
+              <span className="w-16 text-[13px] text-gray-600 shrink-0">
+                City
+              </span>
+              <div className="flex-grow w-full min-w-0">
                 <Input
                   value={formData.city}
-                  onChange={(e) => handleFieldChange('city', e.target.value)}
+                  onChange={(e) => handleFieldChange("city", e.target.value)}
                   placeholder="Enter City"
                 />
               </div>

@@ -1,44 +1,46 @@
-import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { DocumentIcon, ChevronDownIcon, ChevronUpIcon } from '../../../../components/icons';
-import { EditIcon } from 'lucide-react';
-import Dropdown, { ColumnDef } from '../../../../components/Dropdown';
-import CrudCustomer from '../customer/AddNewCustomer';
-import { LocationMaster } from '../../../../components/LocationMaster';
-import SalesExecutiveMaster from '../../../../components/SalesExecutiveMaster';
+import React, {
+  useState,
+  useEffect,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
+import {
+  ChartIcon,
+  CalenderIcon,
+  DocumentIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+} from "../../../../components/icons";
+import { EditIcon } from "lucide-react";
+import Dropdown, { ColumnDef } from "../../../../components/Dropdown";
+import CrudCustomer from "../customer/AddNewCustomer";
+import { LocationMaster } from "../../../../components/LocationMaster";
+import SalesExecutiveMaster from "../../../../components/SalesExecutiveMaster";
 
 // --- Services ---
-import { getAllCustomers } from '../../../../services/sales/customer/customerService';
-import { fetchAllLocations } from '../../inventory/stockAdjustment/api/LocationMaster';
-import { fetchSalesExecutives } from '../../../../components/addItemMaster/api/salesExecutiveService';
-import DateInput from '../../../../components/DateInput';
-
+import { getAllCustomers } from "../../../../services/sales/customer/customerService";
+import { fetchAllLocations } from "../../inventory/stockAdjustment/api/LocationMaster";
+import { fetchSalesExecutives } from "../../../../components/addItemMaster/api/salesExecutiveService";
 // --- Types ---
 export interface InvoiceFormData {
   gstType: string;
   cashCredit: string;
-
-  // Store Info
-  store: string; // Display Name
-  storeCode?: string; // Internal Code
-
-  // Customer Info
-  customerId?: string; // Database ID
-  customer?: string; // Display Name (FIXED)
-  customerCode?: string; // Internal Code (NEW ADDITION)
-
-  date: string;
+  store: string;
+  storeId?: string;
+  customer: string;
+  customerId?: string;
   priceCategory: string;
   salesman: string;
   tax: string;
   placeOfSupply: string;
-  shipTo: string;
+  shipTo: string; // This is the Dropdown value (e.g. "Warehouse A")
   paymentTerms: string;
   paymentLink: string;
   email?: string;
   invoiceNo?: string;
   refNo?: string;
 
-  // Auto-fill fields
+  // --- NEW FIELDS FOR AUTO-FILL ---
   billToText?: string;
   shipToText?: string;
   gstNo?: string;
@@ -47,8 +49,7 @@ export interface InvoiceFormData {
 
 interface SimpleOption {
   name: string;
-  code?: string;
-  id?: string;
+  id?: string; // Added ID for better matching
 }
 
 interface ActionBtnProps {
@@ -59,13 +60,11 @@ interface ActionBtnProps {
 interface SalesInvoiceFormProps {
   themeColor?: string;
   onSubmit?: (data: InvoiceFormData) => void;
-  onFormChange?: (data: InvoiceFormData) => void;
 }
 
 export interface SalesInvoiceFormRef {
   triggerSubmit: () => void;
-  getFormData: () => InvoiceFormData;
-  resetForm: () => void;
+  getFormData: () => InvoiceFormData; // <--- ADD THIS
 }
 
 // --- Helper Components ---
@@ -73,20 +72,30 @@ const Label: React.FC<{ children: React.ReactNode; required?: boolean }> = ({
   children,
   required,
 }) => (
-  <label className="flex h-[30px] items-center whitespace-nowrap text-[13px] font-medium text-gray-700">
-    {children} {required && <span className="ml-1 text-red-500">*</span>}
+  <label className="text-[13px] text-gray-700 font-medium flex items-center h-[30px] whitespace-nowrap">
+    {children} {required && <span className="text-red-500 ml-1">*</span>}
   </label>
 );
 
-const toOptions = (arr: string[]): SimpleOption[] => arr.map((s) => ({ name: s, code: '' }));
+const toOptions = (arr: string[]): SimpleOption[] =>
+  arr.map((s) => ({ name: s }));
 
 const mockData = {
-  paymentTerms: toOptions(['Immediate', 'Net 15', 'Net 30']),
-  paymentLinks: toOptions(['PayTM', 'Razorpay', 'Stripe', 'Direct Transfer']),
+  gstTypes: toOptions(["BillOfSupply", "GST Invoice", "Export"]),
+  creditTypes: toOptions(["Credit", "Cash"]),
+  stores: toOptions(["SPORTS HUB", "TECH WORLD", "FASHION POINT"]),
+  customers: toOptions(["John Doe", "Jane Smith", "Acme Corp"]),
+  priceCategories: toOptions(["Default"]),
+  salesmen: toOptions(["Alice", "Bob", "Charlie"]),
+  taxOptions: toOptions(["Inclusive", "Exclusive"]),
+  shipToOptions: toOptions(["Warehouse A", "Warehouse B", "Store Front"]),
+  paymentTerms: toOptions(["Immediate", "Net 15", "Net 30"]),
+  paymentLinks: toOptions(["PayTM", "Razorpay", "Stripe", "Direct Transfer"]),
+  placeOfSupply: toOptions(["Bihar", "Delhi", "Maharashtra", "Uttar Pradesh"]),
 };
 
 const InputGroup: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="relative flex w-full items-center gap-1">{children}</div>
+  <div className="flex items-center w-full relative gap-1">{children}</div>
 );
 
 const Input: React.FC<{
@@ -97,21 +106,35 @@ const Input: React.FC<{
 }> = ({ value, placeholder, readOnly, onChange }) => (
   <input
     type="text"
-    className={`h-[30px] w-full rounded-sm border border-gray-300 bg-white px-2 text-[13px] text-gray-700 focus:border-[var(--theme-focus)] focus:outline-none focus:ring-1 focus:ring-[var(--theme-focus)] ${
-      readOnly ? 'bg-gray-50' : ''
+    className={`w-full h-[30px] bg-white border border-gray-300 rounded-sm px-2 text-[13px] text-gray-700 focus:outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)] ${
+      readOnly ? "bg-gray-50" : ""
     }`}
-    value={value || ''}
+    value={value || ""} // Changed defaultValue to value for control
     onChange={onChange}
     placeholder={placeholder}
     readOnly={readOnly}
   />
 );
 
+const DateField: React.FC<{ value: string }> = ({ value }) => (
+  <div className="relative w-full">
+    <input
+      type="text"
+      className="w-full h-[30px] bg-white border border-gray-300 rounded-sm px-2 text-[13px] text-gray-700 focus:outline-none focus:border-[var(--theme-focus)] focus:ring-1 focus:ring-[var(--theme-focus)]"
+      defaultValue={value}
+    />
+    <div className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none">
+      <CalenderIcon className="w-4 h-4" />
+    </div>
+  </div>
+);
+
 const ActionBtn: React.FC<ActionBtnProps> = ({ icon, onClick }) => (
   <button
     onClick={onClick}
     type="button"
-    className="z-10 ml-[-1px] flex h-[32px] w-[32px] items-center justify-center rounded-sm border border-[var(--theme-primary)] bg-[var(--theme-primary)] text-white shadow-sm transition-opacity hover:opacity-90">
+    className="h-[32px] w-[32px] bg-[var(--theme-primary)] text-white flex items-center justify-center rounded-sm border border-[var(--theme-primary)] hover:opacity-90 transition-opacity ml-[-1px] z-10 shadow-sm"
+  >
     {icon}
   </button>
 );
@@ -122,81 +145,76 @@ const AccordionSection: React.FC<{
   onToggle: () => void;
   children: React.ReactNode;
 }> = ({ title, isOpen, onToggle, children }) => (
-  <div className="mb-2 rounded border border-gray-200 bg-white">
+  <div className="mb-2 border border-gray-200 rounded bg-white">
     <div
       onClick={onToggle}
-      className="flex cursor-pointer select-none items-center justify-between border-b border-transparent px-3 py-2 transition-colors hover:bg-gray-50">
-      <div className="flex items-center gap-2 text-sm font-bold text-[var(--theme-secondary)]">
-        <DocumentIcon className="h-5 w-5" />
+      className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-50 transition-colors select-none border-b border-transparent"
+    >
+      <div className="flex items-center gap-2 text-[var(--theme-secondary)] font-bold text-sm">
+        <DocumentIcon className="w-5 h-5" />
         <span>{title}</span>
       </div>
       <div className="text-[var(--theme-secondary)]">
-        {isOpen ? <ChevronUpIcon className="h-5 w-5" /> : <ChevronDownIcon className="h-5 w-5" />}
+        {isOpen ? (
+          <ChevronUpIcon className="w-5 h-5" />
+        ) : (
+          <ChevronDownIcon className="w-5 h-5" />
+        )}
       </div>
     </div>
-    {isOpen && <div className="border-t border-gray-100 p-3">{children}</div>}
+    {isOpen && <div className="p-3 border-t border-gray-100">{children}</div>}
   </div>
 );
 
 // --- MAIN COMPONENT ---
 const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
-  ({ themeColor = '#0f3c63', onSubmit, onFormChange }, ref) => {
+  ({ themeColor = "#0f3c63", onSubmit }, ref) => {
     // --- State ---
     const [storeOptions, setStoreOptions] = useState<SimpleOption[]>([]);
     const [customerOptions, setCustomerOptions] = useState<SimpleOption[]>([]);
     const [salesmanOptions, setSalesmanOptions] = useState<SimpleOption[]>([]);
 
+    // NEW: Store raw customer objects to access details later
     const [rawCustomers, setRawCustomers] = useState<any[]>([]);
-    const [rawStores, setRawStores] = useState<any[]>([]);
 
-    const [isBillToOpen, setBillToOpen] = useState<boolean>(false);
+    const [isBillToOpen, setBillToOpen] = useState<boolean>(false); // Default open to show effect
     const [isShipToOpen, setShipToOpen] = useState<boolean>(false);
     const [activeModal, setActiveModal] = useState<string | null>(null);
 
-    const getToday = () => new Date().toISOString().split('T')[0];
-
     const [formData, setFormData] = useState<InvoiceFormData>({
-      gstType: 'BillOfSupply',
-      cashCredit: 'Credit',
-      store: '',
-      storeCode: '',
-      customer: '',
-      customerCode: '', // Initialize new field
-      customerId: '',
-      date: getToday(),
-      priceCategory: 'Default',
-      salesman: '',
-      tax: 'Inclusive',
-      placeOfSupply: '',
-      shipTo: '',
-      paymentTerms: '',
-      paymentLink: 'PayTM',
-      email: '',
-      invoiceNo: 'N/A',
-      refNo: '',
-      billToText: '',
-      shipToText: '',
-      gstNo: '',
-      contactPerson: '',
+      gstType: "BillOfSupply",
+      cashCredit: "Credit",
+      store: "",
+      customer: "",
+      priceCategory: "Default",
+      salesman: "",
+      tax: "Inclusive",
+      placeOfSupply: "",
+      shipTo: "",
+      paymentTerms: "",
+      paymentLink: "PayTM",
+      email: "",
+      invoiceNo: "00046",
+      refNo: "",
+      // Initialize new fields
+      billToText: "",
+      shipToText: "",
+      gstNo: "",
+      contactPerson: "",
     });
 
-    // --- Column Definitions ---
-
-    // 1. For Store & Customer (Show Code + Name)
-    const codeColumns: ColumnDef<SimpleOption>[] = [
-      { header: 'Code', key: 'code', width: 'w-24' },
-      { header: 'Name', key: 'name', width: 'flex-1' },
-    ];
-
-    // 2. For everything else (Name Only)
-    const nameColumns: ColumnDef<SimpleOption>[] = [
-      { header: 'Name', key: 'name', width: 'flex-1' },
+    const simpleColumns: ColumnDef<SimpleOption>[] = [
+      {
+        header: "Name",
+        key: "name",
+        width: "flex-1",
+      },
     ];
 
     const themeStyles = {
-      '--theme-primary': themeColor,
-      '--theme-secondary': themeColor,
-      '--theme-focus': '#60a5fa',
+      "--theme-primary": themeColor,
+      "--theme-secondary": themeColor,
+      "--theme-focus": "#60a5fa",
     } as React.CSSProperties;
 
     // --- Load Data ---
@@ -204,179 +222,122 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
       loadDropdownData();
     }, []);
 
-    const loadDropdownData = async () => {
+const loadDropdownData = async () => {
       try {
-        // 1. STORES
+        // 1. Stores
         const storesData = await fetchAllLocations();
-        setRawStores(storesData);
-
         const mappedStores = storesData.map((item: any) => ({
           name: item.name || item.storeName,
           id: item._id,
-          code: item.code || item.storeCode || '',
         }));
         setStoreOptions(mappedStores);
-
         if (mappedStores.length > 0) {
-          const firstStore = storesData[0];
-          updateFormState({
+          setFormData((prev) => ({
+            ...prev,
             store: mappedStores[0].name,
-            storeCode: (firstStore as any).code || (firstStore as any).storeCode || '',
-          });
+            storeId: mappedStores[0].id, // <--- THIS IS CRITICAL
+          }));
         }
 
-        // 2. CUSTOMERS
+        // 2. Customers
         const customersData = await getAllCustomers();
-        setRawCustomers(customersData);
-
-        const mappedCustomers = customersData.map((item: any) => {
-          const codeVal = item.code || item.cust_code || item.customer || item.identification || '';
-
-          return {
-            name: item.cust_name || item.name,
-            id: item._id,
-            code: codeVal,
-          };
-        });
+        setRawCustomers(customersData); // <--- Save RAW data
+        const mappedCustomers = customersData.map((item: any) => ({
+          name: item.cust_name || item.name, // Handle your specific API field names
+          id: item._id,
+        }));
         setCustomerOptions(mappedCustomers);
 
-        // 3. SALESMEN
+        // 3. Salesmen
         const salesData = await fetchSalesExecutives();
         const mappedSalesmen = salesData.map((item: any) => ({
           name: item.name,
           id: item._id,
-          code: item.code || '',
         }));
         setSalesmanOptions(mappedSalesmen);
       } catch (error) {
-        console.error('Error loading dropdowns', error);
+        console.error("Error loading dropdowns", error);
       }
-    };
-
-    // Helper to update state AND notify parent
-    const updateFormState = (updates: Partial<InvoiceFormData>) => {
-      setFormData((prev) => {
-        const newData = { ...prev, ...updates };
-        if (onFormChange) {
-          onFormChange(newData);
-        }
-        return newData;
-      });
     };
 
     // --- Dynamic Handler ---
-    const handleDropdownChange = (field: keyof InvoiceFormData, item: SimpleOption | null) => {
-      const value = item?.name || '';
-      let extraUpdates: Partial<InvoiceFormData> = {};
+    const handleDropdownChange = (
+      field: keyof InvoiceFormData,
+      item: SimpleOption | null,
+    ) => {
+      setFormData((prev) => ({ ...prev, [field]: item?.name || "" }));
 
-      // === STORE SELECTION ===
+      // === AUTO FILL LOGIC ===
       if (field === 'store' && item) {
-        const fullStore = rawStores.find((s) => s._id === item.id);
-        const sCode = fullStore?.code || fullStore?.storeCode || '';
-
-        extraUpdates = {
-          store: value, // Name (for UI)
-          storeCode: sCode, // Code (for API)
-        };
+          setFormData(prev => ({ ...prev, storeId: item.id })); 
       }
-
-      // === CUSTOMER SELECTION ===
-      if (field === 'customer' && item) {
+      if (field === "customer" && item) {
+        setFormData(prev => ({ ...prev, customerId: item.id }));
         const fullCustomer = rawCustomers.find(
-          (c) => c._id === item.id || c.cust_name === item.name
+          (c) => c._id === item.id || c.cust_name === item.name,
         );
 
         if (fullCustomer) {
-          const cCode =
-            fullCustomer.code ||
-            fullCustomer.cust_code ||
-            fullCustomer.customer ||
-            fullCustomer.identification ||
-            '';
+          // 1. Format Bill To Address
+          const billTo = `${fullCustomer.cust_name}\n${fullCustomer.address || ""}\n${fullCustomer.city || ""}, ${fullCustomer.state || ""} - ${fullCustomer.pin_code || ""}\nPhone: ${fullCustomer.phone || ""}`;
 
-          const billTo = `${fullCustomer.cust_name}\n${fullCustomer.address || ''}\n${fullCustomer.city || ''}, ${fullCustomer.state || ''} - ${fullCustomer.pin_code || ''}\nPhone: ${fullCustomer.phone || ''}`;
-          const shipTo = `${fullCustomer.cust_name}\n${fullCustomer.address_ship || fullCustomer.address || ''}\n${fullCustomer.city_ship || fullCustomer.city || ''}, ${fullCustomer.state_ship || fullCustomer.state || ''} - ${fullCustomer.pin_code_ship || fullCustomer.pin_code || ''}\nPhone: ${fullCustomer.phone_ship || fullCustomer.phone || ''}`;
+          // 2. Format Ship To Address
+          const shipTo = `${fullCustomer.cust_name}\n${fullCustomer.address_ship || fullCustomer.address || ""}\n${fullCustomer.city_ship || fullCustomer.city || ""}, ${fullCustomer.state_ship || fullCustomer.state || ""} - ${fullCustomer.pin_code_ship || fullCustomer.pin_code || ""}\nPhone: ${fullCustomer.phone_ship || fullCustomer.phone || ""}`;
 
-          extraUpdates = {
-            customerId: item.id,
-            customer: value, // <--- FIXED: Set to Name (value), not code
-            customerCode: cCode, // <--- FIXED: Save Code separately
-            email: fullCustomer.email || '',
-            priceCategory: fullCustomer.price_category || formData.priceCategory,
-            salesman: fullCustomer.sales_executive || formData.salesman,
-            placeOfSupply: fullCustomer.state || '',
+          setFormData((prev) => ({
+            ...prev,
+            email: fullCustomer.email || "",
+            priceCategory: fullCustomer.price_category || prev.priceCategory,
+            salesman: fullCustomer.sales_executive || prev.salesman,
+            placeOfSupply: fullCustomer.state || "", // Auto-fill POS
+
+            // Auto-fill new fields
             billToText: billTo,
             shipToText: shipTo,
-            gstNo: fullCustomer.gst_no || '',
-            contactPerson: fullCustomer.contact_person || '',
-          };
-        } else {
-          extraUpdates = { customerId: item.id };
+            gstNo: fullCustomer.gst_no || "",
+            contactPerson: fullCustomer.contact_person || "",
+          }));
         }
       }
-
-      updateFormState({ [field]: value, ...extraUpdates });
     };
 
     const handleInputChange = (field: keyof InvoiceFormData, value: string) => {
-      updateFormState({ [field]: value });
+      setFormData((prev) => ({ ...prev, [field]: value }));
     };
 
     useImperativeHandle(ref, () => ({
       triggerSubmit: () => {
         if (onSubmit) {
           if (!formData.customer) {
-            alert('Please select a customer');
+            alert("Please select a customer");
             return;
           }
           onSubmit(formData);
         }
       },
-      getFormData: () => formData,
-
-      resetForm: () => {
-        setFormData((prev) => ({
-          ...prev,
-          // Clear Customer & Specific Details
-          customer: '',
-          customerCode: '',
-          customerId: '',
-          email: '',
-          refNo: '',
-          billToText: '',
-          shipToText: '',
-          gstNo: '',
-          contactPerson: '',
-          invoiceNo: '',
-          paymentLink: 'PayTM',
-          shipTo: '',
-
-          /// keeping store, salesman, date
-        }));
-      },
+      getFormData: () => formData
     }));
 
     return (
-      <div style={themeStyles} className="relative rounded border border-gray-200 bg-white p-5">
+      <div
+        style={themeStyles}
+        className="bg-white rounded border border-gray-200 p-5 relative"
+      >
         <div className="grid grid-cols-12 gap-8">
           {/* LEFT COLUMN */}
           <div className="col-span-4 space-y-1">
+            {/* GST Type & Cash/Credit (Static) */}
             <div className="grid grid-cols-12 gap-2">
               <div className="col-span-4">
                 <Label>GST Type</Label>
               </div>
               <div className="col-span-8">
                 <Dropdown
-                  data={[
-                    { name: 'BillOfSupply', code: '' },
-                    { name: 'GST Invoice', code: '' },
-                    { name: 'Intra', code: '' },
-                    { name: 'Inter', code: '' },
-                  ]}
-                  columns={nameColumns}
+                  data={[{ name: "BillOfSupply" }, { name: "GST Invoice" }]}
+                  columns={[{ header: "Name", key: "name", width: "flex-1" }]}
                   value={formData.gstType}
                   valueKey="name"
-                  onChange={(i) => handleDropdownChange('gstType', i)}
+                  onChange={(i) => handleDropdownChange("gstType", i)}
                 />
               </div>
             </div>
@@ -386,14 +347,11 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
               </div>
               <div className="col-span-8">
                 <Dropdown
-                  data={[
-                    { name: 'Credit', code: 'CR' },
-                    { name: 'Cash', code: 'CS' },
-                  ]}
-                  columns={nameColumns}
+                  data={[{ name: "Credit" }, { name: "Cash" }]}
+                  columns={[{ header: "Name", key: "name", width: "flex-1" }]}
                   value={formData.cashCredit}
                   valueKey="name"
-                  onChange={(i) => handleDropdownChange('cashCredit', i)}
+                  onChange={(i) => handleDropdownChange("cashCredit", i)}
                 />
               </div>
             </div>
@@ -406,14 +364,14 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
                 <InputGroup>
                   <Dropdown
                     data={storeOptions}
-                    columns={codeColumns}
+                    columns={[{ header: "Name", key: "name", width: "flex-1" }]}
                     value={formData.store}
                     valueKey="name"
-                    onChange={(item) => handleDropdownChange('store', item)}
+                    onChange={(item) => handleDropdownChange("store", item)}
                   />
                   <ActionBtn
                     icon={<EditIcon size={14} />}
-                    onClick={() => setActiveModal('store')}
+                    onClick={() => setActiveModal("store")}
                   />
                 </InputGroup>
               </div>
@@ -427,16 +385,17 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
                 <InputGroup>
                   <Dropdown
                     data={customerOptions}
-                    columns={codeColumns}
+                    columns={[{ header: "Name", key: "name", width: "flex-1" }]}
                     value={formData.customer}
                     valueKey="name"
                     placeholder="Select Customer..."
-                    onChange={(item) => handleDropdownChange('customer', item)}
+                    onChange={(item) => handleDropdownChange("customer", item)}
                   />
                   <ActionBtn
                     icon={<EditIcon size={16} />}
-                    onClick={() => setActiveModal('customer')}
+                    onClick={() => setActiveModal("customer")}
                   />
+                  <ActionBtn icon={<ChartIcon />} />
                 </InputGroup>
               </div>
             </div>
@@ -448,7 +407,7 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
               <div className="col-span-8">
                 <Input
                   value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  onChange={(e) => handleInputChange("email", e.target.value)}
                 />
               </div>
             </div>
@@ -459,16 +418,19 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
               </div>
               <div className="col-span-8">
                 <InputGroup>
+                  {/* If price categories are dynamic, load them similarly. Using mock for now */}
                   <Dropdown
                     data={[
-                      { name: 'Wholesale', code: '' },
-                      { name: 'Retail', code: '' },
-                      { name: 'Default', code: '' },
+                      { name: "Wholesale" },
+                      { name: "Retail" },
+                      { name: "Default" },
                     ]}
-                    columns={nameColumns}
+                    columns={[{ header: "Name", key: "name", width: "flex-1" }]}
                     value={formData.priceCategory}
                     valueKey="name"
-                    onChange={(item) => handleDropdownChange('priceCategory', item)}
+                    onChange={(item) =>
+                      handleDropdownChange("priceCategory", item)
+                    }
                   />
                 </InputGroup>
               </div>
@@ -482,10 +444,7 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
                 <Label required>Date</Label>
               </div>
               <div className="col-span-8">
-                <DateInput
-                  value={formData.date}
-                  onChange={(e) => handleInputChange('date', e.target.value)}
-                />
+                <DateField value="20/11/2025" />
               </div>
             </div>
             <div className="grid grid-cols-12 gap-2">
@@ -503,7 +462,7 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
               <div className="col-span-8">
                 <Input
                   value={formData.refNo}
-                  onChange={(e) => handleInputChange('refNo', e.target.value)}
+                  onChange={(e) => handleInputChange("refNo", e.target.value)}
                 />
               </div>
             </div>
@@ -516,83 +475,96 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
                 <InputGroup>
                   <Dropdown
                     data={salesmanOptions}
-                    columns={nameColumns}
+                    columns={[{ header: "Name", key: "name", width: "flex-1" }]}
                     value={formData.salesman}
                     valueKey="name"
-                    onChange={(item) => handleDropdownChange('salesman', item)}
+                    onChange={(item) => handleDropdownChange("salesman", item)}
                   />
                   <ActionBtn
                     icon={<EditIcon size={14} />}
-                    onClick={() => setActiveModal('salesman')}
+                    onClick={() => setActiveModal("salesman")}
                   />
                 </InputGroup>
               </div>
             </div>
+            {/* Tax */}
             <div className="grid grid-cols-12 gap-2">
               <div className="col-span-4">
                 <Label>Tax</Label>
               </div>
               <div className="col-span-8">
                 <Dropdown
-                  data={[
-                    { name: 'Inclusive', code: '' },
-                    { name: 'Exclusive', code: '' },
-                  ]}
-                  columns={nameColumns}
+                  data={[{ name: "Inclusive" }, { name: "Exclusive" }]}
+                  columns={[{ header: "Name", key: "name", width: "flex-1" }]}
                   value={formData.tax}
                   valueKey="name"
-                  onChange={(i) => handleDropdownChange('tax', i)}
+                  onChange={(i) => handleDropdownChange("tax", i)}
                 />
               </div>
             </div>
           </div>
 
           {/* RIGHT COLUMN */}
-          <div className="col-span-4 flex min-h-full flex-col">
+          <div className="col-span-4 flex flex-col min-h-full">
             <AccordionSection
               title="Bill To"
               isOpen={isBillToOpen}
-              onToggle={() => setBillToOpen(!isBillToOpen)}>
+              onToggle={() => setBillToOpen(!isBillToOpen)}
+            >
               <div className="space-y-2">
                 <div className="relative">
+                  {/* BIND VALUE HERE */}
                   <textarea
-                    className="h-20 w-full resize-none rounded border border-gray-300 p-2 text-[13px] focus:outline-none"
+                    className="w-full h-20 border border-gray-300 rounded text-[13px] p-2 resize-none focus:outline-none"
                     value={formData.billToText}
-                    onChange={(e) => handleInputChange('billToText', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("billToText", e.target.value)
+                    }
                   />
-                  <span className="absolute bottom-1 right-2 text-[10px] text-gray-400">0/200</span>
+                  <span className="absolute bottom-1 right-2 text-[10px] text-gray-400">
+                    0/200
+                  </span>
                 </div>
-                <div className="grid grid-cols-12 items-center gap-2">
+                <div className="grid grid-cols-12 gap-2 items-center">
                   <div className="col-span-4">
                     <Label>GST No</Label>
                   </div>
+                  {/* BIND VALUE HERE */}
                   <div className="col-span-8">
                     <Input
                       value={formData.gstNo}
-                      onChange={(e) => handleInputChange('gstNo', e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("gstNo", e.target.value)
+                      }
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-12 items-center gap-2">
+                <div className="grid grid-cols-12 gap-2 items-center">
                   <div className="col-span-4">
                     <Label>Contact Person</Label>
                   </div>
+                  {/* BIND VALUE HERE */}
                   <div className="col-span-8">
                     <Input
                       value={formData.contactPerson}
-                      onChange={(e) => handleInputChange('contactPerson', e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("contactPerson", e.target.value)
+                      }
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-12 items-center gap-2">
+                <div className="grid grid-cols-12 gap-2 items-center">
                   <div className="col-span-4">
                     <Label>Place of Supply</Label>
                   </div>
                   <div className="col-span-8">
                     <InputGroup>
+                      {/* Using simple input for now since state is text in customer obj. Can be dropdown if needed */}
                       <Input
                         value={formData.placeOfSupply}
-                        onChange={(e) => handleInputChange('placeOfSupply', e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("placeOfSupply", e.target.value)
+                        }
                       />
                     </InputGroup>
                   </div>
@@ -603,38 +575,42 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
             <AccordionSection
               title="Ship To"
               isOpen={isShipToOpen}
-              onToggle={() => setShipToOpen(!isShipToOpen)}>
-              <div className="mb-2 flex items-center">
-                <span className="w-16 whitespace-nowrap text-[13px] font-medium text-gray-600">
+              onToggle={() => setShipToOpen(!isShipToOpen)}
+            >
+              <div className="flex items-center mb-2">
+                <span className="w-16 text-[13px] text-gray-600 font-medium whitespace-nowrap">
                   Ship To
                 </span>
-                <div className="relative flex w-full flex-grow">
+                <div className="flex-grow flex w-full relative">
                   <InputGroup>
                     <Dropdown
-                      data={[
-                        { name: 'Warehouse', code: '' },
-                        { name: 'Store Front', code: '' },
+                      data={[{ name: "Warehouse" }, { name: "Store Front" }]}
+                      columns={[
+                        { header: "Name", key: "name", width: "flex-1" },
                       ]}
-                      columns={nameColumns}
                       value={formData.shipTo}
                       valueKey="name"
-                      onChange={(item) => handleDropdownChange('shipTo', item)}
+                      onChange={(item) => handleDropdownChange("shipTo", item)}
                     />
                     <ActionBtn
                       icon={<EditIcon size={14} />}
-                      onClick={() => setActiveModal('shipto')}
+                      onClick={() => setActiveModal("shipto")}
                     />
                   </InputGroup>
                 </div>
               </div>
+              {/* BIND VALUE HERE */}
               <textarea
-                className="h-24 w-full resize-none rounded border border-gray-300 p-2 text-[13px] focus:outline-none"
+                className="w-full h-24 border border-gray-300 rounded text-[13px] p-2 resize-none focus:outline-none"
                 value={formData.shipToText}
-                onChange={(e) => handleInputChange('shipToText', e.target.value)}></textarea>
+                onChange={(e) =>
+                  handleInputChange("shipToText", e.target.value)
+                }
+              ></textarea>
             </AccordionSection>
 
-            <div className="mt-auto space-y-1 pt-4">
-              <div className="grid grid-cols-12 items-center gap-2">
+            <div className="mt-auto pt-4 space-y-1">
+              <div className="grid grid-cols-12 gap-2 items-center">
                 <div className="col-span-4">
                   <Label>Payment Terms</Label>
                 </div>
@@ -642,26 +618,37 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
                   <InputGroup>
                     <Dropdown
                       data={mockData.paymentTerms}
-                      columns={nameColumns}
+                      columns={simpleColumns}
                       value={formData.paymentTerms}
                       valueKey="name"
-                      onChange={(item) => handleDropdownChange('paymentTerms', item)}
+                      onChange={(item) =>
+                        handleDropdownChange("paymentTerms", item)
+                      }
                     />
                   </InputGroup>
                 </div>
               </div>
-
-              <div className="grid grid-cols-12 items-center gap-2">
+              <div className="grid grid-cols-12 gap-2 items-center">
+                <div className="col-span-4">
+                  <Label>Due Date</Label>
+                </div>
+                <div className="col-span-8">
+                  <DateField value="20/11/2025" />
+                </div>
+              </div>
+              <div className="grid grid-cols-12 gap-2 items-center">
                 <div className="col-span-4">
                   <Label>Payment Link</Label>
                 </div>
                 <div className="col-span-8">
                   <Dropdown
                     data={mockData.paymentLinks}
-                    columns={nameColumns}
+                    columns={simpleColumns}
                     value={formData.paymentLink}
                     valueKey="name"
-                    onChange={(item) => handleDropdownChange('paymentLink', item)}
+                    onChange={(item) =>
+                      handleDropdownChange("paymentLink", item)
+                    }
                   />
                 </div>
               </div>
@@ -671,10 +658,10 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
 
         {/* OVERLAY SYSTEM */}
         {activeModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 p-4 backdrop-blur-[2px]">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 backdrop-blur-[2px] p-4">
             <div>
               <div className="p-8">
-                {activeModal === 'customer' && (
+                {activeModal === "customer" && (
                   <CrudCustomer
                     onClose={() => setActiveModal(null)}
                     onSuccess={() => {
@@ -684,7 +671,7 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
                     initialData={null}
                   />
                 )}
-                {activeModal === 'store' && (
+                {activeModal === "store" && (
                   <LocationMaster
                     onClose={() => setActiveModal(null)}
                     onSuccess={() => {
@@ -694,7 +681,7 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
                     initialData={null}
                   />
                 )}
-                {activeModal === 'salesman' && (
+                {activeModal === "salesman" && (
                   <SalesExecutiveMaster
                     onClose={() => setActiveModal(null)}
                     onSuccess={() => {
@@ -709,7 +696,7 @@ const SalesInvoiceForm = forwardRef<SalesInvoiceFormRef, SalesInvoiceFormProps>(
         )}
       </div>
     );
-  }
+  },
 );
 
 export default SalesInvoiceForm;

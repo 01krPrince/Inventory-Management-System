@@ -1,4 +1,4 @@
-import React, { useState, ChangeEvent, useEffect } from 'react';
+import React, { useState, ChangeEvent, useEffect } from "react";
 import {
   Globe,
   Edit,
@@ -15,23 +15,19 @@ import {
   Plus,
   MessageCircle,
   Landmark,
-} from 'lucide-react';
+} from "lucide-react";
 import {
   addCustomer,
   fetchBankDetailsApi,
   customerUpdateApi,
-} from '../../../../services/sales/customer/customerService';
-import Attachment from '../../../../components/Attachment';
-import { FormData } from '../../../../services/sales/customer/AddCustomerPayload';
-import Dropdown, { ColumnDef } from '../../../../components/Dropdown';
-import chartOfAccountService, { ChartOfAccount } from '../../../../services/chartOfAccountService';
-import ChartOfAccounts from '../../../../components/ChartOfAccount';
-
-import {
-  fetchSalesExecutives,
-  SalesExecutiveData,
-} from '../../../../components/addItemMaster/api/salesExecutiveService';
-import SalesExecutiveMaster from '../../../../components/SalesExecutiveMaster';
+} from "../../../../services/sales/customer/customerService";
+import Attachment from "../../../../components/Attachment";
+import { FormData } from "../../../../services/sales/customer/AddCustomerPayload";
+import Dropdown, { ColumnDef } from "../../../../components/Dropdown";
+import chartOfAccountService, {
+  ChartOfAccount,
+} from "../../../../services/chartOfAccountService";
+import ChartOfAccounts from "../../../../components/ChartOfAccount";
 
 interface ContactData {
   name: string;
@@ -42,95 +38,101 @@ interface ContactData {
 
 const INITIAL_DATA: FormData = {
   // Basic Details
-  gst_no: '',
-  cust_name: '',
-  print_name: '',
-  identification: '',
-  under_ledger: '',
+  gst_no: "",
+  cust_name: "",
+  print_name: "",
+  identification: "",
+  under_ledger: "",
   cust_comman: false,
   is_sub_customer: false,
   under_customer: false,
   profileImage: null,
 
   // Statutory
-  gst: '',
-  registration_date: '',
-  cin: '',
-  pan: '',
-  goods_service: 'Goods',
-  gst_category: 'Registered',
+  gst: "",
+  registration_date: "",
+  cin: "",
+  pan: "",
+  goods_service: "Goods",
+  gst_category: "Registered",
   gst_suspend: false,
   distance: 12,
   tds_on_gst_applicable: false,
 
   // Communication
-  address: '',
-  country: '',
-  state: '',
-  city: '',
-  pin_code: '',
-  phone: '',
-  email: '',
-  longitude: '',
-  latitude: '',
-  route_map: 'https://maps.google.com',
+  address: "",
+  country: "",
+  state: "",
+  city: "",
+  pin_code: "",
+  phone: "",
+  email: "",
+  longitude: "",
+  latitude: "",
+  route_map: "https://maps.google.com",
 
-  address_ship: '',
-  country_ship: '',
-  state_ship: '',
-  city_ship: '',
-  pin_code_ship: '',
-  phone_ship: '',
-  email_ship: '',
-  longitude_ship: '',
-  latitude_ship: '',
-  route_map_ship: 'https://maps.google.com',
+  address_ship: "",
+  country_ship: "",
+  state_ship: "",
+  city_ship: "",
+  pin_code_ship: "",
+  phone_ship: "",
+  email_ship: "",
+  longitude_ship: "",
+  latitude_ship: "",
+  route_map_ship: "https://maps.google.com",
 
   // Social Profile
-  website: '',
-  facebook: '',
-  skype: '',
-  twitter: '',
-  linkedin: '',
+  website: "",
+  facebook: "",
+  skype: "",
+  twitter: "",
+  linkedin: "",
 
   // Defaults
-  payment_term: '',
-  price_category: '',
-  batch_rate_category: '',
-  sales_executive: '',
-  transporter: '',
-  credit_limit: '',
-  max_credit_days: '',
-  interest_rate_yearly: '',
+  payment_term: "",
+  price_category: "",
+  batch_rate_category: "",
+  sales_executive: "",
+  transporter: "",
+  credit_limit: "",
+  max_credit_days: "",
+  interest_rate_yearly: "",
   customer_on_watch: false,
-  firm_status: 'Active',
-  territory: '',
-  customer_category: '',
+  firm_status: "Active",
+  territory: "",
+  customer_category: "",
 
   // Bank Detail
-  ifsc_code: '',
-  account_number: '',
-  bank_name: '',
-  branch: '',
+  ifsc_code: "",
+  account_number: "",
+  bank_name: "",
+  branch: "",
 
   // Contact Persons
-  contact_person: '',
+  contact_person: "",
   contact: [],
 };
 
 const STEPS = [
-  { id: 0, label: 'Basic Details' },
-  { id: 1, label: 'Statutory' },
-  { id: 2, label: 'Communication' },
-  { id: 3, label: 'Social Profile' },
-  { id: 4, label: 'Defaults' },
-  { id: 5, label: 'Bank Detail' },
-  { id: 6, label: 'Contact Person' },
-  { id: 7, label: 'Attachments' },
+  { id: 0, label: "Basic Details" },
+  { id: 1, label: "Statutory" },
+  { id: 2, label: "Communication" },
+  { id: 3, label: "Social Profile" },
+  { id: 4, label: "Defaults" },
+  { id: 5, label: "Bank Detail" },
+  { id: 6, label: "Contact Person" },
+  { id: 7, label: "Attachments" },
 ];
 
-const FormLabel = ({ required, children }: { required?: boolean; children: React.ReactNode }) => (
-  <label className="mb-1 block text-xs font-medium text-gray-700">
+const FormLabel = ({
+  required,
+  children,
+}: {
+  required?: boolean;
+  children: React.ReactNode;
+}) => (
+  <label className="block text-xs font-medium text-gray-700 mb-1">
     {children} {required && <span className="text-red-500">*</span>}
   </label>
 );
@@ -144,25 +146,26 @@ const ToggleSwitch = ({
   onChange: any;
   name: string;
 }) => (
-  <div className="relative mr-2 inline-block w-10 select-none align-middle transition duration-200 ease-in">
+  <div className="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
     <input
       type="checkbox"
       name={name}
       id={name}
-      className="toggle-checkbox absolute block h-5 w-5 cursor-pointer appearance-none rounded-full border-4 bg-white transition-all duration-300"
+      className="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300"
       style={{
-        right: checked ? '0' : 'auto',
-        left: checked ? 'auto' : '0',
-        borderColor: checked ? '#1e40af' : '#d1d5db',
+        right: checked ? "0" : "auto",
+        left: checked ? "auto" : "0",
+        borderColor: checked ? "#1e40af" : "#d1d5db",
       }}
       checked={checked}
       onChange={onChange}
     />
     <label
       htmlFor={name}
-      className={`toggle-label block h-5 cursor-pointer overflow-hidden rounded-full ${
-        checked ? 'bg-[#0c5888]' : 'bg-gray-300'
-      }`}></label>
+      className={`toggle-label block overflow-hidden h-5 rounded-full cursor-pointer ${
+        checked ? "bg-[#0c5888]" : "bg-gray-300"
+      }`}
+    ></label>
   </div>
 );
 
@@ -171,10 +174,10 @@ const InputField = ({
   name,
   value,
   onChange,
-  type = 'text',
+  type = "text",
   required = false,
-  className = '',
-  placeholder = '',
+  className = "",
+  placeholder = "",
 }: any) => (
   <div className={`mb-3 ${className}`}>
     <FormLabel required={required}>{label}</FormLabel>
@@ -184,7 +187,7 @@ const InputField = ({
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:border-[#0c5888] focus:outline-none"
+      className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-[#0c5888]"
     />
   </div>
 );
@@ -196,7 +199,7 @@ const SelectField = ({
   onChange,
   options,
   required = false,
-  className = '',
+  className = "",
 }: any) => (
   <div className={`mb-3 ${className}`}>
     <FormLabel required={required}>{label}</FormLabel>
@@ -204,7 +207,8 @@ const SelectField = ({
       name={name}
       value={value}
       onChange={onChange}
-      className="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm focus:border-[#0c5888] focus:outline-none">
+      className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm bg-white focus:outline-none focus:border-[#0c5888]"
+    >
       <option value="">Select...</option>
       {options.map((opt: string) => (
         <option key={opt} value={opt}>
@@ -215,10 +219,16 @@ const SelectField = ({
   </div>
 );
 
-const SocialInput = ({ icon: Icon, name, value, placeholder, onChange }: any) => (
-  <div className="mb-4 flex items-center">
-    <div className="flex h-10 w-10 items-center justify-center rounded-l border-y border-l border-gray-300 bg-gray-100">
-      <Icon className="h-5 w-5 text-gray-600" />
+const SocialInput = ({
+  icon: Icon,
+  name,
+  value,
+  placeholder,
+  onChange,
+}: any) => (
+  <div className="flex items-center mb-4">
+    <div className="w-10 h-10 flex items-center justify-center bg-gray-100 rounded-l border-y border-l border-gray-300">
+      <Icon className="w-5 h-5 text-gray-600" />
     </div>
     <div className="flex-1">
       <input
@@ -227,23 +237,15 @@ const SocialInput = ({ icon: Icon, name, value, placeholder, onChange }: any) =>
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className="w-full rounded-r border border-gray-300 px-3 py-2 text-sm focus:border-[#0c5888] focus:outline-none"
+        className="w-full border border-gray-300 rounded-r px-3 py-2 text-sm focus:outline-none focus:border-[#0c5888]"
       />
     </div>
   </div>
 );
 
-// --- Column Definitions ---
-
 const underLedger: ColumnDef<ChartOfAccount>[] = [
-  { header: 'Code', key: 'code', width: 'w-24' },
-  { header: 'Name', key: 'name', width: 'w-full' },
-];
-
-const salesExecutiveColumns: ColumnDef<SalesExecutiveData>[] = [
-  { header: 'Code', key: 'code', width: 'w-24' },
-  { header: 'Name', key: 'name', width: 'w-48' },
-  { header: 'Type', key: 'amountType', width: 'w-24' },
+  { header: "Code", key: "code", width: "w-24" },
+  { header: "Name", key: "name", width: "w-full" },
 ];
 
 interface AddNewCustomerProps {
@@ -266,68 +268,52 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
   const [activeStep, setActiveStep] = useState(0);
   const [formData, setFormData] = useState<FormData>(INITIAL_DATA);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Ledger/COA States
   const [coaFormData, setCoaFormData] = useState<ChartOfAccount | null>(null);
   const [glDataFull, setGlDataFull] = useState<ChartOfAccount[]>([]);
   const [showChartOfAccounts, setShowChartOfAccounts] = useState(false);
 
-  // Sales Executive States
-  const [salesExecutiveList, setSalesExecutiveList] = useState<SalesExecutiveData[]>([]);
-  const [showSalesExecutiveModal, setShowSalesExecutiveModal] = useState(false);
-  const [selectedExecutiveObj, setSelectedExecutiveObj] = useState<SalesExecutiveData | null>(null);
-
-  // Contact Modal States
+  // --- Contact Modal States ---
   const [showContactModal, setShowContactModal] = useState(false);
-  const [editingContactIndex, setEditingContactIndex] = useState<number | null>(null);
+  const [editingContactIndex, setEditingContactIndex] = useState<number | null>(
+    null
+  );
   const [contactForm, setContactForm] = useState<ContactData>({
-    name: '',
-    email: '',
-    phone: '',
-    designation: '',
+    name: "",
+    email: "",
+    phone: "",
+    designation: "",
   });
 
   const isEditMode = !!initialData && !!initialData._id;
 
-  // --- API Loaders ---
-
-  const loadSalesExecutives = async () => {
-    try {
-      const data = await fetchSalesExecutives();
-      if (data && Array.isArray(data)) {
-        setSalesExecutiveList(data);
-      }
-    } catch (error) {
-      console.error('Failed to load sales executives', error);
-    }
-  };
-
+  // --- Load Ledger Data ---
   useEffect(() => {
     const loadData = async () => {
       try {
-        const coaResponse = await chartOfAccountService.getAllChartOfAccounts();
-        if (coaResponse.data && coaResponse.data != null) {
-          setGlDataFull(coaResponse.data);
+        const response = await chartOfAccountService.getAllChartOfAccounts();
+        if (response.data && response.data.success) {
+          setGlDataFull(response.data.data);
         }
-
-        await loadSalesExecutives();
       } catch (error) {
-        console.error('Failed to load dropdown data', error);
+        console.error("Failed to load dropdown data", error);
       }
     };
     loadData();
   }, []);
 
+  // --- Populate Initial Data ---
   useEffect(() => {
     if (initialData) {
-      const val = (v: any) => (v !== null && v !== undefined ? String(v) : '');
+      const val = (v: any) => (v !== null && v !== undefined ? String(v) : "");
 
-      // Handle Ledger mapping
+      // Fix for under_ledger: if it comes as ID, we need to find the name for display
       let ledgerName = val(initialData.under_ledger);
       let selectedLedgerObj = null;
 
       if (glDataFull.length > 0) {
-        const found = glDataFull.find((g) => g._id === ledgerName || g.name === ledgerName);
+        const found = glDataFull.find(
+          (g) => g._id === ledgerName || g.name === ledgerName
+        );
         if (found) {
           ledgerName = found.name;
           selectedLedgerObj = found;
@@ -335,13 +321,8 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
       }
       if (selectedLedgerObj) setCoaFormData(selectedLedgerObj);
 
-      // Handle Sales Executive mapping
-      let executiveName = val(initialData.sales_executive);
-      // We don't strictly need to find the object for the Form Data (string name),
-      // but if we wanted to pre-select for editing, we could do it here.
-
       setFormData({
-        ...INITIAL_DATA,
+        ...INITIAL_DATA, // Start with defaults
         gst_no: val(initialData.gst_no),
         cust_name: val(initialData.cust_name || initialData.name),
         print_name: val(initialData.print_name),
@@ -350,7 +331,7 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
         cust_comman: !!initialData.cust_comman,
         is_sub_customer: !!initialData.is_sub_customer,
         under_customer:
-          typeof initialData.under_customer === 'string'
+          typeof initialData.under_customer === "string"
             ? initialData.under_customer
             : !!initialData.under_customer,
         profileImage: initialData.profile_photo || null,
@@ -366,7 +347,7 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
         tds_on_gst_applicable: !!initialData.tds_on_gst_applicable,
 
         address: val(initialData.address),
-        country: val(initialData.country || 'India'),
+        country: val(initialData.country || "India"),
         state: val(initialData.state),
         city: val(initialData.city),
         pin_code: val(initialData.pin_code),
@@ -377,7 +358,7 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
         route_map: val(initialData.route_map),
 
         address_ship: val(initialData.address_ship),
-        country_ship: val(initialData.country_ship || 'India'),
+        country_ship: val(initialData.country_ship || "India"),
         state_ship: val(initialData.state_ship),
         city_ship: val(initialData.city_ship),
         pin_code_ship: val(initialData.pin_code_ship),
@@ -395,15 +376,16 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
 
         payment_term: val(initialData.payment_term),
         price_category: val(initialData.price_category),
-        batch_rate_category: val(initialData.batch_rate_category) || 'Standard',
-        sales_executive: executiveName,
+        batch_rate_category: val(initialData.batch_rate_category) || "Standard",
+        sales_executive: val(initialData.sales_executive),
         transporter: val(initialData.transporter),
         credit_limit: val(initialData.credit_limit),
         max_credit_days: val(initialData.max_credit_days),
         interest_rate_yearly: val(initialData.interest_rate_yearly),
         customer_on_watch:
-          initialData.customer_on_watch === 'Yes' || !!initialData.customer_on_watch,
-        firm_status: val(initialData.firm_status || 'Active'),
+          initialData.customer_on_watch === "Yes" ||
+          !!initialData.customer_on_watch,
+        firm_status: val(initialData.firm_status || "Active"),
         territory: val(initialData.territory),
         customer_category: val(initialData.customer_category),
 
@@ -416,9 +398,7 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
         contact: Array.isArray(initialData.contact) ? initialData.contact : [],
       });
     }
-  }, [initialData, glDataFull, salesExecutiveList]);
-
-  // --- Handlers ---
+  }, [initialData, glDataFull]);
 
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -428,33 +408,18 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
 
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: type === "checkbox" ? checked : value,
     }));
   };
 
   const handleDropdownChange = (fieldName: string, value: any) => {
     setFormData((prev) => ({ ...prev, [fieldName]: value }));
 
-    if (fieldName === 'under_ledger') {
+    // Logic: If UnderLedger changes, update the COA Form Data so edit works
+    if (fieldName === "under_ledger") {
       const selected = glDataFull.find((item) => item.name === value);
       setCoaFormData(selected || null);
     }
-
-    if (fieldName === 'sales_executive') {
-      const selected = salesExecutiveList.find((item) => item.name === value);
-      setSelectedExecutiveObj(selected || null);
-    }
-  };
-
-  const handleEditSalesExecutive = () => {
-    // Determine if we are editing an existing selection or creating new
-    if (formData.sales_executive) {
-      const found = salesExecutiveList.find((x) => x.name === formData.sales_executive);
-      setSelectedExecutiveObj(found || null);
-    } else {
-      setSelectedExecutiveObj(null); // Create mode
-    }
-    setShowSalesExecutiveModal(true);
   };
 
   const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
@@ -485,12 +450,13 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
         ...bankData,
       }));
     } catch (error) {
-      alert('Failed to fetch bank details');
+      alert("Failed to fetch bank details");
     }
   };
 
+  // --- Contact Modal Logic ---
   const openAddContact = () => {
-    setContactForm({ name: '', email: '', phone: '', designation: '' });
+    setContactForm({ name: "", email: "", phone: "", designation: "" });
     setEditingContactIndex(null);
     setShowContactModal(true);
   };
@@ -504,7 +470,7 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
 
   const saveContact = () => {
     if (!contactForm.name) {
-      alert('Contact Name is required');
+      alert("Contact Name is required");
       return;
     }
 
@@ -522,7 +488,7 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
   };
 
   const deleteContact = (index: number) => {
-    if (window.confirm('Delete this contact?')) {
+    if (window.confirm("Delete this contact?")) {
       setFormData((prev) => ({
         ...prev,
         contact: prev.contact.filter((_, i) => i !== index),
@@ -530,6 +496,7 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
     }
   };
 
+  // --- Submit Logic (Corrected for ID and Type Safety) ---
   const handleNext = async () => {
     if (activeStep < STEPS.length - 1) {
       setActiveStep((prev) => prev + 1);
@@ -543,7 +510,9 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
       let underLedgerId: string | null = null;
 
       if (formData.under_ledger) {
-        const foundLedger = glDataFull.find((gl) => gl.name === formData.under_ledger);
+        const foundLedger = glDataFull.find(
+          (gl) => gl.name === formData.under_ledger
+        );
         if (foundLedger) {
           underLedgerId = foundLedger._id!;
         } else {
@@ -553,25 +522,29 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
         }
       }
 
-      const val = (v: any) => (v === undefined || v === null ? '' : String(v));
+      const val = (v: any) => (v === undefined || v === null ? "" : String(v));
 
       const payload = {
         ...formData,
+        // Replace name with ID or NULL
         under_ledger: underLedgerId,
 
+        // Ensure bools and numbers are correct types
         cust_comman: !!formData.cust_comman,
         is_sub_customer: !!formData.is_sub_customer,
         gst_suspend: !!formData.gst_suspend,
         tds_on_gst_applicable: !!formData.tds_on_gst_applicable,
         distance: Number(formData.distance),
-        customer_on_watch: formData.customer_on_watch ? 'Yes' : 'No',
+        customer_on_watch: formData.customer_on_watch ? "Yes" : "No",
 
+        // Ensure strings
         gst_no: val(formData.gst_no),
         cust_name: val(formData.cust_name),
       };
 
       const finalPayload = { ...payload, profile_photo: formData.profileImage };
 
+      // TS Fix: Cast to any to allow 'null' in under_ledger
       const apiPayload = finalPayload as any;
 
       let response;
@@ -582,15 +555,18 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
       }
 
       if (response.success) {
-        alert(response.message || (isEditMode ? 'Updated successfully!' : 'Created successfully!'));
+        alert(
+          response.message ||
+            (isEditMode ? "Updated successfully!" : "Created successfully!")
+        );
         if (onSuccess) onSuccess();
         onClose(false);
       } else {
-        alert('Operation failed: ' + (response.message || 'Unknown error'));
+        alert("Operation failed: " + (response.message || "Unknown error"));
       }
     } catch (error) {
-      console.error('Submission Error:', error);
-      alert('An error occurred while saving.');
+      console.error("Submission Error:", error);
+      alert("An error occurred while saving.");
     } finally {
       setIsSubmitting(false);
     }
@@ -601,19 +577,24 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
       setGlDataFull((prev) => {
         const exists = prev.find((item) => item.name === savedData.name);
         if (exists) {
-          return prev.map((item) => (item.name === savedData.name ? savedData : item));
+          return prev.map((item) =>
+            item.name === savedData.name ? savedData : item
+          );
         }
         return [...prev, savedData];
       });
+      // Auto select the new one
       setFormData((prev) => ({ ...prev, under_ledger: savedData.name }));
     }
     setShowChartOfAccounts(false);
   };
 
+  // --- Renders ---
+
   const renderBasicDetails = () => (
     <div className="grid grid-cols-12 gap-6">
-      <div className="col-span-12 space-y-3 md:col-span-8">
-        <div className="grid grid-cols-12 items-center gap-4">
+      <div className="col-span-12 md:col-span-8 space-y-3">
+        <div className="grid grid-cols-12 gap-4 items-center">
           <div className="col-span-3">
             <FormLabel>GST No</FormLabel>
           </div>
@@ -623,17 +604,17 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
               name="gst_no"
               value={formData.gst_no}
               onChange={handleInputChange}
-              className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
+              className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
             />
           </div>
           <div className="col-span-2">
-            <button className="w-full rounded bg-[#0c5888] px-3 py-1.5 text-xs text-white hover:bg-[#0a4a70]">
+            <button className="bg-[#0c5888] text-white text-xs px-3 py-1.5 rounded hover:bg-[#0a4a70] w-full">
               Fetch
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-12 items-center gap-4">
+        <div className="grid grid-cols-12 gap-4 items-center">
           <div className="col-span-3">
             <FormLabel required>Name</FormLabel>
           </div>
@@ -643,12 +624,12 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
               name="cust_name"
               value={formData.cust_name}
               onChange={handleInputChange}
-              className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
+              className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-12 items-center gap-4">
+        <div className="grid grid-cols-12 gap-4 items-center">
           <div className="col-span-3">
             <FormLabel required>Print Name</FormLabel>
           </div>
@@ -658,12 +639,12 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
               name="print_name"
               value={formData.print_name}
               onChange={handleInputChange}
-              className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
+              className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-12 items-center gap-4">
+        <div className="grid grid-cols-12 gap-4 items-center">
           <div className="col-span-3">
             <FormLabel>Identification</FormLabel>
           </div>
@@ -673,7 +654,7 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
               name="identification"
               value={formData.identification}
               onChange={handleInputChange}
-              className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
+              className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
             />
           </div>
         </div>
@@ -681,13 +662,15 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
         <div className="mb-3">
           <FormLabel required>Under Ledger</FormLabel>
           <div className="flex w-full">
-            <div className="min-w-0 flex-1">
+            <div className="flex-1 min-w-0">
               <Dropdown
                 data={glDataFull}
                 columns={underLedger}
                 value={formData.under_ledger}
                 valueKey="name"
-                onChange={(item) => handleDropdownChange('under_ledger', item?.name || '')}
+                onChange={(item) =>
+                  handleDropdownChange("under_ledger", item?.name || "")
+                }
                 placeholder="Select..."
                 zIndex={dropdownZIndex}
               />
@@ -697,13 +680,14 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
                 e.preventDefault();
                 setShowChartOfAccounts(true);
               }}
-              className="ml-[1px] rounded-r bg-[#0c5888] px-2 text-white hover:bg-[#0a4a70]">
-              <Edit className="h-4 w-4" />
+              className="bg-[#0c5888] text-white px-2 rounded-r hover:bg-[#0a4a70] ml-[1px]"
+            >
+              <Edit className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-12 items-center gap-4">
+        <div className="grid grid-cols-12 gap-4 items-center">
           <div className="col-span-3">
             <FormLabel>Customer Common</FormLabel>
           </div>
@@ -714,12 +698,12 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
               onChange={handleInputChange}
             />
             <span className="text-xs font-bold text-gray-600">
-              {formData.cust_comman ? 'ON' : 'OFF'}
+              {formData.cust_comman ? "ON" : "OFF"}
             </span>
           </div>
         </div>
 
-        <div className="grid grid-cols-12 items-center gap-4">
+        <div className="grid grid-cols-12 gap-4 items-center">
           <div className="col-span-3">
             <FormLabel>Is Sub Customer</FormLabel>
           </div>
@@ -730,43 +714,51 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
               onChange={handleInputChange}
             />
             <span className="text-xs font-bold text-gray-600">
-              {formData.is_sub_customer ? 'ON' : 'OFF'}
+              {formData.is_sub_customer ? "ON" : "OFF"}
             </span>
           </div>
         </div>
 
         {formData.is_sub_customer && (
-          <div className="grid grid-cols-12 items-center gap-4">
+          <div className="grid grid-cols-12 gap-4 items-center">
             <div className="col-span-3">
               <FormLabel required>Under Customer</FormLabel>
             </div>
-            <div className="relative col-span-9">
+            <div className="col-span-9 relative">
               <select
                 name="under_customer"
-                value={typeof formData.under_customer === 'boolean' ? '' : formData.under_customer}
+                value={
+                  typeof formData.under_customer === "boolean"
+                    ? ""
+                    : formData.under_customer
+                }
                 onChange={handleInputChange}
-                className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-sm">
+                className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white"
+              >
                 <option value="">Select...</option>
               </select>
-              <ChevronRight className="pointer-events-none absolute right-2 top-1.5 h-4 w-4 text-gray-500" />
+              <ChevronRight className="w-4 h-4 absolute right-2 top-1.5 text-gray-500 pointer-events-none" />
             </div>
           </div>
         )}
       </div>
 
-      <div className="col-span-12 mt-2 flex flex-col items-center justify-start md:col-span-4">
-        <div className="relative flex h-56 w-56 flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-gray-400 bg-gray-200">
+      <div className="col-span-12 md:col-span-4 flex flex-col items-center justify-start mt-2">
+        <div className="w-56 h-56 bg-gray-200 border-2 border-dashed border-gray-400 rounded-lg flex flex-col items-center justify-center relative overflow-hidden">
           {formData.profileImage ? (
             <>
               <img
                 src={formData.profileImage}
                 alt="Profile"
-                className="h-full w-full object-cover"
+                className="w-full h-full object-cover"
               />
               <button
-                onClick={() => setFormData((prev) => ({ ...prev, profileImage: null }))}
-                className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white">
-                <X className="h-3 w-3" />
+                onClick={() =>
+                  setFormData((prev) => ({ ...prev, profileImage: null }))
+                }
+                className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full"
+              >
+                <X className="w-3 h-3" />
               </button>
             </>
           ) : (
@@ -774,9 +766,14 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
           )}
         </div>
         <div className="mt-4 w-56">
-          <label className="block cursor-pointer rounded bg-[#0c5888] px-4 py-2 text-center text-xs font-bold text-white shadow hover:bg-[#0a4a70]">
+          <label className="cursor-pointer bg-[#0c5888] hover:bg-[#0a4a70] text-white text-xs font-bold py-2 px-4 rounded shadow block text-center">
             Browse
-            <input type="file" className="hidden" onChange={handleImageUpload} accept="image/*" />
+            <input
+              type="file"
+              className="hidden"
+              onChange={handleImageUpload}
+              accept="image/*"
+            />
           </label>
         </div>
       </div>
@@ -784,11 +781,16 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
   );
 
   const renderStatutory = () => (
-    <div className="mt-4 rounded-lg border bg-white p-6 shadow-sm">
-      <div className="grid grid-cols-1 gap-x-8 gap-y-4 md:grid-cols-2">
+    <div className="bg-white border rounded-lg p-6 shadow-sm mt-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
         <div className="space-y-4">
-          <InputField label="GST" name="gst" value={formData.gst} onChange={handleInputChange} />
-          <div className="grid grid-cols-12 items-center gap-2">
+          <InputField
+            label="GST"
+            name="gst"
+            value={formData.gst}
+            onChange={handleInputChange}
+          />
+          <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
               <FormLabel>Registration Date</FormLabel>
             </div>
@@ -798,18 +800,28 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
                 name="registration_date"
                 value={formData.registration_date}
                 onChange={handleInputChange}
-                className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm"
+                className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
               />
             </div>
           </div>
-          <InputField label="CIN" name="cin" value={formData.cin} onChange={handleInputChange} />
-          <InputField label="PAN" name="pan" value={formData.pan} onChange={handleInputChange} />
+          <InputField
+            label="CIN"
+            name="cin"
+            value={formData.cin}
+            onChange={handleInputChange}
+          />
+          <InputField
+            label="PAN"
+            name="pan"
+            value={formData.pan}
+            onChange={handleInputChange}
+          />
           <SelectField
             label="Goods Service"
             name="goods_service"
             value={formData.goods_service}
             onChange={handleInputChange}
-            options={['Goods', 'Service']}
+            options={["Goods", "Service"]}
           />
         </div>
         <div className="space-y-4">
@@ -818,9 +830,9 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
             name="gst_category"
             value={formData.gst_category}
             onChange={handleInputChange}
-            options={['Registered', 'Unregistered', 'Composite']}
+            options={["Registered", "Unregistered", "Composite"]}
           />
-          <div className="grid grid-cols-12 items-center gap-2">
+          <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
               <FormLabel>GST Suspend</FormLabel>
             </div>
@@ -830,7 +842,7 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
                 name="gst_suspend"
                 checked={formData.gst_suspend}
                 onChange={handleInputChange}
-                className="h-5 w-5"
+                className="w-5 h-5"
               />
             </div>
           </div>
@@ -841,7 +853,7 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
             value={formData.distance}
             onChange={handleInputChange}
           />
-          <div className="grid grid-cols-12 items-center gap-2">
+          <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
               <FormLabel>TDS Applicable</FormLabel>
             </div>
@@ -851,7 +863,7 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
                 name="tds_on_gst_applicable"
                 checked={formData.tds_on_gst_applicable}
                 onChange={handleInputChange}
-                className="h-5 w-5"
+                className="w-5 h-5"
               />
             </div>
           </div>
@@ -861,10 +873,10 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
   );
 
   const renderCommunication = () => (
-    <div className="mt-4 rounded-lg border bg-white p-6 shadow-sm">
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+    <div className="bg-white border rounded-lg p-6 shadow-sm mt-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div>
-          <h3 className="mb-4 border-b pb-2 text-sm font-bold text-[#0c5888]">
+          <h3 className="text-sm font-bold text-[#0c5888] mb-4 border-b pb-2">
             Billing Information
           </h3>
           <div className="space-y-3">
@@ -875,7 +887,7 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
                 value={formData.address}
                 onChange={handleInputChange}
                 rows={3}
-                className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm"
+                className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
               />
             </div>
             <InputField
@@ -920,12 +932,15 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
         </div>
 
         <div>
-          <div className="mb-4 flex items-center justify-between border-b pb-2">
-            <h3 className="text-sm font-bold text-[#0c5888]">Shipping Address</h3>
+          <div className="flex justify-between items-center mb-4 border-b pb-2">
+            <h3 className="text-sm font-bold text-[#0c5888]">
+              Shipping Address
+            </h3>
             <button
               onClick={copyBillingToShipping}
-              className="flex items-center rounded border border-[#0c5888] px-2 py-1 text-xs text-[#0c5888]">
-              <Copy className="mr-1 h-3 w-3" /> Copy Billing
+              className="flex items-center text-xs text-[#0c5888] border border-[#0c5888] rounded px-2 py-1"
+            >
+              <Copy className="w-3 h-3 mr-1" /> Copy Billing
             </button>
           </div>
           <div className="space-y-3">
@@ -936,7 +951,7 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
                 value={formData.address_ship}
                 onChange={handleInputChange}
                 rows={3}
-                className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm"
+                className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
               />
             </div>
             <InputField
@@ -984,7 +999,7 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
   );
 
   const renderSocialProfile = () => (
-    <div className="mx-auto mt-4 max-w-3xl rounded-lg border bg-white p-8 shadow-sm">
+    <div className="bg-white border rounded-lg p-8 shadow-sm mt-4 max-w-3xl mx-auto">
       <div className="space-y-2">
         <SocialInput
           icon={Globe}
@@ -1026,55 +1041,35 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
   );
 
   const renderDefaults = () => (
-    <div className="mt-4 rounded-lg border bg-white p-6 shadow-sm">
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+    <div className="bg-white border rounded-lg p-6 shadow-sm mt-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <SelectField
           label="Payment Terms"
           name="payment_term"
           value={formData.payment_term}
           onChange={handleInputChange}
-          options={['Due on Receipt', 'Net 15', 'Net 30', 'Net 60']}
+          options={["Due on Receipt", "Net 15", "Net 30", "Net 60"]}
         />
         <SelectField
           label="Price Category"
           name="price_category"
           value={formData.price_category}
           onChange={handleInputChange}
-          options={['Retail', 'Wholesale', 'Distributor']}
+          options={["Retail", "Wholesale", "Distributor"]}
         />
-
-        {/* Dynamic Sales Executive Dropdown with Edit Button */}
-        <div className="mb-3">
-          <FormLabel>Sales Executive</FormLabel>
-          <div className="flex w-full">
-            <div className="min-w-0 flex-1">
-              <Dropdown
-                data={salesExecutiveList}
-                columns={salesExecutiveColumns}
-                value={formData.sales_executive}
-                valueKey="name"
-                onChange={(item) => handleDropdownChange('sales_executive', item?.name || '')}
-                placeholder="Select..."
-                zIndex={dropdownZIndex}
-              />
-            </div>
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                handleEditSalesExecutive();
-              }}
-              className="ml-[1px] rounded-r bg-[#0c5888] px-2 text-white hover:bg-[#0a4a70]">
-              <Edit className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-
+        <SelectField
+          label="Sales Executive"
+          name="sales_executive"
+          value={formData.sales_executive}
+          onChange={handleInputChange}
+          options={["Select...", "John Doe", "Jane Smith"]}
+        />
         <SelectField
           label="Transporter"
           name="transporter"
           value={formData.transporter}
           onChange={handleInputChange}
-          options={['Select...', 'DHL', 'FedEx', 'Local']}
+          options={["Select...", "DHL", "FedEx", "Local"]}
         />
         <InputField
           label="Credit Limit"
@@ -1097,17 +1092,17 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
           value={formData.interest_rate_yearly}
           onChange={handleInputChange}
         />
-        <div className="flex h-full items-center pt-4">
+        <div className="flex items-center h-full pt-4">
           <input
             type="checkbox"
             name="customer_on_watch"
             checked={
-              typeof formData.customer_on_watch === 'boolean'
+              typeof formData.customer_on_watch === "boolean"
                 ? formData.customer_on_watch
-                : formData.customer_on_watch === 'Yes'
+                : formData.customer_on_watch === "Yes"
             }
             onChange={handleInputChange}
-            className="mr-2 h-5 w-5"
+            className="w-5 h-5 mr-2"
           />
           <span className="text-sm font-medium">Customer On Watch</span>
         </div>
@@ -1116,33 +1111,35 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
           name="firm_status"
           value={formData.firm_status}
           onChange={handleInputChange}
-          options={['Active', 'Inactive', 'Suspended']}
+          options={["Active", "Inactive", "Suspended"]}
         />
         <SelectField
           label="Territory"
           name="territory"
           value={formData.territory}
           onChange={handleInputChange}
-          options={['Default', 'North', 'South']}
+          options={["Default", "North", "South"]}
         />
         <SelectField
           label="Customer Category"
           name="customer_category"
           value={formData.customer_category}
           onChange={handleInputChange}
-          options={['General', 'VIP', 'Reseller']}
+          options={["General", "VIP", "Reseller"]}
         />
       </div>
     </div>
   );
 
   const renderBankDetail = () => (
-    <div className="mt-4 rounded-lg border bg-white p-6 shadow-sm">
-      <div className="mb-6 flex items-center border-b pb-2">
-        <Landmark className="mr-2 h-5 w-5 text-[#0c5888]" />
-        <h3 className="text-lg font-medium text-gray-800">Banking Information</h3>
+    <div className="bg-white border rounded-lg p-6 shadow-sm mt-4">
+      <div className="flex items-center mb-6 pb-2 border-b">
+        <Landmark className="w-5 h-5 text-[#0c5888] mr-2" />
+        <h3 className="text-lg font-medium text-gray-800">
+          Banking Information
+        </h3>
       </div>
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="mb-3">
           <FormLabel>RTGS/IFSC Code</FormLabel>
           <div className="flex">
@@ -1151,11 +1148,12 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
               name="ifsc_code"
               value={formData.ifsc_code}
               onChange={handleInputChange}
-              className="w-full rounded-l border border-gray-300 px-2 py-1.5 text-sm"
+              className="w-full border border-gray-300 rounded-l px-2 py-1.5 text-sm"
             />
             <button
               onClick={fetchBankDetails}
-              className="rounded-r bg-[#0c5888] px-4 text-xs text-white">
+              className="bg-[#0c5888] text-white text-xs px-4 rounded-r"
+            >
               Fetch
             </button>
           </div>
@@ -1183,69 +1181,75 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
   );
 
   const renderContactPerson = () => (
-    <div className="mt-4 rounded-lg border bg-white p-6 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
+    <div className="bg-white border rounded-lg p-6 shadow-sm mt-4">
+      <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-medium text-gray-700">Contact Persons</h3>
         <button
           onClick={openAddContact}
-          className="flex items-center rounded bg-[#0c5888] px-3 py-2 text-sm text-white hover:bg-[#0a4a70]">
-          <Plus className="mr-1 h-4 w-4" /> Add Contact
+          className="flex items-center bg-[#0c5888] text-white px-3 py-2 rounded text-sm hover:bg-[#0a4a70]"
+        >
+          <Plus className="w-4 h-4 mr-1" /> Add Contact
         </button>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border">
+      <div className="overflow-x-auto border rounded-lg">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
                 Name
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
                 Designation
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
                 Mobile
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-600">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
                 Email
               </th>
-              <th className="px-4 py-3 text-center text-xs font-semibold uppercase text-gray-600">
+              <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200 bg-white">
+          <tbody className="bg-white divide-y divide-gray-200">
             {formData.contact.map((contact, idx) => (
               <tr key={idx} className="hover:bg-blue-50">
-                <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
                   <div className="font-medium">{contact.name}</div>
                 </td>
-                <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600">
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
                   {contact.designation}
                 </td>
-                <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600">
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
                   {contact.phone}
                 </td>
-                <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600">
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
                   {contact.email}
                 </td>
-                <td className="whitespace-nowrap px-4 py-3 text-center text-sm font-medium">
+                <td className="px-4 py-3 whitespace-nowrap text-center text-sm font-medium">
                   <button
                     onClick={() => openEditContact(idx)}
-                    className="mr-3 text-[#0c5888] hover:text-[#0a4a70]">
-                    <Edit className="h-4 w-4" />
+                    className="text-[#0c5888] hover:text-[#0a4a70] mr-3"
+                  >
+                    <Edit className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => deleteContact(idx)}
-                    className="text-red-500 hover:text-red-700">
-                    <Trash2 className="h-4 w-4" />
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </td>
               </tr>
             ))}
             {formData.contact.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-sm text-gray-500">
+                <td
+                  colSpan={5}
+                  className="px-4 py-8 text-center text-gray-500 text-sm"
+                >
                   No contact persons added yet.
                 </td>
               </tr>
@@ -1258,37 +1262,45 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
 
   return (
     <div
-      className="fixed inset-0 flex items-center justify-center bg-transparent p-4 font-sans text-gray-800 backdrop-blur-sm"
-      style={{ zIndex: overlayZIndex }}>
-      <div className="mx-auto flex h-[70vh] w-full max-w-6xl flex-col overflow-hidden rounded-lg bg-white shadow-lg">
+      className="fixed inset-0 flex items-center justify-center bg-transparent backdrop-blur-sm p-4 font-sans text-gray-800"
+      style={{ zIndex: overlayZIndex }}
+    >
+      <div className="max-w-6xl w-full mx-auto bg-white shadow-lg rounded-lg overflow-hidden flex flex-col h-[70vh]">
         {/* Header */}
-        <div className="flex shrink-0 items-center justify-between bg-[#0c5888] px-6 py-4 text-white">
+        <div className="bg-[#0c5888] px-6 py-4 text-white flex justify-between items-center shrink-0">
           <h1 className="text-xl font-semibold tracking-wide">
-            {isEditMode ? 'EDIT CUSTOMER' : 'ADD NEW CUSTOMER'}
+            {isEditMode ? "EDIT CUSTOMER" : "ADD NEW CUSTOMER"}
           </h1>
-          <button onClick={() => onClose(false)} className="text-white hover:text-gray-200">
-            <X className="h-6 w-6" />
+          <button
+            onClick={() => onClose(false)}
+            className="text-white hover:text-gray-200"
+          >
+            <X className="w-6 h-6" />
           </button>
         </div>
 
         {/* Steps */}
-        <div className="shrink-0 overflow-x-auto border-b bg-gray-100">
+        <div className="bg-gray-100 border-b overflow-x-auto shrink-0">
           <div className="flex min-w-max px-4">
             {STEPS.map((step, index) => {
               const isActive = index === activeStep;
               return (
                 <div
                   key={step.id}
-                  className={`relative flex cursor-pointer items-center px-4 py-3 text-sm font-medium ${
+                  className={`relative py-3 px-4 text-sm font-medium cursor-pointer flex items-center ${
                     isActive
-                      ? 'border-b-2 border-[#0c5888] bg-white text-[#0c5888]'
-                      : 'text-gray-500'
+                      ? "text-[#0c5888] border-b-2 border-[#0c5888] bg-white"
+                      : "text-gray-500"
                   }`}
-                  onClick={() => setActiveStep(index)}>
+                  onClick={() => setActiveStep(index)}
+                >
                   <span
-                    className={`mr-2 flex h-6 w-6 items-center justify-center rounded-full border text-xs ${
-                      isActive ? 'bg-[#0c5888] text-white' : 'border-gray-300 bg-white'
-                    }`}>
+                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs mr-2 border ${
+                      isActive
+                        ? "bg-[#0c5888] text-white"
+                        : "bg-white border-gray-300"
+                    }`}
+                  >
                     {index + 1}
                   </span>
                   {step.label}
@@ -1299,7 +1311,7 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
         </div>
 
         {/* Content - Scrollable */}
-        <div className="flex-1 overflow-y-auto bg-white px-6 py-2">
+        <div className="p-6 bg-white overflow-y-auto flex-1">
           {activeStep === 0 && renderBasicDetails()}
           {activeStep === 1 && renderStatutory()}
           {activeStep === 2 && renderCommunication()}
@@ -1311,29 +1323,33 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="flex shrink-0 items-center justify-between border-t bg-gray-50 px-6 py-4">
+        <div className="bg-gray-50 px-6 py-4 border-t flex justify-between items-center shrink-0">
           <div className="text-sm text-gray-600">
             Step {activeStep + 1} of {STEPS.length}
           </div>
           <div className="flex gap-3">
             <button
-              onClick={() => (activeStep > 0 ? setActiveStep((p) => p - 1) : onClose(false))}
-              className="flex items-center rounded border bg-white px-4 py-2 hover:bg-gray-100">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              {activeStep > 0 ? 'Back' : 'Close'}
+              onClick={() =>
+                activeStep > 0 ? setActiveStep((p) => p - 1) : onClose(false)
+              }
+              className="px-4 py-2 border rounded bg-white hover:bg-gray-100 flex items-center"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              {activeStep > 0 ? "Back" : "Close"}
             </button>
             <button
               onClick={handleNext}
               disabled={isSubmitting}
-              className="flex items-center rounded bg-[#0c5888] px-6 py-2 text-white hover:bg-[#0a4a70] disabled:opacity-50">
+              className="px-6 py-2 bg-[#0c5888] text-white rounded hover:bg-[#0a4a70] disabled:opacity-50 flex items-center"
+            >
               {activeStep === STEPS.length - 1 ? (
                 <>
-                  <Save className="mr-2 h-4 w-4" />
-                  {isSubmitting ? 'Saving...' : 'Submit'}
+                  <Save className="w-4 h-4 mr-2" />
+                  {isSubmitting ? "Saving..." : "Submit"}
                 </>
               ) : (
                 <span className="flex items-center">
-                  Next <ArrowRight className="ml-2 h-4 w-4" />
+                  Next <ArrowRight className="w-4 h-4 ml-2" />
                 </span>
               )}
             </button>
@@ -1341,11 +1357,13 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
         </div>
       </div>
 
+      {/* COA Modal */}
       {showChartOfAccounts && (
         <div
           className="fixed inset-0 flex items-center justify-center bg-black/50 p-4"
-          style={{ zIndex: nestedModalZIndex }}>
-          <div className="max-h-[90vh] w-full max-w-4xl overflow-auto rounded bg-white shadow-lg">
+          style={{ zIndex: nestedModalZIndex }}
+        >
+          <div className="bg-white rounded shadow-lg w-full max-w-4xl max-h-[90vh] overflow-auto">
             <ChartOfAccounts
               isOpen={showChartOfAccounts}
               onClose={() => setShowChartOfAccounts(false)}
@@ -1357,39 +1375,31 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
         </div>
       )}
 
-      {/* SALES EXECUTIVE MODAL */}
-      {showSalesExecutiveModal && (
-        <SalesExecutiveMaster
-          onClose={() => setShowSalesExecutiveModal(false)}
-          initialData={selectedExecutiveObj || undefined}
-          onSuccess={() => {
-            loadSalesExecutives(); // Refresh the dropdown
-          }}
-          index={nestedModalZIndex}
-        />
-      )}
-
+      {/* Contact Add/Edit Modal */}
       {showContactModal && (
         <div
           className="fixed inset-0 flex items-center justify-center bg-black/50 p-4"
-          style={{ zIndex: nestedModalZIndex }}>
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
-            <h3 className="mb-4 text-lg font-bold">
-              {editingContactIndex !== null ? 'Edit Contact' : 'Add Contact'}
+          style={{ zIndex: nestedModalZIndex }}
+        >
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+            <h3 className="text-lg font-bold mb-4">
+              {editingContactIndex !== null ? "Edit Contact" : "Add Contact"}
             </h3>
             <div className="space-y-3">
               <div>
                 <FormLabel required>Name</FormLabel>
                 <input
-                  className="w-full rounded border p-2"
+                  className="w-full border p-2 rounded"
                   value={contactForm.name}
-                  onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
+                  onChange={(e) =>
+                    setContactForm({ ...contactForm, name: e.target.value })
+                  }
                 />
               </div>
               <div>
                 <FormLabel>Designation</FormLabel>
                 <input
-                  className="w-full rounded border p-2"
+                  className="w-full border p-2 rounded"
                   value={contactForm.designation}
                   onChange={(e) =>
                     setContactForm({
@@ -1402,27 +1412,35 @@ const CrudCustomer: React.FC<AddNewCustomerProps> = ({
               <div>
                 <FormLabel>Email</FormLabel>
                 <input
-                  className="w-full rounded border p-2"
+                  className="w-full border p-2 rounded"
                   value={contactForm.email}
-                  onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                  onChange={(e) =>
+                    setContactForm({ ...contactForm, email: e.target.value })
+                  }
                 />
               </div>
               <div>
                 <FormLabel>Phone</FormLabel>
                 <input
-                  className="w-full rounded border p-2"
+                  className="w-full border p-2 rounded"
                   value={contactForm.phone}
-                  onChange={(e) => setContactForm({ ...contactForm, phone: e.target.value })}
+                  onChange={(e) =>
+                    setContactForm({ ...contactForm, phone: e.target.value })
+                  }
                 />
               </div>
             </div>
             <div className="mt-6 flex justify-end gap-3">
               <button
                 onClick={() => setShowContactModal(false)}
-                className="rounded border px-4 py-2">
+                className="px-4 py-2 border rounded"
+              >
                 Cancel
               </button>
-              <button onClick={saveContact} className="rounded bg-[#0c5888] px-4 py-2 text-white">
+              <button
+                onClick={saveContact}
+                className="px-4 py-2 bg-[#0c5888] text-white rounded"
+              >
                 Save
               </button>
             </div>
