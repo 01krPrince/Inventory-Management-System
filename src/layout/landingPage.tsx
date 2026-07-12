@@ -294,7 +294,7 @@ const LandingPage = () => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-700 rounded-lg py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
-                      placeholder="••••••••••••"
+                      placeholder="12345"
                     />
                   </div>
                 </div>
@@ -399,7 +399,7 @@ const LandingPage = () => {
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Password"
+                    placeholder="12345"
                     className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
                   />
 
